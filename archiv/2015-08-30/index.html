@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="de" ng-app="navplanApp" ng-controller="navplanCtrl">
+<head>
+	<title>NAV-Flightplan</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+	<link rel="stylesheet" href = "http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+	<link rel="stylesheet" href = "http://openlayers.org/en/v3.7.0/css/ol.css">
+	<link href="http://allfont.net/allfont.css?fonts=arial-narrow" rel="stylesheet" type="text/css" />
+	<link rel="stylesheet" href = "navplan.css">
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+	<script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.4.2/angular.min.js"></script>
+	<script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.4.2/angular-route.min.js"></script>
+	<script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.4.2/angular-resource.min.js"></script>
+	<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+	<script src="http://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/0.13.0/ui-bootstrap-tpls.min.js"></script>
+	<script src="http://openlayers.org/en/v3.7.0/build/ol.js"></script>
+	<script src="navplanApp.js"></script>
+	<script src="navplanCtrl.js"></script>
+	<script src="mapCtrl.js"></script>
+	<script src="waypointCtrl.js"></script>
+	<script src="aircraftCtrl.js"></script>
+	<script src="fuelCtrl.js"></script>
+	<script src="mapService.js"></script>
+	<script src="geonameService.js"></script>
+	<script src="kmlService.js"></script>
+</head>
+<body>
+	<nav class="navbar navbar-default">
+		<div class="container-fluid">
+			<div class="navbar-header">
+				<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false">
+					<span class="sr-only">Toggle navigation</span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</button>
+				<a class="navbar-brand" href="#/">NAV-FLIGHTPLAN</a>
+			</div>
+			<div class="collapse navbar-collapse" id="navbar">
+				<ul class="nav navbar-nav">
+					<li><a href="#/map">Map</a></li>
+					<li><a href="#/waypoints">Waypoints</a></li>
+					<li><a href="#/aircraft">Aircraft</a></li>
+					<li><a href="#/fuel">Fuel</a></li>
+				</ul>
+				<ul class="nav navbar-nav navbar-right">
+					<li><a href="#/about">About</a></li>
+				</ul>
+			</div>
+		</div>
+	</nav>
+	<!-- content -->
+	<div ng-view></div>
+</body>
+</html>

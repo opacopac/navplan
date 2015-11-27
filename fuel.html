@@ -1,0 +1,39 @@
+<div id="fuel">
+	<table>
+		<tr>
+			<th>Fuel calc.</th>
+			<th>Time</th>
+			<th>Fuel</th>
+		</tr>
+		<tr>
+			<td>Trip</td>
+			<td><span ng-show="globalData.fuel.tripTime > 0">{{ globalData.fuel.tripTime }}</span></td>
+			<td><span ng-show="globalData.fuel.tripTime > 0">{{ fuelByTime(globalData.fuel.tripTime) }}</span></td>
+		</tr>
+		<tr>
+			<td>Alternate</td>
+			<td><span ng-show="globalData.fuel.alternateTime > 0">{{ globalData.fuel.alternateTime }}</span></td>
+			<td><span ng-show="globalData.fuel.alternateTime > 0">{{ fuelByTime(globalData.fuel.alternateTime) }}</span></td>
+		</tr>
+		<tr>
+			<td>Reserve</td>
+			<td>{{ globalData.fuel.reserveTime }}</td>
+			<td>{{ fuelByTime(globalData.fuel.reserveTime) }}</td>
+		</tr>
+		<tr>
+			<td>Minimum</td>
+			<td><span ng-show="globalData.fuel.tripTime > 0 || globalData.fuel.alternateTime > 0">{{ globalData.fuel.tripTime + globalData.fuel.alternateTime + globalData.fuel.reserveTime }}</span></td>
+			<td><span ng-show="globalData.fuel.tripTime > 0 || globalData.fuel.alternateTime > 0">{{ fuelByTime(globalData.fuel.tripTime + globalData.fuel.alternateTime + globalData.fuel.reserveTime) }}</span></td>
+		</tr>
+		<tr>
+			<td>Extra fuel</td>
+			<td><input id="extraFuelInput" type="text" class="form-control" maxlength="3" size="3" ng-model="globalData.fuel.extraTime"></td>
+			<td><span ng-show="globalData.fuel.extraTime * 1 > 0">{{ fuelByTime(globalData.fuel.extraTime) }}</span></td>
+		</tr>
+		<tr>
+			<td><b>Block fuel</b></td>
+			<td><span ng-show="globalData.fuel.tripTime > 0 || globalData.fuel.alternateTime > 0"><b>{{ globalData.fuel.tripTime + globalData.fuel.alternateTime + globalData.fuel.reserveTime + globalData.fuel.extraTime * 1 }}</b></span></td>
+			<td><span ng-show="globalData.fuel.tripTime > 0 || globalData.fuel.alternateTime > 0"><b>{{ fuelByTime(globalData.fuel.tripTime + globalData.fuel.alternateTime + globalData.fuel.reserveTime + globalData.fuel.extraTime * 1) }}</b></span></td>
+		</tr>
+	</table>
+</div>

@@ -1,0 +1,39 @@
+<div id="fuel">
+	<table>
+		<tr>
+			<th>Fuel calc.</th>
+			<th>Time</th>
+			<th>Fuel</th>
+		</tr>
+		<tr>
+			<td>Trip</td>
+			<td><span ng-show="eetSum">{{ eetSum }}</span></td>
+			<td><span ng-show="eetSum">{{ fuelByTime(eetSum) }}</span></td>
+		</tr>
+		<tr>
+			<td>Alternate</td>
+			<td><span ng-show="globalData.alternate.dist">{{ alternateTime() }}</span></td>
+			<td><span ng-show="globalData.alternate.dist">{{ fuelByTime(alternateTime()) }}</span></td>
+		</tr>
+		<tr>
+			<td>Reserve</td>
+			<td>{{ globalData.fuel.reserve }}</td>
+			<td>{{ fuelByTime(globalData.fuel.reserve) }}</td>
+		</tr>
+		<tr>
+			<td>Minimum</td>
+			<td><span ng-show="eetSum || globalData.alternate.dist">{{ eetSum + globalData.fuel.reserve }}</span></td>
+			<td><span ng-show="eetSum || globalData.alternate.dist">{{ fuelByTime(eetSum + globalData.fuel.reserve) }}</span></td>
+		</tr>
+		<tr>
+			<td>Extra fuel</td>
+			<td><input id="extraFuelInput" type="text" class="form-control" maxlength="3" size="3" ng-model="globalData.fuel.extra"></td>
+			<td><span ng-show="globalData.fuel.extra">{{ fuelByTime(globalData.fuel.extra) }}</span></td>
+		</tr>
+		<tr>
+			<td><b>Block fuel</b></td>
+			<td><span ng-show="eetSum || globalData.alternate.dist"><b>{{ eetSum + alternateTime() + globalData.fuel.reserve + 1 * globalData.fuel.extra }}</b></span></td>
+			<td><span ng-show="eetSum || globalData.alternate.dist"><b>{{ fuelByTime(eetSum + alternateTime() + globalData.fuel.reserve + 1 * globalData.fuel.extra) }}</b></span></td>
+		</tr>
+	</table>
+</div>

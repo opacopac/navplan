@@ -1,0 +1,130 @@
+body { 
+   background-color: #FFFFFF; 
+   margin: 0px; 
+   padding: 0px;
+   text-align:center;
+   font-size: 12px;
+   font-family: verdana, sans-serif;
+   color: #333;
+}
+
+.text { 
+   background-color: #FFFFFF; 
+   margin: 0px; 
+   padding: 0px;
+   font-size: 12px;
+   font-family: verdana, sans-serif;
+   color: #333;
+}
+
+h3 {color:#363; margin-left:20px; }
+h4 {color:#363; margin-left:40px;}
+h5 {color:#363; margin-left:60px;}
+
+.list li  {padding:10px; }
+
+/* table */
+.restable {
+	margin: auto;
+	background: #FFF;
+	border-collapse: collapse;
+	border-top: 1px solid #363;
+}
+
+
+/* tinted rows */
+/* in CSS3 selectors: tbody tr:even or tbody tr:nth-child(2n) */
+tr.odd {
+	background: #DFD;
+}
+
+tr.tfooter {
+	border-top: 2px solid #363;
+}
+
+/* table cells */
+.restable th {
+	font-weight: bold;
+	padding: .3em .7em;
+	text-align: left;
+	vertical-align: top;
+	background: #9C9;
+	white-space: nowrap;
+	border-top: 1px solid #363;
+	border-bottom: 1px solid #363;
+}
+
+/* table cells */
+.restable td {
+	font-weight: normal;
+	padding: .3em .7em;
+	text-align: left;
+	vertical-align: top;
+}
+
+
+th.rightalign { text-align: right; vertical-align:bottom ; white-space: nowrap}
+td.rightalign { text-align: right; vertical-align:bottom ; white-space: nowrap}
+
+
+#topmenutable {width:100%; background:#EEEEEE; border-bottom: 2px solid #363; white-space: nowrap; }
+#topmenutableGooglemap {position:absolute; top:0px; left:0px; width:100%; background:#EEEEEE; border-bottom: 2px solid #363; white-space: nowrap; }
+#topmenutableGooglemapv3 { width:100%; background:#EEEEEE; border-bottom: 2px solid #363; white-space: nowrap; }
+
+.topmenu { padding-left:10px; font-size: 12px; font-weight:bold; text-decoration:none ; color:#363; text-align: left; white-space: nowrap; }
+.topmenu A { font-size: 12px; font-weight:bold; text-decoration:none ; color:#363; text-align: left; white-space: nowrap; }
+
+
+.topsearch {width:100%; font-size: 10px; font-family: Helvetica, Arial, san-serif; text-decoration:none ; color:#666666; text-align: right; display:inline; white-space: nowrap; }
+#topmenulogin {display:inline; width:20px; white-space: nowrap;}
+
+#footer {color:#666666;}
+
+#centerPt {font-size:10px; position: absolute; top: 33px; left: 10px; }
+#mapQuest {font-size:10px; position: absolute; top: 33px; right: 10px; }
+
+
+.formTemplateClass {padding:10px; border:#000000; border-color:#3E5E7A; border-style:double; background-color : #FFFFFF; text-align:center;}
+.formTemplateClass h3,h4,h5 {margin-left:0px; color:#3E5E7A;}
+.formTemplateClass A {font-size:10px; color : #5C85FF}
+#infoWinMenuDiv A {font-size:10px; color : #5C85FF}
+
+#geonameWin {font-size:14px;}
+
+
+.optBoxTemplate {padding:4px; background:#FFFFFF; border-style:solid; border-width:1px; border-color:#3E5E7A;} 
+#toolbar {padding: 0px;}
+.tabSelected { font-weight:bold; text-decoration:none ;}
+
+
+#editForm {position:absolute;  top:50px; left: 250px; width: 650px; visibility:hidden; z-index:80; }
+#alternateNamesDiv {position:absolute;  top:250px; left: 250px; width: 600px; visibility:hidden; z-index:100; }
+#codeEditFormDiv {position:absolute;  top:50px; left: 250px; width: 450px; visibility:hidden; z-index:80; }
+#hierarchyDiv {position:absolute;  top:250px; left: 250px; width: 550px; visibility:hidden; z-index:90; }
+
+
+#loginFormDiv {position:absolute;  top:100px; left: 100px; width: 300px; visibility:hidden; z-index:100; }
+
+#deleteForm {position:absolute;  top:100px; left: 100px; width: 300px; visibility:hidden; z-index:100; }
+#emailFormDiv {position:absolute;  top:100px; left: 100px; width: 500px; visibility:hidden; z-index:100; }
+
+#tagFormDiv {position:absolute;  top:100px; left: 100px; width: 500px; visibility:hidden; z-index:100; ;}
+
+
+#list {font-size:10px; position: absolute; top: 500px; left: 230px; width: 730px; text-align:center}
+
+#optbox {font-size:10px; position: absolute; top: 210px; left: 10px; width: 210px; text-align:left;}
+
+
+#codeForm  {display:inline;}
+#wikipediaFormDiv  {position:absolute; top:75px; left: 0px; width: 200px; z-index:10; visibility:hidden; ;border-style:solid; border-width:1px; border-color:#3E5E7A;}
+
+
+#pageFooter {font-size: 10px;}
+.separator {color:#363; margin:10px;}
+
+#baseStationExport {font-size:10px; position: absolute; top: 23px; right: 10px; }
+#editBaseStationForm {position:absolute;  top:50px; left: 250px; width: 450px; visibility:visible; z-index:80; }
+
+#left {font-size:10px; text-align:center; padding:1px; }
+

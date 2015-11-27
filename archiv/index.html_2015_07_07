@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html ng-app="navplanApp" ng-controller="navplanCtrl">
+<head>
+	<title>NAV-Flightplan</title>
+	<link rel="stylesheet" href = "bootstrap/css/bootstrap.min.css">
+	<link rel="stylesheet" href = "openlayers/ol.css">
+	<link rel="stylesheet" href = "navplan.css">
+	<!--<script src="bootstrap/js/bootstrap.min.js"></script>-->
+	<script src="angularjs/angular.js"></script>
+	<script src="angularjs/angular-resource.js"></script>
+	<script src="ui-bootstrap/ui-bootstrap-tpls-0.13.0.js"></script>
+	<script src="openlayers/ol-debug.js"></script>
+	<script src="navplanApp.js"></script>
+	<script src="navplanCtrl.js"></script>
+	<script src="mapService.js"></script>
+	<script src="geonameService.js"></script>
+</head>
+<body>
+	<div class="page-header">
+		<h1>Nav-Flightplan</small></h1>
+	</div>
+	<div class="container-fluid">
+		<div class="row">
+			<div id="navplan" class="col-lg-6">
+				<div id="aircraft" class="form-horizontal">
+					<div class="form-group">
+						<label for="pilot_name" class="col-sm-2">Pilot</label>
+ 						<div class="col-sm-6">
+							<input type="text" id="pilot_name" class="form-control" ng-model="pilot.name">
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="aircraft_id" class="col-sm-2">Aircraft ID</label>
+						<div class="col-sm-6">
+							<input type="text" id="aircraft_id" class="form-control" ng-model="aircraft.id">
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="aircraft_speed" class="col-sm-2">Ground Speed</label>
+						<div class="col-sm-2">
+							<input type="text" id="aircraft_speed" class="form-control" ng-model="aircraft.speed" placeholder="kt" maxlength="3" size="3">
+						</div>
+						<label for="aircraft_consumption" class="col-sm-2">Fuel Consumption</label>
+						<div class="col-sm-2">
+							<input type="text" id="aircraft_consumption" class="form-control" ng-model="aircraft.consumption" placeholder="l/h" maxlength="2" size="2">
+						</div>
+					</div>
+				</div>
+				<div id="waypoints">
+					<div class="row" ng-repeat="wp in waypoints">
+						<div class="col-md-1"><!-- frequency -->
+							<input type="text" class="form-control" maxlength="7" size="4" placeholder="Freq." ng-model="wp.freq">
+						</div>
+						<div class="col-md-1"><!-- callsign -->
+							<input type="text" class="form-control" maxlength="4" size="3" placeholder="C/S" ng-model="wp.callsign">
+						</div>
+						<div class="col-md-2"><!-- checkpoint -->
+							<input type="text" class="form-control" placeholder="Checkpoint" ng-model="wp.checkpoint"
+								typeahead="geoname.name for geoname in searchGeonamesByValue($viewValue)" typeahead-min-length="2"
+								typeahead-loading="loadingLocations" typeahead-on-select="onGeonameSelect($item, wp)"
+								ng-blur="updateTrack()">
+							<i ng-show="loadingLocations" class="glyphicon glyphicon-refresh"></i>
+						</div>
+						<div class="col-md-1" ng-class="{disabled: $first}"><!-- mt -->
+							<input type="text" class="form-control" maxlength="3" size="3" placeholder="MT" ng-model="wp.mt" ng-hide="$first" disabled>
+						</div>
+						<div class="col-md-1" ng-class="{disabled: $first}"><!-- dist -->
+							<input type="text" class="form-control" maxlength="3" size="3" placeholder="Dist." ng-model="wp.dist" ng-hide="$first" disabled>
+						</div>
+						<div class="col-md-1"  ng-class="{disabled: $first}"><!-- alt -->
+							<input type="text" class="form-control" maxlength="5" size="3" placeholder="Alt." ng-model="wp.alt" ng-hide="$first">
+						</div>
+						<div class="col-md-1" ng-class="{disabled: $first}"><!-- eet -->
+							<input type="text" class="form-control" maxlength="5" size="3" placeholder="EET" value="{{ formatEet(wp) }}" ng-hide="$first" disabled>
+						</div>
+						<div class="col-md-2"><!-- remarks -->
+							<input type="text" class="form-control" placeholder="Remarks" ng-model="wp.remark">
+						</div>
+						<button type="button" class="btn btn-danger btn-circle" ng-click="waypoints.splice($index, 1); updateTrack();"><i class="glyphicon glyphicon-remove"></i></button>
+					</div>
+				</div>
+				<div id="fuel">
+					<table>
+						<tr>
+							<th>Fuel calc.</th>
+							<th>Time</th>
+							<th>Fuel</th>
+						</tr>
+						<tr>
+							<td>Trip</td>
+							<td><span ng-show="eetSum">{{ eetSum }}</span></td>
+							<td><span ng-show="eetSum">{{ fuelByTime(eetSum) }}</span></td>
+						</tr>
+						<tr>
+							<td>Alternate</td>
+							<td><span ng-show="alternate.dist">{{ alternateTime() }}</span></td>
+							<td><span ng-show="alternate.dist">{{ fuelByTime(alternateTime()) }}</span></td>
+						</tr>
+						<tr>
+							<td>Reserve</td>
+							<td>{{ fuel.reserve }}</td>
+							<td>{{ fuelByTime(fuel.reserve) }}</td>
+						</tr>
+						<tr>
+							<td>Minimum</td>
+							<td><span ng-show="eetSum || alternate.dist">{{ eetSum + fuel.reserve }}</span></td>
+							<td><span ng-show="eetSum || alternate.dist">{{ fuelByTime(eetSum + fuel.reserve) }}</span></td>
+						</tr>
+						<tr>
+							<td>Extra fuel</td>
+							<td><input type="text" class="fuel" maxlength="3" size="3" ng-model="fuel.extra"></td>
+							<td><span ng-show="fuel.extra">{{ fuelByTime(fuel.extra) }}</span></td>
+						</tr>
+						<tr>
+							<td>Block fuel</td>
+							<td><span ng-show="eetSum || alternate.dist">{{ eetSum + alternateTime() + fuel.reserve + 1 * fuel.extra }}</span></td>
+							<td><span ng-show="eetSum || alternate.dist">{{ fuelByTime(eetSum + alternateTime() + fuel.reserve + 1 * fuel.extra) }}</span></td>
+						</tr>
+					</table>
+				</div>
+			</div>
+			<div id="map" class="col-lg-6"></div>
+		</div>
+	</div>
+</body>
+</html>

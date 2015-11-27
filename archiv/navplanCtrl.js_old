@@ -1,0 +1,134 @@
+app.controller('navplanCtrl', function($scope) {
+	// init pilot
+	$scope.pilot = { name: 'Armand' };
+	
+	// init aircraft
+	$scope.aircraft = { id: 'HB-SRA', speed: 100, consumption: 20 };
+	
+	// init waypoints
+	var wps = [];
+	for (i = 0; i < 19; i++)
+		wps[i] = { freq: '', callsign: '', checkpoint: '', mt: '', dist: '', alt: '', remark: '', isAlternate: false };
+	$scope.waypoints = wps;
+	$scope.alternate = { freq: '', callsign: '', checkpoint: '', mt: '', dist: '', alt: '', remark: '', isAlternate: true };
+	$scope.lastIdx = 0;
+	$scope.eetSum = '';
+
+	// init fuel
+	$scope.fuel = { reserve: 45, extra: '' }
+	
+	
+	$scope.fuelByTime = function(time)
+	{
+		return Math.round(time / 60 * $scope.aircraft.consumption);
+	};
+
+	
+	$scope.alternateTime = function()
+	{
+		return Math.round($scope.alternate.dist / $scope.aircraft.speed * 60 + 5);
+	};
+
+	
+	// mt formatter
+	$scope.formatMt = function(wp)
+	{
+		if (!wp || !wp.mt || wp.mt.length > 3)
+			return;
+		
+		var mt_num = parseInt(wp.mt);
+		
+		if (isNaN(mt_num))
+			return;
+		else
+			mt_num += '';
+		
+		wp.mt = Array(4-mt_num.length).join("0") + mt_num;
+	};
+	
+	
+	// dist formatter
+	$scope.formatDist = function(wp)
+	{
+		if (!wp || !wp.dist)
+			return;
+		
+		var dist_num = parseFloat(wp.dist);
+		
+		if (isNaN(dist_num))
+			return;
+			
+		wp.dist = Math.round(dist_num);
+	};
+
+	
+	// eet-formatter
+	$scope.formatEet = function(wp)
+	{
+		if (!$scope.aircraft || !$scope.aircraft.speed || $scope.aircraft.speed <= 0)
+			return '';
+
+		if (!wp || !wp.dist || wp.dist <= 0)
+			return '';
+
+		var dist_num = parseFloat(wp.dist);
+		
+		if (isNaN(dist_num))
+			return '';
+
+		eet = Math.round(Math.round(dist_num) / $scope.aircraft.speed * 60);
+
+		if (wp.isAlternate || wp.mt.toUpperCase().indexOf("VAC") >= 0)
+			return eet + '/+5';
+		else
+			return eet;
+	};
+	
+	
+	$scope.updateLastIdx = function(min_index)
+	{
+		var idx = 0;
+		
+		if (min_index && min_index > 0)
+			idx = min_index;
+		
+		for (i = idx; i < $scope.waypoints.length; i++)
+		{
+			wp = $scope.waypoints[i];
+			
+			if (wp.freq || wp.callsign || wp.checkpoint || wp.mt || wp.dist || wp.alt || wp.remark)
+				idx = i;
+		}
+		
+		$scope.lastIdx = idx;
+	};
+	
+	
+	$scope.updateEetSum = function()
+	{
+		var sumEet = 0;
+		var countVac = 0;
+		$scope.eetSum = '';
+		
+		if (!$scope.aircraft || !$scope.aircraft.speed || $scope.aircraft.speed <= 0)
+			return;
+
+		for (i = 0; i < $scope.waypoints.length; i++)
+		{
+			wp = $scope.waypoints[i];
+			
+			if (wp.mt.toUpperCase().indexOf("VAC") >= 0)
+				countVac++;
+
+			var dist_num = parseInt(wp.dist);
+			
+			if (!isNaN(dist_num))
+				sumEet += Math.round(dist_num / $scope.aircraft.speed * 60);
+		}
+		
+		if (sumEet <= 0)
+			return;
+
+		$scope.eetSum = sumEet + countVac * 5;
+	}
+});
