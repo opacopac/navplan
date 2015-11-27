@@ -8,7 +8,7 @@ navplanApp
 function geonameService($resource)
 {
 	// init
-	var base_url = 'http://navplan.ch/geoname.php';
+	var base_url = 'geoname.php';
 	var resource = $resource(base_url);
 
 	

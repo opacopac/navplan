@@ -55,7 +55,7 @@ function mapService()
 
 
 		// add airports to icon layer
-		$http.get('http://navplan.ch/airports.php')
+		$http.get('airports.php')
 			.success(function(data, status, headers, config) {
 				if (data.airports)
 				{
@@ -100,7 +100,7 @@ function mapService()
 		
 		
 		// add navaids to icon layer
-		$http.get('http://navplan.ch/navaids.php')
+		$http.get('navaids.php')
 			.success(function(data, status, headers, config) {
 				if (data.navaids)
 				{
@@ -129,7 +129,7 @@ function mapService()
 
 			
 		// add user waypoints to icon layer
-		$http.get('http://navplan.ch/userWaypoint.php?action=getall')
+		$http.get('userWaypoint.php?action=getall')
 			.success(function(data, status, headers, config) {
 				if (data.userWaypoints)
 				{
@@ -163,7 +163,7 @@ function mapService()
 		});
 		
 		// add airspaces to airspace layer
-		$http.get('http://navplan.ch/airspace.php')
+		$http.get('airspace.php')
 			.success(function(data, status, headers, config) {
 				if (data.airspace)
 				{

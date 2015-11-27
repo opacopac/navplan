@@ -8,7 +8,7 @@ navplanApp
 function userWaypointService($http)
 {
 	// init
-	var base_url = 'http://navplan.ch/userWaypoint.php';
+	var base_url = 'userWaypoint.php';
 
 	
 	// return api reference
