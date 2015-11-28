@@ -9,11 +9,12 @@ var navplanApp =
 function routeprovider($routeProvider)
 {
 	$routeProvider
-		.when("/",  { templateUrl: 'map.html', controller: 'mapCtrl' })
-		.when("/map",  { templateUrl: 'map.html', controller: 'mapCtrl' })
-		.when("/waypoints",  { templateUrl: 'waypoints.html', controller: 'waypointCtrl' })
-		.when("/aircraft",  { templateUrl: 'aircraft.html', controller: 'aircraftCtrl' })
-		.when("/fuel",  { templateUrl: 'fuel.html', controller: 'fuelCtrl' })
-		.when("/settings",  { templateUrl: 'settings.html', controller: 'settingsCtrl' })
-		.when("/about",  { templateUrl: 'about.html' });
+		.when("/",  { templateUrl: 'map/map.html', controller: 'mapCtrl' })
+		.when("/map",  { templateUrl: 'map/map.html', controller: 'mapCtrl' })
+		.when("/waypoints",  { templateUrl: 'waypoints/waypoints.html', controller: 'waypointCtrl' })
+		.when("/aircraft",  { templateUrl: 'aircraft/aircraft.html', controller: 'aircraftCtrl' })
+		.when("/fuel",  { templateUrl: 'fuel/fuel.html', controller: 'fuelCtrl' })
+		.when("/login",  { templateUrl: 'login/login.html', controller: 'loginCtrl' })
+		.when("/settings",  { templateUrl: 'settings/settings.html', controller: 'settingsCtrl' })
+		.when("/about",  { templateUrl: 'about/about.html' });
 }

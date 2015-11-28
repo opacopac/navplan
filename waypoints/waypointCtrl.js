@@ -21,7 +21,7 @@ function waypointCtrl($scope, $http, geonameService, mapService, waypointService
 		};
 		
 		var pdfLink = document.getElementById("dlPdfLink");
-		pdfLink.href = 'navplanPdf.php?data=' + encodeURIComponent(JSON.stringify(navplanData))
+		pdfLink.href = 'php/navplanPdf.php?data=' + encodeURIComponent(JSON.stringify(navplanData))
 	}
 	
 	
@@ -35,7 +35,7 @@ function waypointCtrl($scope, $http, geonameService, mapService, waypointService
 		};
 		
 		var excelLink = document.getElementById("dlExcelLink");
-		excelLink.href = 'navplanExcel.php?data=' + encodeURIComponent(JSON.stringify(navplanData))
+		excelLink.href = 'php/navplanExcel.php?data=' + encodeURIComponent(JSON.stringify(navplanData))
 	}
 	
 	

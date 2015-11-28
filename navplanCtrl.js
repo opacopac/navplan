@@ -23,22 +23,23 @@ function navplanCtrl($scope, globalData)
 	$scope.globalData = globalData;
 	
 	// init user
-	var uid = getCookie("uid");
+	var userCookie = getCookie("uc");
 
-	if (uid == "")
+	if (userCookie == "")
 	{
-		uid = getUid();
-		setCookie("uid", uid, 90);
+		userCookie = generateUserCookie();
+		setCookie("uc", userCookie, 90);
+		$scope.globalData.user = { userCookie: userCookie };
 	}
 	
-	$scope.globalData.user = { uid: uid };
+	getUser(userCookie);
+	
 
 	// init disclaimer
 	var hideDisclaimer = getCookie("hideDisclaimer");
 
 	if (hideDisclaimer != "1")
 		$('#disclaimerDialog').modal('show');
-	
 
 	// init pilot
 	$scope.globalData.pilot = { name: 'Armand' };
@@ -97,7 +98,12 @@ function getCookie(cname) {
     return "";
 }
 
-function getUid()
+function generateUserCookie()
 {
 	return Math.floor((Math.random() * 100000000000) + 1); 
+}
+
+function getUser(userCookie)
+{
+
 }

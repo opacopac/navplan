@@ -55,7 +55,7 @@ function mapService()
 
 
 		// add airports to icon layer
-		$http.get('airports.php')
+		$http.get('php/airports.php')
 			.success(function(data, status, headers, config) {
 				if (data.airports)
 				{
@@ -100,7 +100,7 @@ function mapService()
 		
 		
 		// add navaids to icon layer
-		$http.get('navaids.php')
+		$http.get('php/navaids.php')
 			.success(function(data, status, headers, config) {
 				if (data.navaids)
 				{
@@ -129,7 +129,7 @@ function mapService()
 
 			
 		// add user waypoints to icon layer
-		$http.get('userWaypoint.php?action=getall')
+		$http.get('php/userWaypoint.php?action=getall')
 			.success(function(data, status, headers, config) {
 				if (data.userWaypoints)
 				{
@@ -163,7 +163,7 @@ function mapService()
 		});
 		
 		// add airspaces to airspace layer
-		$http.get('airspace.php')
+		$http.get('php/airspace.php')
 			.success(function(data, status, headers, config) {
 				if (data.airspace)
 				{
@@ -206,7 +206,7 @@ function mapService()
 		var kmlLink = document.createElement('a');
 		kmlLink.id = "dlKmlLink";
 		kmlLink.innerHTML = 'KML';
-		kmlLink.href = "navplanKml.php";
+		kmlLink.href = "php/navplanKml.php";
 		kmlLink.target = "_blank";
 		kmlLink.download = "track.kml";
 		kmlLink.addEventListener('click', onKmlClick, false);

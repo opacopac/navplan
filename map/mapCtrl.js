@@ -193,7 +193,7 @@ function mapCtrl($scope, $http, $resource, mapService, geonameService, waypointS
 		};
 	
 		var kmlLink = document.getElementById("dlKmlLink");
-		kmlLink.href = 'navplanKml.php?data=' + encodeURIComponent(JSON.stringify(navplanData))
+		kmlLink.href = 'php/navplanKml.php?data=' + encodeURIComponent(JSON.stringify(navplanData))
 	}
 	
 	
