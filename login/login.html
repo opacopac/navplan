@@ -1,14 +1,20 @@
 <!-- login -->
-<div id="login" class="form-horizontal">
-	<div class="form-group">
-		<label for="email" class="col-sm-2">E-Mail</label>
-		<div class="col-sm-2">
-			<input type="text" id="email" class="form-control" ng-model="email">
+<form name="loginForm">
+	<div id="login" class="form-horizontal">
+		<div class="form-group">
+			<label for="email" class="col-sm-2">E-Mail</label>
+			<div class="col-sm-2">
+				<input type="email" id="email" class="form-control" ng-model="email" ng-required="true">
+			</div>
 		</div>
-		<label for="password" class="col-sm-2">Password</label>
-		<div class="col-sm-2">
-			<input type="password" id="password" class="form-control" ng-model="password">
+		<div class="form-group">
+			<label for="password" class="col-sm-2">Password</label>
+			<div class="col-sm-2">
+				<input type="password" id="password" class="form-control" ng-model="password" ng-required="true">
+			</div>
 		</div>
-		<button class="button" ng-click="login()">Login</button>
+		<input type="checkbox" ng-model="remember">remember me<br/>
+		<button class="button" ng-click="login()" ng-disabled="email.$dirty && email.$invalid || password.$dirty && password.$invalid">Login</button>
+		<button class="button" ng-click="register()">Register</button>
 	</div>
-</div>
+</form>

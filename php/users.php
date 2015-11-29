@@ -1,62 +1,165 @@
 <?php
 	include "config.php";
 
-	// open db connection
-	$conn = new mysqli($db_host, $db_user, $db_pw, $db_name);
-	$conn->set_charset("utf8");
-
-	if (isset($_GET["uc"]))
+	$input = json_decode(file_get_contents('php://input'), true);
+	
+	switch($input["action"])
 	{
-		$query = "SELECT * FROM users";
+		case "login":
+			loginUser();
+			break;
+		case "logout":
+			logoutUser();
+			break;
+		case "register":
+			registerUser();
+			break;
+		default:
+			die("no action defined!");
+	}
+	
+	
+	function openDb()
+	{
+		global $db_host, $db_user, $db_pw, $db_name;
+	
+		// open db connection
+		$conn = new mysqli($db_host, $db_user, $db_pw, $db_name);
+		$conn->set_charset("utf8");
+		
+		return $conn;
+	}
+
+	
+	function registerUser()
+	{
+		global $input;
+
+		// open db
+		$conn = openDb();
+
+		// get credentials
+		$email = mysqli_real_escape_string($conn, trim($input["email"]));
+		$password = mysqli_real_escape_string($conn, trim($input["password"]));
+		
+		// TODO: validate user input (length, format etc.)
+
+		// check duplicate email
+		$query = "SELECT id FROM users WHERE email='" . $email . "'";
 		$result = $conn->query($query);
-	}
 
-	
-	// build return object
-	$return_object = buildReturnObject($result);
-	$conn->close();
-	
-	
-	// return output
-	if (isset($_GET["debug"]))
-	{
-		echo "<html><body>\n";
-		echo "<h1>DEBUG MODE</h1>\n";
-		echo "<h2>QUERY</h2>";
-		echo "<p style='font-family: courier'>" . $query . "</p>\n";
-		echo "<h2>DB RESULT</h2>\n";
-		echo "<p>" . $result . "</p>\n";
-		echo "<h2>RETURN OBJECT</h2>\n";
-		echo "<p>" . $return_object . "</p>\n";
-		echo "</body></html>\n";
-	}
-	else
-	{
-		header("Access-Control-Allow-Origin: *"); //TODO: remove
-		header("Content-Type: application/json; charset=UTF-8");
-	
-		echo($return_object);
-	}
-	
-	
-	function buildReturnObject($result)
-	{
-		while ($rs = $result->fetch_array(MYSQLI_ASSOC))
+		if ($result->num_rows > 0)
 		{
-			$navaids[] = array(
-				id => $rs["id"],
-				type => $rs["type"],
-//				country => $rs["country"],
-				kuerzel => $rs["kuerzel"],
-				latitude => $rs["latitude"],
-				longitude => $rs["longitude"],
-//				elevation => $rs["elevation"],
-				frequency => $rs["frequency"]
-//				declination => $rs["declination"],
-//				truenorth => $rs["truenorth"]
-			);
+			$token = "";
+			
+			$message = "error: user already exists";
+			$resultcode = -1;
+		}
+		else
+		{
+			// hash pw
+			$pw_hash = crypt($password);
+			
+			// create token
+			$token = createToken();
+		
+			// add user
+			$query = "INSERT INTO users (token, email, pw_hash) VALUES ('" . $token . "','" . $email . "','" . $pw_hash . "')";
+			$result = $conn->query($query);
+
+			// TODO: error handling
+			
+			$message = "";
+			$resultcode = 0;
 		}
 		
-		return json_encode(array("navaids" => $navaids), JSON_NUMERIC_CHECK);
+		// output signup result
+		echo json_encode(
+			array(
+				"resultcode" => $resultcode,
+				"message" => $message,
+				"token" => $token
+			)
+		);
+
+		$conn->close();
 	}
-?> 
+
+
+	function loginUser()
+	{
+		global $input;
+	
+		// open db
+		$conn = openDb();
+
+		// get credentials
+		$email = mysqli_real_escape_string($conn, trim($input["email"]));
+		$password = mysqli_real_escape_string($conn, trim($input["password"]));
+
+		// get token
+		$query = "SELECT id, token, pw_hash FROM users WHERE email='" . $email . "'";
+		$result = $conn->query($query);
+	
+		if ($result->num_rows > 0)
+		{
+			$row = $result->fetch_assoc();
+			$pw_hash_db = $row["pw_hash"];
+			
+			// compare pw hashes
+			if ($pw_hash_db === crypt($password, $pw_hash_db))
+			{
+				$token = $row["token"];
+				
+				$message = "login successful";
+				$resultcode = 0;
+			}
+			else
+			{
+				$token = "";
+				
+				$message = "error: invalid password";
+				$resultcode = -1;
+			}
+		}
+		else
+		{
+			$token = "";
+			
+			$message = "error: invalid email";
+			$resultcode = -1;
+		}
+
+		// output login result
+		echo json_encode(
+			array(
+				"resultcode" => $resultcode,
+				"message" => $message,
+				"token" => $token
+			)
+		);
+		
+		// close db
+		$conn->close();
+	}
+	
+	
+	function logoutUser()
+	{
+		die("not yet implemented");
+	}
+
+	
+	function createToken()
+	{
+		return md5(uniqid(rand(), true));
+	}
+	
+	
+    function hash_equals($a, $b)
+	{
+        $ret = strlen($a) ^ strlen($b);
+        $ret |= array_sum(unpack("C*", $a^$b));
+        return !$ret;
+    }
+?>

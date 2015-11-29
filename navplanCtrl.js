@@ -23,18 +23,16 @@ function navplanCtrl($scope, globalData)
 	$scope.globalData = globalData;
 	
 	// init user
-	var userCookie = getCookie("uc");
+	var	$email = getCookie("email");
+	var $token = getCookie("token");
 
-	if (userCookie == "")
+	$scope.globalData.user =
 	{
-		userCookie = generateUserCookie();
-		setCookie("uc", userCookie, 90);
-		$scope.globalData.user = { userCookie: userCookie };
+		email: $email,
+		token: $token,
+		isLoggedIn: $email && $token
 	}
-	
-	getUser(userCookie);
-	
-
+		
 	// init disclaimer
 	var hideDisclaimer = getCookie("hideDisclaimer");
 
@@ -76,34 +74,15 @@ function navplanCtrl($scope, globalData)
 		if ($scope.hideDisclaimer)
 			setCookie("hideDisclaimer", "1", 90);
 	}
+	
+	$scope.onLogoutClicked = function()
+	{
+		$scope.globalData.user.email = "";
+		$scope.globalData.user.token = "";
+		$scope.globalData.user.isLoggedIn = false;
+		
+		deleteCookie("email");
+		deleteCookie("token");
+	}
 }
 
-
-function setCookie(cname, cvalue, exdays) {
-    var d = new Date();
-    d.setTime(d.getTime() + (exdays*24*60*60*1000));
-    var expires = "expires="+d.toUTCString();
-    document.cookie = cname + "=" + cvalue + "; " + expires;
-}
-
-
-function getCookie(cname) {
-    var name = cname + "=";
-    var ca = document.cookie.split(';');
-    for(var i=0; i<ca.length; i++) {
-        var c = ca[i];
-        while (c.charAt(0)==' ') c = c.substring(1);
-        if (c.indexOf(name) == 0) return c.substring(name.length, c.length);
-    }
-    return "";
-}
-
-function generateUserCookie()
-{
-	return Math.floor((Math.random() * 100000000000) + 1); 
-}
-
-function getUser(userCookie)
-{
-
-}
