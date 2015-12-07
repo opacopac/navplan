@@ -5,34 +5,32 @@
 navplanApp
 	.controller('loginCtrl', loginCtrl);
 
-loginCtrl.$inject = ['$scope', 'globalData', 'loginService'];
+loginCtrl.$inject = ['$scope', 'globalData', 'userService'];
 
-function loginCtrl($scope, globalData, loginService)
+function loginCtrl($scope, globalData, userService)
 {
 	$scope.globalData = globalData;
 	
-    $scope.login = function()
+    $scope.onLoginClicked = function()
 	{
-		loginService.login($scope.email, $scope.password)
+		userService.login($scope.email, $scope.password)
 			.success(function(data) {
 				if (data.resultcode == 0)
 				{
-					if ($scope.remember == true)
-						$days = 90;
+					if ($scope.rememberMeChecked == true)
+						rememberDays = 90;
 					else
-						$days = 0;
+						rememberDays = 0;
 						
-					setCookie("email", $scope.email, $days);
-					setCookie("token", data.token, $days);
-					$scope.globalData.user.isLoggedIn = true;
+					$scope.loginUser($scope.email, data.token, rememberDays);
 				}
 			})
 			.error(function(data, status) { console.error("ERROR", status, data); });
     }	
 	
-    $scope.register = function()
+    $scope.onRegisterClicked = function()
 	{
-		loginService.register($scope.email, $scope.password)
+		userService.register($scope.email, $scope.password)
 			.success(function(data) { return data; })
 			.error(function(data, status) { console.error("ERROR", status, data); });
     }	

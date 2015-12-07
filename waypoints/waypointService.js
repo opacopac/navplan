@@ -3,7 +3,9 @@
  */
 
 navplanApp
-	.factory('waypointService', [ 'mapService', waypointService] );
+	.factory('waypointService', waypointService);
+
+waypointService.$inject = ['mapService'];
 
 function waypointService(mapService)
 {

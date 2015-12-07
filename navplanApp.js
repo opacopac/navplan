@@ -2,8 +2,7 @@
  * Navplan App
  */
  
-var navplanApp = 
-	angular.module('navplanApp', [ 'ngRoute', 'ngResource', 'ui.bootstrap' ])
+var navplanApp = angular.module('navplanApp', [ 'ngRoute', 'ngResource', 'ui.bootstrap' ])
 	.config(routeprovider);
 
 function routeprovider($routeProvider)
@@ -17,4 +16,16 @@ function routeprovider($routeProvider)
 		.when("/login",  { templateUrl: 'login/login.html', controller: 'loginCtrl' })
 		.when("/settings",  { templateUrl: 'settings/settings.html', controller: 'settingsCtrl' })
 		.when("/about",  { templateUrl: 'about/about.html' });
+}
+
+/**
+ * Global Data
+ */
+
+ navplanApp
+	.factory('globalData', globalData);
+
+function globalData()
+{
+	return {}; // return empty object
 }

@@ -29,7 +29,7 @@
 	<script src="aircraft/aircraftCtrl.js"></script>
 	<script src="settings/settingsCtrl.js"></script>
 	<script src="login/loginCtrl.js"></script>
-	<script src="login/loginService.js"></script>
+	<script src="login/userService.js"></script>
 </head>
 <body>
 	<nav class="navbar navbar-default">
@@ -51,8 +51,8 @@
 					<li><a href="#/fuel">Fuel</a></li>
 				</ul>
 				<ul class="nav navbar-nav navbar-right">
-					<li ng-hide="globalData.user.isLoggedIn"><a href="#/login">Login</a></li>
-					<li ng-show="globalData.user.isLoggedIn"><a href="#/map" ng-click="onLogoutClicked()">Logout</a></li>
+					<li ng-hide="isLoggedIn()"><a href="#/login">Login</a></li>
+					<li ng-show="isLoggedIn()"><a href="#/map" ng-click="onLogoutClicked()">Logout</a></li>
 					<li><a href="#/settings">Settings</a></li>
 					<li><a href="#/about">About</a></li>
 				</ul>

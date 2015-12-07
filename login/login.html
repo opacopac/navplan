@@ -13,8 +13,8 @@
 				<input type="password" id="password" class="form-control" ng-model="password" ng-required="true">
 			</div>
 		</div>
-		<input type="checkbox" ng-model="remember">remember me<br/>
-		<button class="button" ng-click="login()" ng-disabled="email.$dirty && email.$invalid || password.$dirty && password.$invalid">Login</button>
-		<button class="button" ng-click="register()">Register</button>
+		<input type="checkbox" ng-model="rememberMeChecked">remember me<br/>
+		<button class="button" ng-click="onLoginClicked()" ng-disabled="email.$dirty && email.$invalid || password.$dirty && password.$invalid">Login</button>
+		<button class="button" ng-click="onRegisterClicked()">Register</button>
 	</div>
 </form>
