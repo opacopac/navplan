@@ -35,8 +35,13 @@ function navplanCtrl($scope, globalData, userService)
 		reserveTime: 45,
 		extraTime: 0
 	};
-	$scope.globalData.waypoints = [ ];
-	$scope.globalData.selectedWaypoint = undefined;
+	$scope.globalData.navplan = 
+	{
+		id: undefined,
+		name: '',
+		waypoints: [ ],
+		selectedWaypoint: undefined,
+	};
 	$scope.globalData.settings =
 	{
 		variation: 2
@@ -50,22 +55,34 @@ function navplanCtrl($scope, globalData, userService)
 
 	// globally used functions
 	
+	$scope.readNavplanList = function()
+	{
+		var email = $scope.globalData.user.email;
+		var token = $scope.globalData.user.token;
+		
+		userService.readNavplanList(email, token)
+			.success(function(data) {
+				if (data.navplanList || data.navplanList === null)
+					$scope.globalData.user.navplanList = data.navplanList;
+				else
+					console.error("ERROR", data);
+			})
+			.error(function(data, status) {
+				console.error("ERROR", status, data);
+			});
+	}
+	
+	
 	$scope.loginUser = function(email, token, rememberDays)
 	{
-		//TODO: load user data (name, plane, settings, etc.)
-		
-		userService.loadNavplanList(email, token)
-			.success(function(data) {
-				if (data.navplanList)
-					$scope.globalData.user.navplanList = data.navplanList;
-			})
-			.error(function(data, status) { console.error("ERROR", status, data); });
-	
 		setCookie("email", email, rememberDays);
 		setCookie("token", token, rememberDays);
 	
 		$scope.globalData.user.email = email;
 		$scope.globalData.user.token = token;
+
+		$scope.readNavplanList();
+		//TODO: read user data (name, plane, settings, etc.)
 	}
 	
 	

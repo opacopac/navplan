@@ -14,10 +14,10 @@ function waypointService(mapService)
 	
 	// return api reference
 	return {
-		updateWpList: updateWpList,
+		updateWpList: updateWpList
 	};
-
-
+	
+	
 	function updateWpList(wps, magvar, speed)
 	{
 		// set alternate flag

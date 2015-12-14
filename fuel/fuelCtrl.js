@@ -20,5 +20,5 @@ function fuelCtrl($scope, fuelService, globalData) {
 
 	
 	// initially calc fuel
-	fuelService.updateFuelCalc($scope.globalData.fuel, $scope.globalData.waypoints, $scope.globalData.aircraft);
+	fuelService.updateFuelCalc($scope.globalData.fuel, $scope.globalData.navplan.waypoints, $scope.globalData.aircraft);
 }

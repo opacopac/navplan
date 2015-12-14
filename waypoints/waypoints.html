@@ -2,14 +2,20 @@
 	<a id="dlPdfLink" href="php/navplanPdf.php" target="_blank" download="navplan.pdf" ng-click="createPdfNavplan()">DL PDF</a>&nbsp;
 	<a id="dlExcelLink" href="php/navplanExcel.php" target="_blank" download="navplan.xlsx" ng-click="createExcelNavplan()">DL Excel</a>
     <div>
-        Load Navplan:
-        <select>
+        Select Navplan:
+        <select ng-model="selectedNavplanId">
 			<option ng-repeat="navplan in globalData.user.navplanList" value="{{ navplan.id }}">{{ navplan.title }}</option>
         </select>
 		<button type="button" class="btn" ng-click="loadNavplan();">Load</button>
+		<button type="button" class="btn" ng-click="deleteNavplan();">Delete</button>
+    </div>	
+    <div>
+        Save Navplan:
+		<input type="text" placeholder="Navplan Name" ng-model="globalData.navplan.title" />
+		<button type="button" class="btn" ng-click="saveNavplan();">Save</button>
     </div>	
 	<div class="container-fluid">
-		<div class="row waypoint-entry" ng-repeat="wp in globalData.waypoints"><!-- waypoint list -->
+		<div class="row waypoint-entry" ng-repeat="wp in globalData.navplan.waypoints"><!-- waypoint list -->
 			<div class="col-xs-11">
 				<div class="row">
 					<div class="col-md-4 col-md-push-2 col-xs-12">

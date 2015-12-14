@@ -1,7 +1,7 @@
 <div class="container-fluid">
 	<div class="row">
 		<div class="input-group">
-			<input id="searchWpInput" type="text" class="form-control" placeholder="Enter Waypoint or Coordinates" ng-model="globalData.selectedWaypoint.checkpoint"
+			<input id="searchWpInput" type="text" class="form-control" placeholder="Enter Waypoint or Coordinates" ng-model="globalData.navplan.selectedWaypoint.checkpoint"
 				typeahead="geoname.name for geoname in searchGeonamesByValue($viewValue)" typeahead-min-length="2"
 				typeahead-on-select="onGeonameSelect($item)"
 				ng-blur="updateTrack()" />

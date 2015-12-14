@@ -25,16 +25,16 @@ function mapCtrl($scope, $http, $resource, mapService, geonameService, waypointS
 	
 	$scope.updateTrack = function()
 	{
-		waypointService.updateWpList($scope.globalData.waypoints, $scope.globalData.settings.variation, $scope.globalData.aircraft.speed);
-		fuelService.updateFuelCalc($scope.globalData.fuel, $scope.globalData.waypoints, $scope.globalData.aircraft);
-		mapService.updateTrack($scope.globalData.waypoints);
+		waypointService.updateWpList($scope.globalData.navplan.waypoints, $scope.globalData.settings.variation, $scope.globalData.aircraft.speed);
+		fuelService.updateFuelCalc($scope.globalData.fuel, $scope.globalData.navplan.waypoints, $scope.globalData.aircraft);
+		mapService.updateTrack($scope.globalData.navplan.waypoints);
 	}
 	
 
 	// select geopoint from search 
 	$scope.onGeonameSelect = function ($item)
 	{
-		$scope.globalData.selectedWaypoint = {
+		$scope.globalData.navplan.selectedWaypoint = {
 			type: $item.type,
 			freq: $item.frequency,
 			callsign: $item.callsign,
@@ -52,12 +52,12 @@ function mapCtrl($scope, $http, $resource, mapService, geonameService, waypointS
 	$scope.onGeonameAdd = function()
 	{
 		var wp = {
-			type: $scope.globalData.selectedWaypoint.type,
-			freq: $scope.globalData.selectedWaypoint.freq,
-			callsign: $scope.globalData.selectedWaypoint.callsign,
-			checkpoint: $scope.globalData.selectedWaypoint.checkpoint,
-			latitude: $scope.globalData.selectedWaypoint.latitude,
-			longitude: $scope.globalData.selectedWaypoint.longitude,
+			type: $scope.globalData.navplan.selectedWaypoint.type,
+			freq: $scope.globalData.navplan.selectedWaypoint.freq,
+			callsign: $scope.globalData.navplan.selectedWaypoint.callsign,
+			checkpoint: $scope.globalData.navplan.selectedWaypoint.checkpoint,
+			latitude: $scope.globalData.navplan.selectedWaypoint.latitude,
+			longitude: $scope.globalData.navplan.selectedWaypoint.longitude,
 			mt: '',
 			dist: '',
 			alt: '',
@@ -66,7 +66,7 @@ function mapCtrl($scope, $http, $resource, mapService, geonameService, waypointS
 			
 		$scope.addWaypoint(wp);
 		
-		$scope.globalData.selectedWaypoint = undefined;
+		$scope.globalData.navplan.selectedWaypoint = undefined;
 	}
 
 	
@@ -173,14 +173,14 @@ function mapCtrl($scope, $http, $resource, mapService, geonameService, waypointS
 	
 	$scope.addWaypoint = function(newWp)
 	{
-		var wps = $scope.globalData.waypoints;
+		var wps = $scope.globalData.navplan.waypoints;
 		var numWp = wps.length;
 		
 		// skip if same coordinates as last waypoint
 		if (numWp > 1 && wps[numWp - 1].latitude == newWp.latitude && wps[numWp - 1].longitude == newWp.longitude)				
 			return;
 			
-		$scope.globalData.waypoints.push(newWp);
+		$scope.globalData.navplan.waypoints.push(newWp);
 		
 		$scope.updateTrack();
 	}
@@ -189,7 +189,7 @@ function mapCtrl($scope, $http, $resource, mapService, geonameService, waypointS
 	$scope.onKmlClick = function()
 	{
 		var navplanData = {
-			waypoints: $scope.globalData.waypoints,
+			waypoints: $scope.globalData.navplan.waypoints,
 		};
 	
 		var kmlLink = document.getElementById("dlKmlLink");
