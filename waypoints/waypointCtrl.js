@@ -150,42 +150,10 @@ function waypointCtrl($scope, $http, geonameService, mapService, waypointService
 		}
 	}
 	
-	$scope.focusNewWpInput = function()
-	{
-		document.getElementById('newWpInput').focus();
-	}
-	
 
 	$scope.searchGeonamesByValue = function(val)
 	{
 		return geonameService.searchGeonamesByValue($http, val);
-	};
-	
-	
-	// geopoint selected from search results
-	$scope.onGeonameSelect = function (selectedWp)
-	{
-		$scope.newWp = {
-			type: selectedWp.type,
-			freq: selectedWp.frequency,
-			callsign: selectedWp.callsign,
-			checkpoint: selectedWp.wpname,
-			latitude: selectedWp.latitude,
-			longitude: selectedWp.longitude
-		}
-
-
-		// calc dist / bearing 
-		var wps = $scope.globalData.navplan.waypoints;
-		
-		if (wps.length > 0)
-		{
-			var wp1 = wps[wps.length - 1];
-			var wp2 = $scope.newWp;
-			
-			$scope.newWp.dist = mapService.getDistance(wp1.latitude, wp1.longitude, wp2.latitude, wp2.longitude);
-			$scope.newWp.mt = mapService.getBearing(wp1.latitude, wp1.longitude, wp2.latitude, wp2.longitude, $scope.globalData.settings.variation);
-		}
 	};
 	
 	
@@ -194,37 +162,18 @@ function waypointCtrl($scope, $http, geonameService, mapService, waypointService
 		waypointService.updateWpList($scope.globalData.navplan.waypoints, $scope.globalData.settings.variation, $scope.globalData.aircraft.speed);
 		fuelService.updateFuelCalc($scope.globalData.fuel, $scope.globalData.navplan.waypoints, $scope.globalData.aircraft);
 	}
-	
-	
-	$scope.addWaypoint = function()
+
+
+	$scope.editWaypoint = function(wp)
 	{
-		var wp = {
-			type: $scope.newWp.type,
-			freq: $scope.newWp.freq,
-			callsign: $scope.newWp.callsign,
-			checkpoint: $scope.newWp.checkpoint,
-			latitude: $scope.newWp.latitude,
-			longitude: $scope.newWp.longitude,
-			mt: '',
-			dist: '',
-			alt: '',
-			remark: ''
-		};
-		
-		$scope.globalData.navplan.waypoints.push(wp);
-		$scope.newWp = undefined;
-		
-		$scope.updateWpList();
+		$scope.globalData.selectedWp = wp;
+		$scope.editSelectedWaypoint();
 	};
-
-
+	
+	
 	$scope.removeWaypoint = function(idx)
 	{
 		$scope.globalData.navplan.waypoints.splice(idx, 1);
 		$scope.updateWpList();
 	};
-	
-	
-	// set initial focus
-	$scope.focusNewWpInput();
 }

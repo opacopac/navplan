@@ -5,9 +5,12 @@
 navplanApp
 	.factory('mapService', mapService);
 
-function mapService()
+mapService.$inject = ['$http'];
+
+function mapService($http)
 {
 	var map = {}; 	// empty map reference
+	var featureOverlay = {} // empty feature overlay reference
 	var isSelectionActive = false;
 	var wgs84Sphere = new ol.Sphere(6378137);
 	
@@ -15,17 +18,20 @@ function mapService()
 	// return api reference
 	return {
 		map: map,
+		featureOverlay: featureOverlay,
 		init: init,
 		setMapPosition: setMapPosition,
 		updateTrack: updateTrack,
 		getDistance: getDistance,
 		getBearing: getBearing,
-		drawGeopointSelection: drawGeopointSelection
+		drawGeopointSelection: drawGeopointSelection,
+		showFeaturePopup: showFeaturePopup,
+		hideFeaturePopup: hideFeaturePopup
 	};
 	
 	
 	// init map
-	function init(onMapClickCallback, onFeatureSelectCallback, onMoveEndCallback, onKmlClick, mapPos, $http)
+	function init(onMapClickCallback, onFeatureSelectCallback, onMoveEndCallback, onKmlClick, mapPos, featureContainer)
 	{
 		// map layer
 		mapLayer =  new ol.layer.Tile({
@@ -218,7 +224,7 @@ function mapService()
 
 
 
-		
+		// TODO: drag interactions
 		var dragInteraction = function() {
 			ol.interaction.Pointer.call(this, {
 				handleDownEvent: dragInteraction.prototype.handleDownEvent,
@@ -321,17 +327,26 @@ function mapService()
 			return false;
 		};
 		
-	
+		
+		// feature overlay
+		featureOverlay = new ol.Overlay(/** @type {olx.OverlayOptions} */ ({
+			element: featureContainer,
+			autoPan: true,
+			autoPanAnimation: { duration: 250 }
+		}));		
+
+		
 		// map
 		map = new ol.Map({
-			interactions: ol.interaction.defaults().extend([new dragInteraction()]),		
 			target: 'map',
+			interactions: ol.interaction.defaults().extend([new dragInteraction()]),
 			controls: ol.control.defaults().extend([
 				new ol.control.ScaleLine({ units: 'nautical' })
 			]).extend([
 				new ol.control.Control({ element: kmlContainer })
 			]),
 			layers: [ mapLayer, airspaceLayer, iconLayer, trackLayer, geopointLayer ],
+			overlays: [ featureOverlay ],
 			view: new ol.View({
 				center: mapPos.center,
 				zoom: mapPos.zoom
@@ -603,6 +618,21 @@ function mapService()
 		var lon2 = ol.proj.toLonLat(coord2)[0];
 		
 		return lon2 - lon1;
+	}
+	
+	
+	function showFeaturePopup(lat, lon)
+	{
+		var coords = ol.proj.fromLonLat([lon, lat]);
+		//var pixelCoords = map.getPixelFromCoordinate(coords);
+	
+		featureOverlay.setPosition(coords);
+	}
+	
+	
+	function hideFeaturePopup()
+	{
+		featureOverlay.setPosition(undefined);
 	}
 	
 	

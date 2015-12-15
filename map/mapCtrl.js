@@ -8,7 +8,6 @@ navplanApp
 
 function mapCtrl($scope, $http, $resource, mapService, geonameService, waypointService, userWaypointService, fuelService, globalData) {
 	$scope.globalData = globalData;
-	$scope.selectedWp = undefined;
 
 	
 	$scope.focusSearchWpInput = function()
@@ -49,8 +48,9 @@ function mapCtrl($scope, $http, $resource, mapService, geonameService, waypointS
 	
 	
 	// adding geopoint from search with (+) sign 
-	$scope.onGeonameAdd = function()
+	$scope.onGeonameSearch = function()
 	{
+		/*
 		var wp = {
 			type: $scope.globalData.navplan.selectedWaypoint.type,
 			freq: $scope.globalData.navplan.selectedWaypoint.freq,
@@ -66,7 +66,7 @@ function mapCtrl($scope, $http, $resource, mapService, geonameService, waypointS
 			
 		$scope.addWaypoint(wp);
 		
-		$scope.globalData.navplan.selectedWaypoint = undefined;
+		$scope.globalData.navplan.selectedWaypoint = undefined;*/
 	}
 
 	
@@ -76,6 +76,7 @@ function mapCtrl($scope, $http, $resource, mapService, geonameService, waypointS
 			if (!data.geonames)
 				data.geonames = [];
 
+			mapService.hideFeaturePopup();
 			mapService.drawGeopointSelection(data.geonames, event.pixel);
 		});
 	}
@@ -85,7 +86,7 @@ function mapCtrl($scope, $http, $resource, mapService, geonameService, waypointS
 	{
 		if (feature.geopoint)
 		{
-			var wp = {
+			$scope.globalData.selectedWp = {
 				type: feature.geopoint.type,
 				freq: feature.geopoint.frequency,
 				callsign: feature.geopoint.callsign,
@@ -95,14 +96,16 @@ function mapCtrl($scope, $http, $resource, mapService, geonameService, waypointS
 				mt: '',
 				dist: '',
 				alt: '',
-				remark: ''
+				remark: '',
+				isNew: true
 			};
-				
-			$scope.addWaypoint(wp);
+			$scope.$apply();
+
+			mapService.showFeaturePopup($scope.globalData.selectedWp.latitude, $scope.globalData.selectedWp.longitude);
 		}
 		else if (feature.airport)
 		{
-			var wp = {
+			$scope.globalData.selectedWp = {
 				type: 'airport',
 				freq: feature.airport.frequency,
 				callsign: feature.airport.callsign,
@@ -112,13 +115,16 @@ function mapCtrl($scope, $http, $resource, mapService, geonameService, waypointS
 				mt: '',
 				dist: '',
 				alt: '',
-				remark: '' };
+				remark: '',
+				isNew: true
+			};
+			$scope.$apply();
 				
-			$scope.addWaypoint(wp);
+			mapService.showFeaturePopup($scope.globalData.selectedWp.latitude, $scope.globalData.selectedWp.longitude);
 		}
 		else if (feature.navaid)
 		{
-			var wp = {
+			$scope.globalData.selectedWp = {
 				type: 'navaid',
 				freq: feature.navaid.frequency,
 				callsign: feature.navaid.kuerzel,
@@ -128,13 +134,16 @@ function mapCtrl($scope, $http, $resource, mapService, geonameService, waypointS
 				mt: '',
 				dist: '',
 				alt: '',
-				remark: '' };
+				remark: '',
+				isNew: true
+			};
+			$scope.$apply();
 				
-			$scope.addWaypoint(wp);
+			mapService.showFeaturePopup($scope.globalData.selectedWp.latitude, $scope.globalData.selectedWp.longitude);
 		}
 		else if (feature.userWaypoint)
 		{
-			var wp = {
+			$scope.globalData.selectedWp = {
 				type: 'user',
 				freq: '',
 				callsign: '',
@@ -144,18 +153,19 @@ function mapCtrl($scope, $http, $resource, mapService, geonameService, waypointS
 				mt: '',
 				dist: '',
 				alt: '',
-				remark: feature.userWaypoint.remark };
+				remark: feature.userWaypoint.remark,
+				isNew: true
+			};
+			$scope.$apply();
 				
-			$scope.addWaypoint(wp);
+			mapService.showFeaturePopup($scope.globalData.selectedWp.latitude, $scope.globalData.selectedWp.longitude);
 		}
 		else if (feature.waypoint)
 		{
-			$scope.selectedWp = feature.waypoint;
-			$scope.selectedWp.type = "user";
-			$scope.saveUserWp = false;
+			$scope.globalData.selectedWp = feature.waypoint;
 			$scope.$apply();
 			
-			$('#selectedWaypointDialog').modal('show');
+			mapService.showFeaturePopup($scope.globalData.selectedWp.latitude, $scope.globalData.selectedWp.longitude);
 		}
 	}
 	
@@ -169,8 +179,34 @@ function mapCtrl($scope, $http, $resource, mapService, geonameService, waypointS
 			zoom: view.getZoom()
 		}
 	}
-
 	
+	
+	$scope.onAddSelectedWaypointClicked = function()
+	{
+		$scope.globalData.selectedWp.isNew = false;
+		$scope.addWaypoint($scope.globalData.selectedWp);
+		$scope.globalData.selectedWp = undefined;
+
+		mapService.hideFeaturePopup();
+	}
+	
+	
+	$scope.onRemoveSelectedWaypointClicked = function()
+	{
+		removeFromArray($scope.globalData.navplan.waypoints, $scope.globalData.selectedWp);
+		$scope.globalData.selectedWp = undefined;
+		$scope.updateTrack();
+
+		mapService.hideFeaturePopup();
+	}
+	
+
+	$scope.onEditSelectedWaypointClicked = function()
+	{
+		$scope.editSelectedWaypoint();
+	}
+
+
 	$scope.addWaypoint = function(newWp)
 	{
 		var wps = $scope.globalData.navplan.waypoints;
@@ -180,6 +216,7 @@ function mapCtrl($scope, $http, $resource, mapService, geonameService, waypointS
 		if (numWp > 1 && wps[numWp - 1].latitude == newWp.latitude && wps[numWp - 1].longitude == newWp.longitude)				
 			return;
 			
+		newWp.isNew = false;
 		$scope.globalData.navplan.waypoints.push(newWp);
 		
 		$scope.updateTrack();
@@ -197,18 +234,20 @@ function mapCtrl($scope, $http, $resource, mapService, geonameService, waypointS
 	}
 	
 	
-	$scope.onWpOkClicked = function()
-	{
-		if ($scope.saveUserWp)
-		{
-			userWaypointService.saveUserWaypoint($scope.selectedWp);
-		}
-	}
-	
-	
-	// init 
-	mapService.init($scope.onMapClicked, $scope.onFeatureSelected, $scope.onMapMoveEnd, $scope.onKmlClick, $scope.globalData.currentMapPos, $http);
+	// init feature popup
+	var featureContainer = document.getElementById('feature-popup');
+	var featureContent = document.getElementById('feature-popup-content');
+	var featureCloser = document.getElementById('feature-popup-closer');
+
+	// init mapservice
+	mapService.init($scope.onMapClicked, $scope.onFeatureSelected, $scope.onMapMoveEnd, $scope.onKmlClick, $scope.globalData.currentMapPos, featureContainer);
+
+	featureCloser.onclick = function() {
+		mapService.hideFeaturePopup();
+		featureCloser.blur();
+		return false;
+	};
 	
 	$scope.updateTrack();
-	$scope.focusSearchWpInput();
+	//$scope.focusSearchWpInput();
 }

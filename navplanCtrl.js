@@ -51,6 +51,8 @@ function navplanCtrl($scope, globalData, userService)
 		center: ol.proj.fromLonLat([7.4971, 46.9141]), // LSZB
 		zoom: 11
 	};
+	$scope.globalData.selectedWp = undefined;
+	$scope.globalData.wpBackup = undefined;
 	
 
 	// globally used functions
@@ -127,5 +129,56 @@ function navplanCtrl($scope, globalData, userService)
 	$scope.onLogoutClicked = function()
 	{
 		$scope.logoutUser();
+	}
+	
+	
+	$scope.editSelectedWaypoint = function ()
+	{
+		// save backup for undo
+		$scope.globalData.wpBackup = {
+			checkpoint: $scope.globalData.selectedWp.checkpoint,
+			freq: $scope.globalData.selectedWp.freq,
+			callsign: $scope.globalData.selectedWp.callsign,
+			alt: $scope.globalData.selectedWp.alt
+		}
+		
+		$('#selectedWaypointDialog').modal('show');
+	}
+	
+	
+	$scope.onSaveSelectedWaypointClicked = function()
+	{
+		$scope.globalData.selectedWp.type = 'user';
+		$scope.$apply();
+		
+		userWaypointService.saveUserWaypoint($scope.globalData.selectedWp);
+	}
+
+
+	$scope.onDeleteSelectedWaypointClicked = function()
+	{
+		userWaypointService.deleteUserWaypoint($scope.globalData.selectedWp);
+		
+		$scope.globalData.selectedWp.type = 'geoname';
+		$scope.$apply();
+	}
+
+	
+	$scope.onOkEditWpClicked = function()
+	{
+		// mapService.hideFeaturePopup();
+		$scope.globalData.wpBackup = undefined;
+	}
+	
+	
+	$scope.onCancelEditWpClicked = function()
+	{
+		// restore backup
+		$scope.globalData.selectedWp.checkpoint = $scope.globalData.wpBackup.checkpoint;
+		$scope.globalData.selectedWp.freq = $scope.globalData.wpBackup.freq;
+		$scope.globalData.selectedWp.callsign = $scope.globalData.wpBackup.callsign;
+		$scope.globalData.selectedWp.alt = $scope.globalData.wpBackup.alt;
+		
+		//mapService.hideFeaturePopup();
 	}
 }

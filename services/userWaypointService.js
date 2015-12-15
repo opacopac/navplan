@@ -3,8 +3,10 @@
  */
 
 navplanApp
-	.factory('userWaypointService', userWaypointService, '$http');
+	.factory('userWaypointService', userWaypointService);
 
+userWaypointService.$inject = ['$http'];
+	
 function userWaypointService($http)
 {
 	// init
@@ -13,11 +15,12 @@ function userWaypointService($http)
 	
 	// return api reference
 	return {
-		saveUserWaypoint: saveUserWaypoint
+		saveUserWaypoint: saveUserWaypoint,
+		deleteUserWaypoint: deleteUserWaypoint
 	};
 
 
-	// search by name
+	// save user wp
 	function saveUserWaypoint(wp)
 	{
 		$http.post(base_url + "?action=save", wp)
@@ -26,5 +29,11 @@ function userWaypointService($http)
 //					alert("Saved");
 				}
 			);
+	}
+	
+	
+	// delete user wp
+	function deleteUserWaypoint(wp)
+	{
 	}
 }

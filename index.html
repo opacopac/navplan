@@ -80,5 +80,30 @@
 			</div>
 		</div>
 	</div>
+	<!-- edit waypoint -->
+	<div class="modal fade" id="selectedWaypointDialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+					<h4 class="modal-title" id="myModalLabel">Waypoint</h4>
+				</div>
+				<div class="modal-body">
+					Checkpoint: <input type="text" class="form-control" ng-model="globalData.selectedWp.checkpoint" />
+					Frequency: <input type="text" class="form-control" ng-model="globalData.selectedWp.freq" />
+					Callsign: <input type="text" class="form-control" ng-model="globalData.selectedWp.callsign" />
+					Altitude: <input type="text" class="form-control" ng-model="globalData.selectedWp.alt" />
+					Remarks: <input type="text" class="form-control" ng-model="globalData.selectedWp.remark" />
+					<hr />
+					<p ng-show="globalData.selectedWp.type == 'user' || globalData.selectedWp.type == 'geoname'"><button type="button" class="btn btn-primary btn-circle" ng-click="onSaveSelectedWaypointClicked()"><i class="glyphicon glyphicon-save"></i></button> Store to my waypoint</p>
+					<p ng-show="globalData.selectedWp.type == 'user'"><button type="button" class="btn btn-danger btn-circle" ng-click="onDeleteSelectedWaypointClicked()"><i class="glyphicon glyphicon-remove"></i></button> Delete from my waypoints</p>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal" ng-click="onCancelEditWpClicked()">Cancel</button>
+					<button type="button" class="btn btn-primary" data-dismiss="modal" ng-click="onOkEditWpClicked()">OK</button>
+				</div>
+			</div>
+		</div>
+	</div>
 </body>
 </html>

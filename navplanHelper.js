@@ -49,3 +49,14 @@ function obj2json(obj)
 {
 	 return JSON.stringify(obj, undef2null)
 }
+
+
+function removeFromArray(array, value)
+{
+	var idx = array.indexOf(value);
+
+	if (idx !== -1)
+		array.splice(idx, 1);
+
+	return array;
+}

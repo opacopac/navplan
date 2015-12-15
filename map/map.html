@@ -6,35 +6,19 @@
 				typeahead-on-select="onGeonameSelect($item)"
 				ng-blur="updateTrack()" />
 			<span class="input-group-btn">
-				<button type="button" class="btn btn-success" ng-click="onGeonameAdd(); focusSearchWpInput();"><i class="glyphicon glyphicon-plus"></i></button>
+				<button type="button" class="btn btn-primary" ng-click="onGeonameSearch();"><i class="glyphicon glyphicon-search"></i></button>
 			</span>
 		</div>
 	</div>
 </div>
-<!-- waypoint details -->
-<div class="modal fade" id="selectedWaypointDialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
-	<div class="modal-dialog" role="document">
-		<div class="modal-content">
-			<div class="modal-header">
-				<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-				<h4 class="modal-title" id="myModalLabel">Waypoint</h4>
-			</div>
-			<div class="modal-body">
-				Type: 
-				<select class="form-control" ng-model="selectedWp.type">
-					<option value="user">User Waypoint</option>
-					<option value="report">Reporting Point</option>
-				</select>
-				Name: <input type="text" class="form-control" ng-model="selectedWp.checkpoint" />
-				Latitude: <input type="text" class="form-control" ng-model="selectedWp.latitude" />
-				Longitude: <input type="text" class="form-control" ng-model="selectedWp.longitude" />
-				<input type="checkbox" ng-model="saveUserWp">Save as User Waypoint
-			</div>
-			<div class="modal-footer">
-				<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-				<button type="button" class="btn btn-primary" data-dismiss="modal" ng-click="onWpOkClicked()">OK</button>
-			</div>
-		</div>
+<!-- feature popup -->
+<div id="feature-popup" class="ol-popup">
+	<a href="#" id="feature-popup-closer" class="ol-popup-closer"></a>
+	<div id="feature-popup-content">
+		<h4>{{ globalData.selectedWp.checkpoint }}</h4>
+		<p ng-show="globalData.selectedWp.isNew"><button type="button" class="btn btn-success btn-circle" ng-click="onAddSelectedWaypointClicked()"><i class="glyphicon glyphicon-plus"></i></button> Add Waypoint</p>
+		<p ng-hide="globalData.selectedWp.isNew"><button type="button" class="btn btn-warning btn-circle" ng-click="onEditSelectedWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Edit Waypoint</p>
+		<p ng-hide="globalData.selectedWp.isNew"><button type="button" class="btn btn-danger btn-circle" ng-click="onRemoveSelectedWaypointClicked()"><i class="glyphicon glyphicon-remove"></i></button> Remove Waypoint</p>
 	</div>
 </div>
 <!-- map -->
