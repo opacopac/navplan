@@ -1,51 +1,69 @@
 <div id="waypoints">
-	<a id="dlPdfLink" href="php/navplanPdf.php" target="_blank" download="navplan.pdf" ng-click="createPdfNavplan()">DL PDF</a>&nbsp;
-	<a id="dlExcelLink" href="php/navplanExcel.php" target="_blank" download="navplan.xlsx" ng-click="createExcelNavplan()">DL Excel</a>
-    <div>
-        Select Navplan:
-        <select ng-model="selectedNavplanId">
-			<option ng-repeat="navplan in globalData.user.navplanList" value="{{ navplan.id }}">{{ navplan.title }}</option>
-        </select>
-		<button type="button" class="btn" ng-click="loadNavplan();">Load</button>
-		<button type="button" class="btn" ng-click="deleteNavplan();">Delete</button>
-    </div>	
-    <div>
-        Save Navplan:
-		<input type="text" placeholder="Navplan Name" ng-model="globalData.navplan.title" />
-		<button type="button" class="btn" ng-click="saveNavplan();">Save</button>
-    </div>	
-	
-	<div class="table-responsive">
-		<table class="table table-condensed table-striped table-hover">
-			<thead>
-				<tr>
-					<th>Freq</th>
-					<th>Callsign</th>
-					<th>Checkpoint</th>
-					<th>Alt</th>
-					<th>MT</th>
-					<th>Dist</th>
-					<th>EET</th>
-					<th>Remarks</th>
-					<th>&nbsp;</th>
-				</tr>
-			</thead>
-			<tbody>
-				<tr ng-repeat="wp in globalData.navplan.waypoints">
-					<td>{{ wp.freq }}</td>
-					<td>{{ wp.callsign }}</td>
-					<td>{{ wp.checkpoint }}</td>
-					<td>{{ wp.alt }}</td>
-					<td>{{ wp.mtText }}</td>
-					<td>{{ wp.distText }}</td>
-					<td>{{ wp.eetText }}</td>
-					<td>{{ wp.remark }}</td>
-					<td>
-						<button type="button" class="btn btn-warning btn-circle" ng-click="editWaypoint(wp);"><i class="glyphicon glyphicon-edit"></i></button>
-						<button type="button" class="btn btn-danger btn-circle" ng-click="removeWaypoint($index);"><i class="glyphicon glyphicon-remove"></i></button>
-					</td>
-				</tr>
-			</tbody>			
-		</table>
-	</div> 	
+	<div class="container">
+		<div class="form-inline">
+			<div class="form-group">
+				<label for="navplan_name">Navplan Name</label>
+				<input id="navplan_name" type="text" class="form-control" placeholder="Navplan Name" ng-model="globalData.navplan.title" />
+				<button type="button" class="btn btn-primary btn-circle" title="Save Navplan" ng-click="saveNavplan();" ng-disabled="!globalData.navplan.title"><i class="glyphicon glyphicon-save"></i></button>
+			</div>
+			<div class="form-group pull-right">
+				<label for="navplan_list">Saved Navplans</label>
+				<select id="navplan_list" class="form-control" ng-model="selectedNavplanId">
+					<option value="" selected>--- Select ---</option>
+					<option ng-repeat="navplan in globalData.user.navplanList" value="{{ navplan.id }}">{{ navplan.title }}</option>
+				</select>
+				<button type="button" class="btn btn-success btn-circle" title="Load Navplan" ng-click="loadNavplan();" ng-disabled="!selectedNavplanId"><i class="glyphicon glyphicon-open"></i></button>
+				<button type="button" class="btn btn-danger btn-circle" title="Delete Navplan" ng-click="deleteNavplan();" ng-disabled="!selectedNavplanId"><i class="glyphicon glyphicon-remove"></i></button>
+			</div>	
+		</div>
+		<div class="form-inline">
+			<div class="form-group">
+				<label for="aircraft_speed">Ground Speed</label>
+				<input type="text" id="aircraft_speed" class="form-control" ng-model="globalData.aircraft.speed" placeholder="kt" maxlength="3" size="3">
+			</div>
+			<div class="form-group">
+				<label for="aircraft_consumption">Fuel Consumption</label>
+				<input type="text" id="aircraft_consumption" class="form-control" ng-model="globalData.aircraft.consumption" placeholder="l/h" maxlength="2" size="2">
+			</div>
+		</div>
+		<div class="table-responsive">
+			<table class="table table-condensed table-striped table-hover">
+				<thead>
+					<tr>
+						<th>Freq</th>
+						<th>Callsign</th>
+						<th>Checkpoint</th>
+						<th>Alt</th>
+						<th>MT</th>
+						<th>Dist</th>
+						<th>EET</th>
+						<th>Remarks</th>
+						<th>&nbsp;</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr ng-repeat="wp in globalData.navplan.waypoints">
+						<td>{{ wp.freq }}</td>
+						<td>{{ wp.callsign }}</td>
+						<td>{{ wp.checkpoint }}</td>
+						<td>{{ wp.alt }}</td>
+						<td>{{ wp.mtText }}</td>
+						<td>{{ wp.distText }}</td>
+						<td>{{ wp.eetText }}</td>
+						<td>{{ wp.remark }}</td>
+						<td>
+							<button type="button" class="btn btn-warning btn-circle" ng-click="editWaypoint(wp);"><i class="glyphicon glyphicon-edit"></i></button>
+							<button type="button" class="btn btn-danger btn-circle" ng-click="removeWaypoint($index);"><i class="glyphicon glyphicon-remove"></i></button>
+						</td>
+					</tr>
+				</tbody>			
+			</table>
+		</div> 
+		<div class="form-inline">
+			<div class="form-group">
+				<a id="dlPdfLink" href="php/navplanPdf.php" target="_blank" class="btn btn-primary btn-circle" title="Print Navplan as PDF" download="navplan.pdf" ng-click="createPdfNavplan()"><i class="glyphicon glyphicon-print"></i></a>&nbsp;
+				<a id="dlExcelLink" href="php/navplanExcel.php" target="_blank" class="btn btn-success btn-circle" title="Export Navplan as Excel" download="navplan.xlsx" ng-click="createExcelNavplan()"><i class="glyphicon glyphicon-export"></i></a>
+			</div>
+		</div>
+	</div>
 </div>

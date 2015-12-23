@@ -22,14 +22,6 @@ function mapCtrl($scope, $http, $resource, mapService, geonameService, waypointS
 	};
 
 	
-	$scope.updateTrack = function()
-	{
-		waypointService.updateWpList($scope.globalData.navplan.waypoints, $scope.globalData.settings.variation, $scope.globalData.aircraft.speed);
-		fuelService.updateFuelCalc($scope.globalData.fuel, $scope.globalData.navplan.waypoints, $scope.globalData.aircraft);
-		mapService.updateTrack($scope.globalData.navplan.waypoints);
-	}
-	
-
 	// select geopoint from search 
 	$scope.onGeonameSelect = function ($item)
 	{
@@ -195,7 +187,7 @@ function mapCtrl($scope, $http, $resource, mapService, geonameService, waypointS
 	{
 		removeFromArray($scope.globalData.navplan.waypoints, $scope.globalData.selectedWp);
 		$scope.globalData.selectedWp = undefined;
-		$scope.updateTrack();
+		$scope.updateWpList();
 
 		mapService.hideFeaturePopup();
 	}
@@ -219,7 +211,7 @@ function mapCtrl($scope, $http, $resource, mapService, geonameService, waypointS
 		newWp.isNew = false;
 		$scope.globalData.navplan.waypoints.push(newWp);
 		
-		$scope.updateTrack();
+		$scope.updateWpList();
 	}
 	
 	
@@ -248,6 +240,6 @@ function mapCtrl($scope, $http, $resource, mapService, geonameService, waypointS
 		return false;
 	};
 	
-	$scope.updateTrack();
+	$scope.updateWpList();
 	//$scope.focusSearchWpInput();
 }

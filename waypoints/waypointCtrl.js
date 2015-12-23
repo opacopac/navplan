@@ -157,13 +157,6 @@ function waypointCtrl($scope, $http, geonameService, mapService, waypointService
 	};
 	
 	
-	$scope.updateWpList = function()
-	{
-		waypointService.updateWpList($scope.globalData.navplan.waypoints, $scope.globalData.settings.variation, $scope.globalData.aircraft.speed);
-		fuelService.updateFuelCalc($scope.globalData.fuel, $scope.globalData.navplan.waypoints, $scope.globalData.aircraft);
-	}
-
-
 	$scope.editWaypoint = function(wp)
 	{
 		$scope.globalData.selectedWp = wp;

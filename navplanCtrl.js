@@ -5,58 +5,84 @@
 navplanApp
 	.controller('navplanCtrl', navplanCtrl);
 
-navplanCtrl.$inject = ['$scope', 'globalData', 'userService'];
+navplanCtrl.$inject = ['$scope', 'globalData', 'userService', 'mapService', 'waypointService', 'fuelService'];
 
-function navplanCtrl($scope, globalData, userService)
+function navplanCtrl($scope, globalData, userService, mapService, waypointService, fuelService)
 {
 	// init global data object
 	$scope.globalData = globalData;
-
-	$scope.globalData.user =
-	{
-		email: undefined,
-		token: undefined,
-		navplanList: []
-	};
-	$scope.globalData.pilot =
-	{
-		name: 'Armand'
-	};
-	$scope.globalData.aircraft =
-	{
-		id: 'HB-SRA',
-		speed: 100,
-		consumption: 20
-	};
-	$scope.globalData.fuel =
-	{
-		tripTime: 0,
-		alternatTime: 0,
-		reserveTime: 45,
-		extraTime: 0
-	};
-	$scope.globalData.navplan = 
-	{
-		id: undefined,
-		name: '',
-		waypoints: [ ],
-		selectedWaypoint: undefined,
-	};
-	$scope.globalData.settings =
-	{
-		variation: 2
-	};
-	$scope.globalData.currentMapPos = 
-	{
-		center: ol.proj.fromLonLat([7.4971, 46.9141]), // LSZB
-		zoom: 11
-	};
-	$scope.globalData.selectedWp = undefined;
-	$scope.globalData.wpBackup = undefined;
 	
 
 	// globally used functions
 	
+	$scope.initGlobalData = function()
+	{
+		// init global data
+		$scope.globalData.user =
+		{
+			email: undefined,
+			token: undefined,
+			navplanList: []
+		};
+		$scope.globalData.pilot =
+		{
+			name: 'Armand'
+		};
+		$scope.globalData.aircraft =
+		{
+			id: 'HB-SRA',
+			speed: 100,
+			consumption: 20
+		};
+		$scope.globalData.fuel =
+		{
+			tripTime: 0,
+			alternatTime: 0,
+			reserveTime: 45,
+			extraTime: 0
+		};
+		$scope.globalData.navplan = 
+		{
+			id: undefined,
+			name: '',
+			waypoints: [ ],
+			selectedWaypoint: undefined,
+		};
+		$scope.globalData.settings =
+		{
+			variation: 2
+		};
+		$scope.globalData.currentMapPos = 
+		{
+			center: ol.proj.fromLonLat([7.4971, 46.9141]), // LSZB
+			zoom: 11
+		};
+		$scope.globalData.selectedWp = undefined;
+		$scope.globalData.wpBackup = undefined;
+	}
+	
+	
+	$scope.initUser = function()
+	{
+		// init user
+		var	email = getCookie("email");
+		var token = getCookie("token");
+
+		if (email && token)
+			$scope.loginUser(email, token, 90)
+	}
+	
+	
+	$scope.initDisclaimer = function()
+	{
+		// init disclaimer
+		var hideDisclaimer = getCookie("hideDisclaimer");
+
+		if (hideDisclaimer != "1")
+			$('#disclaimerDialog').modal('show');
+	}
+
+
 	$scope.readNavplanList = function()
 	{
 		var email = $scope.globalData.user.email;
@@ -103,21 +129,6 @@ function navplanCtrl($scope, globalData, userService)
 		deleteCookie("token");
 	}
 
-	
-	// init user
-	var	email = getCookie("email");
-	var token = getCookie("token");
-
-	if (email && token)
-		$scope.loginUser(email, token, 90)
-
-		
-	// init disclaimer
-	var hideDisclaimer = getCookie("hideDisclaimer");
-
-	if (hideDisclaimer != "1")
-		$('#disclaimerDialog').modal('show');
-
 
 	$scope.onDisclaimerOKClicked = function()
 	{
@@ -130,7 +141,15 @@ function navplanCtrl($scope, globalData, userService)
 	{
 		$scope.logoutUser();
 	}
-	
+
+
+	$scope.updateWpList = function()
+	{
+		waypointService.updateWpList($scope.globalData.navplan.waypoints, $scope.globalData.settings.variation, $scope.globalData.aircraft.speed);
+		fuelService.updateFuelCalc($scope.globalData.fuel, $scope.globalData.navplan.waypoints, $scope.globalData.aircraft);
+		mapService.updateTrack($scope.globalData.navplan.waypoints);
+	}
+
 	
 	$scope.editSelectedWaypoint = function ()
 	{
@@ -181,4 +200,25 @@ function navplanCtrl($scope, globalData, userService)
 		
 		//mapService.hideFeaturePopup();
 	}
+
+	
+	$scope.onClearAllWaypointsClicked = function()
+	{
+		$scope.globalData.navplan = 
+		{
+			id: undefined,
+			name: '',
+			waypoints: [ ],
+			selectedWaypoint: undefined,
+		};
+		$scope.globalData.selectedWp = undefined;
+	
+		$scope.updateWpList();
+	}
+	
+
+	// init stuff
+	$scope.initGlobalData();
+	$scope.initUser();
+	$scope.initDisclaimer();
 }

@@ -3,6 +3,7 @@
 <head>
 	<title>NAV-Flightplan</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+	<meta charset="utf-8">
 	<link rel="stylesheet" href = "http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
 	<link rel="stylesheet" href = "http://openlayers.org/en/v3.9.0/css/ol.css">
 	<link href="http://allfont.net/allfont.css?fonts=arial-narrow" rel="stylesheet" type="text/css" />
@@ -47,13 +48,14 @@
 				<ul class="nav navbar-nav">
 					<li><a href="#/map">Map</a></li>
 					<li><a href="#/waypoints">Waypoints</a></li>
-					<li><a href="#/aircraft">Aircraft</a></li>
+					<!--<li><a href="#/aircraft">Aircraft</a></li>-->
 					<li><a href="#/fuel">Fuel</a></li>
+					<li><a href="#/map" title="Clear All Waypoints" ng-click="onClearAllWaypointsClicked()"><i class="glyphicon glyphicon-trash"></i></a></li>
 				</ul>
 				<ul class="nav navbar-nav navbar-right">
 					<li ng-hide="isLoggedIn()"><a href="#/login">Login</a></li>
-					<li ng-show="isLoggedIn()"><a href="#/map" ng-click="onLogoutClicked()">Logout</a></li>
-					<li><a href="#/settings">Settings</a></li>
+					<li ng-show="isLoggedIn()"><a href="#/map" ng-click="onLogoutClicked()">Logout ({{ globalData.user.email }})</a></li>
+					<li><a href="#/settings" title="Settings"><i class="glyphicon glyphicon-cog"></i></a></li>
 					<li><a href="#/about">About</a></li>
 				</ul>
 			</div>
