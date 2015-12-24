@@ -1,29 +1,44 @@
 <div id="waypoints">
 	<div class="container">
-		<div class="form-inline">
+		<div id="success_alert_box" class="alert alert-success" role="alert" ng-show="success_alert_message">{{ success_alert_message }}</div>
+		<div class="form-horizontal">
 			<div class="form-group">
-				<label for="navplan_name">Navplan Name</label>
-				<input id="navplan_name" type="text" class="form-control" placeholder="Navplan Name" ng-model="globalData.navplan.title" />
-				<button type="button" class="btn btn-primary btn-circle" title="Save Navplan" ng-click="saveNavplan();" ng-disabled="!globalData.navplan.title"><i class="glyphicon glyphicon-save"></i></button>
-			</div>
-			<div class="form-group pull-right">
-				<label for="navplan_list">Saved Navplans</label>
-				<select id="navplan_list" class="form-control" ng-model="selectedNavplanId">
-					<option value="" selected>--- Select ---</option>
-					<option ng-repeat="navplan in globalData.user.navplanList" value="{{ navplan.id }}">{{ navplan.title }}</option>
-				</select>
-				<button type="button" class="btn btn-success btn-circle" title="Load Navplan" ng-click="loadNavplan();" ng-disabled="!selectedNavplanId"><i class="glyphicon glyphicon-open"></i></button>
-				<button type="button" class="btn btn-danger btn-circle" title="Delete Navplan" ng-click="deleteNavplan();" ng-disabled="!selectedNavplanId"><i class="glyphicon glyphicon-remove"></i></button>
+				<label for="navplan_name" class="control-label col-sm-3">Navplan Name</label>
+				<div class="col-sm-6">
+					<div class="input-group">
+						<input id="navplan_name" type="text" class="form-control" placeholder="Enter Name" ng-model="globalData.navplan.title" />
+						<span class="input-group-btn">
+							<button type="button" class="btn btn-primary" title="Save Navplan" ng-click="saveNavplan();" ng-disabled="!globalData.navplan.title"><i class="glyphicon glyphicon-save"></i></button>
+						</span>					
+					</div>
+				</div>	
 			</div>	
-		</div>
-		<div class="form-inline">
 			<div class="form-group">
-				<label for="aircraft_speed">Ground Speed</label>
-				<input type="text" id="aircraft_speed" class="form-control" ng-model="globalData.aircraft.speed" placeholder="kt" maxlength="3" size="3">
+				<label for="navplan_list" class="control-label col-sm-3">Saved Plans</label>
+				<div class="col-sm-6">
+					<div class="input-group">
+						<select id="navplan_list" class="form-control" ng-model="selectedNavplanId">
+							<option value="" selected>--- Select ---</option>
+							<option ng-repeat="navplan in globalData.user.navplanList" value="{{ navplan.id }}">{{ navplan.title }}</option>
+						</select>
+						<span class="input-group-btn">
+							<button type="button" class="btn btn-success" title="Load Navplan" ng-click="loadNavplan();" ng-disabled="!selectedNavplanId"><i class="glyphicon glyphicon-open"></i></button>
+							<button type="button" class="btn btn-danger" title="Delete Navplan" ng-click="deleteNavplan();" ng-disabled="!selectedNavplanId"><i class="glyphicon glyphicon-trash"></i></button>
+						</span>					
+					</div>
+				</div>
+			</div>	
+			<div class="form-group">
+				<label for="aircraft_speed" class="control-label col-sm-3">Ground Speed</label>
+				<div class="col-sm-2">
+					<input type="text" id="aircraft_speed" class="form-control" ng-model="globalData.aircraft.speed" placeholder="kt" maxlength="3" size="3">
+				</div>
 			</div>
 			<div class="form-group">
-				<label for="aircraft_consumption">Fuel Consumption</label>
-				<input type="text" id="aircraft_consumption" class="form-control" ng-model="globalData.aircraft.consumption" placeholder="l/h" maxlength="2" size="2">
+				<label for="aircraft_consumption" class="control-label col-sm-3">Fuel Consumption</label>
+				<div class="col-sm-2">
+					<input type="text" id="aircraft_consumption" class="form-control" ng-model="globalData.aircraft.consumption" placeholder="l/h" maxlength="2" size="2">
+				</div>
 			</div>
 		</div>
 		<div class="table-responsive">
@@ -42,7 +57,7 @@
 					</tr>
 				</thead>
 				<tbody>
-					<tr ng-repeat="wp in globalData.navplan.waypoints">
+					<tr ng-repeat="wp in globalData.navplan.waypoints" ng-class="{danger: wp.isAlternate, info: wp.isStartEnd}">
 						<td>{{ wp.freq }}</td>
 						<td>{{ wp.callsign }}</td>
 						<td>{{ wp.checkpoint }}</td>

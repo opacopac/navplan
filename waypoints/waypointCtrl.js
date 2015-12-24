@@ -5,12 +5,20 @@
 navplanApp
 	.controller('waypointCtrl', waypointCtrl);
 	
-waypointCtrl.$inject = ['$scope', '$http', 'geonameService', 'mapService', 'waypointService', 'fuelService', 'userService', 'globalData'];
+waypointCtrl.$inject = ['$scope', '$http', '$timeout', 'geonameService', 'mapService', 'waypointService', 'fuelService', 'userService', 'globalData'];
 
-function waypointCtrl($scope, $http, geonameService, mapService, waypointService, fuelService, userService, globalData) {
+function waypointCtrl($scope, $http, $timeout, geonameService, mapService, waypointService, fuelService, userService, globalData) {
 	$scope.globalData = globalData;
 	$scope.newWp = undefined;
-
+	
+	
+	$scope.showSuccessMessage = function(text)
+	{
+		$scope.success_alert_message = text;
+		
+		$timeout(function () { $scope.success_alert_message = ""; }, 3000, true);
+	}
+	
 	
 	$scope.createPdfNavplan = function()
 	{
@@ -99,7 +107,7 @@ function waypointCtrl($scope, $http, geonameService, mapService, waypointService
 					if (data.success == 1)
 					{
 						$scope.readNavplanList();
-						// TODO: success message
+						$scope.showSuccessMessage("Navplan successfully saved!");
 					}
 					else
 						console.error("ERROR", data);
@@ -116,8 +124,6 @@ function waypointCtrl($scope, $http, geonameService, mapService, waypointService
 					{
 						$scope.globalData.navplan.id = data.navplan_id
 						$scope.readNavplanList();
-
-						// TODO: success message
 					}
 					else
 						console.error("ERROR", data);
@@ -137,9 +143,8 @@ function waypointCtrl($scope, $http, geonameService, mapService, waypointService
 				.success(function(data) {
 					if (data.success == 1)
 					{
-						// TODO: success message
-
 						$scope.readNavplanList();
+						$scope.showSuccessMessage("Navplan successfully deleted!");
 					}
 					else
 						console.error("ERROR", data);

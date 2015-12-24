@@ -27,8 +27,17 @@ function waypointService(mapService)
 				wps[i].isAlternate = true;
 			else
 				wps[i].isAlternate = false;
+				
+			if (i == 0)
+				wps[i].isStartEnd = true;
+			else if (i == wps.length - 1 && wps[i].isAlternate)
+				wps[i - 1].isStartEnd = true;
+			else if (i == wps.length - 1 && !wps[i].isAlternate)
+				wps[i].isStartEnd = true;
+			else
+				wps[i].isStartEnd = false;
 		}
-
+		
 
 		for (i = 0; i < wps.length; i++)
 		{

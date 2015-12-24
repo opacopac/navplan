@@ -147,7 +147,7 @@ function navplanCtrl($scope, globalData, userService, mapService, waypointServic
 	{
 		waypointService.updateWpList($scope.globalData.navplan.waypoints, $scope.globalData.settings.variation, $scope.globalData.aircraft.speed);
 		fuelService.updateFuelCalc($scope.globalData.fuel, $scope.globalData.navplan.waypoints, $scope.globalData.aircraft);
-		mapService.updateTrack($scope.globalData.navplan.waypoints);
+		mapService.updateTrack($scope.globalData.navplan.waypoints, $scope.globalData.settings);
 	}
 
 	

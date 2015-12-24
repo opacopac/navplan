@@ -60,3 +60,9 @@ function removeFromArray(array, value)
 
 	return array;
 }
+
+
+function deg2rad(deg)
+{
+	return deg / 360 * 2 * Math.PI;
+}

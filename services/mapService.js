@@ -1,4 +1,4 @@
-/**
+ï»¿/**
  * Map Service
  */
 
@@ -40,8 +40,8 @@ function mapService($http)
 				maxZoom: 14,
 				crossOrigin: null,
 				attributions: [
-					new ol.Attribution({ html: 'Kartendaten: © OpenStreetMap-Mitwirkende, SRTM | Kartendarstellung: © <a href="http://www.opentopomap.org/">OpenTopoMap</a> (CC-BY-SA)'}),
-					new ol.Attribution({ html: 'Aviation Data: © <a href="http://www.openaip.net/">openAIP</a> (CC-BY-SA)'}),
+					new ol.Attribution({ html: 'Kartendaten: (c) OpenStreetMap-Mitwirkende, SRTM | Kartendarstellung: (c) <a href="http://www.opentopomap.org/">OpenTopoMap</a> (CC-BY-SA)'}),
+					new ol.Attribution({ html: 'Aviation Data: (c) <a href="http://www.openaip.net/">openAIP</a> (CC-BY-SA)'}),
 					ol.source.OSM.ATTRIBUTION
 				]
 			})
@@ -793,8 +793,11 @@ function mapService($http)
 	}
 	
 	
-	function updateTrack(wps)
+	function updateTrack(wps, settings)
 	{
+		if (typeof trackLayer === "undefined")
+			return;
+	
 		var trackSource = trackLayer.getSource();
 		trackSource.clear();
 		
@@ -858,7 +861,7 @@ function mapService($http)
 					geometry: new ol.geom.Point(mapCoord)
 				});
 				
-				dbStyle = createDirBearStyle(wps[i + 1]);
+				dbStyle = createDirBearStyle(wps[i + 1], settings);
 				dbFeature.setStyle(dbStyle);
 				trackSource.addFeature(dbFeature);
 			}
@@ -873,21 +876,21 @@ function mapService($http)
 		if (wp1.mt && wp2) // middle point
 		{
 			if (wp2.mt > wp1.mt)
-				rot = ((wp1.mt + 270 + (wp2.mt - wp1.mt) / 2) % 360) / 360 * 2 * Math.PI;
+				rot = deg2rad((wp1.mt + 270 + (wp2.mt - wp1.mt) / 2) % 360);
 			else
-				rot = ((wp1.mt + 270 + (wp2.mt + 360 - wp1.mt) / 2) % 360) / 360 * 2 * Math.PI;
+				rot = deg2rad((wp1.mt + 270 + (wp2.mt + 360 - wp1.mt) / 2) % 360);
 		}
 		else if (!wp1.mt && wp2) // start point
 		{
-			rot = (((wp2.mt + 180) % 360) / 360) * 2 * Math.PI;
+			rot = deg2rad((wp2.mt + 180) % 360);
 		}
 		else if (wp1.mt && !wp2) // end point
 		{
-			rot = (wp1.mt / 360) * 2 * Math.PI;
+			rot = deg2rad(wp1.mt);
 		}
 		else if (!wp1.mt && !wp2) // single point
 		{
-			rot = Math.PI / 4; // 45°
+			rot = deg2rad(45); // 45Â°
 		}
 		else
 			throw "invalid waypoints";
@@ -911,8 +914,10 @@ function mapService($http)
 	}
 	
 	
-	function createDirBearStyle(wp)
+	function createDirBearStyle(wp, settings)
 	{
+		var varRad = Number(settings.variation) ? deg2rad(Number(settings.variation)) : 0;
+	
 		if (!wp)
 		{
 			rotRad = 0;
@@ -923,17 +928,17 @@ function mapService($http)
 		}
 		else if (wp.mt  < 180)
 		{
-			rotRad = (wp.mt - 90) / 360 * 2 * Math.PI;
+			rotRad = deg2rad(wp.mt - 90);
 			align = "start";
-			text = wp.mt + '° D' + wp.dist + ' >';
+			text = wp.mt + 'Â° ' + wp.dist + 'NM >';
 			offX = 10 * Math.sin(rotRad + Math.PI / 2);
 			offY = -10 * Math.cos(rotRad + Math.PI / 2);
 		}
 		else
 		{
-			rotRad = (wp.mt - 270) / 360 * 2 * Math.PI;
+			rotRad = deg2rad(wp.mt - 270);
 			align = "end";
-			text = '< ' + wp.mt + '° D' + wp.dist;
+			text = '< ' + wp.mt + 'Â° ' + wp.dist + 'NM';
 			offX = 10 * Math.sin(rotRad + Math.PI * 3 / 2);
 			offY = -10 * Math.cos(rotRad + Math.PI * 3 / 2);
 		}
@@ -951,7 +956,7 @@ function mapService($http)
 				text: text,
 				fill: new ol.style.Fill( { color: '#000000' } ),
 				stroke: new ol.style.Stroke( {color: '#FFFFFF', width: 10 } ),
-				rotation: rotRad,
+				rotation: rotRad + varRad,
 				textAlign: align,
 				offsetX: offX,
 				offsetY: offY
