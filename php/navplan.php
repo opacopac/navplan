@@ -193,7 +193,7 @@
 		$email = mysqli_real_escape_string($conn, $input["globalData"]["user"]["email"]);
 		$token = mysqli_real_escape_string($conn, $input["globalData"]["user"]["token"]);
 
-		// check if navplan exists
+		// check if user + navplan exists
 		$query = "SELECT id FROM users WHERE email = '" . $email . "' AND token = '" . $token . "'";
 		
 		$result = $conn->query($query);

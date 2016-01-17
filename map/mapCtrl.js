@@ -232,7 +232,7 @@ function mapCtrl($scope, $http, $resource, mapService, geonameService, waypointS
 	var featureCloser = document.getElementById('feature-popup-closer');
 
 	// init mapservice
-	mapService.init($scope.onMapClicked, $scope.onFeatureSelected, $scope.onMapMoveEnd, $scope.onKmlClick, $scope.globalData.currentMapPos, featureContainer);
+	mapService.init($scope.onMapClicked, $scope.onFeatureSelected, $scope.onMapMoveEnd, $scope.onKmlClick, $scope.globalData.currentMapPos, featureContainer, $scope.globalData.user.email, $scope.globalData.user.token);
 
 	featureCloser.onclick = function() {
 		mapService.hideFeaturePopup();

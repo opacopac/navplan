@@ -1,53 +1,71 @@
 <?php
 	include "config.php";
 
-	// open db connection
-	$conn = new mysqli($db_host, $db_user, $db_pw, $db_name);
-	$conn->set_charset("utf8");
+	$input = json_decode(file_get_contents('php://input'), true);
 	
-	if (!isset($_GET["action"]))
-		die ("Error: Argument 'action' missing");
-
-	
-	if ($_GET["action"] == "save")
+	switch($input["action"])
 	{
-		$data = json_decode(file_get_contents("php://input"), true); 
-		$result = saveWaypoint($data);
-	}
-	else if ($_GET["action"] == "getall")
-	{
-		$result = getAllWaypoints();
-	}
-	else
-		die ("Error: Unknown value for argument 'action'");
-		
-	$conn->close();
-	
-	// return output
-	if (isset($_GET["debug"]))
-	{
-		echo "<html><body>\n";
-		echo "<h1>DEBUG MODE</h1>\n";
-		echo "<h2>QUERY</h2>";
-		echo "<p style='font-family: courier'>" . $query . "</p>\n";
-		echo "<h2>DB RESULT</h2>\n";
-		echo "<p>" . $result . "</p>\n";
-		echo "</body></html>\n";
-	}
-	else
-	{
-		header("Access-Control-Allow-Origin: *"); //TODO: remove
-		header("Content-Type: application/json; charset=UTF-8");
-	
-		echo($result);
+		case "save":
+			saveUserWaypoint();
+			break;
+		case "readUserWaypoints":
+			readUserWaypointList();
+			break;
+		case "readGlobalWaypoints":
+			readGlobalWaypointList();
+			break;
+		default:
+			die("no action defined!");
 	}
 
 
-	function getAllWaypoints()
+	function readGlobalWaypointList()
 	{
-		global $conn;
-		$query = "SELECT * FROM user_waypoint";
+		global $input;
+
+		// open db
+		$conn = openDb();
+
+		$query = "SELECT * FROM global_waypoints";
 		$result = $conn->query($query);
+
+		while ($rs = $result->fetch_array(MYSQLI_ASSOC))
+		{
+			$globalWps[] = array(
+				id => $rs["id"],
+				type => $rs["type"],
+				name => $rs["name"],
+				latitude => $rs["latitude"],
+				longitude => $rs["longitude"],
+				remark => $rs["remark"]
+			);
+		}
+
+		// close db
+		$conn->close();
+		
+		echo json_encode(array("globalWaypoints" => $globalWps), JSON_NUMERIC_CHECK);
+	}
+		
+		
+	function readUserWaypointList()
+	{
+		global $input;
+
+		// open db
+		$conn = openDb();
+
+		$email = mysqli_real_escape_string($conn, $input["email"]);
+		$token = mysqli_real_escape_string($conn, $input["token"]);
+		
+		$query = "SELECT * FROM user_waypoints AS uwp";
+		$query .= " INNER JOIN users AS usr ON uwp.user_id = usr.id";
+		$query .= " WHERE usr.email = '" . $email . "' AND usr.token = '" . $token . "'";
+
+		$result = $conn->query($query);
+		
+		if ($result === FALSE)
+			die("error reading user waypoint list: " . $conn->error . " query:" . $query);
 
 		while ($rs = $result->fetch_array(MYSQLI_ASSOC))
 		{
@@ -60,15 +78,25 @@
 				remark => $rs["remark"]
 			);
 		}
+
+		// close db
+		$conn->close();
 		
-		return json_encode(array("userWaypoints" => $userWps), JSON_NUMERIC_CHECK);
+		echo json_encode(array("userWaypoints" => $userWps), JSON_NUMERIC_CHECK);
 	}
 		
 		
-	function saveWaypoint($data)
+	function saveUserWaypoint($data)
 	{
-		global $conn;
+		global $input;
 
+		// open db
+		$conn = openDb();
+		
+		$email = mysqli_real_escape_string($conn, $input["email"]);
+		$token = mysqli_real_escape_string($conn, $input["token"]);
+
+		
 		$id = mysqli_real_escape_string($conn, $data["id"]);
 		$type = mysqli_real_escape_string($conn, $data["type"]);
 		$name = mysqli_real_escape_string($conn, $data["checkpoint"]);

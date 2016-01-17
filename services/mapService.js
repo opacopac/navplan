@@ -31,7 +31,7 @@ function mapService($http)
 	
 	
 	// init map
-	function init(onMapClickCallback, onFeatureSelectCallback, onMoveEndCallback, onKmlClick, mapPos, featureContainer)
+	function init(onMapClickCallback, onFeatureSelectCallback, onMoveEndCallback, onKmlClick, mapPos, featureContainer, email, token)
 	{
 		// map layer
 		mapLayer =  new ol.layer.Tile({
@@ -107,7 +107,7 @@ function mapService($http)
 		
 		// add navaids to icon layer
 		$http.get('php/navaids.php')
-			.success(function(data, status, headers, config) {
+			.success(function(data) {
 				if (data.navaids)
 				{
 					for (i = 0; i < data.navaids.length; i++)
@@ -128,39 +128,83 @@ function mapService($http)
 						iconLayer.getSource().addFeature(navaidFeature);
 					}
 				}
+				else
+				{
+					console.error("ERROR", data);
+				}
 			})
-			.error(function(data, status, headers, config) {
-				// empty
+			.error(function(data, status) {
+				console.error("ERROR", status, data);
 			});
 
 			
-		// add user waypoints to icon layer
-		$http.get('php/userWaypoint.php?action=getall')
-			.success(function(data, status, headers, config) {
-				if (data.userWaypoints)
+		// add global waypoints to icon layer
+		$http.post('php/userWaypoint.php', obj2json({ action: 'readGlobalWaypoints' }))
+			.success(function(data) {
+				if (data.globalWaypoints)
 				{
-					for (i = 0; i < data.userWaypoints.length; i++)
+					for (i = 0; i < data.globalWaypoints.length; i++)
 					{
-						var userWpFeature = new ol.Feature({
-							geometry: new ol.geom.Point(ol.proj.fromLonLat([data.userWaypoints[i].longitude, data.userWaypoints[i].latitude]))
+						var globalWpFeature = new ol.Feature({
+							geometry: new ol.geom.Point(ol.proj.fromLonLat([data.globalWaypoints[i].longitude, data.globalWaypoints[i].latitude]))
 						});
 						
-						userWpFeature.userWaypoint = data.userWaypoints[i];
+						globalWpFeature.userWaypoint = data.globalWaypoints[i];
 
-						var userWpStyle = createUserWpStyle(data.userWaypoints[i].type, data.userWaypoints[i].name);
+						var globalWpStyle = createUserWpStyle(data.globalWaypoints[i].type, data.globalWaypoints[i].name); // TODO: different style for global (vs user)?
 						
-						if (userWpStyle)
-							userWpFeature.setStyle(userWpStyle);
+						if (globalWpStyle)
+							globalWpFeature.setStyle(globalWpStyle);
 						else
 							continue;
 				
-						iconLayer.getSource().addFeature(userWpFeature);
+						iconLayer.getSource().addFeature(globalWpFeature);
 					}
 				}
+				else
+				{
+					console.error("ERROR", data);
+				}
 			})
-			.error(function(data, status, headers, config) {
-				// empty
+			.error(function(data, status) {
+				console.error("ERROR", status, data);
 			});
+
+			
+		// add user waypoints to icon layer (if logged in)
+		if (email && token)
+		{
+			$http.post('php/userWaypoint.php', obj2json({ action: 'readUserWaypoints', email: email, token: token }))
+				.success(function(data) {
+					if (data.userWaypoints)
+					{
+						for (i = 0; i < data.userWaypoints.length; i++)
+						{
+							var userWpFeature = new ol.Feature({
+								geometry: new ol.geom.Point(ol.proj.fromLonLat([data.userWaypoints[i].longitude, data.userWaypoints[i].latitude]))
+							});
+							
+							userWpFeature.userWaypoint = data.userWaypoints[i];
+
+							var userWpStyle = createUserWpStyle(data.userWaypoints[i].type, data.userWaypoints[i].name);
+							
+							if (userWpStyle)
+								userWpFeature.setStyle(userWpStyle);
+							else
+								continue;
+					
+							iconLayer.getSource().addFeature(userWpFeature);
+						}
+					}
+					else
+					{
+						console.error("ERROR", data);
+					}
+				})
+				.error(function(data, status) {
+					console.error("ERROR", status, data);
+				});
+		}
 
 			
 		// airspace layer
