@@ -17,7 +17,9 @@ function userService($http)
 		readNavplan: readNavplan,
 		createNavplan: createNavplan,
 		updateNavplan: updateNavplan,
-		deleteNavplan: deleteNavplan
+		deleteNavplan: deleteNavplan,
+		saveUserWaypoint: saveUserWaypoint,
+		deleteUserWaypoint: deleteUserWaypoint
 	}
 	
 	return api;
@@ -68,5 +70,17 @@ function userService($http)
 	function deleteNavplan(navplan_id, email, token)
 	{
 		return $http.post('php/navplan.php', obj2json({ action: 'delete', navplan_id: navplan_id, email: email, token: token }));
+	}
+
+	
+	function saveUserWaypoint(wp, email, token)
+	{
+		return $http.post('php/userWaypoint.php', obj2json({ action: 'save', wp: wp, email: email, token: token }));
+	}
+
+	
+	function deleteUserWaypoint(wp_id, email, token)
+	{
+		return $http.post('php/userWaypoint.php', obj2json({ action: 'delete', wp_id: wp_id, email: email, token: token }));
 	}
 }

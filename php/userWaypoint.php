@@ -5,15 +5,17 @@
 	
 	switch($input["action"])
 	{
-		case "save":
-			saveUserWaypoint();
+		case "readGlobalWaypoints":
+			readGlobalWaypointList();
 			break;
 		case "readUserWaypoints":
 			readUserWaypointList();
 			break;
-		case "readGlobalWaypoints":
-			readGlobalWaypointList();
+		case "saveUserWaypoint":
+			saveUserWaypoint();
 			break;
+		case "deleteUserWaypoint":
+			die("no yet implemented!");
 		default:
 			die("no action defined!");
 	}
@@ -86,7 +88,7 @@
 	}
 		
 		
-	function saveUserWaypoint($data)
+	function saveUserWaypoint()
 	{
 		global $input;
 
@@ -95,30 +97,53 @@
 		
 		$email = mysqli_real_escape_string($conn, $input["email"]);
 		$token = mysqli_real_escape_string($conn, $input["token"]);
+		$wp_id = mysqli_real_escape_string($conn, $data["id"]);
 
+		// check if user / wp exists
+		$query = "SELECT id FROM users AS usr WHERE email = '" . $email . "' AND token = '" . $token . "'";
 		
-		$id = mysqli_real_escape_string($conn, $data["id"]);
+		if ($wp_id)
+		{
+			$query .= " INNER JOIN user_waypoints AS uwp ON uwp.user_id = usr.id";
+			$query .= " WHERE uwp.id = '" . $wp_id . "'";
+		}
+		
+		$result = $conn->query($query);
+
+		if ($result === FALSE)
+			die("error reading user id: " . $conn->error . " query:" . $query);
+
+		if ($result->num_rows > 0)
+		{
+			$row = $result->fetch_assoc();
+			$user_id = $row["id"];
+		}
+		else
+			die("no valid user / waypoint found");
+
+		// create wp
 		$type = mysqli_real_escape_string($conn, $data["type"]);
 		$name = mysqli_real_escape_string($conn, $data["checkpoint"]);
 		$latitude = mysqli_real_escape_string($conn, $data["latitude"]);
 		$longitude = mysqli_real_escape_string($conn, $data["longitude"]);
 		$remark = mysqli_real_escape_string($conn, $data["remark"]);
 
-		if ($id > 0)
+		if ($wp_id)
 		{
 			$query =  "UPDATE user_waypoint";
+			$query .= " SET user_id = '" . $user_id . "'";
 			$query .= " SET type = '" . $type . "'";
 			$query .= " SET name = '" . $name . "'";
 			$query .= " SET latitude = '" . $latitude . "'";
 			$query .= " SET longitude = '" . $longitude . "'";
 			$query .= " SET remark = '" . $remark . "'";
-			$query .= " WHERE id = " . $id . "";
+			$query .= " WHERE id = " . $wp_id . "";
 		}
 		else
 		{
 			$query =  "INSERT INTO user_waypoint";
-			$query .= " (type, name, latitude, longitude, remark)";
-			$query .= " VALUES ('" . $type . "', '" . $name . "', '" . $latitude . "', '" . $longitude . "', '" . $remark . "')";
+			$query .= " (user_id, type, name, latitude, longitude, remark)";
+			$query .= " VALUES ('" . $user_id . "', '" . $type . "', '" . $name . "', '" . $latitude . "', '" . $longitude . "', '" . $remark . "')";
 		}
 
 		$result = $conn->query($query);

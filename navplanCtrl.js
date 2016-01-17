@@ -170,16 +170,20 @@ function navplanCtrl($scope, globalData, userService, mapService, waypointServic
 		$scope.globalData.selectedWp.type = 'user';
 		$scope.$apply();
 		
-		userWaypointService.saveUserWaypoint($scope.globalData.selectedWp);
+		userService.saveUserWaypoint($scope.globalData.selectedWp, $scope.globalData.user.email, $scope.globalData.user.token);
+		
+		// todo message
 	}
 
 
 	$scope.onDeleteSelectedWaypointClicked = function()
 	{
-		userWaypointService.deleteUserWaypoint($scope.globalData.selectedWp);
+		userWaypointService.deleteUserWaypoint($scope.globalData.selectedWp.id, $scope.globalData.user.email, $scope.globalData.user.token);
 		
-		$scope.globalData.selectedWp.type = 'geoname';
+		$scope.globalData.selectedWp = undefined;
 		$scope.$apply();
+		
+		// todo message
 	}
 
 	

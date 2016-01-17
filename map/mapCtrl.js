@@ -3,10 +3,10 @@
  */
 
 navplanApp
-	.controller('mapCtrl', [ '$scope', '$http', '$resource', 'mapService', 'geonameService', 'waypointService', 'userWaypointService', 'fuelService', 'globalData', mapCtrl ]);
+	.controller('mapCtrl', [ '$scope', 'mapService', 'geonameService', 'waypointService', 'fuelService', 'globalData', mapCtrl ]);
 
 
-function mapCtrl($scope, $http, $resource, mapService, geonameService, waypointService, userWaypointService, fuelService, globalData) {
+function mapCtrl($scope, mapService, geonameService, waypointService, fuelService, globalData) {
 	$scope.globalData = globalData;
 
 	
@@ -16,9 +16,9 @@ function mapCtrl($scope, $http, $resource, mapService, geonameService, waypointS
 	}
 	
 
-	$scope.searchGeonamesByValue = function(val)
+	$scope.searchGeonamesByValue = function(search)
 	{
-		return geonameService.searchGeonamesByValue($http, val);
+		return geonameService.searchGeonamesByValue(search, $scope.globalData.user.email, $scope.globalData.user.token);
 	};
 
 	
@@ -64,13 +64,19 @@ function mapCtrl($scope, $http, $resource, mapService, geonameService, waypointS
 	
 	$scope.onMapClicked = function(event, clickCoordinates, maxRadius)
 	{
-		geonameService.resource.get({ lat: clickCoordinates[1], lon: clickCoordinates[0], rad: maxRadius }, function(data) {
-			if (!data.geonames)
-				data.geonames = [];
-
-			mapService.hideFeaturePopup();
-			mapService.drawGeopointSelection(data.geonames, event.pixel);
-		});
+		geonameService.searchGeonamesByPosition(clickCoordinates[1], clickCoordinates[0], maxRadius, $scope.globalData.user.email, $scope.globalData.user.token)
+			.success(function(data) {
+				if (data.geonames)
+				{
+					mapService.hideFeaturePopup();
+					mapService.drawGeopointSelection(data.geonames, event.pixel);
+				}
+				else
+					console.error("ERROR", data);
+			})
+			.error(function(data, status) {
+				console.error("ERROR", status, data);
+			});
 	}
 	
 	
