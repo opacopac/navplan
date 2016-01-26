@@ -60,6 +60,10 @@
 			</div>
 		</div>
 	</nav>
+	<!-- success messages -->
+	<div class="container">
+		<div id="success_alert_box" class="alert alert-success" role="alert" ng-show="success_alert_message">{{ success_alert_message }}</div>
+	</div>
 	<!-- content -->
 	<div ng-view></div>
 	<!-- disclaimer -->

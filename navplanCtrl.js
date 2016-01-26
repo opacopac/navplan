@@ -5,9 +5,9 @@
 navplanApp
 	.controller('navplanCtrl', navplanCtrl);
 
-navplanCtrl.$inject = ['$scope', 'globalData', 'userService', 'mapService', 'waypointService', 'fuelService'];
+navplanCtrl.$inject = ['$scope', '$timeout', 'globalData', 'userService', 'mapService', 'waypointService', 'fuelService'];
 
-function navplanCtrl($scope, globalData, userService, mapService, waypointService, fuelService)
+function navplanCtrl($scope, $timeout, globalData, userService, mapService, waypointService, fuelService)
 {
 	// init global data object
 	$scope.globalData = globalData;
@@ -62,6 +62,14 @@ function navplanCtrl($scope, globalData, userService, mapService, waypointServic
 	}
 	
 	
+	$scope.showSuccessMessage = function(text)
+	{
+		$scope.success_alert_message = text;
+		
+		$timeout(function () { $scope.success_alert_message = ""; }, 3000, true);
+	}
+	
+	
 	$scope.initUser = function()
 	{
 		// init user
@@ -110,7 +118,10 @@ function navplanCtrl($scope, globalData, userService, mapService, waypointServic
 		$scope.globalData.user.token = token;
 
 		$scope.readNavplanList();
+		
 		//TODO: read user data (name, plane, settings, etc.)
+
+		$scope.showSuccessMessage("Welcome " + email + "!");
 	}
 	
 	
@@ -127,6 +138,10 @@ function navplanCtrl($scope, globalData, userService, mapService, waypointServic
 		
 		deleteCookie("email");
 		deleteCookie("token");
+		
+		$scope.initGlobalData();
+
+		$scope.showSuccessMessage("User Logged out successfully!");
 	}
 
 

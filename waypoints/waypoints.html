@@ -1,6 +1,5 @@
 <div id="waypoints">
 	<div class="container">
-		<div id="success_alert_box" class="alert alert-success" role="alert" ng-show="success_alert_message">{{ success_alert_message }}</div>
 		<div class="form-horizontal">
 			<div class="form-group">
 				<label for="navplan_name" class="control-label col-sm-3">Navplan Name</label>
@@ -57,7 +56,8 @@
 					</tr>
 				</thead>
 				<tbody>
-					<tr ng-repeat="wp in globalData.navplan.waypoints" ng-class="{danger: wp.isAlternate, info: wp.isStartEnd}">
+					<!-- trip checkpoints -->
+					<tr ng-repeat="wp in globalData.navplan.waypoints | filter: { isAlternate: false } as results" ng-class="{info: wp.isStartEnd}">
 						<td>{{ wp.freq }}</td>
 						<td>{{ wp.callsign }}</td>
 						<td>{{ wp.checkpoint }}</td>
@@ -68,8 +68,50 @@
 						<td>{{ wp.remark }}</td>
 						<td>
 							<button type="button" class="btn btn-warning btn-circle" ng-click="editWaypoint(wp);"><i class="glyphicon glyphicon-edit"></i></button>
-							<button type="button" class="btn btn-danger btn-circle" ng-click="removeWaypoint($index);"><i class="glyphicon glyphicon-remove"></i></button>
+							<button type="button" class="btn btn-danger btn-circle" ng-click="removeWaypoint(wp);"><i class="glyphicon glyphicon-remove"></i></button>
 						</td>
+					</tr>
+					<!-- trip total -->
+					<tr ng-if="results.length > 0">
+						<td>&nbsp;</td>
+						<td>&nbsp;</td>
+						<td>&nbsp;</td>
+						<td>&nbsp;</td>
+						<td>&nbsp;</td>
+						<td>&nbsp;</td>
+						<td>{{ globalData.fuel.tripTime }}</td>
+						<td>&nbsp;</td>
+						<td>&nbsp;</td>
+					</tr>
+					<!-- alternate checkpoint -->
+					<tr ng-if="globalData.fuel.alternateTime > 0">
+						<td>&nbsp;</td>
+						<td>&nbsp;</td>
+						<td><i><u>Alternate:</u></i></td>
+						<td>&nbsp;</td>
+						<td>&nbsp;</td>
+						<td>&nbsp;</td>
+						<td>&nbsp;</td>
+						<td>&nbsp;</td>
+						<td>&nbsp;</td>
+					</tr>
+					<tr ng-repeat="wp in globalData.navplan.waypoints | filter: { isAlternate: true } " ng-class="{danger: true}">
+						<td>{{ wp.freq }}</td>
+						<td>{{ wp.callsign }}</td>
+						<td>{{ wp.checkpoint }}</td>
+						<td>{{ wp.alt }}</td>
+						<td>{{ wp.mtText }}</td>
+						<td>{{ wp.distText }}</td>
+						<td>{{ wp.eetText }}</td>
+						<td>{{ wp.remark }}</td>
+						<td>
+							<button type="button" class="btn btn-warning btn-circle" ng-click="editWaypoint(wp);"><i class="glyphicon glyphicon-edit"></i></button>
+							<button type="button" class="btn btn-danger btn-circle" ng-click="removeWaypoint(wp);"><i class="glyphicon glyphicon-remove"></i></button>
+						</td>
+					</tr>
+					<!-- empty list -->
+					<tr ng-if="results.length == 0">
+						<td colspan="9"><i>Empty list. Select checkpoints on map.</i></td>
 					</tr>
 				</tbody>			
 			</table>
