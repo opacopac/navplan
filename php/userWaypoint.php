@@ -69,6 +69,8 @@
 		if ($result === FALSE)
 			die("error reading user waypoint list: " . $conn->error . " query:" . $query);
 
+		$userWps = [];
+		
 		while ($rs = $result->fetch_array(MYSQLI_ASSOC))
 		{
 			$userWps[] = array(

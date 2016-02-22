@@ -43,6 +43,15 @@ html, body {
   border-radius: 35px;
 }
 
+.table-nonfluid {
+   width: auto !important;
+}
+
+.ui-sortable tr
+{
+	cursor: pointer;
+}
+
 .waypoint-entry {
 	padding: 5px
 }

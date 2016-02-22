@@ -13,6 +13,8 @@ function userService($http)
 	{
 		login: login,
 		register: register,
+		forgotPassword: forgotPassword,
+		updatePassword: updatePassword,
 		readNavplanList: readNavplanList,
 		readNavplan: readNavplan,
 		createNavplan: createNavplan,
@@ -37,9 +39,15 @@ function userService($http)
 	}
 	
 	
-	function readUser(email, token)
+	function forgotPassword(email)
 	{
-		//TODO
+		return $http.post('php/users.php', obj2json({ action: 'forgotpassword', email: email }));
+	}
+
+	
+	function updatePassword(email, oldpassword, newpassword)
+	{
+		return $http.post('php/users.php', obj2json({ action: 'updatepassword', email: email, oldpassword: oldpassword, newpassword: newpassword }));
 	}
 	
 	

@@ -108,7 +108,7 @@
 		// create result array
 		while ($row = $result->fetch_assoc())
 		{
-			$waypoints[] = array(
+			$wp = array(
 				type => $row["type"],
 				freq => $row["freq"],
 				callsign => $row["callsign"],
@@ -116,12 +116,17 @@
 				latitude => $row["latitude"],
 				longitude => $row["longitude"],
 				alt => $row["alt"],
-				remark => $row["remark"],
-				is_alternate => $row["is_alternate"]
+				remark => $row["remark"]
 			);
+			
+			if ($row["is_alternate"] == 1)
+				$alternate = $wp;
+			else
+				$waypoints[] = $wp;
 		}
 		
 		$navplan["waypoints"] = $waypoints;
+		$navplan["alternate"] = $alternate;
 		
 		$conn->close();
 		
@@ -174,7 +179,7 @@
 		if ($result === FALSE)
 			die("error deleting waypoints from navplan: " . $conn->error);
 		
-		createWaypoints($conn, $navplan["waypoints"], $navplan["id"]);
+		createWaypoints($conn, $navplan["waypoints"], $navplan["alternate"], $navplan["id"]);
 		
 		$conn->close();
 		
@@ -226,7 +231,7 @@
 	
 		
 		// update waypoints
-		createWaypoints($conn, $navplan["waypoints"], $navplan_id);
+		createWaypoints($conn, $navplan["waypoints"], $navplan["alternate"], $navplan_id);
 		
 		$conn->close();
 
@@ -282,6 +287,9 @@
 		
 		foreach ($globalData["navplan"]["waypoints"] as $waypoint)
 			$nav["waypoints"][] =  escapeWaypointData($conn, $waypoint);
+			
+		if ($globalData["navplan"]["alternate"])
+			$nav["alternate"] = escapeWaypointData($conn, $globalData["navplan"]["alternate"]);
 		
 		return $nav;
 	}
@@ -297,33 +305,48 @@
 		$wp["longitude"] = mysqli_real_escape_string($conn, $waypoint["longitude"]);
 		$wp["alt"] = mysqli_real_escape_string($conn, $waypoint["alt"]);
 		$wp["remark"] = mysqli_real_escape_string($conn, $waypoint["remark"]);
-		$wp["is_alternate"] = mysqli_real_escape_string($conn, $waypoint["is_alternate"]);
 		
 		return $wp;
 	}
 	
 	
-	function createWaypoints($conn, $waypoints, $navplan_id)
+	function createWaypoints($conn, $waypoints, $alternate, $navplan_id)
 	{
 		for ($i = 0; $i < count($waypoints); $i++)
 		{
-			$query = "INSERT INTO navplan_waypoints (navplan_id, sortorder, type, freq, callsign, checkpoint, latitude, longitude, alt, remark, is_alternate) VALUES (";
-			$query .= "'" . $navplan_id . "',";
-			$query .= "'" . $i . "',";
-			$query .= "'" . $waypoints[$i]["type"] . "',";
-			$query .= "'" . $waypoints[$i]["freq"] . "',";
-			$query .= "'" . $waypoints[$i]["callsign"] . "',";
-			$query .= "'" . $waypoints[$i]["checkpoint"] . "',";
-			$query .= "'" . $waypoints[$i]["latitude"] . "',";
-			$query .= "'" . $waypoints[$i]["longitude"] . "',";
-			$query .= "'" . $waypoints[$i]["alt"] . "',";
-			$query .= "'" . $waypoints[$i]["remark"] . "',";
-			$query .= "'" . $waypoints[$i]["is_alternate"] . "')";
-			
+			$query = createInsertWaypointQuery($waypoints[$i], $i, $navplan_id, 0);
 			$result = $conn->query($query);
 
 			if ($result === FALSE)
 				die("error inserting waypoint: " . $conn->error . " query:" . $query);
 		}
+		
+		if ($alternate)
+		{
+			$query = createInsertWaypointQuery($alternate, count($waypoints), $navplan_id, 1);
+			$result = $conn->query($query);
+
+			if ($result === FALSE)
+				die("error inserting alternate: " . $conn->error . " query:" . $query);
+		}
+	}
+	
+	
+	function createInsertWaypointQuery($waypoint, $sortorder, $navplan_id, $is_alternate)
+	{
+		$query = "INSERT INTO navplan_waypoints (navplan_id, sortorder, type, freq, callsign, checkpoint, latitude, longitude, alt, remark, is_alternate) VALUES (";
+		$query .= "'" . $navplan_id . "',";
+		$query .= "'" . $sortorder . "',";
+		$query .= "'" . $waypoint["type"] . "',";
+		$query .= "'" . $waypoint["freq"] . "',";
+		$query .= "'" . $waypoint["callsign"] . "',";
+		$query .= "'" . $waypoint["checkpoint"] . "',";
+		$query .= "'" . $waypoint["latitude"] . "',";
+		$query .= "'" . $waypoint["longitude"] . "',";
+		$query .= "'" . $waypoint["alt"] . "',";
+		$query .= "'" . $waypoint["remark"] . "',";
+		$query .= "'" . $is_alternate . "')";
+		
+		return $query;
 	}
 ?>

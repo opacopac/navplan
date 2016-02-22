@@ -167,6 +167,8 @@
 	
 	function buildReturnObject($result)
 	{
+		$geonames = [];
+	
 		while ($rs = $result->fetch_array(MYSQLI_ASSOC))
 		{
 			$geonames[] = array(

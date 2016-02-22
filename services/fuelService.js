@@ -19,24 +19,20 @@ function fuelService()
 	
 	function getFuelByTime(consumption, time)
 	{
-		return Math.round(time / 60 * consumption);
+		return Math.ceil(time / 60 * consumption);
 	}
 	
 	
-	function updateFuelCalc(fuel, wps, aircraft)
+	function updateFuelCalc(fuel, wps, alternate, aircraft)
 	{
 		fuel.tripTime = 0;
 		fuel.alternateTime = 0;
 		
 		for (i = 0; i < wps.length; i++)
-		{
-			var eet = getEet(wps[i], aircraft.speed);
-		
-			if (!wps[i].isAlternate)
-				fuel.tripTime += eet;
-			else
-				fuel.alternateTime += eet;
-		}
+			fuel.tripTime += getEet(wps[i], aircraft.speed);
+
+		if (alternate)
+			fuel.alternateTime = getEet(alternate, aircraft.speed);
 	}
 	
 	
@@ -50,7 +46,7 @@ function fuelService()
 		if (isNaN(dist_num))
 			return 0;
 
-		var eet = Math.round(Math.round(dist_num) / speed * 60);
+		var eet = Math.ceil(dist_num / speed * 60);
 		
 		if (wp.vacTime > 0)
 			return eet + wp.vacTime;

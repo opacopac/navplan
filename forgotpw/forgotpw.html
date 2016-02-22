@@ -1,0 +1,17 @@
+<div class="container">
+	<form name="forgotPwForm" class="form-horizontal">
+		<h3>Request new Password</h3>
+		<div class="form-group">
+			<label for="email" class="col-sm-3">Registered E-Mail</label>
+			<div class="col-sm-6">
+				<input type="text" id="email" class="form-control" ng-model="email" ng-required="true" >
+			</div>
+		</div>
+		<div class="form-group">
+			<span class="col-sm-3">&nbsp;</span>
+			<div class="col-sm-6">
+				<button type="submit" class="btn btn-primary" ng-click="onReqPwClicked()" ng-disabled="forgotPwForm.$invalid">Request new Password</button>
+			</div>
+		</div>
+	</form>
+</div>

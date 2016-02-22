@@ -188,10 +188,25 @@ function mapCtrl($scope, mapService, geonameService, waypointService, fuelServic
 		mapService.hideFeaturePopup();
 	}
 	
+
+	$scope.onSetAsAlternateClicked = function()
+	{
+		$scope.globalData.selectedWp.isNew = false;
+		$scope.setAlternate($scope.globalData.selectedWp);
+		$scope.globalData.selectedWp = undefined;
+
+		mapService.hideFeaturePopup();
+	}
+	
+
 	
 	$scope.onRemoveSelectedWaypointClicked = function()
 	{
-		removeFromArray($scope.globalData.navplan.waypoints, $scope.globalData.selectedWp);
+		if ($scope.globalData.selectedWp == $scope.globalData.navplan.alternate)
+			$scope.globalData.navplan.alternate = undefined;
+		else
+			removeFromArray($scope.globalData.navplan.waypoints, $scope.globalData.selectedWp);
+			
 		$scope.globalData.selectedWp = undefined;
 		$scope.updateWpList();
 
@@ -214,8 +229,15 @@ function mapCtrl($scope, mapService, geonameService, waypointService, fuelServic
 		if (numWp > 1 && wps[numWp - 1].latitude == newWp.latitude && wps[numWp - 1].longitude == newWp.longitude)				
 			return;
 			
-		newWp.isNew = false;
 		$scope.globalData.navplan.waypoints.push(newWp);
+		
+		$scope.updateWpList();
+	}
+	
+	
+	$scope.setAlternate = function(altWp)
+	{
+		$scope.globalData.navplan.alternate = altWp;
 		
 		$scope.updateWpList();
 	}

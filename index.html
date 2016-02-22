@@ -9,26 +9,27 @@
 	<link href="http://allfont.net/allfont.css?fonts=arial-narrow" rel="stylesheet" type="text/css" />
 	<link rel="stylesheet" href = "css/navplan.css">
 	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+	<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js"></script>
 	<script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.4.2/angular.min.js"></script>
 	<script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.4.2/angular-route.min.js"></script>
 	<script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.4.2/angular-resource.min.js"></script>
 	<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
 	<script src="http://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/0.13.0/ui-bootstrap-tpls.min.js"></script>
-	<!--<script src="http://openlayers.org/en/v3.8.2/build/ol.js"></script>-->
-	<script src="http://openlayers.org/en/v3.9.0/build/ol-debug.js"></script>
+	<script src="http://openlayers.org/en/v3.13.1/build/ol.js"></script>
+	<!--<script src="http://openlayers.org/en/v3.9.0/build/ol-debug.js"></script>-->
 	<script src="navplanHelper.js"></script>
 	<script src="navplanApp.js"></script>
 	<script src="navplanCtrl.js"></script>
 	<script src="map/mapCtrl.js"></script>
+	<script src="login/loginCtrl.js"></script>
+	<script src="forgotpw/forgotpwCtrl.js"></script>
+	<script src="edituser/edituserCtrl.js"></script>
+	<script src="waypoints/waypointCtrl.js"></script>
+	<script src="settings/settingsCtrl.js"></script>
 	<script src="services/mapService.js"></script>
 	<script src="services/geonameService.js"></script>
-	<script src="waypoints/waypointCtrl.js"></script>
 	<script src="services/waypointService.js"></script>
-	<script src="fuel/fuelCtrl.js"></script>
 	<script src="services/fuelService.js"></script>
-	<script src="aircraft/aircraftCtrl.js"></script>
-	<script src="settings/settingsCtrl.js"></script>
-	<script src="login/loginCtrl.js"></script>
 	<script src="services/userService.js"></script>
 </head>
 <body>
@@ -46,14 +47,12 @@
 			<div class="collapse navbar-collapse" id="navbar">
 				<ul class="nav navbar-nav">
 					<li><a href="#/map">Map</a></li>
-					<li><a href="#/waypoints">Waypoints</a></li>
-					<!--<li><a href="#/aircraft">Aircraft</a></li>-->
-					<li><a href="#/fuel">Fuel</a></li>
+					<li><a href="#/waypoints">Navplan</a></li>
 					<li><a href="#/map" title="Clear All Waypoints" ng-click="onClearAllWaypointsClicked()"><i class="glyphicon glyphicon-trash"></i></a></li>
 				</ul>
 				<ul class="nav navbar-nav navbar-right">
 					<li ng-hide="isLoggedIn()"><a href="#/login">Login</a></li>
-					<li ng-show="isLoggedIn()"><a href="#/map" ng-click="onLogoutClicked()">Logout ({{ globalData.user.email }})</a></li>
+					<li ng-show="isLoggedIn()"><a href="#/edituser">{{ globalData.user.email }}</a></li>
 					<li><a href="#/settings" title="Settings"><i class="glyphicon glyphicon-cog"></i></a></li>
 					<li><a href="#/about">About</a></li>
 				</ul>
@@ -63,6 +62,10 @@
 	<!-- success messages -->
 	<div class="container">
 		<div id="success_alert_box" class="alert alert-success" role="alert" ng-show="success_alert_message">{{ success_alert_message }}</div>
+	</div>
+	<!-- error messages -->
+	<div class="container">
+		<div id="error_alert_box" class="alert alert-warning" role="alert" ng-show="error_alert_message">{{ error_alert_message }}</div>
 	</div>
 	<!-- content -->
 	<div ng-view></div>

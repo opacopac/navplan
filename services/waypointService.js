@@ -18,31 +18,13 @@ function waypointService(mapService)
 	};
 	
 	
-	function updateWpList(wps, magvar, speed)
+	function updateWpList(wps, altWp, magvar, speed)
 	{
-		// set alternate flag
+		// waypoints
 		for (i = 0; i < wps.length; i++)
 		{
-			if (i > 1 && i == wps.length - 1 && wps[i].type == 'airport' && wps[i - 1].type == 'airport')
-				wps[i].isAlternate = true;
-			else
-				wps[i].isAlternate = false;
-				
-			if (i == 0)
-				wps[i].isStartEnd = true;
-			else if (i == wps.length - 1 && wps[i].isAlternate)
-				wps[i - 1].isStartEnd = true;
-			else if (i == wps.length - 1 && !wps[i].isAlternate)
-				wps[i].isStartEnd = true;
-			else
-				wps[i].isStartEnd = false;
-		}
-		
-
-		for (i = 0; i < wps.length; i++)
-		{
-			// check vac time +5 (first, last, second last if before alternate)
-			if ((i == 1 && wps[0].type == 'airport') || (i == wps.length - 1 && wps[i].type == 'airport') || (i == wps.length - 2 && wps[i + 1].isAlternate && wps[i].type == 'airport'))
+			// vac time for start/end +5
+			if ((i == 1 && wps[0].type == 'airport') || (i == wps.length - 1 && wps[i].type == 'airport'))
 				wps[i].vacTime = 5;
 			else
 				wps[i].vacTime = 0;
@@ -50,25 +32,56 @@ function waypointService(mapService)
 				
 			// recalc distance & bearing
 			if (i > 0)
-			{
-				wps[i].dist = mapService.getDistance(wps[i - 1].latitude, wps[i - 1].longitude, wps[i].latitude, wps[i].longitude);
-				wps[i].mt = mapService.getBearing(wps[i - 1].latitude, wps[i - 1].longitude, wps[i].latitude, wps[i].longitude, magvar);
-			}
-			
-			// format mt / dist / eet
-			wps[i].mtText = formatMt(wps[i]);
-			wps[i].distText = formatDist(wps[i]);
-			wps[i].eetText = formatEet(wps[i], speed);
+				prevWp = wps[i - 1];
+			else
+				prevWp = undefined;
+
+			recalcWp(wps[i], prevWp, false, magvar, speed);
+		}
+
+		// alternate
+		if (altWp)
+		{
+			// vac time +5
+			altWp.vacTime = 5;
+		
+			if (wps.length > 0)
+				prevWp = wps[wps.length - 1];
+			else
+				prevWp = undefined;
+				
+			recalcWp(altWp, prevWp, true, magvar, speed);
 		}
 	}
 	
 	
-	function formatMt(wp)
+	function recalcWp(wp, prevWp, isAlternate, magvar, speed)
+	{
+		// recalc distance & bearing
+		if (prevWp)
+		{
+			wp.dist = Math.ceil(mapService.getDistance(wp.latitude, wp.longitude, prevWp.latitude, prevWp.longitude));
+			wp.mt = Math.round(mapService.getBearing(prevWp.latitude, prevWp.longitude, wp.latitude, wp.longitude, magvar));
+		}
+		else
+		{
+			wp.dist = undefined;
+			wp.mt = undefined;
+		}
+
+		// format mt / dist / eet
+		wp.mtText = formatMt(wp, isAlternate);
+		wp.distText = formatDist(wp);
+		wp.eetText = formatEet(wp, speed);
+	}
+	
+	
+	function formatMt(wp, isAlternate)
 	{
 		if (!wp || !wp.mt || wp.mt.length > 3)
 			return '';
 		
-		if (wp.vacTime > 0 && !wp.isAlternate)
+		if (wp.vacTime > 0 && !isAlternate)
 			return 'VAC';
 			
 		var mt_num = parseInt(wp.mt);
@@ -85,14 +98,14 @@ function waypointService(mapService)
 	function formatDist(wp)
 	{
 		if (!wp || !wp.dist)
-			return;
+			return '';
 		
 		var dist_num = parseFloat(wp.dist);
 		
 		if (isNaN(dist_num))
 			return '';
 		else
-			return (Math.round(dist_num));
+			return Math.ceil(dist_num);
 	}
 
 
@@ -106,7 +119,7 @@ function waypointService(mapService)
 		if (isNaN(dist_num))
 			return '';
 
-		eet = Math.round(Math.round(dist_num) / speed * 60);
+		eet = Math.ceil(dist_num / speed * 60);
 		
 		if (wp.vacTime > 0)
 			return eet + '/+' + wp.vacTime;

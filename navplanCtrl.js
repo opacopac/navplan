@@ -26,13 +26,13 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 		};
 		$scope.globalData.pilot =
 		{
-			name: 'Armand'
+			name: '' // TODO => cookie
 		};
 		$scope.globalData.aircraft =
 		{
-			id: 'HB-SRA',
-			speed: 100,
-			consumption: 20
+			id: '', // TODO => cookie
+			speed: 100,  // TODO => cookie
+			consumption: 20  // TODO => cookie
 		};
 		$scope.globalData.fuel =
 		{
@@ -46,6 +46,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 			id: undefined,
 			name: '',
 			waypoints: [ ],
+			alternate: undefined,
 			selectedWaypoint: undefined,
 		};
 		$scope.globalData.settings =
@@ -54,7 +55,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 		};
 		$scope.globalData.currentMapPos = 
 		{
-			center: ol.proj.fromLonLat([7.4971, 46.9141]), // LSZB
+			center: ol.proj.fromLonLat([7.4971, 46.9141]), // LSZB, TODO => nearest ap
 			zoom: 11
 		};
 		$scope.globalData.selectedWp = undefined;
@@ -67,6 +68,14 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 		$scope.success_alert_message = text;
 		
 		$timeout(function () { $scope.success_alert_message = ""; }, 3000, true);
+	}
+	
+	
+	$scope.showErrorMessage = function(text)
+	{
+		$scope.error_alert_message = text;
+		
+		$timeout(function () { $scope.error_alert_message = ""; }, 3000, true);
 	}
 	
 	
@@ -152,17 +161,11 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 	}
 
 	
-	$scope.onLogoutClicked = function()
-	{
-		$scope.logoutUser();
-	}
-
-
 	$scope.updateWpList = function()
 	{
-		waypointService.updateWpList($scope.globalData.navplan.waypoints, $scope.globalData.settings.variation, $scope.globalData.aircraft.speed);
-		fuelService.updateFuelCalc($scope.globalData.fuel, $scope.globalData.navplan.waypoints, $scope.globalData.aircraft);
-		mapService.updateTrack($scope.globalData.navplan.waypoints, $scope.globalData.settings);
+		waypointService.updateWpList($scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.settings.variation, $scope.globalData.aircraft.speed);
+		fuelService.updateFuelCalc($scope.globalData.fuel, $scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.aircraft);
+		mapService.updateTrack($scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.settings);
 	}
 
 	
@@ -229,6 +232,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 			name: '',
 			waypoints: [ ],
 			selectedWaypoint: undefined,
+			alternate: undefined
 		};
 		$scope.globalData.selectedWp = undefined;
 	

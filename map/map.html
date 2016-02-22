@@ -17,6 +17,7 @@
 	<div id="feature-popup-content">
 		<h4>{{ globalData.selectedWp.checkpoint }}</h4>
 		<p ng-show="globalData.selectedWp.isNew"><button type="button" class="btn btn-success btn-circle" ng-click="onAddSelectedWaypointClicked()"><i class="glyphicon glyphicon-plus"></i></button> Add Waypoint</p>
+		<p ng-show="globalData.selectedWp.isNew && globalData.selectedWp.type == 'airport'"><button type="button" class="btn btn-warning btn-circle" ng-click="onSetAsAlternateClicked()"><i class="glyphicon glyphicon-plus"></i></button> Set as Alternate</p>
 		<p ng-hide="globalData.selectedWp.isNew"><button type="button" class="btn btn-warning btn-circle" ng-click="onEditSelectedWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Edit Waypoint</p>
 		<p ng-hide="globalData.selectedWp.isNew"><button type="button" class="btn btn-danger btn-circle" ng-click="onRemoveSelectedWaypointClicked()"><i class="glyphicon glyphicon-remove"></i></button> Remove Waypoint</p>
 	</div>

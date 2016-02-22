@@ -7,6 +7,7 @@
 	{
 		$data = json_decode($_GET["data"], true);
 		$waypoints = $data["waypoints"];
+		$alternate = $data["alternate"];
 		$fuel = $data["fuel"];
 		$pilot = $data["pilot"];
 		$aircraft = $data["aircraft"];
@@ -93,8 +94,6 @@
 			
 			if ($j == 0 && ($i >= 3 && $i <= 7))  // grey filled cells in first row
 				$pdf->Cell($ckpColWidth[$i], $rowHeight, "", "LTRB", 0, $align, true);
-			else if (checkIsAlternate($j) == true) // skip alternate
-				$pdf->Cell($ckpColWidth[$i], $rowHeight, "", "LTRB", 0, $align); 
 			else
 				$pdf->Cell($ckpColWidth[$i], $rowHeight, getWaypointString($j, $ckpKeys[$i]), "LTRB", 0, $align);
 		}
@@ -117,8 +116,6 @@
 	
 	$pdf->SetFont('Arial-Narrow', '', 10);
 	
-	$lastWpIdx = count($waypoints) - 1;
-	
 	for ($i = 0; $i < count($ckpColWidth); $i++)
 	{
 		if ($i >= 3 && $i <= 8)
@@ -126,8 +123,8 @@
 		else
 			$align = "L"; // align left
 
-		if (checkIsAlternate($lastWpIdx) == true)
-			$pdf->Cell($ckpColWidth[$i], $rowHeight, getWaypointString($lastWpIdx, $ckpKeys[$i]), "LTRB", 0, $align);
+		if (isset($alternate) && isset($alternate[$ckpKeys[$i]]))
+			$pdf->Cell($ckpColWidth[$i], $rowHeight, utf8_decode($alternate[$ckpKeys[$i]]), "LTRB", 0, $align);
 		else
 			$pdf->Cell($ckpColWidth[$i], $rowHeight, "", "LTRB", 0);
 	}
