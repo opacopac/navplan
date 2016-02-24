@@ -171,56 +171,68 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 	
 	$scope.editSelectedWaypoint = function ()
 	{
-		// save backup for undo
-		$scope.globalData.wpBackup = {
-			checkpoint: $scope.globalData.selectedWp.checkpoint,
-			freq: $scope.globalData.selectedWp.freq,
-			callsign: $scope.globalData.selectedWp.callsign,
-			alt: $scope.globalData.selectedWp.alt
-		}
+		$scope.backupSelectedWaypoint();
 		
 		$('#selectedWaypointDialog').modal('show');
 	}
 	
 	
-	$scope.onSaveSelectedWaypointClicked = function()
-	{
-		$scope.globalData.selectedWp.type = 'user';
-		$scope.$apply();
-		
-		userService.saveUserWaypoint($scope.globalData.selectedWp, $scope.globalData.user.email, $scope.globalData.user.token);
-		
-		// todo message
-	}
-
-
-	$scope.onDeleteSelectedWaypointClicked = function()
-	{
-		userWaypointService.deleteUserWaypoint($scope.globalData.selectedWp.id, $scope.globalData.user.email, $scope.globalData.user.token);
-		
-		$scope.globalData.selectedWp = undefined;
-		$scope.$apply();
-		
-		// todo message
-	}
-
-	
 	$scope.onOkEditWpClicked = function()
 	{
-		// mapService.hideFeaturePopup();
 		$scope.globalData.wpBackup = undefined;
 	}
 	
 	
 	$scope.onCancelEditWpClicked = function()
 	{
-		// restore backup
-		$scope.globalData.selectedWp.checkpoint = $scope.globalData.wpBackup.checkpoint;
-		$scope.globalData.selectedWp.freq = $scope.globalData.wpBackup.freq;
-		$scope.globalData.selectedWp.callsign = $scope.globalData.wpBackup.callsign;
-		$scope.globalData.selectedWp.alt = $scope.globalData.wpBackup.alt;
+		$scope.restoreSelectedWaypoint();
+	}
+
+	
+	$scope.editUserWaypoint = function ()
+	{
+		$scope.backupSelectedWaypoint();
 		
-		//mapService.hideFeaturePopup();
+		$('#userWaypointDialog').modal('show');
+	}
+	
+	
+	$scope.onSaveUserWaypointClicked = function()
+	{
+		userService.saveUserWaypoint($scope.globalData.selectedWp, $scope.globalData.user.email, $scope.globalData.user.token)
+			.success(function(data) {
+				if (data.success == 1)
+				{
+					mapService.updateUserWaypoints($scope.globalData.user.email, $scope.globalData.user.token);
+
+					$scope.showSuccessMessage("User Waypoint successfully saved");
+				}
+				else
+					console.error("ERROR", data);
+			})
+			.error(function(data, status) {
+				console.error("ERROR", status, data);
+			});
+	}
+
+
+	$scope.onDeleteUserWaypointClicked = function()
+	{
+		userService.deleteUserWaypoint($scope.globalData.selectedWp.id, $scope.globalData.user.email, $scope.globalData.user.token)
+			.success(function(data) {
+				if (data.success == 1)
+				{
+					mapService.updateUserWaypoints($scope.globalData.user.email, $scope.globalData.user.token);
+					mapService.hideFeaturePopup();
+			
+					$scope.showSuccessMessage("User Waypoint successfully deleted");
+				}
+				else
+					console.error("ERROR", data);
+			})
+			.error(function(data, status) {
+				console.error("ERROR", status, data);
+			});
 	}
 
 	
@@ -237,6 +249,26 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 		$scope.globalData.selectedWp = undefined;
 	
 		$scope.updateWpList();
+	}
+	
+	
+	$scope.backupSelectedWaypoint = function()
+	{
+		$scope.globalData.wpBackup = {
+			checkpoint: $scope.globalData.selectedWp.checkpoint,
+			freq: $scope.globalData.selectedWp.freq,
+			callsign: $scope.globalData.selectedWp.callsign,
+			alt: $scope.globalData.selectedWp.alt
+		}
+	}
+	
+	
+	$scope.restoreSelectedWaypoint = function()
+	{
+		$scope.globalData.selectedWp.checkpoint = $scope.globalData.wpBackup.checkpoint;
+		$scope.globalData.selectedWp.freq = $scope.globalData.wpBackup.freq;
+		$scope.globalData.selectedWp.callsign = $scope.globalData.wpBackup.callsign;
+		$scope.globalData.selectedWp.alt = $scope.globalData.wpBackup.alt;
 	}
 	
 

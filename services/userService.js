@@ -83,12 +83,12 @@ function userService($http)
 	
 	function saveUserWaypoint(wp, email, token)
 	{
-		return $http.post('php/userWaypoint.php', obj2json({ action: 'save', wp: wp, email: email, token: token }));
+		return $http.post('php/userWaypoint.php', obj2json({ action: 'saveUserWaypoint', wp: wp, email: email, token: token }));
 	}
 
 	
 	function deleteUserWaypoint(wp_id, email, token)
 	{
-		return $http.post('php/userWaypoint.php', obj2json({ action: 'delete', wp_id: wp_id, email: email, token: token }));
+		return $http.post('php/userWaypoint.php', obj2json({ action: 'deleteUserWaypoint', wp_id: wp_id, email: email, token: token }));
 	}
 }

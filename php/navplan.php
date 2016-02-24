@@ -177,8 +177,8 @@
 		$result = $conn->query($query);
 		
 		if ($result === FALSE)
-			die("error deleting waypoints from navplan: " . $conn->error);
-		
+			die("error deleting waypoints from navplan: " . $conn->error . " query:" . $query);
+
 		createWaypoints($conn, $navplan["waypoints"], $navplan["alternate"], $navplan["id"]);
 		
 		$conn->close();

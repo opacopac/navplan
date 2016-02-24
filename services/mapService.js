@@ -22,6 +22,7 @@ function mapService($http)
 		init: init,
 		setMapPosition: setMapPosition,
 		updateTrack: updateTrack,
+		updateUserWaypoints: updateUserWaypoints,
 		getDistance: getDistance,
 		getBearing: getBearing,
 		drawGeopointSelection: drawGeopointSelection,
@@ -149,7 +150,7 @@ function mapService($http)
 							geometry: new ol.geom.Point(ol.proj.fromLonLat([data.globalWaypoints[i].longitude, data.globalWaypoints[i].latitude]))
 						});
 						
-						globalWpFeature.userWaypoint = data.globalWaypoints[i];
+						globalWpFeature.globalWaypoint = data.globalWaypoints[i];
 
 						var globalWpStyle = createUserWpStyle(data.globalWaypoints[i].type, data.globalWaypoints[i].name); // TODO: different style for global (vs user)?
 						
@@ -170,41 +171,13 @@ function mapService($http)
 				console.error("ERROR", status, data);
 			});
 
-			
-		// add user waypoints to icon layer (if logged in)
-		if (email && token)
-		{
-			$http.post('php/userWaypoint.php', obj2json({ action: 'readUserWaypoints', email: email, token: token }))
-				.success(function(data) {
-					if (data.userWaypoints)
-					{
-						for (i = 0; i < data.userWaypoints.length; i++)
-						{
-							var userWpFeature = new ol.Feature({
-								geometry: new ol.geom.Point(ol.proj.fromLonLat([data.userWaypoints[i].longitude, data.userWaypoints[i].latitude]))
-							});
-							
-							userWpFeature.userWaypoint = data.userWaypoints[i];
 
-							var userWpStyle = createUserWpStyle(data.userWaypoints[i].type, data.userWaypoints[i].name);
-							
-							if (userWpStyle)
-								userWpFeature.setStyle(userWpStyle);
-							else
-								continue;
-					
-							iconLayer.getSource().addFeature(userWpFeature);
-						}
-					}
-					else
-					{
-						console.error("ERROR", data);
-					}
-				})
-				.error(function(data, status) {
-					console.error("ERROR", status, data);
-				});
-		}
+		// user waypoint layer
+		userWpLayer = new ol.layer.Vector({
+			source: new ol.source.Vector({ })
+		});
+		
+		updateUserWaypoints(email, token);
 
 			
 		// airspace layer
@@ -390,7 +363,7 @@ function mapService($http)
 			]).extend([
 				new ol.control.Control({ element: kmlContainer })
 			]),
-			layers: [ mapLayer, airspaceLayer, iconLayer, trackLayer, geopointLayer ],
+			layers: [ mapLayer, airspaceLayer, iconLayer, userWpLayer, trackLayer, geopointLayer ],
 			overlays: [ featureOverlay ],
 			view: new ol.View({
 				center: mapPos.center,
@@ -410,7 +383,7 @@ function mapService($http)
 					if (eventConsumed)
 						return;
 				
-					if (feature.geopoint || feature.airport || feature.navaid || feature.waypoint || feature.userWaypoint)
+					if (feature.geopoint || feature.airport || feature.navaid || feature.waypoint || feature.userWaypoint || feature.globalWaypoint)
 					{
 						onFeatureSelectCallback(event, feature);
 						clearGeopointSelection();
@@ -418,7 +391,7 @@ function mapService($http)
 					}
 				},
 				null,
-				function(layer) { return layer === geopointLayer || layer === iconLayer || layer === trackLayer; }
+				function(layer) { return layer === geopointLayer || layer === iconLayer || layer === userWpLayer || layer === trackLayer; }
 			);
 			
 			if (!eventConsumed && !isSelectionActive)
@@ -435,12 +408,10 @@ function mapService($http)
 				event.pixel,
 				function(feature, layer) { return layer; },
 				null,
-				function(layer) { return layer === geopointLayer || layer === iconLayer || layer === trackLayer; }
+				function(layer) { return layer === geopointLayer || layer === iconLayer || layer === userWpLayer || layer === trackLayer; }
 			);
 			
-			if (hitLayer === geopointLayer || hitLayer === iconLayer)
-				map.getTargetElement().style.cursor = 'pointer';
-			else if (hitLayer === trackLayer)
+			if (hitLayer === geopointLayer || hitLayer === iconLayer || hitLayer === userWpLayer || hitLayer === trackLayer)
 				map.getTargetElement().style.cursor = 'pointer';
 			else
 				map.getTargetElement().style.cursor = '';
@@ -834,6 +805,51 @@ function mapService($http)
 			labelCoordY = geoPointPixel[1] - Math.cos(rotationRad + (i + 1) * rotInc + rotOffset) * radiusPixel;
 			
 			geopoints[i].labelCoordinates = map.getCoordinateFromPixel([labelCoordX, labelCoordY]);
+		}
+	}
+	
+	
+	function updateUserWaypoints(email, token)
+	{
+		if (typeof userWpLayer === "undefined")
+			return;
+			
+		var layerSource = userWpLayer.getSource();
+		layerSource.clear();
+			
+			
+		if (email && token)
+		{
+			$http.post('php/userWaypoint.php', obj2json({ action: 'readUserWaypoints', email: email, token: token }))
+				.success(function(data) {
+					if (data.userWaypoints)
+					{
+						for (i = 0; i < data.userWaypoints.length; i++)
+						{
+							var userWpFeature = new ol.Feature({
+								geometry: new ol.geom.Point(ol.proj.fromLonLat([data.userWaypoints[i].longitude, data.userWaypoints[i].latitude]))
+							});
+							
+							userWpFeature.userWaypoint = data.userWaypoints[i];
+
+							var userWpStyle = createUserWpStyle(data.userWaypoints[i].type, data.userWaypoints[i].name);
+							
+							if (userWpStyle)
+								userWpFeature.setStyle(userWpStyle);
+							else
+								continue;
+					
+							layerSource.addFeature(userWpFeature);
+						}
+					}
+					else
+					{
+						console.error("ERROR", data);
+					}
+				})
+				.error(function(data, status) {
+					console.error("ERROR", status, data);
+				});
 		}
 	}
 	

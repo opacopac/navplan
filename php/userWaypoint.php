@@ -15,7 +15,8 @@
 			saveUserWaypoint();
 			break;
 		case "deleteUserWaypoint":
-			die("no yet implemented!");
+			deleteUserWaypoint();
+			break;
 		default:
 			die("no action defined!");
 	}
@@ -54,13 +55,12 @@
 	{
 		global $input;
 
-		// open db
 		$conn = openDb();
 
 		$email = mysqli_real_escape_string($conn, $input["email"]);
 		$token = mysqli_real_escape_string($conn, $input["token"]);
 		
-		$query = "SELECT * FROM user_waypoints AS uwp";
+		$query = "SELECT uwp.* FROM user_waypoints AS uwp";
 		$query .= " INNER JOIN users AS usr ON uwp.user_id = usr.id";
 		$query .= " WHERE usr.email = '" . $email . "' AND usr.token = '" . $token . "'";
 
@@ -83,7 +83,6 @@
 			);
 		}
 
-		// close db
 		$conn->close();
 		
 		echo json_encode(array("userWaypoints" => $userWps), JSON_NUMERIC_CHECK);
@@ -94,20 +93,22 @@
 	{
 		global $input;
 
-		// open db
 		$conn = openDb();
 		
 		$email = mysqli_real_escape_string($conn, $input["email"]);
 		$token = mysqli_real_escape_string($conn, $input["token"]);
-		$wp_id = mysqli_real_escape_string($conn, $data["id"]);
+		$wp_id = mysqli_real_escape_string($conn, $input["wp"]["id"]);
 
-		// check if user / wp exists
-		$query = "SELECT id FROM users AS usr WHERE email = '" . $email . "' AND token = '" . $token . "'";
-		
-		if ($wp_id)
+		// get user id
+		if ($wp_id > 0)
 		{
+			$query = "SELECT usr.id FROM users AS usr";
 			$query .= " INNER JOIN user_waypoints AS uwp ON uwp.user_id = usr.id";
-			$query .= " WHERE uwp.id = '" . $wp_id . "'";
+			$query .= " WHERE uwp.id = '" . $wp_id . "' AND usr.email = '" . $email . "' AND usr.token = '" . $token . "'";
+		}
+		else
+		{
+			$query = "SELECT id FROM users AS usr WHERE email = '" . $email . "' AND token = '" . $token . "'";
 		}
 		
 		$result = $conn->query($query);
@@ -115,7 +116,7 @@
 		if ($result === FALSE)
 			die("error reading user id: " . $conn->error . " query:" . $query);
 
-		if ($result->num_rows > 0)
+		if ($result->num_rows == 1)
 		{
 			$row = $result->fetch_assoc();
 			$user_id = $row["id"];
@@ -124,33 +125,70 @@
 			die("no valid user / waypoint found");
 
 		// create wp
-		$type = mysqli_real_escape_string($conn, $data["type"]);
-		$name = mysqli_real_escape_string($conn, $data["checkpoint"]);
-		$latitude = mysqli_real_escape_string($conn, $data["latitude"]);
-		$longitude = mysqli_real_escape_string($conn, $data["longitude"]);
-		$remark = mysqli_real_escape_string($conn, $data["remark"]);
+		$name = mysqli_real_escape_string($conn, $input["wp"]["checkpoint"]);
+		$latitude = mysqli_real_escape_string($conn, $input["wp"]["latitude"]);
+		$longitude = mysqli_real_escape_string($conn, $input["wp"]["longitude"]);
+		$remark = mysqli_real_escape_string($conn, $input["wp"]["remark"]);
 
-		if ($wp_id)
+		if ($wp_id > 0)
 		{
-			$query =  "UPDATE user_waypoint";
-			$query .= " SET user_id = '" . $user_id . "'";
-			$query .= " SET type = '" . $type . "'";
-			$query .= " SET name = '" . $name . "'";
-			$query .= " SET latitude = '" . $latitude . "'";
-			$query .= " SET longitude = '" . $longitude . "'";
-			$query .= " SET remark = '" . $remark . "'";
+			$query =  "UPDATE user_waypoints SET";
+			$query .= " user_id = '" . $user_id . "',";
+			$query .= " name = '" . $name . "',";
+			$query .= " latitude = '" . $latitude . "',";
+			$query .= " longitude = '" . $longitude . "',";
+			$query .= " remark = '" . $remark . "'";
 			$query .= " WHERE id = " . $wp_id . "";
 		}
 		else
 		{
-			$query =  "INSERT INTO user_waypoint";
+			$query =  "INSERT INTO user_waypoints";
 			$query .= " (user_id, type, name, latitude, longitude, remark)";
-			$query .= " VALUES ('" . $user_id . "', '" . $type . "', '" . $name . "', '" . $latitude . "', '" . $longitude . "', '" . $remark . "')";
+			$query .= " VALUES ('" . $user_id . "', 'user', '" . $name . "', '" . $latitude . "', '" . $longitude . "', '" . $remark . "')";
 		}
 
 		$result = $conn->query($query);
 		
-		return $result;
-	}
+		if ($result === FALSE)
+			die("error saving user waypoint: " . $conn->error . " query:" . $query);
 
+		
+		echo json_encode(array("success" => 1), JSON_NUMERIC_CHECK);
+	}
+	
+	
+	function deleteUserWaypoint()
+	{
+		global $input;
+
+		$conn = openDb();
+		
+		$email = mysqli_real_escape_string($conn, $input["email"]);
+		$token = mysqli_real_escape_string($conn, $input["token"]);
+		$wp_id = mysqli_real_escape_string($conn, $input["wp_id"]);
+
+		// check if user & wp exists
+		$query = "SELECT usr.id FROM users AS usr";
+		$query .= " INNER JOIN user_waypoints AS uwp ON uwp.user_id = usr.id";
+		$query .= " WHERE uwp.id = '" . $wp_id . "' AND usr.email = '" . $email . "' AND usr.token = '" . $token . "'";
+		
+		$result = $conn->query($query);
+
+		if ($result === FALSE)
+			die("error reading user id: " . $conn->error . " query:" . $query);
+
+		if ($result->num_rows == 1)
+		{
+			$query = "DELETE FROM user_waypoints WHERE id = '" . $wp_id . "'";
+			
+			$result = $conn->query($query);
+
+			if ($result === FALSE)
+				die("error deleting user waypoint: " . $conn->error . " query:" . $query);
+		}
+		else
+			die("no valid user / waypoint found");
+		
+		echo json_encode(array("success" => 1), JSON_NUMERIC_CHECK);
+	}	
 ?> 

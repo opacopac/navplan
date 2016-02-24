@@ -86,6 +86,7 @@ function mapCtrl($scope, mapService, geonameService, waypointService, fuelServic
 		{
 			$scope.globalData.selectedWp = {
 				type: feature.geopoint.type,
+				id: feature.geopoint.id,
 				freq: feature.geopoint.frequency,
 				callsign: feature.geopoint.callsign,
 				checkpoint: feature.geopoint.wpname,
@@ -139,10 +140,30 @@ function mapCtrl($scope, mapService, geonameService, waypointService, fuelServic
 				
 			mapService.showFeaturePopup($scope.globalData.selectedWp.latitude, $scope.globalData.selectedWp.longitude);
 		}
+		else if (feature.globalWaypoint)
+		{
+			$scope.globalData.selectedWp = {
+				type: 'global',
+				freq: '',
+				callsign: '',
+				checkpoint: feature.globalWaypoint.name,
+				latitude: feature.globalWaypoint.latitude,
+				longitude: feature.globalWaypoint.longitude,
+				mt: '',
+				dist: '',
+				alt: '',
+				remark: feature.globalWaypoint.remark,
+				isNew: true
+			};
+			$scope.$apply();
+				
+			mapService.showFeaturePopup($scope.globalData.selectedWp.latitude, $scope.globalData.selectedWp.longitude);
+		}
 		else if (feature.userWaypoint)
 		{
 			$scope.globalData.selectedWp = {
 				type: 'user',
+				id: feature.userWaypoint.id,
 				freq: '',
 				callsign: '',
 				checkpoint: feature.userWaypoint.name,
@@ -220,6 +241,12 @@ function mapCtrl($scope, mapService, geonameService, waypointService, fuelServic
 	}
 
 
+	$scope.onEditUserWaypointClicked = function()
+	{
+		$scope.editUserWaypoint();
+	}
+	
+	
 	$scope.addWaypoint = function(newWp)
 	{
 		var wps = $scope.globalData.navplan.waypoints;
@@ -269,5 +296,4 @@ function mapCtrl($scope, mapService, geonameService, waypointService, fuelServic
 	};
 	
 	$scope.updateWpList();
-	//$scope.focusSearchWpInput();
 }

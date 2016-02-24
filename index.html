@@ -88,13 +88,13 @@
 			</div>
 		</div>
 	</div>
-	<!-- edit waypoint -->
-	<div class="modal fade" id="selectedWaypointDialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+	<!-- selected waypoint -->
+	<div class="modal fade" id="selectedWaypointDialog" tabindex="-1" role="dialog" aria-labelledby="selectedWaypointModalLabel">
 		<div class="modal-dialog" role="document">
 			<div class="modal-content">
 				<div class="modal-header">
 					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-					<h4 class="modal-title" id="myModalLabel">Waypoint</h4>
+					<h4 class="modal-title" id="selectedWaypointModalLabel">Selected Waypoint</h4>
 				</div>
 				<div class="modal-body">
 					Checkpoint: <input type="text" class="form-control" ng-model="globalData.selectedWp.checkpoint" />
@@ -102,13 +102,31 @@
 					Callsign: <input type="text" class="form-control" ng-model="globalData.selectedWp.callsign" />
 					Altitude: <input type="text" class="form-control" ng-model="globalData.selectedWp.alt" />
 					Remarks: <input type="text" class="form-control" ng-model="globalData.selectedWp.remark" />
-					<hr />
-					<p ng-show="globalData.selectedWp.type == 'user' || globalData.selectedWp.type == 'geoname'"><button type="button" class="btn btn-primary btn-circle" ng-click="onSaveSelectedWaypointClicked()"><i class="glyphicon glyphicon-save"></i></button> Store to my waypoint</p>
-					<p ng-show="globalData.selectedWp.type == 'user'"><button type="button" class="btn btn-danger btn-circle" ng-click="onDeleteSelectedWaypointClicked()"><i class="glyphicon glyphicon-remove"></i></button> Delete from my waypoints</p>
 				</div>
 				<div class="modal-footer">
 					<button type="button" class="btn btn-default" data-dismiss="modal" ng-click="onCancelEditWpClicked()">Cancel</button>
 					<button type="button" class="btn btn-primary" data-dismiss="modal" ng-click="onOkEditWpClicked()">OK</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- user waypoint -->
+	<div class="modal fade" id="userWaypointDialog" tabindex="-1" role="dialog" aria-labelledby="userWpModalLabel">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+					<h4 class="modal-title" id="userWpModalLabel">User Waypoint</h4>
+				</div>
+				<div class="modal-body">
+					Checkpoint: <input type="text" class="form-control" ng-model="globalData.selectedWp.checkpoint" />
+					Remarks: <input type="text" class="form-control" ng-model="globalData.selectedWp.remark" />
+					<hr />
+					<p><button type="button" class="btn btn-primary btn-circle" data-dismiss="modal" ng-click="onSaveUserWaypointClicked()"><i class="glyphicon glyphicon-save"></i></button> Save my User Waypoint</p>
+					<p ng-show="globalData.selectedWp.type == 'user' && globalData.selectedWp.id > 0"><button type="button" class="btn btn-danger btn-circle" data-dismiss="modal" ng-click="onDeleteUserWaypointClicked()"><i class="glyphicon glyphicon-remove"></i></button> Delete from my User Waypoints</p>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal" ng-click="onCancelEditWpClicked()">Cancel</button>
 				</div>
 			</div>
 		</div>
