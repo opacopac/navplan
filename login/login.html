@@ -1,0 +1,30 @@
+<div class="container">
+	<form name="loginForm" class="form-horizontal">
+		<div class="form-group">
+			<label for="email" class="col-sm-3">E-Mail</label>
+			<div class="col-sm-6">
+				<input type="email" id="email" class="form-control" ng-model="email" ng-required="true">
+			</div>
+		</div>
+		<div class="form-group">
+			<label for="password" class="col-sm-3">Password</label>
+			<div class="col-sm-6">
+				<input type="password" id="password" class="form-control" ng-model="password" ng-required="true" ng-minlength="6">
+				<p class="pull-right"><a href="#/forgotpw">I forgot my password</a></p>
+			</div>
+		</div>
+		<div class="form-group">
+			<span class="col-sm-3">&nbsp;</span>
+			<div class="col-sm-6">
+				<input type="checkbox" ng-model="rememberMeChecked">&nbsp;remember me
+			</div>
+		</div>
+		<div class="form-group">
+			<span class="col-sm-3">&nbsp;</span>
+			<div class="col-sm-6">
+				<button type="submit" class="btn btn-primary" ng-click="onLoginClicked()" ng-disabled="loginForm.$invalid">Log In</button>
+				<button type="submit" class="btn btn-success pull-right" ng-click="onRegisterClicked()" ng-disabled="loginForm.$invalid">Create New Account</button>
+			</div>
+		</div>
+	</form>
+</div>

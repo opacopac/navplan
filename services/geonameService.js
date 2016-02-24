@@ -3,29 +3,30 @@
  */
 
 navplanApp
-	.factory('geonameService', geonameService, '$resource');
+	.factory('geonameService', geonameService);
 
-function geonameService($resource)
+geonameService.$inject = ['$http'];
+
+function geonameService($http)
 {
 	// init
-	var base_url = 'http://navplan.ch/geoname.php';
-	var resource = $resource(base_url);
+	var base_url = 'php/geoname.php';
 
 	
 	// return api reference
 	return {
-		resource: resource,
-		searchGeonamesByValue: searchGeonamesByValue
+		searchGeonamesByValue: searchGeonamesByValue,
+		searchGeonamesByPosition: searchGeonamesByPosition
 	};
 
 
 	// search by name
-	function searchGeonamesByValue($http, val)
+	function searchGeonamesByValue(search, email, token)
 	{
 		var gradMinSecPattern = /^(\d+)°\s*(\d+)('|’|`|\xB4)\s*(\d+)("|”|''|’’|``|\xB4\xB4)\s*([NS]?)[^\d\w]*(\d+)°\s*(\d+)('|’|`|\xB4)\s*(\d+)("|”|''|’’|``|\xB4\xB4)\s*([EOW]?)$/i;
 		var decGradPattern = /^([+-]?\d+\.\d+)[^\d\.+-]+([+-]?\d+\.\d+)$/i;
-		var matchGradMinSec = gradMinSecPattern.exec(val);
-		var matchDecGrad = decGradPattern.exec(val);
+		var matchGradMinSec = gradMinSecPattern.exec(search);
+		var matchDecGrad = decGradPattern.exec(search);
 		
 		if (matchGradMinSec != null || matchDecGrad != null)
 		{
@@ -35,10 +36,10 @@ function geonameService($resource)
 			if (matchDecGrad != null)
 				lonLat = getLonLatFromDecGrad(matchDecGrad);
 				
-			return getCoordinateGeoPoint(lonLat, val);
+			return getCoordinateGeoPoint(lonLat, search);
 		}
 		
-		return $http.get(base_url, { params: { search: val } })
+		return $http.post(base_url, obj2json({ action: 'searchByName', search: search, email: email, token: token }))
 			.then(function(response)
 			{
 				return response.data.geonames.map(function(item)
@@ -46,6 +47,13 @@ function geonameService($resource)
 					return item;
 				});
 			});
+	}
+	
+
+	// search by pos
+	function searchGeonamesByPosition(lat, lon, rad, email, token)
+	{
+		return $http.post(base_url, obj2json({ action: 'searchByPosition', lat: lat, lon: lon, rad: rad, email: email, token: token }));
 	}
 	
 	

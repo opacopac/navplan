@@ -1,0 +1,168 @@
+<div class="container">
+	<div class="form-horizontal">
+		<div class="form-group" ng-show="isLoggedIn()">
+			<label for="navplan_name" class="control-label col-sm-3">Navplan Name</label>
+			<div class="col-sm-6">
+				<div class="input-group">
+					<input id="navplan_name" type="text" class="form-control" placeholder="Enter Name" ng-model="globalData.navplan.title" />
+					<span class="input-group-btn">
+						<button type="button" class="btn btn-primary" title="Save Navplan" ng-click="saveNavplan();" ng-disabled="!globalData.navplan.title"><i class="glyphicon glyphicon-save"></i></button>
+					</span>					
+				</div>
+			</div>	
+		</div>	
+		<div class="form-group" ng-show="isLoggedIn()">
+			<label for="navplan_list" class="control-label col-sm-3">Saved Navplans</label>
+			<div class="col-sm-6">
+				<div class="input-group">
+					<select id="navplan_list" class="form-control" ng-model="selectedNavplanId">
+						<option value="" selected>--- Select ---</option>
+						<option ng-repeat="navplan in globalData.user.navplanList" value="{{ navplan.id }}">{{ navplan.title }}</option>
+					</select>
+					<span class="input-group-btn">
+						<button type="button" class="btn btn-success" title="Load Navplan" ng-click="loadNavplan();" ng-disabled="!selectedNavplanId"><i class="glyphicon glyphicon-open"></i></button>
+						<button type="button" class="btn btn-danger" title="Delete Navplan" ng-click="deleteNavplan();" ng-disabled="!selectedNavplanId"><i class="glyphicon glyphicon-trash"></i></button>
+					</span>					
+				</div>
+			</div>
+		</div>	
+		<div class="form-group">
+			<label for="aircraft_speed" class="control-label col-sm-3">Ground Speed</label>
+			<div class="col-sm-2">
+				<input type="text" id="aircraft_speed" class="form-control" ng-model="globalData.aircraft.speed" placeholder="kt" maxlength="3" size="3">
+			</div>
+		</div>
+		<div class="form-group">
+			<label for="aircraft_consumption" class="control-label col-sm-3">Fuel Consumption</label>
+			<div class="col-sm-2">
+				<input type="text" id="aircraft_consumption" class="form-control" ng-model="globalData.aircraft.consumption" placeholder="l/h" maxlength="2" size="2">
+			</div>
+		</div>
+	</div>
+	<div class="table-responsive">
+		<table id="waypoint_list" class="table table-condensed table-striped table-hover">
+			<thead>
+				<tr>
+					<th>Freq</th>
+					<th>Callsign</th>
+					<th>Checkpoint</th>
+					<th>Alt</th>
+					<th>MT</th>
+					<th>Dist</th>
+					<th>EET</th>
+					<th>Remarks</th>
+					<th>&nbsp;</th>
+				</tr>
+			</thead>
+			<tbody>
+				<!-- trip checkpoints -->
+				<tr ng-repeat="wp in globalData.navplan.waypoints as results" ng-class="{info: wp.type == 'airport' && ($first || $last) }" class="tr_sortable">
+					<td>{{ wp.freq }}</td>
+					<td>{{ wp.callsign }}</td>
+					<td>{{ wp.checkpoint }}</td>
+					<td>{{ wp.alt }}</td>
+					<td>{{ wp.mtText }}</td>
+					<td>{{ wp.distText }}</td>
+					<td>{{ wp.eetText }}</td>
+					<td>{{ wp.remark }}</td>
+					<td>
+						<button type="button" class="btn btn-warning btn-circle" ng-click="editWaypoint(wp);"><i class="glyphicon glyphicon-edit"></i></button>
+						<button type="button" class="btn btn-danger btn-circle" ng-click="removeWaypoint(wp);"><i class="glyphicon glyphicon-remove"></i></button>
+					</td>
+				</tr>
+				<!-- trip total -->
+				<tr ng-if="results.length > 0">
+					<td>&nbsp;</td>
+					<td>&nbsp;</td>
+					<td>&nbsp;</td>
+					<td>&nbsp;</td>
+					<td>&nbsp;</td>
+					<td>&nbsp;</td>
+					<td><strong>{{ globalData.fuel.tripTime }}</strong></td>
+					<td>&nbsp;</td>
+					<td>&nbsp;</td>
+				</tr>
+				<!-- alternate checkpoint -->
+				<tr ng-if="globalData.fuel.alternateTime > 0">
+					<td>&nbsp;</td>
+					<td>&nbsp;</td>
+					<td><i><u>Alternate:</u></i></td>
+					<td>&nbsp;</td>
+					<td>&nbsp;</td>
+					<td>&nbsp;</td>
+					<td>&nbsp;</td>
+					<td>&nbsp;</td>
+					<td>&nbsp;</td>
+				</tr>
+				<tr ng-if="globalData.fuel.alternateTime > 0" ng-class="{warning: true}">
+					<td>{{ globalData.navplan.alternate.freq }}</td>
+					<td>{{ globalData.navplan.alternate.callsign }}</td>
+					<td>{{ globalData.navplan.alternate.checkpoint }}</td>
+					<td>{{ globalData.navplan.alternate.alt }}</td>
+					<td>{{ globalData.navplan.alternate.mtText }}</td>
+					<td>{{ globalData.navplan.alternate.distText }}</td>
+					<td>{{ globalData.navplan.alternate.eetText }}</td>
+					<td>{{ globalData.navplan.alternate.remark }}</td>
+					<td>
+						<button type="button" class="btn btn-warning btn-circle" ng-click="editWaypoint(globalData.navplan.alternate);"><i class="glyphicon glyphicon-edit"></i></button>
+						<button type="button" class="btn btn-danger btn-circle" ng-click="removeAlternate();"><i class="glyphicon glyphicon-remove"></i></button>
+					</td>
+				</tr>
+				<!-- empty list -->
+				<tr ng-if="results.length == 0">
+					<td colspan="9"><i>No Checkpoints, add checkpoints on the map.</i></td>
+				</tr>
+			</tbody>			
+		</table>
+	</div> 
+	<div id="fuel">
+		<table class="table table-condensed table-bordered table-striped table-nonfluid">
+			<thead>
+				<tr>
+					<th>Fuel Calculation</th>
+					<th>Time</th>
+					<th>Fuel</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td>Trip</td>
+					<td><span ng-show="globalData.fuel.tripTime > 0">{{ formatHourMin(globalData.fuel.tripTime) }}</span></td>
+					<td><span ng-show="globalData.fuel.tripTime > 0">{{ fuelByTime(globalData.fuel.tripTime) }}</span></td>
+				</tr>
+				<tr>
+					<td>Alternate</td>
+					<td><span ng-show="globalData.fuel.alternateTime > 0">{{ formatHourMin(globalData.fuel.alternateTime) }}</span></td>
+					<td><span ng-show="globalData.fuel.alternateTime > 0">{{ fuelByTime(globalData.fuel.alternateTime) }}</span></td>
+				</tr>
+				<tr>
+					<td>Reserve</td>
+					<td>{{ formatHourMin(globalData.fuel.reserveTime) }}</td>
+					<td>{{ fuelByTime(globalData.fuel.reserveTime) }}</td>
+				</tr>
+				<tr>
+					<td>Minimum</td>
+					<td><span ng-show="globalData.fuel.tripTime > 0 || globalData.fuel.alternateTime > 0">{{ formatHourMin(globalData.fuel.tripTime + globalData.fuel.alternateTime + globalData.fuel.reserveTime) }}</span></td>
+					<td><span ng-show="globalData.fuel.tripTime > 0 || globalData.fuel.alternateTime > 0">{{ fuelByTime(globalData.fuel.tripTime + globalData.fuel.alternateTime + globalData.fuel.reserveTime) }}</span></td>
+				</tr>
+				<tr>
+					<td>Extra fuel</td>
+					<td><input id="extraFuelInput" type="text" class="form-control" maxlength="3" size="3" ng-model="globalData.fuel.extraTime"></td>
+					<td><span ng-show="globalData.fuel.extraTime * 1 > 0">{{ fuelByTime(globalData.fuel.extraTime) }}</span></td>
+				</tr>
+				<tr>
+					<td><b>Block fuel</b></td>
+					<td><span ng-show="globalData.fuel.tripTime > 0 || globalData.fuel.alternateTime > 0"><b>{{ formatHourMin(globalData.fuel.tripTime + globalData.fuel.alternateTime + globalData.fuel.reserveTime + globalData.fuel.extraTime * 1) }}</b></span></td>
+					<td><span ng-show="globalData.fuel.tripTime > 0 || globalData.fuel.alternateTime > 0"><b>{{ fuelByTime(globalData.fuel.tripTime + globalData.fuel.alternateTime + globalData.fuel.reserveTime + globalData.fuel.extraTime * 1) }}</b></span></td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+	<div class="form-inline">
+		<div class="form-group">
+			<a id="dlPdfLink" href="php/navplanPdf.php" target="_blank" class="btn btn-danger btn-circle" title="Print Navplan as PDF" download="navplan.pdf" ng-click="createPdfNavplan()"><i class="glyphicon glyphicon-print"></i></a>&nbsp;
+			<a id="dlExcelLink" href="php/navplanExcel.php" target="_blank" class="btn btn-success btn-circle" title="Save Navplan as Excel" download="navplan.xlsx" ng-click="createExcelNavplan()"><i class="glyphicon glyphicon-th"></i></a>&nbsp;
+			<a id="dlKmlLink2" href="php/navplanKml.php" target="_blank" class="btn btn-primary btn-circle" title="Save KML-Track for Google Earth" download="navplan-track.kml" ng-click="onKmlClicked()"><i class="glyphicon glyphicon-globe"></i></a>
+		</div>
+	</div>
+</div>

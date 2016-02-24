@@ -1,13 +1,16 @@
-/**
+ï»¿/**
  * Map Service
  */
 
 navplanApp
 	.factory('mapService', mapService);
 
-function mapService()
+mapService.$inject = ['$http'];
+
+function mapService($http)
 {
 	var map = {}; 	// empty map reference
+	var featureOverlay = {} // empty feature overlay reference
 	var isSelectionActive = false;
 	var wgs84Sphere = new ol.Sphere(6378137);
 	
@@ -15,17 +18,21 @@ function mapService()
 	// return api reference
 	return {
 		map: map,
+		featureOverlay: featureOverlay,
 		init: init,
 		setMapPosition: setMapPosition,
 		updateTrack: updateTrack,
+		updateUserWaypoints: updateUserWaypoints,
 		getDistance: getDistance,
 		getBearing: getBearing,
-		drawGeopointSelection: drawGeopointSelection
+		drawGeopointSelection: drawGeopointSelection,
+		showFeaturePopup: showFeaturePopup,
+		hideFeaturePopup: hideFeaturePopup
 	};
 	
 	
 	// init map
-	function init(onMapClickCallback, onFeatureSelectCallback, onMoveEndCallback, onKmlClick, mapPos, $http)
+	function init(onMapClickCallback, onFeatureSelectCallback, onMoveEndCallback, onKmlClick, mapPos, featureContainer, email, token)
 	{
 		// map layer
 		mapLayer =  new ol.layer.Tile({
@@ -34,8 +41,8 @@ function mapService()
 				maxZoom: 14,
 				crossOrigin: null,
 				attributions: [
-					new ol.Attribution({ html: 'Kartendaten: © OpenStreetMap-Mitwirkende, SRTM | Kartendarstellung: © <a href="http://www.opentopomap.org/">OpenTopoMap</a> (CC-BY-SA)'}),
-					new ol.Attribution({ html: 'Aviation Data: © <a href="http://www.openaip.net/">openAIP</a> (CC-BY-SA)'}),
+					new ol.Attribution({ html: 'Kartendaten: (c) OpenStreetMap-Mitwirkende, SRTM | Kartendarstellung: (c) <a href="http://www.opentopomap.org/">OpenTopoMap</a> (CC-BY-SA)'}),
+					new ol.Attribution({ html: 'Aviation Data: (c) <a href="http://www.openaip.net/">openAIP</a> (CC-BY-SA)'}),
 					ol.source.OSM.ATTRIBUTION
 				]
 			})
@@ -55,7 +62,7 @@ function mapService()
 
 
 		// add airports to icon layer
-		$http.get('http://navplan.ch/airports.php')
+		$http.get('php/airports.php')
 			.success(function(data, status, headers, config) {
 				if (data.airports)
 				{
@@ -100,8 +107,8 @@ function mapService()
 		
 		
 		// add navaids to icon layer
-		$http.get('http://navplan.ch/navaids.php')
-			.success(function(data, status, headers, config) {
+		$http.get('php/navaids.php')
+			.success(function(data) {
 				if (data.navaids)
 				{
 					for (i = 0; i < data.navaids.length; i++)
@@ -122,39 +129,55 @@ function mapService()
 						iconLayer.getSource().addFeature(navaidFeature);
 					}
 				}
+				else
+				{
+					console.error("ERROR", data);
+				}
 			})
-			.error(function(data, status, headers, config) {
-				// empty
+			.error(function(data, status) {
+				console.error("ERROR", status, data);
 			});
 
 			
-		// add user waypoints to icon layer
-		$http.get('http://navplan.ch/userWaypoint.php?action=getall')
-			.success(function(data, status, headers, config) {
-				if (data.userWaypoints)
+		// add global waypoints to icon layer
+		$http.post('php/userWaypoint.php', obj2json({ action: 'readGlobalWaypoints' }))
+			.success(function(data) {
+				if (data.globalWaypoints)
 				{
-					for (i = 0; i < data.userWaypoints.length; i++)
+					for (i = 0; i < data.globalWaypoints.length; i++)
 					{
-						var userWpFeature = new ol.Feature({
-							geometry: new ol.geom.Point(ol.proj.fromLonLat([data.userWaypoints[i].longitude, data.userWaypoints[i].latitude]))
+						var globalWpFeature = new ol.Feature({
+							geometry: new ol.geom.Point(ol.proj.fromLonLat([data.globalWaypoints[i].longitude, data.globalWaypoints[i].latitude]))
 						});
 						
-						userWpFeature.userWaypoint = data.userWaypoints[i];
+						globalWpFeature.globalWaypoint = data.globalWaypoints[i];
 
-						var userWpStyle = createUserWpStyle(data.userWaypoints[i].type, data.userWaypoints[i].name);
+						var globalWpStyle = createUserWpStyle(data.globalWaypoints[i].type, data.globalWaypoints[i].name); // TODO: different style for global (vs user)?
 						
-						if (userWpStyle)
-							userWpFeature.setStyle(userWpStyle);
+						if (globalWpStyle)
+							globalWpFeature.setStyle(globalWpStyle);
 						else
 							continue;
 				
-						iconLayer.getSource().addFeature(userWpFeature);
+						iconLayer.getSource().addFeature(globalWpFeature);
 					}
 				}
+				else
+				{
+					console.error("ERROR", data);
+				}
 			})
-			.error(function(data, status, headers, config) {
-				// empty
+			.error(function(data, status) {
+				console.error("ERROR", status, data);
 			});
+
+
+		// user waypoint layer
+		userWpLayer = new ol.layer.Vector({
+			source: new ol.source.Vector({ })
+		});
+		
+		updateUserWaypoints(email, token);
 
 			
 		// airspace layer
@@ -163,7 +186,7 @@ function mapService()
 		});
 		
 		// add airspaces to airspace layer
-		$http.get('http://navplan.ch/airspace.php')
+		$http.get('php/airspace.php')
 			.success(function(data, status, headers, config) {
 				if (data.airspace)
 				{
@@ -205,10 +228,11 @@ function mapService()
 		// kml export control
 		var kmlLink = document.createElement('a');
 		kmlLink.id = "dlKmlLink";
-		kmlLink.innerHTML = 'KML';
-		kmlLink.href = "navplanKml.php";
+		kmlLink.title = "Save KML-Track for Google Earth";
+		kmlLink.innerHTML = '<button type="button" class="btn btn-success btn-circle"><i class="glyphicon glyphicon-globe"></i></button>';
+		kmlLink.href = "php/navplanKml.php";
 		kmlLink.target = "_blank";
-		kmlLink.download = "track.kml";
+		kmlLink.download = "navplan-track.kml";
 		kmlLink.addEventListener('click', onKmlClick, false);
 
 
@@ -218,120 +242,129 @@ function mapService()
 
 
 
+		// TODO: drag interactions
+		// var dragInteraction = function() {
+			// ol.interaction.Pointer.call(this, {
+				// handleDownEvent: dragInteraction.prototype.handleDownEvent,
+				// handleDragEvent: dragInteraction.prototype.handleDragEvent,
+				// handleMoveEvent: dragInteraction.prototype.handleMoveEvent,
+				// handleUpEvent: dragInteraction.prototype.handleUpEvent
+			// });
+
+			// this.coordinate_ = null;
+			// this.cursor_ = 'pointer';
+			// this.feature_ = null;
+			// this.previousCursor_ = undefined;
+
+		// };
 		
-		var dragInteraction = function() {
-			ol.interaction.Pointer.call(this, {
-				handleDownEvent: dragInteraction.prototype.handleDownEvent,
-				handleDragEvent: dragInteraction.prototype.handleDragEvent,
-				handleMoveEvent: dragInteraction.prototype.handleMoveEvent,
-				handleUpEvent: dragInteraction.prototype.handleUpEvent
-			});
+		// ol.inherits(dragInteraction, ol.interaction.Pointer);
 
-			this.coordinate_ = null;
-			this.cursor_ = 'pointer';
-			this.feature_ = null;
-			this.previousCursor_ = undefined;
 
-		};
+		// /**
+		 // * @param {ol.MapBrowserEvent} evt Map browser event.
+		 // * @return {boolean} `true` to start the drag sequence.
+		 // */
+		// dragInteraction.prototype.handleDownEvent = function(evt) {
+			// var map = evt.map;
+
+			// var feature = map.forEachFeatureAtPixel(
+				// evt.pixel,
+				// function(feature, layer) { return feature; },
+				// null,
+				// function(layer) { return layer === trackLayer; }
+			// );
+
+			// if (feature) {
+				// this.coordinate_ = evt.coordinate;
+				// this.feature_ = feature;
+			// }
+
+			// return !!feature;
+		// };
+
+
+		// /**
+		 // * @param {ol.MapBrowserEvent} evt Map browser event.
+		 // */
+		// dragInteraction.prototype.handleDragEvent = function(evt) {
+			// var map = evt.map;
+
+			// var feature = map.forEachFeatureAtPixel(
+				// evt.pixel,
+				// function(feature, layer) { return feature; },
+				// null,
+				// function(layer) { return layer === trackLayer; }
+			// );
+
+		  // var deltaX = evt.coordinate[0] - this.coordinate_[0];
+		  // var deltaY = evt.coordinate[1] - this.coordinate_[1];
+
+		  // var geometry = /** @type {ol.geom.SimpleGeometry} */
+			  // (this.feature_.getGeometry());
+		  // geometry.translate(deltaX, deltaY);
+
+		  // this.coordinate_[0] = evt.coordinate[0];
+		  // this.coordinate_[1] = evt.coordinate[1];
+		// };
+
+
+		// /**
+		 // * @param {ol.MapBrowserEvent} evt Event.
+		 // */
+		// dragInteraction.prototype.handleMoveEvent = function(evt) {
+			// if (this.cursor_) {
+				// var map = evt.map;
+				// var feature = map.forEachFeatureAtPixel(
+					// evt.pixel,
+					// function(feature, layer) { return feature; },
+					// null,
+					// function(layer) { return layer === trackLayer; }
+				// );
+				// var element = evt.map.getTargetElement();
+				// if (feature) {
+					// if (element.style.cursor != this.cursor_) {
+						// this.previousCursor_ = element.style.cursor;
+						// element.style.cursor = this.cursor_;
+					// }
+				// } else if (this.previousCursor_ !== undefined) {
+					// element.style.cursor = this.previousCursor_;
+					// this.previousCursor_ = undefined;
+				// }
+			// }
+		// };
+
+
+		// /**
+		 // * @param {ol.MapBrowserEvent} evt Map browser event.
+		 // * @return {boolean} `false` to stop the drag sequence.
+		 // */
+		// dragInteraction.prototype.handleUpEvent = function(evt) {
+			// this.coordinate_ = null;
+			// this.feature_ = null;
+			// return false;
+		// };
 		
-		ol.inherits(dragInteraction, ol.interaction.Pointer);
-
-
-		/**
-		 * @param {ol.MapBrowserEvent} evt Map browser event.
-		 * @return {boolean} `true` to start the drag sequence.
-		 */
-		dragInteraction.prototype.handleDownEvent = function(evt) {
-			var map = evt.map;
-
-			var feature = map.forEachFeatureAtPixel(
-				evt.pixel,
-				function(feature, layer) { return feature; },
-				null,
-				function(layer) { return layer === trackLayer; }
-			);
-
-			if (feature) {
-				this.coordinate_ = evt.coordinate;
-				this.feature_ = feature;
-			}
-
-			return !!feature;
-		};
-
-
-		/**
-		 * @param {ol.MapBrowserEvent} evt Map browser event.
-		 */
-		dragInteraction.prototype.handleDragEvent = function(evt) {
-			var map = evt.map;
-
-			var feature = map.forEachFeatureAtPixel(
-				evt.pixel,
-				function(feature, layer) { return feature; },
-				null,
-				function(layer) { return layer === trackLayer; }
-			);
-
-		  var deltaX = evt.coordinate[0] - this.coordinate_[0];
-		  var deltaY = evt.coordinate[1] - this.coordinate_[1];
-
-		  var geometry = /** @type {ol.geom.SimpleGeometry} */
-			  (this.feature_.getGeometry());
-		  geometry.translate(deltaX, deltaY);
-
-		  this.coordinate_[0] = evt.coordinate[0];
-		  this.coordinate_[1] = evt.coordinate[1];
-		};
-
-
-		/**
-		 * @param {ol.MapBrowserEvent} evt Event.
-		 */
-		dragInteraction.prototype.handleMoveEvent = function(evt) {
-			if (this.cursor_) {
-				var map = evt.map;
-				var feature = map.forEachFeatureAtPixel(
-					evt.pixel,
-					function(feature, layer) { return feature; },
-					null,
-					function(layer) { return layer === trackLayer; }
-				);
-				var element = evt.map.getTargetElement();
-				if (feature) {
-					if (element.style.cursor != this.cursor_) {
-						this.previousCursor_ = element.style.cursor;
-						element.style.cursor = this.cursor_;
-					}
-				} else if (this.previousCursor_ !== undefined) {
-					element.style.cursor = this.previousCursor_;
-					this.previousCursor_ = undefined;
-				}
-			}
-		};
-
-
-		/**
-		 * @param {ol.MapBrowserEvent} evt Map browser event.
-		 * @return {boolean} `false` to stop the drag sequence.
-		 */
-		dragInteraction.prototype.handleUpEvent = function(evt) {
-			this.coordinate_ = null;
-			this.feature_ = null;
-			return false;
-		};
 		
-	
+		// feature overlay
+		featureOverlay = new ol.Overlay(/** @type {olx.OverlayOptions} */ ({
+			element: featureContainer,
+			autoPan: true,
+			autoPanAnimation: { duration: 250 }
+		}));		
+
+		
 		// map
 		map = new ol.Map({
-			interactions: ol.interaction.defaults().extend([new dragInteraction()]),		
 			target: 'map',
+			//interactions: ol.interaction.defaults().extend([new dragInteraction()]),
 			controls: ol.control.defaults().extend([
 				new ol.control.ScaleLine({ units: 'nautical' })
 			]).extend([
 				new ol.control.Control({ element: kmlContainer })
 			]),
-			layers: [ mapLayer, airspaceLayer, iconLayer, trackLayer, geopointLayer ],
+			layers: [ mapLayer, airspaceLayer, iconLayer, userWpLayer, trackLayer, geopointLayer ],
+			overlays: [ featureOverlay ],
 			view: new ol.View({
 				center: mapPos.center,
 				zoom: mapPos.zoom
@@ -350,7 +383,7 @@ function mapService()
 					if (eventConsumed)
 						return;
 				
-					if (feature.geopoint || feature.airport || feature.navaid || feature.waypoint || feature.userWaypoint)
+					if (feature.geopoint || feature.airport || feature.navaid || feature.waypoint || feature.userWaypoint || feature.globalWaypoint)
 					{
 						onFeatureSelectCallback(event, feature);
 						clearGeopointSelection();
@@ -358,7 +391,7 @@ function mapService()
 					}
 				},
 				null,
-				function(layer) { return layer === geopointLayer || layer === iconLayer || layer === trackLayer; }
+				function(layer) { return layer === geopointLayer || layer === iconLayer || layer === userWpLayer || layer === trackLayer; }
 			);
 			
 			if (!eventConsumed && !isSelectionActive)
@@ -375,13 +408,11 @@ function mapService()
 				event.pixel,
 				function(feature, layer) { return layer; },
 				null,
-				function(layer) { return layer === geopointLayer || layer === iconLayer || layer === trackLayer; }
+				function(layer) { return layer === geopointLayer || layer === iconLayer || layer === userWpLayer || layer === trackLayer; }
 			);
 			
-			if (hitLayer === geopointLayer || hitLayer === iconLayer)
+			if (hitLayer === geopointLayer || hitLayer === iconLayer || hitLayer === userWpLayer || hitLayer === trackLayer)
 				map.getTargetElement().style.cursor = 'pointer';
-			else if (hitLayer === trackLayer)
-				map.getTargetElement().style.cursor = 'move';
 			else
 				map.getTargetElement().style.cursor = '';
 		});
@@ -606,6 +637,21 @@ function mapService()
 	}
 	
 	
+	function showFeaturePopup(lat, lon)
+	{
+		var coords = ol.proj.fromLonLat([lon, lat]);
+		//var pixelCoords = map.getPixelFromCoordinate(coords);
+	
+		featureOverlay.setPosition(coords);
+	}
+	
+	
+	function hideFeaturePopup()
+	{
+		featureOverlay.setPosition(undefined);
+	}
+	
+	
 	function clearGeopointSelection()
 	{
 		geopointLayer.getSource().clear();
@@ -763,8 +809,56 @@ function mapService()
 	}
 	
 	
-	function updateTrack(wps)
+	function updateUserWaypoints(email, token)
 	{
+		if (typeof userWpLayer === "undefined")
+			return;
+			
+		var layerSource = userWpLayer.getSource();
+		layerSource.clear();
+			
+			
+		if (email && token)
+		{
+			$http.post('php/userWaypoint.php', obj2json({ action: 'readUserWaypoints', email: email, token: token }))
+				.success(function(data) {
+					if (data.userWaypoints)
+					{
+						for (i = 0; i < data.userWaypoints.length; i++)
+						{
+							var userWpFeature = new ol.Feature({
+								geometry: new ol.geom.Point(ol.proj.fromLonLat([data.userWaypoints[i].longitude, data.userWaypoints[i].latitude]))
+							});
+							
+							userWpFeature.userWaypoint = data.userWaypoints[i];
+
+							var userWpStyle = createUserWpStyle(data.userWaypoints[i].type, data.userWaypoints[i].name);
+							
+							if (userWpStyle)
+								userWpFeature.setStyle(userWpStyle);
+							else
+								continue;
+					
+							layerSource.addFeature(userWpFeature);
+						}
+					}
+					else
+					{
+						console.error("ERROR", data);
+					}
+				})
+				.error(function(data, status) {
+					console.error("ERROR", status, data);
+				});
+		}
+	}
+	
+	
+	function updateTrack(wps, alternate, settings)
+	{
+		if (typeof trackLayer === "undefined")
+			return;
+	
 		var trackSource = trackLayer.getSource();
 		trackSource.clear();
 		
@@ -783,56 +877,78 @@ function mapService()
 			})
 		});
 		
-		var points = [];
 		
+		// waypoints
 		for (i = 0; i < wps.length; i++)
 		{
-			if (wps[i].longitude && wps[i].latitude)
-			{
-				// get wp coordinates
-				mapCoord = ol.proj.fromLonLat([wps[i].longitude, wps[i].latitude]);
+			if (i > 0)
+				prevWp = wps[i - 1];
+			else
+				prevWp = undefined;	
 				
+			if (i < wps.length - 1)
+				nextWp = wps[i + 1];
+			else if (alternate)
+				nextWp = alternate;
+			else
+				nextWp = undefined;
 				
-				// add track line segment
-				if (i > 0)
-				{
-					mapCoord0 = ol.proj.fromLonLat([wps[i - 1].longitude, wps[i - 1].latitude]);
-
-					var trackFeature = new ol.Feature({
-						geometry: new ol.geom.LineString([ mapCoord0, mapCoord])
-					});
-					
-					if (wps[i].isAlternate)
-						trackFeature.setStyle(trackAlternateStyle);
-					else
-						trackFeature.setStyle(trackStyle);
-						
-					trackFeature.wpIndex = i;
-					trackSource.addFeature(trackFeature);
-				}
-				
-		
-				// add waypoint + label
-				var wpFeature  = new ol.Feature({
-					geometry: new ol.geom.Point(mapCoord)
-				});
-				
-				wpStyle = createWaypointStyle(wps[i], wps[i + 1]);
-				wpFeature.setStyle(wpStyle);
-				wpFeature.waypoint = wps[i];
-				trackSource.addFeature(wpFeature);
-
-				
-				// add direction+bearing label
-				var dbFeature  = new ol.Feature({
-					geometry: new ol.geom.Point(mapCoord)
-				});
-				
-				dbStyle = createDirBearStyle(wps[i + 1]);
-				dbFeature.setStyle(dbStyle);
-				trackSource.addFeature(dbFeature);
-			}
+			updateTrackSegment(trackSource, wps[i], prevWp, nextWp, trackStyle, settings);
 		}
+		
+		
+		// alternate
+		if (alternate)
+		{
+			if (wps.length > 0)
+				prevWp = wps[wps.length - 1];
+			else
+				prevWp = undefined;
+				
+			updateTrackSegment(trackSource, alternate, prevWp, undefined, trackAlternateStyle, settings);
+		}
+	}
+	
+	
+	function updateTrackSegment(trackSource, wp, prevWp, nextWp, trackStyle, settings)
+	{
+		// get wp coordinates
+		mapCoord = ol.proj.fromLonLat([wp.longitude, wp.latitude]);
+		
+		
+		// add track line segment
+		if (prevWp)
+		{
+			mapCoord0 = ol.proj.fromLonLat([prevWp.longitude, prevWp.latitude]);
+
+			var trackFeature = new ol.Feature({
+				geometry: new ol.geom.LineString([ mapCoord0, mapCoord ])
+			});
+			
+			trackFeature.setStyle(trackStyle);
+			trackSource.addFeature(trackFeature);
+		}
+		
+
+		// add waypoint + label
+		var wpFeature  = new ol.Feature({
+			geometry: new ol.geom.Point(mapCoord)
+		});
+		
+		wpStyle = createWaypointStyle(wp, nextWp);
+		wpFeature.setStyle(wpStyle);
+		wpFeature.waypoint = wp;
+		trackSource.addFeature(wpFeature);
+
+		
+		// add direction & bearing label
+		var dbFeature  = new ol.Feature({
+			geometry: new ol.geom.Point(mapCoord)
+		});
+		
+		dbStyle = createDirBearStyle(nextWp, settings);
+		dbFeature.setStyle(dbStyle);
+		trackSource.addFeature(dbFeature);
 	}
 	
 	
@@ -840,24 +956,24 @@ function mapService()
 	{
 		var rot, align;
 	
-		if (wp1.mt && wp2) // middle point
+		if (wp1.mt && wp2) // en route point
 		{
 			if (wp2.mt > wp1.mt)
-				rot = ((wp1.mt + 270 + (wp2.mt - wp1.mt) / 2) % 360) / 360 * 2 * Math.PI;
+				rot = deg2rad((wp1.mt + 270 + (wp2.mt - wp1.mt) / 2) % 360);
 			else
-				rot = ((wp1.mt + 270 + (wp2.mt + 360 - wp1.mt) / 2) % 360) / 360 * 2 * Math.PI;
+				rot = deg2rad((wp1.mt + 270 + (wp2.mt + 360 - wp1.mt) / 2) % 360);
 		}
 		else if (!wp1.mt && wp2) // start point
 		{
-			rot = (((wp2.mt + 180) % 360) / 360) * 2 * Math.PI;
+			rot = deg2rad((wp2.mt + 180) % 360);
 		}
 		else if (wp1.mt && !wp2) // end point
 		{
-			rot = (wp1.mt / 360) * 2 * Math.PI;
+			rot = deg2rad(wp1.mt);
 		}
 		else if (!wp1.mt && !wp2) // single point
 		{
-			rot = Math.PI / 4; // 45°
+			rot = deg2rad(45); // 45Â°
 		}
 		else
 			throw "invalid waypoints";
@@ -881,8 +997,10 @@ function mapService()
 	}
 	
 	
-	function createDirBearStyle(wp)
+	function createDirBearStyle(wp, settings)
 	{
+		var varRad = Number(settings.variation) ? deg2rad(Number(settings.variation)) : 0;
+	
 		if (!wp)
 		{
 			rotRad = 0;
@@ -893,17 +1011,17 @@ function mapService()
 		}
 		else if (wp.mt  < 180)
 		{
-			rotRad = (wp.mt - 90) / 360 * 2 * Math.PI;
+			rotRad = deg2rad(wp.mt - 90);
 			align = "start";
-			text = wp.mt + '° D' + wp.dist + ' >';
+			text = wp.mt + 'Â° ' + wp.dist + 'NM >';
 			offX = 10 * Math.sin(rotRad + Math.PI / 2);
 			offY = -10 * Math.cos(rotRad + Math.PI / 2);
 		}
 		else
 		{
-			rotRad = (wp.mt - 270) / 360 * 2 * Math.PI;
+			rotRad = deg2rad(wp.mt - 270);
 			align = "end";
-			text = '< ' + wp.mt + '° D' + wp.dist;
+			text = '< ' + wp.mt + 'Â° ' + wp.dist + 'NM';
 			offX = 10 * Math.sin(rotRad + Math.PI * 3 / 2);
 			offY = -10 * Math.cos(rotRad + Math.PI * 3 / 2);
 		}
@@ -921,7 +1039,7 @@ function mapService()
 				text: text,
 				fill: new ol.style.Fill( { color: '#000000' } ),
 				stroke: new ol.style.Stroke( {color: '#FFFFFF', width: 10 } ),
-				rotation: rotRad,
+				rotation: rotRad + varRad,
 				textAlign: align,
 				offsetX: offX,
 				offsetY: offY
@@ -941,7 +1059,7 @@ function mapService()
 	
 	function getDistance(lat1, lon1, lat2, lon2)
 	{
-		return Math.round(wgs84Sphere.haversineDistance([lon1,lat1],[lon2,lat2]) * 0.000539957, 0);
+		return (wgs84Sphere.haversineDistance([lon1,lat1],[lon2,lat2]) * 0.000539957);
 	}
 	
 
@@ -957,6 +1075,6 @@ function mapService()
 		var x = Math.cos(f1) * Math.sin(f2) - Math.sin(f1) * Math.cos(f2) * Math.cos(dl);
 		var t = Math.atan2(y, x);
 
-		return Math.round((t * toDeg + 360) % 360 - magvar);
+		return ((t * toDeg + 360) % 360 - magvar);
 	}
 }

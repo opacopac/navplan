@@ -1,0 +1,27 @@
+<div class="container-fluid">
+	<div class="row">
+		<div class="input-group">
+			<input id="searchWpInput" type="text" class="form-control" placeholder="Enter Waypoint or Coordinates" ng-model="globalData.navplan.selectedWaypoint.checkpoint"
+				typeahead="geoname.name for geoname in searchGeonamesByValue($viewValue)" typeahead-min-length="2"
+				typeahead-on-select="onGeonameSelect($item)"
+				ng-blur="updateTrack()" />
+			<span class="input-group-btn">
+				<button type="button" class="btn btn-primary" ng-click="onGeonameSearch();"><i class="glyphicon glyphicon-search"></i></button>
+			</span>
+		</div>
+	</div>
+</div>
+<!-- feature popup -->
+<div id="feature-popup" class="ol-popup">
+	<a href="#" id="feature-popup-closer" class="ol-popup-closer"></a>
+	<div id="feature-popup-content">
+		<h4>{{ globalData.selectedWp.checkpoint }}</h4>
+		<p ng-show="globalData.selectedWp.isNew"><button type="button" class="btn btn-success btn-circle" ng-click="onAddSelectedWaypointClicked()"><i class="glyphicon glyphicon-plus"></i></button> Add to Track</p>
+		<p ng-show="globalData.selectedWp.isNew && globalData.selectedWp.type == 'airport'"><button type="button" class="btn btn-warning btn-circle" ng-click="onSetAsAlternateClicked()"><i class="glyphicon glyphicon-plus"></i></button> Set as Alternate</p>
+		<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-warning btn-circle" ng-click="onEditSelectedWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Edit Track Waypoint</p>
+		<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-danger btn-circle" ng-click="onRemoveSelectedWaypointClicked()"><i class="glyphicon glyphicon-remove"></i></button> Remove from Track</p>
+		<p ng-show="isLoggedIn() && (globalData.selectedWp.type == 'user' || globalData.selectedWp.type == 'geoname')"><button type="button" class="btn btn-primary btn-circle" ng-click="onEditUserWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Edit User Waypoint</p>
+	</div>
+</div>
+<!-- map -->
+<div id="map"></div>

@@ -1,17 +1,18 @@
 <?php
 	require('phpexcel/PHPExcel.php');
-		
-	
+
+
 	// get flightplan data
 	if (isset($_GET["data"]))
 	{
 		$data = json_decode($_GET["data"], true);
 		$waypoints = $data["waypoints"];
+		$alternate = $data["alternate"];
 		$fuel = $data["fuel"];
 		$pilot = $data["pilot"];
 		$aircraft = $data["aircraft"];
 	}
-
+	
 	$sfc = 0.142822265625;
 	$sheetColWidth = array("A" => 42 * $sfc, "B" => 33 * $sfc, "C" => 112 * $sfc, "D" => 32 * $sfc, "E" => 32 * $sfc, "F" => 32 * $sfc, "G" => 0 * $sfc, "H" => 32 * $sfc, "I" => 32 * $sfc, "J" => 32 * $sfc, "K" => 52 * $sfc, "L" => 52 * $sfc );
 	$sfr = 0.75;
@@ -282,7 +283,6 @@
 		)
 	);
 
-
 	
 	// create new excel
 	$objPHPExcel = new PHPExcel();
@@ -412,10 +412,7 @@
 	for ($i = 0; $i < 18; $i++)
 	{
 		foreach($ckpKeys as $key => $col)
-		{
-			if (!checkIsAlternate($i)) // skip alternate checkpoint
-				$objPHPExcel->getActiveSheet()->setCellValueExplicit($col . ($i + 5), getWaypointString($i, $key), PHPExcel_Cell_DataType::TYPE_STRING);
-		}
+			$objPHPExcel->getActiveSheet()->setCellValueExplicit($col . ($i + 5), getWaypointString($i, $key), PHPExcel_Cell_DataType::TYPE_STRING);
 	}
 	
 	// pre-eet/dist sums
@@ -431,15 +428,14 @@
 	$objPHPExcel->getActiveSheet()->setCellValue("C24", "Alternate:");
 	
 	// alternate values
-	for ($i = 0; $i < count($waypoints); $i++)
+	foreach($ckpKeys as $key => $col)
 	{
-		if (checkIsAlternate($i))
-		{
-			foreach($ckpKeys as $key => $col)
-				$objPHPExcel->getActiveSheet()->setCellValue($col . "25", getWaypointString($i, $key));
-			
-			break;
-		}
+		if (isset($alternate) && isset($alternate[$key]))
+			$text = $alternate[$key];
+		else
+			$text = "";
+		
+		$objPHPExcel->getActiveSheet()->setCellValue($col . "25", $text);
 	}
 	
 	// alternate eet-formulas
@@ -536,17 +532,6 @@
 
 	
 	
-	function checkIsAlternate($index)
-	{
-		global $waypoints;
-	
-		if (!isset($waypoints) || !isset($waypoints[$index]) || !isset($waypoints[$index]["isAlternate"]))
-			return false;
-			
-		return $waypoints[$index]["isAlternate"] == true;
-	}
-	
-	
 	function getWaypointString($index, $key)
 	{
 		global $waypoints;
@@ -554,7 +539,8 @@
 		if (!isset($waypoints) || !isset($waypoints[$index]) || !isset($waypoints[$index][$key]))
 			return "";
 			
-		return utf8_decode($waypoints[$index][$key]);
+		//return utf8_decode($waypoints[$index][$key]);
+		return $waypoints[$index][$key];
 	}
 	
 	
