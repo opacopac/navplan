@@ -1,5 +1,6 @@
 <?php
 	include "config.php";
+	include "helper.php";
 
 	$raw_input = file_get_contents('php://input');
 	$input = json_decode($raw_input, true);

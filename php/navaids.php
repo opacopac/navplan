@@ -1,5 +1,6 @@
 <?php
 	include "config.php";
+	include "helper.php";
 
 	// open db connection
 	$conn = new mysqli($db_host, $db_user, $db_pw, $db_name);
