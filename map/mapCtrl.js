@@ -86,6 +86,7 @@ function mapCtrl($scope, mapService, geonameService, waypointService, fuelServic
 		{
 			$scope.globalData.selectedWp = {
 				type: feature.geopoint.type,
+				geopoint: feature.geopoint,
 				id: feature.geopoint.id,
 				freq: feature.geopoint.frequency,
 				callsign: feature.geopoint.callsign,
@@ -106,6 +107,7 @@ function mapCtrl($scope, mapService, geonameService, waypointService, fuelServic
 		{
 			$scope.globalData.selectedWp = {
 				type: 'airport',
+				airport: feature.airport,
 				freq: feature.airport.frequency,
 				callsign: feature.airport.callsign,
 				checkpoint: feature.airport.icao,
@@ -125,6 +127,7 @@ function mapCtrl($scope, mapService, geonameService, waypointService, fuelServic
 		{
 			$scope.globalData.selectedWp = {
 				type: 'navaid',
+				navaid: feature.navaid,
 				freq: feature.navaid.frequency,
 				callsign: feature.navaid.kuerzel,
 				checkpoint: feature.navaid.kuerzel + ' ' + feature.navaid.type,
@@ -144,6 +147,7 @@ function mapCtrl($scope, mapService, geonameService, waypointService, fuelServic
 		{
 			$scope.globalData.selectedWp = {
 				type: 'global',
+				globalWaypoint: feature.globalWaypoint,
 				freq: '',
 				callsign: '',
 				checkpoint: feature.globalWaypoint.name,
@@ -163,6 +167,7 @@ function mapCtrl($scope, mapService, geonameService, waypointService, fuelServic
 		{
 			$scope.globalData.selectedWp = {
 				type: 'user',
+				userWaypoint: feature.userWaypoint,
 				id: feature.userWaypoint.id,
 				freq: '',
 				callsign: '',
@@ -270,6 +275,13 @@ function mapCtrl($scope, mapService, geonameService, waypointService, fuelServic
 	}
 	
 	
+	$scope.onDisplayChartClicked = function(chartId)
+	{
+		mapService.displayChart(chartId);
+		mapService.hideFeaturePopup();
+	}
+	
+	
 	$scope.onKmlClick = function()
 	{
 		var navplanData = {
@@ -278,7 +290,7 @@ function mapCtrl($scope, mapService, geonameService, waypointService, fuelServic
 	
 		var kmlLink = document.getElementById("dlKmlLink");
 		kmlLink.href = 'php/navplanKml.php?data=' + encodeURIComponent(JSON.stringify(navplanData))
-	}
+	}	
 	
 	
 	// init feature popup

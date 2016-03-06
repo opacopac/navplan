@@ -9,4 +9,11 @@
 		
 		return $conn;
 	}
+	
+
+	function checkNumeric($var)
+	{
+		if (!is_numeric($var))
+			die;
+	}
 ?> 

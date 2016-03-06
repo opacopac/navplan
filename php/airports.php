@@ -27,9 +27,53 @@
 		
 	$result = $conn->query($query);
 	
+	if ($result === FALSE)
+		die("error reading airports: " . $conn->error . " query:" . $query);
+	
+	
 	// build return object
-	$return_object = buildReturnObject($result);
+	
+	while ($rs = $result->fetch_array(MYSQLI_ASSOC))
+	{
+		// find charts
+		$query = "SELECT id, type FROM ad_charts WHERE airport_icao = '" . $rs["icao"] . "'";
+		
+		$result2 = $conn->query($query);
+		
+		if ($result2 === FALSE)
+			die("error reading charts: " . $conn->error . " query:" . $query);
+		
+		$charts = [];
+		
+		while ($rs2 = $result2->fetch_array(MYSQLI_ASSOC))
+		{
+			$charts[] = array(
+				id => $rs2["id"],
+				type => $rs2["type"]
+			);
+		}
+		
+		// build return object
+		$airports[] = array(
+			id => $rs["id"],
+			type => $rs["type"],
+//				country => $rs["country"],
+			name => $rs["name"],
+			icao => $rs["icao"],
+			latitude => $rs["latitude"],
+			longitude => $rs["longitude"],
+//				elevation => $rs["elevation"],
+			rwy_surface => $rs["surface"],
+			rwy_direction1 => $rs["direction1"],
+			frequency => $rs["frequency"],
+			callsign => $rs["callsign"],
+			charts => $charts
+		);
+	}
+	
 	$conn->close();
+	
+	$return_object = json_encode(array("airports" => $airports), JSON_NUMERIC_CHECK);
 	
 	
 	// return output
@@ -51,29 +95,5 @@
 		header("Content-Type: application/json; charset=UTF-8");
 	
 		echo($return_object);
-	}
-	
-	
-	function buildReturnObject($result)
-	{
-		while ($rs = $result->fetch_array(MYSQLI_ASSOC))
-		{
-			$airports[] = array(
-				id => $rs["id"],
-				type => $rs["type"],
-//				country => $rs["country"],
-				name => $rs["name"],
-				icao => $rs["icao"],
-				latitude => $rs["latitude"],
-				longitude => $rs["longitude"],
-//				elevation => $rs["elevation"],
-				rwy_surface => $rs["surface"],
-				rwy_direction1 => $rs["direction1"],
-				frequency => $rs["frequency"],
-				callsign => $rs["callsign"]
-			);
-		}
-		
-		return json_encode(array("airports" => $airports), JSON_NUMERIC_CHECK);
 	}
 ?> 

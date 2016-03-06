@@ -1,5 +1,5 @@
 <?php
-	include "../config.php";
+	include "../php/config.php";
 
 	header("Access-Control-Allow-Origin: *"); //TODO: remove
 

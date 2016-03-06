@@ -27,7 +27,8 @@ function mapService($http)
 		getBearing: getBearing,
 		drawGeopointSelection: drawGeopointSelection,
 		showFeaturePopup: showFeaturePopup,
-		hideFeaturePopup: hideFeaturePopup
+		hideFeaturePopup: hideFeaturePopup,
+		displayChart: displayChart
 	};
 	
 	
@@ -48,7 +49,7 @@ function mapService($http)
 			})
 		});
 		
-	
+		
 		// track layer
 		trackLayer = new ol.layer.Vector({
 			source: new ol.source.Vector({ })
@@ -63,7 +64,7 @@ function mapService($http)
 
 		// add airports to icon layer
 		$http.get('php/airports.php')
-			.success(function(data, status, headers, config) {
+			.success(function(data) {
 				if (data.airports)
 				{
 					for (i = 0; i < data.airports.length; i++)
@@ -100,9 +101,14 @@ function mapService($http)
 						iconLayer.getSource().addFeature(rwyFeature);
 					}
 				}
+				else
+				{
+					console.error("ERROR", data);
+				}
 			})
-			.error(function(data, status, headers, config) {
-				// empty
+			.error(function(data, status)
+			{
+				console.error("ERROR", status, data);
 			});
 		
 		
@@ -212,9 +218,14 @@ function mapService($http)
 						airspaceLayer.getSource().addFeature(airspaceFeature);
 					}
 				}
+				else
+				{
+					console.error("ERROR", data);
+				}
 			})
-			.error(function(data, status, headers, config) {
-				// empty
+			.error(function(data, status)
+			{
+				console.error("ERROR", status, data);
 			});
 		
 
@@ -223,7 +234,7 @@ function mapService($http)
 		geopointLayer = new ol.layer.Vector({
 			source: new ol.source.Vector({ })
 		});
-
+		
 
 		// kml export control
 		var kmlLink = document.createElement('a');
@@ -1057,6 +1068,57 @@ function mapService($http)
 	}
 	
 	
+	function displayChart(chartId)
+	{
+		// load chart data
+		$http.post('php/ad_charts.php', obj2json({ action: 'read', id: chartId }))
+			.success(function(data) {
+				if (data.chart)
+				{
+					var xmpp = data.chart.width_mm / 1000 / data.chart.width_pixel * data.chart.scale;
+					var ympp = data.chart.height_mm / 1000 / data.chart.height_pixel * data.chart.scale;
+					
+					var posNE = ol.proj.fromLonLat(moveNorthEast(
+						data.chart.longitude,
+						data.chart.latitude,
+						data.chart.arp_pixeloffset_south * ympp,
+						(data.chart.width_pixel - data.chart.arp_pixeloffset_east) * xmpp));
+					var posSW = ol.proj.fromLonLat(moveSouthWest(
+						data.chart.longitude,
+						data.chart.latitude,
+						(data.chart.height_pixel - data.chart.arp_pixeloffset_south) * ympp,
+						data.chart.arp_pixeloffset_east * xmpp));
+					
+					var extent = [posSW[0], posSW[1], posNE[0], posNE[1]];
+					
+					var projection = new ol.proj.Projection({
+						code: 'chart',
+						units: 'm',
+						extent: extent
+					});
+					
+					chartLayer = new ol.layer.Image({
+						source: new ol.source.ImageStatic({
+							url: 'charts/' + data.chart.filename,
+							projection: projection,
+							imageExtent: extent
+						}),
+						opacity: 0.8
+					});
+					
+					map.getLayers().insertAt(1, chartLayer);
+				}
+				else
+				{
+					console.error("ERROR", data);
+				}
+			})
+			.error(function(data, status) {
+				console.error("ERROR", status, data);
+			});
+	}
+	
+	
 	function getDistance(lat1, lon1, lat2, lon2)
 	{
 		return (wgs84Sphere.haversineDistance([lon1,lat1],[lon2,lat2]) * 0.000539957);
@@ -1077,4 +1139,97 @@ function mapService($http)
 
 		return ((t * toDeg + 360) % 360 - magvar);
 	}
+	
+	
+	function getDestination(lon1Deg, lat1Deg, distM, brngRad)
+	{
+		var dR = distM / 6378137.0;
+		var lon1 = convertToRad(lon1Deg);
+		var lat1 = convertToRad(lat1Deg);
+		
+		var lat2 = Math.asin(Math.sin(lat1) * Math.cos(dR) + Math.cos(lat1) * Math.sin(dR) * Math.cos(brngRad));
+		var lon2 = lon1 + Math.atan2(Math.sin(brngRad) * Math.sin(dR) * Math.cos(lat1), Math.cos(dR) - Math.sin(lat1) * Math.sin(lat2));
+		
+		return [convertToDeg(lon2), convertToDeg(lat2)];
+	}
+	
+	
+	function moveNorthEast(lon1, lat1, distNorthM, distEastM)
+	{
+		var pos1 = getDestination(lon1, lat1, distNorthM, 0);
+		return getDestination(pos1[0], pos1[1], distEastM, Math.PI / 2);
+	}
+	
+	
+	function moveSouthWest(lon1, lat1, distSouthM, distWestM)
+	{
+		var pos1 = getDestination(lon1, lat1, distSouthM, Math.PI);
+		return getDestination(pos1[0], pos1[1], distWestM, 3* Math.PI / 2);
+	}
+	
+	
+	function convertToRad(deg)
+	{
+		return deg / 360 * 2 * Math.PI
+	}
+	
+	
+	function convertToDeg(rad)
+	{
+		return rad / (2 * Math.PI) * 360;
+	}
+	
+	
+	/*function convertDmsToDec(posDms)
+	{
+		var parts = posDms.split(/^(\d+)\D+(\d+)\D+(\d+)\D*(\w+)$/);
+		var posDec = parseInt(parts[1]) + parseInt(parts[2])/60 + parseInt(parts[3])/(60*60);
+		
+		if (parts[4] == "W" || parts[4] == "w" || parts[4] == "S" || parts[4] == "s")
+			posDec = -posDec;
+			
+		return posDec;
+	}
+
+
+	// Convert CH y/x to WGS lat
+	function CHtoWGSlat(y, x) {
+	  // Converts military to civil and  to unit = 1000km
+	  // Auxiliary values (% Bern)
+	  var y_aux = (y - 600000)/1000000;
+	  var x_aux = (x - 200000)/1000000;
+	  
+	  // Process lat
+	  lat = 16.9023892
+		   +  3.238272 * x_aux
+		   -  0.270978 * Math.pow(y_aux,2)
+		   -  0.002528 * Math.pow(x_aux,2)
+		   -  0.0447   * Math.pow(y_aux,2) * x_aux
+		   -  0.0140   * Math.pow(x_aux,3);
+		
+	  // Unit 10000" to 1 " and converts seconds to degrees (dec)
+	  lat = lat * 100/36;
+	  
+	  return lat;
+	}
+
+	// Convert CH y/x to WGS long
+	function CHtoWGSlng(y, x) {
+	  // Converts military to civil and  to unit = 1000km
+	  // Auxiliary values (% Bern)
+	  var y_aux = (y - 600000)/1000000;
+	  var x_aux = (x - 200000)/1000000;
+	  
+	  // Process long
+	  lng = 2.6779094
+			+ 4.728982 * y_aux
+			+ 0.791484 * y_aux * x_aux
+			+ 0.1306   * y_aux * Math.pow(x_aux,2)
+			- 0.0436   * Math.pow(y_aux,3);
+		 
+	  // Unit 10000" to 1 " and converts seconds to degrees (dec)
+	  lng = lng * 100/36;
+		 
+	  return lng;
+	}	*/
 }
