@@ -1075,7 +1075,7 @@ function mapService($http)
 			.success(function(data) {
 				if (data.chart)
 				{
-					var xmpp = data.chart.width_mm / 1000 / data.chart.width_pixel * data.chart.scale;
+					/*var xmpp = data.chart.width_mm / 1000 / data.chart.width_pixel * data.chart.scale;
 					var ympp = data.chart.height_mm / 1000 / data.chart.height_pixel * data.chart.scale;
 					
 					var posNE = ol.proj.fromLonLat(moveNorthEast(
@@ -1089,7 +1089,11 @@ function mapService($http)
 						(data.chart.height_pixel - data.chart.arp_pixeloffset_south) * ympp,
 						data.chart.arp_pixeloffset_east * xmpp));
 					
-					var extent = [posSW[0], posSW[1], posNE[0], posNE[1]];
+					var posNE = [728843, 5848586];
+					var posSW = [626642, 5771286];
+					   posSW[0], posSW[1], posNE[0], posNE[1]];*/
+					
+					var extent = [data.chart.mercator_w, data.chart.mercator_s, data.chart.mercator_e, data.chart.mercator_n];
 					
 					var projection = new ol.proj.Projection({
 						code: 'chart',

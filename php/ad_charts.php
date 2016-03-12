@@ -29,7 +29,11 @@
 		$query .= " cha.airport_icao, ";
 		$query .= " cha.type, ";
 		$query .= " cha.filename, ";
-		$query .= " cha.width_pixel, ";
+		$query .= " cha.mercator_n, ";
+		$query .= " cha.mercator_s, ";
+		$query .= " cha.mercator_e, ";
+		$query .= " cha.mercator_w ";
+		/*$query .= " cha.width_pixel, ";
 		$query .= " cha.height_pixel, ";
 		$query .= " cha.width_mm, ";
 		$query .= " cha.height_mm, ";
@@ -37,7 +41,7 @@
 		$query .= " cha.arp_pixeloffset_east, ";
 		$query .= " cha.arp_pixeloffset_south, ";
 		$query .= " ap.latitude, ";
-		$query .= " ap.longitude ";
+		$query .= " ap.longitude ";*/
 		$query .= "FROM ad_charts AS cha ";
 		$query .= "  INNER JOIN openaip_airports AS ap ";
 		$query .= "  ON ap.icao = cha.airport_icao ";
@@ -57,7 +61,11 @@
 			airport_icao => $rs["airport_icao"],
 			type => $rs["type"],
 			filename => $rs["filename"],
-			width_pixel => $rs["width_pixel"],
+			mercator_n => $rs["mercator_n"],
+			mercator_s => $rs["mercator_s"],
+			mercator_e => $rs["mercator_e"],
+			mercator_w => $rs["mercator_w"]
+			/*width_pixel => $rs["width_pixel"],
 			height_pixel => $rs["height_pixel"],
 			width_mm => $rs["width_mm"],
 			height_mm => $rs["height_mm"],
@@ -65,7 +73,7 @@
 			arp_pixeloffset_east => $rs["arp_pixeloffset_east"],
 			arp_pixeloffset_south => $rs["arp_pixeloffset_south"],
 			latitude => $rs["latitude"],
-			longitude => $rs["longitude"]
+			longitude => $rs["longitude"]*/
 		);
 
 		$conn->close();
