@@ -47,7 +47,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 			name: '',
 			waypoints: [ ],
 			alternate: undefined,
-			selectedWaypoint: undefined,
+			selectedWaypoint: undefined
 		};
 		$scope.globalData.settings =
 		{
@@ -60,7 +60,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 		};
 		$scope.globalData.selectedWp = undefined;
 		$scope.globalData.wpBackup = undefined;
-	}
+	};
 	
 	
 	$scope.showSuccessMessage = function(text)
@@ -68,7 +68,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 		$scope.success_alert_message = text;
 		
 		$timeout(function () { $scope.success_alert_message = ""; }, 3000, true);
-	}
+	};
 	
 	
 	$scope.showErrorMessage = function(text)
@@ -76,7 +76,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 		$scope.error_alert_message = text;
 		
 		$timeout(function () { $scope.error_alert_message = ""; }, 3000, true);
-	}
+	};
 	
 	
 	$scope.initUser = function()
@@ -87,7 +87,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 
 		if (email && token)
 			$scope.loginUser(email, token, 90)
-	}
+	};
 	
 	
 	$scope.initDisclaimer = function()
@@ -97,7 +97,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 
 		if (hideDisclaimer != "1")
 			$('#disclaimerDialog').modal('show');
-	}
+	};
 
 
 	$scope.readNavplanList = function()
@@ -115,7 +115,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 			.error(function(data, status) {
 				console.error("ERROR", status, data);
 			});
-	}
+	};
 	
 	
 	$scope.loginUser = function(email, token, rememberDays)
@@ -131,13 +131,13 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 		//TODO: read user data (name, plane, settings, etc.)
 
 		$scope.showSuccessMessage("Welcome " + email + "!");
-	}
+	};
 	
 	
 	$scope.isLoggedIn = function()
 	{
 		return ($scope.globalData.user.email && $scope.globalData.user.token);
-	}
+	};
 
 	
 	$scope.logoutUser = function()
@@ -151,14 +151,14 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 		$scope.initGlobalData();
 
 		$scope.showSuccessMessage("User Logged out successfully!");
-	}
+	};
 
 
 	$scope.onDisclaimerOKClicked = function()
 	{
 		if ($scope.hideDisclaimer)
 			setCookie("hideDisclaimer", "1", 90);
-	}
+	};
 
 	
 	$scope.updateWpList = function()
@@ -166,7 +166,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 		waypointService.updateWpList($scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.settings.variation, $scope.globalData.aircraft.speed);
 		fuelService.updateFuelCalc($scope.globalData.fuel, $scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.aircraft);
 		mapService.updateTrack($scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.settings);
-	}
+	};
 
 	
 	$scope.editSelectedWaypoint = function ()
@@ -174,19 +174,19 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 		$scope.backupSelectedWaypoint();
 		
 		$('#selectedWaypointDialog').modal('show');
-	}
+	};
 	
 	
 	$scope.onOkEditWpClicked = function()
 	{
 		$scope.globalData.wpBackup = undefined;
-	}
+	};
 	
 	
 	$scope.onCancelEditWpClicked = function()
 	{
 		$scope.restoreSelectedWaypoint();
-	}
+	};
 
 	
 	$scope.editUserWaypoint = function ()
@@ -194,7 +194,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 		$scope.backupSelectedWaypoint();
 		
 		$('#userWaypointDialog').modal('show');
-	}
+	};
 	
 	
 	$scope.onSaveUserWaypointClicked = function()
@@ -213,7 +213,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 			.error(function(data, status) {
 				console.error("ERROR", status, data);
 			});
-	}
+	};
 
 
 	$scope.onDeleteUserWaypointClicked = function()
@@ -233,7 +233,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 			.error(function(data, status) {
 				console.error("ERROR", status, data);
 			});
-	}
+	};
 
 	
 	$scope.onClearAllWaypointsClicked = function()
@@ -249,7 +249,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 		$scope.globalData.selectedWp = undefined;
 	
 		$scope.updateWpList();
-	}
+	};
 	
 	
 	$scope.backupSelectedWaypoint = function()
@@ -260,7 +260,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 			callsign: $scope.globalData.selectedWp.callsign,
 			alt: $scope.globalData.selectedWp.alt
 		}
-	}
+	};
 	
 	
 	$scope.restoreSelectedWaypoint = function()
@@ -269,7 +269,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 		$scope.globalData.selectedWp.freq = $scope.globalData.wpBackup.freq;
 		$scope.globalData.selectedWp.callsign = $scope.globalData.wpBackup.callsign;
 		$scope.globalData.selectedWp.alt = $scope.globalData.wpBackup.alt;
-	}
+	};
 	
 
 	// init stuff

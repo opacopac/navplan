@@ -5,9 +5,9 @@
 navplanApp
 	.controller('waypointCtrl', waypointCtrl);
 	
-waypointCtrl.$inject = ['$scope', '$http', 'geonameService', 'mapService', 'waypointService', 'fuelService', 'userService', 'globalData'];
+waypointCtrl.$inject = ['$scope', '$http', 'geonameService', 'fuelService', 'userService', 'globalData'];
 
-function waypointCtrl($scope, $http, geonameService, mapService, waypointService, fuelService, userService, globalData) {
+function waypointCtrl($scope, $http, geonameService, fuelService, userService, globalData) {
 	$scope.globalData = globalData;
 	$scope.newWp = undefined;
 
@@ -20,7 +20,7 @@ function waypointCtrl($scope, $http, geonameService, mapService, waypointService
 		
 		$scope.updateWpList();
 		$scope.$apply();
-	}
+	};
 
 	makeWaypointsSortable($scope.updateOrderCallback);
 
@@ -37,7 +37,7 @@ function waypointCtrl($scope, $http, geonameService, mapService, waypointService
 		
 		var pdfLink = document.getElementById("dlPdfLink");
 		pdfLink.href = 'php/navplanPdf.php?data=' + encodeURIComponent(JSON.stringify(navplanData))
-	}
+	};
 	
 	
 	$scope.createExcelNavplan = function()
@@ -52,18 +52,18 @@ function waypointCtrl($scope, $http, geonameService, mapService, waypointService
 		
 		var excelLink = document.getElementById("dlExcelLink");
 		excelLink.href = 'php/navplanExcel.php?data=' + encodeURIComponent(JSON.stringify(navplanData))
-	}
+	};
 	
 	
 	$scope.onKmlClicked = function()
 	{
 		var navplanData = {
-			waypoints: $scope.globalData.navplan.waypoints,
+			waypoints: $scope.globalData.navplan.waypoints
 		};
 	
 		var kmlLink = document.getElementById("dlKmlLink2");
 		kmlLink.href = 'php/navplanKml.php?data=' + encodeURIComponent(JSON.stringify(navplanData))
-	}
+	};
 	
 	
 	$scope.loadNavplan = function()
@@ -82,10 +82,11 @@ function waypointCtrl($scope, $http, geonameService, mapService, waypointService
 					
 					// waypoints
 					$scope.globalData.navplan.waypoints = [ ];
-					
+					var wp;
+
 					if (data.navplan.waypoints)
 					{
-						for (i = 0; i < data.navplan.waypoints.length; i++)
+						for (var i = 0; i < data.navplan.waypoints.length; i++)
 						{
 							wp = $scope.getWaypointFromData(data.navplan.waypoints[i]);
 							$scope.globalData.navplan.waypoints.push(wp);
@@ -109,7 +110,7 @@ function waypointCtrl($scope, $http, geonameService, mapService, waypointService
 			.error(function(data, status) {
 				console.error("ERROR", status, data);
 			});
-	}
+	};
 	
 	
 	$scope.getWaypointFromData = function (wp_data)
@@ -126,7 +127,7 @@ function waypointCtrl($scope, $http, geonameService, mapService, waypointService
 			alt: wp_data.alt,
 			remark: wp_data.remark
 		};
-	}
+	};
 	
 	
 	$scope.saveNavplan = function()
@@ -153,7 +154,7 @@ function waypointCtrl($scope, $http, geonameService, mapService, waypointService
 				.success(function(data) {
 					if (data.navplan_id >= 0)
 					{
-						$scope.globalData.navplan.id = data.navplan_id
+						$scope.globalData.navplan.id = data.navplan_id;
 						$scope.readNavplanList();
 					}
 					else
@@ -163,7 +164,7 @@ function waypointCtrl($scope, $http, geonameService, mapService, waypointService
 					console.error("ERROR", status, data);
 				});
 		}
-	}
+	};
 
 
 	$scope.deleteNavplan = function()
@@ -184,7 +185,7 @@ function waypointCtrl($scope, $http, geonameService, mapService, waypointService
 					console.error("ERROR", status, data);
 				});
 		}
-	}
+	};
 	
 
 	$scope.searchGeonamesByValue = function(val)
@@ -202,13 +203,13 @@ function waypointCtrl($scope, $http, geonameService, mapService, waypointService
 	
 	$scope.removeWaypoint = function(wp)
 	{
-		idx = $scope.globalData.navplan.waypoints.indexOf(wp);
+		var idx = $scope.globalData.navplan.waypoints.indexOf(wp);
 		$scope.globalData.navplan.waypoints.splice(idx, 1);
 		$scope.updateWpList();
 	};
 	
 	
-	$scope.removeAlternate = function(wp)
+	$scope.removeAlternate = function()
 	{
 		$scope.globalData.navplan.alternate = undefined;
 		$scope.updateWpList();
@@ -232,7 +233,7 @@ function waypointCtrl($scope, $http, geonameService, mapService, waypointService
 		}
 		else 
 			return "";
-	}
+	};
 	
 	
 	$scope.padNumber = function(num)
@@ -241,7 +242,7 @@ function waypointCtrl($scope, $http, geonameService, mapService, waypointService
 			return "0" + num;
 		else
 			return "" + num;
-	}
+	};
 }
 
 

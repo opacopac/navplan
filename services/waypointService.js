@@ -9,10 +9,7 @@ waypointService.$inject = ['mapService'];
 
 function waypointService(mapService)
 {
-	// init
-	var mapService = mapService;
-	
-	// return api reference
+	// service api
 	return {
 		updateWpList: updateWpList
 	};
@@ -20,8 +17,10 @@ function waypointService(mapService)
 	
 	function updateWpList(wps, altWp, magvar, speed)
 	{
+		var prevWp;
+
 		// waypoints
-		for (i = 0; i < wps.length; i++)
+		for (var i = 0; i < wps.length; i++)
 		{
 			// vac time for start/end +5
 			if ((i == 1 && wps[0].type == 'airport') || (i == wps.length - 1 && wps[i].type == 'airport'))
@@ -91,7 +90,7 @@ function waypointService(mapService)
 		else
 			mt_num += '';
 
-		return Array(4-mt_num.length).join("0") + mt_num;
+		return new Array(4-mt_num.length).join("0") + mt_num;
 	}
 
 	
@@ -119,7 +118,7 @@ function waypointService(mapService)
 		if (isNaN(dist_num))
 			return '';
 
-		eet = Math.ceil(dist_num / speed * 60);
+		var eet = Math.ceil(dist_num / speed * 60);
 		
 		if (wp.vacTime > 0)
 			return eet + '/+' + wp.vacTime;

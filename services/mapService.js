@@ -10,7 +10,8 @@ mapService.$inject = ['$http'];
 function mapService($http)
 {
 	var map = {}; 	// empty map reference
-	var featureOverlay = {} // empty feature overlay reference
+	var mapLayer, trackLayer, iconLayer, airspaceLayer, userWpLayer, geopointLayer;
+	var featureOverlay = {}; // empty feature overlay reference
 	var isSelectionActive = false;
 	var wgs84Sphere = new ol.Sphere(6378137);
 	
@@ -414,7 +415,6 @@ function mapService($http)
 
 		// pointermove event
 		map.on('pointermove', function(event) {
-			var hitLayer = undefined;
 			var hitLayer = map.forEachFeatureAtPixel(
 				event.pixel,
 				function(feature, layer) { return layer; },
@@ -438,6 +438,8 @@ function mapService($http)
 	
 	function createNavaidStyle(navaid_type, name)
 	{
+		var src, offsetY;
+
 		if (navaid_type == "NDB")
 		{
 			src = 'icon/navaid_ndb.png';
@@ -481,6 +483,8 @@ function mapService($http)
 	
 	function createUserWpStyle(wp_type, name)
 	{
+		var src, offsetY;
+
 		if (wp_type == "report")
 		{
 			src = 'icon/wp_report.png';
@@ -516,6 +520,7 @@ function mapService($http)
 	function createAdStyle(ad_type, name)
 	{
 		var textColor = "#451A57";
+		var src;
 	
 		if (ad_type == "APT" || ad_type == "INTL_APT")
 			src = 'icon/ad_civ.png';
@@ -554,6 +559,8 @@ function mapService($http)
 	
 	function createRwyStyle(ad_type, rwy_surface, rwy_direction)
 	{
+		var src;
+
 		if (ad_type == "AD_MIL")
 			src = 'icon/rwy_mil.png';
 		else if (rwy_surface == "ASPH" || rwy_surface == "CONC")
@@ -629,9 +636,7 @@ function mapService($http)
 				})
 			});
 		}
-		else
-			return;
-	}		
+	}
 		
 	
 	function getClickRadius(event)
@@ -672,7 +677,7 @@ function mapService($http)
 	
 	function drawGeopointSelection(geopoints, clickPixel)
 	{
-		layerSource = geopointLayer.getSource();
+		var layerSource = geopointLayer.getSource();
 		layerSource.clear();
 		
 		isSelectionActive = true;
@@ -682,13 +687,13 @@ function mapService($http)
 		{
 			var clickLonLat = ol.proj.toLonLat(map.getCoordinateFromPixel(clickPixel));
 			
-			clickPoint = {
+			var clickPoint = {
 				type: 'user',
 				longitude: clickLonLat[0],
 				latitude: clickLonLat[1],
 				name: Math.round(clickLonLat[1] * 10000) / 10000 + " " + Math.round(clickLonLat[0] * 10000) / 10000,
 				wpname: ol.coordinate.toStringHDMS(clickLonLat)
-			}
+			};
 			
 			geopoints.push(clickPoint);
 		}
@@ -712,7 +717,7 @@ function mapService($http)
 		setLabelCoordinates(pointsRT, Math.PI * 1.5, clickPixel);
 
 
-		for (i = 0; i < geopoints.length; i++)
+		for (var i = 0; i < geopoints.length; i++)
 		{
 			var pointCoordLon = geopoints[i].longitude;
 			var pointCoordLat = geopoints[i].latitude;
@@ -810,10 +815,9 @@ function mapService($http)
 		
 		for (i = 0; i < geopoints.length; i++)
 		{
-			geoPointPixel = map.getPixelFromCoordinate(ol.proj.fromLonLat([geopoints[i].longitude, geopoints[i].latitude]));
-		
-			labelCoordX = geoPointPixel[0] + Math.sin(rotationRad + (i + 1) * rotInc + rotOffset) * radiusPixel;
-			labelCoordY = geoPointPixel[1] - Math.cos(rotationRad + (i + 1) * rotInc + rotOffset) * radiusPixel;
+			var geoPointPixel = map.getPixelFromCoordinate(ol.proj.fromLonLat([geopoints[i].longitude, geopoints[i].latitude]));
+			var labelCoordX = geoPointPixel[0] + Math.sin(rotationRad + (i + 1) * rotInc + rotOffset) * radiusPixel;
+			var labelCoordY = geoPointPixel[1] - Math.cos(rotationRad + (i + 1) * rotInc + rotOffset) * radiusPixel;
 			
 			geopoints[i].labelCoordinates = map.getCoordinateFromPixel([labelCoordX, labelCoordY]);
 		}
@@ -890,7 +894,9 @@ function mapService($http)
 		
 		
 		// waypoints
-		for (i = 0; i < wps.length; i++)
+		var prevWp, nextWp;
+
+		for (var i = 0; i < wps.length; i++)
 		{
 			if (i > 0)
 				prevWp = wps[i - 1];
@@ -924,13 +930,13 @@ function mapService($http)
 	function updateTrackSegment(trackSource, wp, prevWp, nextWp, trackStyle, settings)
 	{
 		// get wp coordinates
-		mapCoord = ol.proj.fromLonLat([wp.longitude, wp.latitude]);
+		var mapCoord = ol.proj.fromLonLat([wp.longitude, wp.latitude]);
 		
 		
 		// add track line segment
 		if (prevWp)
 		{
-			mapCoord0 = ol.proj.fromLonLat([prevWp.longitude, prevWp.latitude]);
+			var mapCoord0 = ol.proj.fromLonLat([prevWp.longitude, prevWp.latitude]);
 
 			var trackFeature = new ol.Feature({
 				geometry: new ol.geom.LineString([ mapCoord0, mapCoord ])
@@ -946,7 +952,7 @@ function mapService($http)
 			geometry: new ol.geom.Point(mapCoord)
 		});
 		
-		wpStyle = createWaypointStyle(wp, nextWp);
+		var wpStyle = createWaypointStyle(wp, nextWp);
 		wpFeature.setStyle(wpStyle);
 		wpFeature.waypoint = wp;
 		trackSource.addFeature(wpFeature);
@@ -957,7 +963,7 @@ function mapService($http)
 			geometry: new ol.geom.Point(mapCoord)
 		});
 		
-		dbStyle = createDirBearStyle(nextWp, settings);
+		var dbStyle = createDirBearStyle(nextWp, settings);
 		dbFeature.setStyle(dbStyle);
 		trackSource.addFeature(dbFeature);
 	}
@@ -1011,6 +1017,7 @@ function mapService($http)
 	function createDirBearStyle(wp, settings)
 	{
 		var varRad = Number(settings.variation) ? deg2rad(Number(settings.variation)) : 0;
+		var rotRad, align, text, offX, offY;
 	
 		if (!wp)
 		{
@@ -1101,7 +1108,7 @@ function mapService($http)
 						extent: extent
 					});
 					
-					chartLayer = new ol.layer.Image({
+					var chartLayer = new ol.layer.Image({
 						source: new ol.source.ImageStatic({
 							url: 'charts/' + data.chart.filename,
 							projection: projection,
@@ -1145,7 +1152,7 @@ function mapService($http)
 	}
 	
 	
-	function getDestination(lon1Deg, lat1Deg, distM, brngRad)
+	/*function getDestination(lon1Deg, lat1Deg, distM, brngRad)
 	{
 		var dR = distM / 6378137.0;
 		var lon1 = convertToRad(lon1Deg);
@@ -1155,10 +1162,10 @@ function mapService($http)
 		var lon2 = lon1 + Math.atan2(Math.sin(brngRad) * Math.sin(dR) * Math.cos(lat1), Math.cos(dR) - Math.sin(lat1) * Math.sin(lat2));
 		
 		return [convertToDeg(lon2), convertToDeg(lat2)];
-	}
+	}*/
 	
 	
-	function moveNorthEast(lon1, lat1, distNorthM, distEastM)
+	/*function moveNorthEast(lon1, lat1, distNorthM, distEastM)
 	{
 		var pos1 = getDestination(lon1, lat1, distNorthM, 0);
 		return getDestination(pos1[0], pos1[1], distEastM, Math.PI / 2);
@@ -1169,10 +1176,10 @@ function mapService($http)
 	{
 		var pos1 = getDestination(lon1, lat1, distSouthM, Math.PI);
 		return getDestination(pos1[0], pos1[1], distWestM, 3* Math.PI / 2);
-	}
+	}*/
 	
 	
-	function convertToRad(deg)
+	/*function convertToRad(deg)
 	{
 		return deg / 360 * 2 * Math.PI
 	}
@@ -1181,7 +1188,7 @@ function mapService($http)
 	function convertToDeg(rad)
 	{
 		return rad / (2 * Math.PI) * 360;
-	}
+	}*/
 	
 	
 	/*function convertDmsToDec(posDms)

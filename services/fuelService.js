@@ -28,7 +28,7 @@ function fuelService()
 		fuel.tripTime = 0;
 		fuel.alternateTime = 0;
 		
-		for (i = 0; i < wps.length; i++)
+		for (var i = 0; i < wps.length; i++)
 			fuel.tripTime += getEet(wps[i], aircraft.speed);
 
 		if (alternate)

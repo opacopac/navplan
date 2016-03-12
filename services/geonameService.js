@@ -23,7 +23,7 @@ function geonameService($http)
 	// search by name
 	function searchGeonamesByValue(search, email, token)
 	{
-		//var gradMinSecPattern = /^(\d+)°\s*(\d+)('|’|`|\xB4)\s*(\d+)("|”|''|’’|``|\xB4\xB4)\s*([NS]?)[^\d\w]*(\d+)°\s*(\d+)('|’|`|\xB4)\s*(\d+)("|”|''|’’|``|\xB4\xB4)\s*([EOW]?)$/i;
+		//var gradMinSecPattern = /^(\d+)ï¿½\s*(\d+)('|ï¿½|`|\xB4)\s*(\d+)("|ï¿½|''|ï¿½ï¿½|``|\xB4\xB4)\s*([NS]?)[^\d\w]*(\d+)ï¿½\s*(\d+)('|ï¿½|`|\xB4)\s*(\d+)("|ï¿½|''|ï¿½ï¿½|``|\xB4\xB4)\s*([EOW]?)$/i;
 		var gradMinSecPattern = /^(\d+)\D+(\d+)\D+(\d+)(\D+)(\d+)\D+(\d+)\D+(\d+)(\D*)$/i;
 		var decGradPattern = /^([+-]?\d+\.\d+)[^\d\.+-]+([+-]?\d+\.\d+)$/i;
 		var matchGradMinSec = gradMinSecPattern.exec(search);
@@ -31,6 +31,8 @@ function geonameService($http)
 		
 		if (matchGradMinSec != null || matchDecGrad != null)
 		{
+			var lonLat;
+
 			if (matchGradMinSec != null)
 				lonLat = getLonLatFromGradMinSec(matchGradMinSec);
 				
@@ -66,7 +68,7 @@ function geonameService($http)
 				latitude: lonLat[1],
 				longitude: lonLat[0]
 			} ]
-		}
+		};
 		
 		return results.geonames.map(function(item)
 		{

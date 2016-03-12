@@ -3,17 +3,17 @@
  */
 
 navplanApp
-	.controller('mapCtrl', [ '$scope', 'mapService', 'geonameService', 'waypointService', 'fuelService', 'globalData', mapCtrl ]);
+	.controller('mapCtrl', [ '$scope', 'mapService', 'geonameService', 'globalData', mapCtrl ]);
 
 
-function mapCtrl($scope, mapService, geonameService, waypointService, fuelService, globalData) {
+function mapCtrl($scope, mapService, geonameService, globalData) {
 	$scope.globalData = globalData;
 
 	
 	$scope.focusSearchWpInput = function()
 	{
 		document.getElementById('searchWpInput').focus();
-	}
+	};
 	
 
 	$scope.searchGeonamesByValue = function(search)
@@ -32,8 +32,8 @@ function mapCtrl($scope, mapService, geonameService, waypointService, fuelServic
 			checkpoint: $item.wpname,
 			latitude: $item.latitude,
 			longitude: $item.longitude
-		}
-		
+		};
+
 		mapService.setMapPosition($item.latitude, $item.longitude, 12);
 		mapService.drawGeopointSelection([ $item ], [0, 0]);
 	};
@@ -59,7 +59,7 @@ function mapCtrl($scope, mapService, geonameService, waypointService, fuelServic
 		$scope.addWaypoint(wp);
 		
 		$scope.globalData.navplan.selectedWaypoint = undefined;*/
-	}
+	};
 
 	
 	$scope.onMapClicked = function(event, clickCoordinates, maxRadius)
@@ -77,7 +77,7 @@ function mapCtrl($scope, mapService, geonameService, waypointService, fuelServic
 			.error(function(data, status) {
 				console.error("ERROR", status, data);
 			});
-	}
+	};
 	
 	
 	$scope.onFeatureSelected = function(event, feature)
@@ -191,7 +191,7 @@ function mapCtrl($scope, mapService, geonameService, waypointService, fuelServic
 			
 			mapService.showFeaturePopup($scope.globalData.selectedWp.latitude, $scope.globalData.selectedWp.longitude);
 		}
-	}
+	};
 	
 	
 	$scope.onMapMoveEnd = function(event)
@@ -202,7 +202,7 @@ function mapCtrl($scope, mapService, geonameService, waypointService, fuelServic
 			center: view.getCenter(),
 			zoom: view.getZoom()
 		}
-	}
+	};
 	
 	
 	$scope.onAddSelectedWaypointClicked = function()
@@ -212,7 +212,7 @@ function mapCtrl($scope, mapService, geonameService, waypointService, fuelServic
 		$scope.globalData.selectedWp = undefined;
 
 		mapService.hideFeaturePopup();
-	}
+	};
 	
 
 	$scope.onSetAsAlternateClicked = function()
@@ -222,7 +222,7 @@ function mapCtrl($scope, mapService, geonameService, waypointService, fuelServic
 		$scope.globalData.selectedWp = undefined;
 
 		mapService.hideFeaturePopup();
-	}
+	};
 	
 
 	
@@ -237,19 +237,19 @@ function mapCtrl($scope, mapService, geonameService, waypointService, fuelServic
 		$scope.updateWpList();
 
 		mapService.hideFeaturePopup();
-	}
+	};
 	
 
 	$scope.onEditSelectedWaypointClicked = function()
 	{
 		$scope.editSelectedWaypoint();
-	}
+	};
 
 
 	$scope.onEditUserWaypointClicked = function()
 	{
 		$scope.editUserWaypoint();
-	}
+	};
 	
 	
 	$scope.addWaypoint = function(newWp)
@@ -264,7 +264,7 @@ function mapCtrl($scope, mapService, geonameService, waypointService, fuelServic
 		$scope.globalData.navplan.waypoints.push(newWp);
 		
 		$scope.updateWpList();
-	}
+	};
 	
 	
 	$scope.setAlternate = function(altWp)
@@ -272,25 +272,25 @@ function mapCtrl($scope, mapService, geonameService, waypointService, fuelServic
 		$scope.globalData.navplan.alternate = altWp;
 		
 		$scope.updateWpList();
-	}
+	};
 	
 	
 	$scope.onDisplayChartClicked = function(chartId)
 	{
 		mapService.displayChart(chartId);
 		mapService.hideFeaturePopup();
-	}
+	};
 	
 	
 	$scope.onKmlClick = function()
 	{
 		var navplanData = {
-			waypoints: $scope.globalData.navplan.waypoints,
+			waypoints: $scope.globalData.navplan.waypoints
 		};
 	
 		var kmlLink = document.getElementById("dlKmlLink");
 		kmlLink.href = 'php/navplanKml.php?data=' + encodeURIComponent(JSON.stringify(navplanData))
-	}	
+	};
 	
 	
 	// init feature popup

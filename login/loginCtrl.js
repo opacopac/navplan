@@ -17,6 +17,8 @@ function loginCtrl($scope, $location, globalData, userService)
 			.success(function(data) {
 				if (data.resultcode == 0)
 				{
+					var rememberDays;
+
 					if ($scope.rememberMeChecked == true)
 						rememberDays = 90;
 					else
@@ -34,7 +36,7 @@ function loginCtrl($scope, $location, globalData, userService)
 			.error(function(data, status) {
 				console.error("ERROR", status, data);
 			});
-	}
+	};
 	
     $scope.onRegisterClicked = function()
 	{
@@ -42,6 +44,8 @@ function loginCtrl($scope, $location, globalData, userService)
 			.success(function(data) {
 				if (data.resultcode == 0)
 				{
+					var rememberDays;
+
 					if ($scope.rememberMeChecked == true)
 						rememberDays = 90;
 					else
@@ -55,5 +59,5 @@ function loginCtrl($scope, $location, globalData, userService)
 					$scope.showErrorMessage("Email already exists!");
 			})
 			.error(function(data, status) { console.error("ERROR", status, data); });
-    }	
+    };
 }

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de" ng-app="navplanApp" ng-controller="navplanCtrl">
+<html lang="de" data-ng-app="navplanApp" data-ng-controller="navplanCtrl">
 <head>
 	<title>NAV-Flightplan</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
@@ -83,7 +83,7 @@
 					<p>The data used on this website could be outdated, inaccurate, or contain errors. Always use up-to-date official sources for your flight planning.</p>
 				</div>
 				<div class="modal-footer">
-					<input type="checkbox" ng-model="hideDisclaimer">Don't show this message again
+					<input type="checkbox" ng-model="hideDisclaimer" title="Don't show again">Don't show this message again
 					<button type="button" class="btn btn-primary" data-dismiss="modal" ng-click="onDisclaimerOKClicked()">I agree</button>
 				</div>
 			</div>

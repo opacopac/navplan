@@ -9,8 +9,8 @@ userService.$inject = ['$http'];
 
 function userService($http)
 {
-	var api = 
-	{
+	// service api
+	return {
 		login: login,
 		register: register,
 		forgotPassword: forgotPassword,
@@ -22,11 +22,9 @@ function userService($http)
 		deleteNavplan: deleteNavplan,
 		saveUserWaypoint: saveUserWaypoint,
 		deleteUserWaypoint: deleteUserWaypoint
-	}
+	};
 	
-	return api;
 
-	
 	function login(email, password)
 	{
 		return $http.post('php/users.php', obj2json({ action: 'login', email: email, password: password }));
