@@ -3,11 +3,12 @@
  */
 
 navplanApp
-	.controller('mapCtrl', [ '$scope', 'mapService', 'geonameService', 'globalData', mapCtrl ]);
+	.controller('mapCtrl', [ '$scope', 'mapService', 'locationService', 'geonameService', 'globalData', mapCtrl ]);
 
 
-function mapCtrl($scope, mapService, geonameService, globalData) {
+function mapCtrl($scope, mapService, locationService, geonameService, globalData) {
 	$scope.globalData = globalData;
+	$scope.showPlanes = false;
 
 	
 	$scope.focusSearchWpInput = function()
@@ -280,9 +281,9 @@ function mapCtrl($scope, mapService, geonameService, globalData) {
 		mapService.displayChart(chartId);
 		mapService.hideFeaturePopup();
 	};
-	
-	
-	$scope.onKmlClick = function()
+
+
+	$scope.onKmlClicked = function()
 	{
 		var navplanData = {
 			waypoints: $scope.globalData.navplan.waypoints
@@ -291,15 +292,32 @@ function mapCtrl($scope, mapService, geonameService, globalData) {
 		var kmlLink = document.getElementById("dlKmlLink");
 		kmlLink.href = 'php/navplanKml.php?data=' + encodeURIComponent(JSON.stringify(navplanData))
 	};
-	
-	
+
+
+	$scope.onTogglePlanesClicked = function() {
+		$scope.showPlanes = !$scope.showPlanes;
+
+		if ($scope.showPlanes)
+			locationService.startWatching();
+		else
+			locationService.stopWatching();
+	};
+
+	$scope.onLocationChanged = function(lastPositions) {
+		mapService.drawPlaneTrack(lastPositions);
+	};
+
+
 	// init feature popup
 	var featureContainer = document.getElementById('feature-popup');
 	var featureContent = document.getElementById('feature-popup-content');
 	var featureCloser = document.getElementById('feature-popup-closer');
 
 	// init mapservice
-	mapService.init($scope.onMapClicked, $scope.onFeatureSelected, $scope.onMapMoveEnd, $scope.onKmlClick, $scope.globalData.currentMapPos, featureContainer, $scope.globalData.user.email, $scope.globalData.user.token);
+	mapService.init($scope.onMapClicked, $scope.onFeatureSelected, $scope.onMapMoveEnd, $scope.onKmlClicked, $scope.onTogglePlanesClicked, $scope.globalData.currentMapPos, featureContainer, $scope.globalData.user.email, $scope.globalData.user.token);
+
+	// init locationservice
+	locationService.init($scope.onLocationChanged);
 
 	featureCloser.onclick = function() {
 		mapService.hideFeaturePopup();

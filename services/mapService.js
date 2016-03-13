@@ -10,7 +10,7 @@ mapService.$inject = ['$http'];
 function mapService($http)
 {
 	var map = {}; 	// empty map reference
-	var mapLayer, trackLayer, iconLayer, airspaceLayer, userWpLayer, geopointLayer;
+	var mapLayer, trackLayer, iconLayer, airspaceLayer, userWpLayer, geopointLayer, planeLayer;
 	var featureOverlay = {}; // empty feature overlay reference
 	var isSelectionActive = false;
 	var wgs84Sphere = new ol.Sphere(6378137);
@@ -29,12 +29,13 @@ function mapService($http)
 		drawGeopointSelection: drawGeopointSelection,
 		showFeaturePopup: showFeaturePopup,
 		hideFeaturePopup: hideFeaturePopup,
-		displayChart: displayChart
+		displayChart: displayChart,
+		drawPlaneTrack: drawPlaneTrack
 	};
 	
 	
 	// init map
-	function init(onMapClickCallback, onFeatureSelectCallback, onMoveEndCallback, onKmlClick, mapPos, featureContainer, email, token)
+	function init(onMapClickCallback, onFeatureSelectCallback, onMoveEndCallback, onKmlClicked, onTogglePlanesClicked, mapPos, featureContainer, email, token)
 	{
 		// map layer
 		mapLayer =  new ol.layer.Tile({
@@ -49,8 +50,14 @@ function mapService($http)
 				]
 			})
 		});
-		
-		
+
+
+		// plane layer
+		planeLayer = new ol.layer.Vector({
+			source: new ol.source.Vector({ })
+		});
+
+
 		// track layer
 		trackLayer = new ol.layer.Vector({
 			source: new ol.source.Vector({ })
@@ -245,12 +252,25 @@ function mapService($http)
 		kmlLink.href = "php/navplanKml.php";
 		kmlLink.target = "_blank";
 		kmlLink.download = "navplan-track.kml";
-		kmlLink.addEventListener('click', onKmlClick, false);
-
+		kmlLink.addEventListener('click', onKmlClicked, false);
 
 		var kmlContainer = document.createElement('div');
 		kmlContainer.className = 'kml-export ol-unselectable ol-control';
 		kmlContainer.appendChild(kmlLink);
+
+
+
+		// toggle planes
+		var togglePlanesLink = document.createElement('a');
+		togglePlanesLink.id = "toggleCurPos";
+		togglePlanesLink.title = "Show/Hide own position";
+		togglePlanesLink.innerHTML = '<button type="button" class="btn btn-success btn-circle"><i class="glyphicon glyphicon-plane"></i></button>';
+		togglePlanesLink.href = "#";
+		togglePlanesLink.addEventListener('click', onTogglePlanesClicked, false);
+
+		var togglePlanesContainer = document.createElement('div');
+		togglePlanesContainer.className = 'toggle-planes ol-unselectable ol-control';
+		togglePlanesContainer.appendChild(togglePlanesLink);
 
 
 
@@ -370,17 +390,27 @@ function mapService($http)
 		map = new ol.Map({
 			target: 'map',
 			//interactions: ol.interaction.defaults().extend([new dragInteraction()]),
-			controls: ol.control.defaults().extend([
-				new ol.control.ScaleLine({ units: 'nautical' })
-			]).extend([
-				new ol.control.Control({ element: kmlContainer })
-			]),
-			layers: [ mapLayer, airspaceLayer, iconLayer, userWpLayer, trackLayer, geopointLayer ],
+			controls: ol.control.defaults().extend(
+				[
+					new ol.control.ScaleLine({ units: 'nautical' }),
+					new ol.control.Control({ element: kmlContainer }),
+					new ol.control.Control({ element: togglePlanesContainer })
+				]),
+			layers: [
+					mapLayer,
+					airspaceLayer,
+					iconLayer,
+					userWpLayer,
+					trackLayer,
+					geopointLayer,
+					planeLayer
+				],
 			overlays: [ featureOverlay ],
-			view: new ol.View({
-				center: mapPos.center,
-				zoom: mapPos.zoom
-			})
+			view: new ol.View(
+					{
+						center: mapPos.center,
+						zoom: mapPos.zoom
+					})
 		});
 		
 		
@@ -1149,6 +1179,81 @@ function mapService($http)
 		var t = Math.atan2(y, x);
 
 		return ((t * toDeg + 360) % 360 - magvar);
+	}
+
+
+	function drawPlaneTrack(lastPositions)
+	{
+		var planeSource = planeLayer.getSource();
+		planeSource.clear();
+
+		if (!lastPositions)
+			return;
+
+		// add track dots
+		var maxIdx = lastPositions.length - 1;
+
+		for (var i = 0; i < maxIdx - 1; i++)
+		{
+			var trackDotFeature = createTrackDotFeature(lastPositions[i].longitude, lastPositions[i].latitude);
+			planeSource.addFeature(trackDotFeature);
+		}
+
+		// add plane
+		if (maxIdx >= 0)
+		{
+			var planeFeature = createPlaneFeature(lastPositions[maxIdx].longitude, lastPositions[maxIdx].latitude, 0);
+			planeSource.addFeature(planeFeature);
+		}
+
+
+		function createTrackDotFeature(longitude, latitude)
+		{
+			var trackPoint = new ol.Feature({
+				geometry: new ol.geom.Point(ol.proj.fromLonLat([longitude, latitude]))
+			});
+
+			trackPoint.setStyle(
+				new ol.style.Style({
+					image: new ol.style.Circle({
+						radius: 3,
+						fill: new ol.style.Fill({
+							color: '#0000FF'
+						}),
+						stroke: new ol.style.Stroke({
+							color: '#0000FF',
+							width: 2
+						})
+					})
+				})
+			);
+
+			return trackPoint;
+		}
+
+
+		function createPlaneFeature(longitude, latitude, rotation)
+		{
+			var planeFeature = new ol.Feature({
+				geometry: new ol.geom.Point(ol.proj.fromLonLat([longitude, latitude]))
+			});
+
+			planeFeature.setStyle(
+				new ol.style.Style({
+					image: new ol.style.Icon({
+						anchor: [0.5, 0.5],
+						anchorXUnits: 'fraction',
+						anchorYUnits: 'fraction',
+						scale: 1,
+						opacity: 1.00,
+						rotation: rotation / 180 * Math.PI,
+						src: 'icon/plane_icon.png'
+					})
+				})
+			);
+
+			return planeFeature;
+		}
 	}
 	
 	

@@ -59,8 +59,13 @@ html, body {
 }
 
 .kml-export {
-	top: 65px;
+	top: 70px;
 	left: .5em;
+}
+
+.toggle-planes {
+  top: 110px;
+  left: .5em;
 }
 
 .ol-touch .kml-export {
