@@ -297,14 +297,22 @@ function mapCtrl($scope, mapService, locationService, geonameService, globalData
 	$scope.onTogglePlanesClicked = function() {
 		$scope.showPlanes = !$scope.showPlanes;
 
-		if ($scope.showPlanes)
+		if ($scope.showPlanes) {
 			locationService.startWatching();
+			mapService.highightPlaneControl(true);
+		}
 		else
+		{
 			locationService.stopWatching();
+			mapService.highightPlaneControl(false);
+		}
 	};
 
 	$scope.onLocationChanged = function(lastPositions) {
+		var lastPos = lastPositions[lastPositions.length - 1];
+
 		mapService.drawPlaneTrack(lastPositions);
+		mapService.setMapPosition(lastPos.latitude, lastPos.longitude);
 	};
 
 

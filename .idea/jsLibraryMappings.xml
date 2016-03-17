@@ -2,6 +2,7 @@
 <project version="4">
   <component name="JavaScriptLibraryMappings">
     <file url="file://$PROJECT_DIR$/index.html" libraries="{ol}" />
-    <file url="PROJECT" libraries="{angular, angular-route, bootstrap, ui-bootstrap-tpls}" />
+    <file url="file://$PROJECT_DIR$/services/mapService.js" libraries="{ol}" />
+    <file url="PROJECT" libraries="{angular, angular-resource, angular-route, bootstrap, jquery, jquery-ui, ol, ui-bootstrap-tpls}" />
   </component>
 </project>
