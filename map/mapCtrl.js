@@ -3,13 +3,14 @@
  */
 
 navplanApp
-	.controller('mapCtrl', [ '$scope', 'mapService', 'locationService', 'geonameService', 'globalData', mapCtrl ]);
+	.controller('mapCtrl', [ '$scope', 'mapService', 'locationService', 'trafficService', 'geonameService', 'globalData', mapCtrl ]);
 
 
-function mapCtrl($scope, mapService, locationService, geonameService, globalData) {
+function mapCtrl($scope, mapService, locationService, trafficService, geonameService, globalData) {
 	$scope.globalData = globalData;
 	$scope.showPlanes = false;
-
+	$scope.trafficTimer = undefined;
+	$scope.timerIntervallMs = 1000;
 	
 	$scope.focusSearchWpInput = function()
 	{
@@ -294,25 +295,43 @@ function mapCtrl($scope, mapService, locationService, geonameService, globalData
 	};
 
 
-	$scope.onTogglePlanesClicked = function() {
+	$scope.onTogglePlanesClicked = function()
+	{
 		$scope.showPlanes = !$scope.showPlanes;
 
 		if ($scope.showPlanes) {
 			locationService.startWatching();
+			trafficService.startWatching();
+
+			$scope.trafficTimer = window.setInterval($scope.onTrafficTimer, $scope.timerIntervallMs)
+
 			mapService.highightPlaneControl(true);
 		}
 		else
 		{
 			locationService.stopWatching();
+			trafficService.stopWatching();
+
+			window.clearInterval($scope.trafficTimer);
+
 			mapService.highightPlaneControl(false);
 		}
 	};
 
-	$scope.onLocationChanged = function(lastPositions) {
+	$scope.onLocationChanged = function(lastPositions)
+	{
 		var lastPos = lastPositions[lastPositions.length - 1];
 
-		mapService.drawPlaneTrack(lastPositions);
-		mapService.setMapPosition(lastPos.latitude, lastPos.longitude);
+		mapService.drawTrafficTrack(lastPositions, "OWN");
+		//mapService.setMapPosition(lastPos.latitude, lastPos.longitude);
+	};
+
+
+	$scope.onTrafficTimer = function()
+	{
+		var acList = trafficService.getAcList();
+
+		mapService.drawMultipleTrafficTracks(acList);
 	};
 
 
@@ -321,10 +340,7 @@ function mapCtrl($scope, mapService, locationService, geonameService, globalData
 	var featureContent = document.getElementById('feature-popup-content');
 	var featureCloser = document.getElementById('feature-popup-closer');
 
-	// init mapservice
 	mapService.init($scope.onMapClicked, $scope.onFeatureSelected, $scope.onMapMoveEnd, $scope.onKmlClicked, $scope.onTogglePlanesClicked, $scope.globalData.currentMapPos, featureContainer, $scope.globalData.user.email, $scope.globalData.user.token);
-
-	// init locationservice
 	locationService.init($scope.onLocationChanged);
 
 	featureCloser.onclick = function() {
