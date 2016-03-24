@@ -23,6 +23,7 @@
             <excludedPath local="true" path="$PROJECT_DIR$/.gitattributes" />
             <excludedPath local="true" path="$PROJECT_DIR$/.gitignore" />
             <excludedPath path="/data_import/vftemp_chart_image.png" />
+            <excludedPath path="/php/phpwebsockets/" />
           </excludedPaths>
         </serverdata>
       </paths>

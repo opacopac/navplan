@@ -10,7 +10,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 	$scope.globalData = globalData;
 	$scope.showPlanes = false;
 	$scope.trafficTimer = undefined;
-	$scope.timerIntervallMs = 1000;
+	$scope.timerIntervallMs = 5000;
 	
 	$scope.focusSearchWpInput = function()
 	{
@@ -301,16 +301,15 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 
 		if ($scope.showPlanes) {
 			locationService.startWatching();
-			trafficService.startWatching();
 
 			$scope.trafficTimer = window.setInterval($scope.onTrafficTimer, $scope.timerIntervallMs)
+			$scope.updateTraffic();
 
 			mapService.highightPlaneControl(true);
 		}
 		else
 		{
 			locationService.stopWatching();
-			trafficService.stopWatching();
 
 			window.clearInterval($scope.trafficTimer);
 
@@ -320,18 +319,45 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 
 	$scope.onLocationChanged = function(lastPositions)
 	{
-		var lastPos = lastPositions[lastPositions.length - 1];
-
-		mapService.drawTrafficTrack(lastPositions, "OWN");
+		// TODO
 		//mapService.setMapPosition(lastPos.latitude, lastPos.longitude);
 	};
 
 
 	$scope.onTrafficTimer = function()
 	{
-		var acList = trafficService.getAcList();
+		$scope.updateTraffic();
+	};
 
-		mapService.drawMultipleTrafficTracks(acList);
+
+	$scope.updateTraffic = function()
+	{
+		var extent = mapService.getViewExtent();
+		var acList = undefined;
+
+		trafficService.readTraffic(extent, 120)
+			.then(
+				function(response)
+				{
+					if (response.data.aclist)
+						acList = response.data.aclist;
+					else
+						console.error("ERROR reading traffic");
+				},
+				function(response)
+				{
+					console.error("ERROR", response.status, response.data);
+				}
+			).then(
+				function()
+				{
+					mapService.clearTrafficTracks();
+					mapService.drawTrafficTrack(locationService.lastPositions, "OWN");
+
+					if (acList)
+						mapService.drawMultipleTrafficTracks(acList);
+				}
+			);
 	};
 
 

@@ -17,7 +17,8 @@ function locationService() {
 	return {
 		init: init,
 		startWatching: startWatching,
-		stopWatching: stopWatching
+		stopWatching: stopWatching,
+		lastPositions: lastPositions
 	};
 
 
@@ -31,7 +32,11 @@ function locationService() {
 		if (navigator.geolocation) {
 			geolocationWatch = navigator.geolocation.watchPosition(
 				function (position) {
-					lastPositions.push(position.coords);
+					lastPositions.push({
+						latitude: position.coords.latitude,
+						longitude: position.coords.longitude,
+						altitude: position.coords.altitude
+					});
 
 					if (lastPositions.length > maxPositions)
 						lastPositions.shift();

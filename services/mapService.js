@@ -23,6 +23,7 @@ function mapService($http)
 		featureOverlay: featureOverlay,
 		init: init,
 		setMapPosition: setMapPosition,
+		getViewExtent: getViewExtent,
 		updateTrack: updateTrack,
 		updateUserWaypoints: updateUserWaypoints,
 		getDistance: getDistance,
@@ -33,6 +34,7 @@ function mapService($http)
 		displayChart: displayChart,
 		drawTrafficTrack: drawTrafficTrack,
 		drawMultipleTrafficTracks: drawMultipleTrafficTracks,
+		clearTrafficTracks: clearTrafficTracks,
 		highightPlaneControl: highightPlaneControl
 	};
 	
@@ -978,6 +980,14 @@ function mapService($http)
 		if (zoom)
 			map.getView().setZoom(zoom);
 	}
+
+
+	function getViewExtent()
+	{
+		var extent = map.getView().calculateExtent(map.getSize());
+
+		return ol.proj.transformExtent(extent, 'EPSG:3857', 'EPSG:4326');
+	}
 	
 	
 	function displayChart(chartId)
@@ -1039,10 +1049,17 @@ function mapService($http)
 	}
 
 
+	function clearTrafficTracks()
+	{
+		var planeSource = planeLayer.getSource();
+
+		planeSource.clear();
+	}
+
+
 	function drawMultipleTrafficTracks(acList)
 	{
 		var planeSource = planeLayer.getSource();
-		planeSource.clear();
 
 		for (var ac in acList)
 			drawTrafficTrack(acList[ac].positions, acList[ac].actype);
@@ -1059,7 +1076,7 @@ function mapService($http)
 		// draw track dots
 		var maxIdx = lastPositions.length - 1;
 
-		for (var i = 0; i < maxIdx - 1; i++)
+		for (var i = 0; i < maxIdx; i++)
 		{
 			var trackDotFeature = createTrackDotFeature(lastPositions[i].longitude, lastPositions[i].latitude, trafficType);
 			planeSource.addFeature(trackDotFeature);
@@ -1078,7 +1095,7 @@ function mapService($http)
 					0);
 			}
 
-			var planeFeature = createTrafficFeature(lastPositions[maxIdx].longitude, lastPositions[maxIdx].latitude, rotation, trafficType);
+			var planeFeature = createTrafficFeature(lastPositions[maxIdx].longitude, lastPositions[maxIdx].latitude, lastPositions[maxIdx].altitude, rotation, trafficType);
 			planeSource.addFeature(planeFeature);
 		}
 
@@ -1100,14 +1117,11 @@ function mapService($http)
 			trackPoint.setStyle(
 				new ol.style.Style({
 					image: new ol.style.Circle({
-						radius: 3,
+						radius: 2,
 						fill: new ol.style.Fill({
 							color: color
-						}),
-						stroke: new ol.style.Stroke({
-							color: color,
-							width: 2
 						})
+						//stroke: new ol.style.Stroke({color: color,width: 2})
 					})
 				})
 			);
@@ -1116,14 +1130,20 @@ function mapService($http)
 		}
 
 
-		function createTrafficFeature(longitude, latitude, rotation, trafficType)
+		function createTrafficFeature(longitude, latitude, altitude, rotation, trafficType)
 		{
 			var icon = "icon/";
+			var color = "#FF0000";
+			var heighttext = "";
+
+			if (altitude > 0)
+				heighttext = Math.round(altitude * 3.28084).toString() + " ft"; // TODO: einstellbar
 
 			switch (trafficType)
 			{
 				case "OWN":
 					icon += "own_plane.png";
+					color = "#0000FF";
 					break;
 				case "HELICOPTER_ROTORCRAFT":
 					icon += "traffic_heli.png";
@@ -1135,10 +1155,12 @@ function mapService($http)
 				case "HANG_GLIDER":
 				case "PARA_GLIDER":
 					icon += "traffic_parachute.png";
+					rotation = 0;
 					break;
 				case "BALLOON":
 				case "AIRSHIP":
 					icon += "traffic_balloon.png";
+					rotation = 0;
 					break;
 				case "UKNOWN":
 				case "TOW_PLANE":
@@ -1167,6 +1189,16 @@ function mapService($http)
 						opacity: 1.00,
 						rotation: rotation / 180 * Math.PI,
 						src: icon
+					}),
+					text: new ol.style.Text({
+						//textAlign: align,
+						//textBaseline: baseline,
+						font: 'bold 14px Calibri,sans-serif',
+						text: heighttext,
+						fill: new ol.style.Fill({color: color}),
+						stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2}),
+						offsetX: 0,
+						offsetY: 35
 					})
 				})
 			);

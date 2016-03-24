@@ -3,9 +3,9 @@
   <component name="WebServers">
     <option name="servers">
       <webServer id="09402835-329f-45bd-840a-c7b743199450" name="navplan-branch" url="http://navplan.ch/branch/">
-        <fileTransfer host="ftp.tschanz.com" port="21" rootFolder="/www/navplan.ch/branch" password="dfcbdfc4dfdedfc3dfcbdfc4dfdedfc3" username="ftp@tschanz.com">
+        <fileTransfer host="ftp.tschanz.com" port="21" rootFolder="/www/navplan.ch/branch/" password="dfcbdfc4dfdedfc3dfcbdfc4dfdedfc3" username="ftp@tschanz.com">
           <advancedOptions>
-            <advancedOptions dataProtectionLevel="Private" />
+            <advancedOptions dataProtectionLevel="Private" forceListCommand="true" />
           </advancedOptions>
         </fileTransfer>
       </webServer>
