@@ -1,7 +1,7 @@
 <div class="container-fluid">
 	<div class="row">
 		<div class="input-group">
-			<input id="searchWpInput" type="text" class="form-control" placeholder="Enter Waypoint or Coordinates" ng-model="globalData.navplan.selectedWaypoint.checkpoint"
+			<input id="searchWpInput" type="text" class="form-control" placeholder="search waypoint / coordinates or click on map" ng-model="globalData.navplan.selectedWaypoint.checkpoint"
 				typeahead="geoname.name for geoname in searchGeonamesByValue($viewValue)" typeahead-min-length="2"
 				typeahead-on-select="onGeonameSelect($item)"
 				ng-blur="updateTrack()" />
@@ -20,9 +20,30 @@
 		<p ng-show="globalData.selectedWp.isNew && globalData.selectedWp.type == 'airport'"><button type="button" class="btn btn-warning btn-circle" ng-click="onSetAsAlternateClicked()"><i class="glyphicon glyphicon-plus"></i></button> Set as Alternate</p>
 		<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-warning btn-circle" ng-click="onEditSelectedWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Edit Track Waypoint</p>
 		<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-danger btn-circle" ng-click="onRemoveSelectedWaypointClicked()"><i class="glyphicon glyphicon-remove"></i></button> Remove from Track</p>
-		<p ng-show="isLoggedIn() && (globalData.selectedWp.type == 'user' || globalData.selectedWp.type == 'geoname')"><button type="button" class="btn btn-primary btn-circle" ng-click="onEditUserWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Edit User Waypoint</p>
+		<p ng-show="isLoggedIn() && (globalData.selectedWp.type == 'user' || globalData.selectedWp.type == 'geoname')"><button type="button" class="btn btn-primary btn-circle" ng-click="onEditUserWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Edit/Save User Waypoint</p>
 		<hr />
 		<p ng-repeat="chart in globalData.selectedWp.airport.charts"><button type="button" class="btn btn-info btn-circle" ng-click="onDisplayChartClicked(chart.id)"><i class="glyphicon glyphicon-file"></i></button> {{ chart.type }}</p>
+	</div>
+</div>
+<!-- traffic popup -->
+<div id="traffic-popup" class="ol-popup">
+	<a href="#" id="traffic-popup-closer" class="ol-popup-closer"></a>
+	<div id="traffic-popup-content">
+		<h4>{{ selectedTraffic.registration }}</h4>
+		<table>
+			<tr>
+				<td>Aircraft Model Type:</td>
+				<td>{{ selectedTraffic.aircraftModelType }}</td>
+			</tr>
+			<tr>
+				<td>Manufacturer:</td>
+				<td>{{ selectedTraffic.manufacturer }}</td>
+			</tr>
+			<tr>
+				<td>ICAO Aircraft Address:</td>
+				<td>{{ selectedTraffic.icaohex }}</td>
+			</tr>
+		</table>
 	</div>
 </div>
 <!-- map -->

@@ -60,6 +60,8 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 		};
 		$scope.globalData.selectedWp = undefined;
 		$scope.globalData.wpBackup = undefined;
+		$scope.globalData.trafficTimer = undefined;
+		$scope.globalData.flyMode = false;
 	};
 	
 	
@@ -249,6 +251,8 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 		$scope.globalData.selectedWp = undefined;
 	
 		$scope.updateWpList();
+
+		mapService.clearAllCharts();
 	};
 	
 	

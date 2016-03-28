@@ -9,12 +9,23 @@ mapService.$inject = ['$http'];
 
 function mapService($http)
 {
-	var map = {}; 	// empty map reference
-	var mapControls = {}; // map control reference
-	var mapLayer, trackLayer, iconLayer, airspaceLayer, userWpLayer, geopointLayer, planeLayer;
-	var featureOverlay = {}; // empty feature overlay reference
-	var isSelectionActive = false;
+	var map = {};
+	var mapControls = {};
+	var mapLayer, trackLayer, iconLayer, airspaceLayer, globalWpLayer, userWpLayer, geopointLayer, trafficLayer, locationLayer;
+	var chartLayers = [];
+	var featureOverlay = {};
+	var trafficOverlay = {};
+	var isGeopointSelectionActive = false;
+	var isFeaturePopupActive = false;
+	var isTrafficPopupActive = false;
 	var wgs84Sphere = new ol.Sphere(6378137);
+	var minZoomLevel =
+	{
+		iconLayer: 9,
+		airspaceLayer: 9,
+		globalWpLayer: 10,
+		userWpLayer: 10
+	};
 	
 
 	// return api reference
@@ -22,6 +33,7 @@ function mapService($http)
 		map: map,
 		featureOverlay: featureOverlay,
 		init: init,
+		getMapPosition: getMapPosition,
 		setMapPosition: setMapPosition,
 		getViewExtent: getViewExtent,
 		updateTrack: updateTrack,
@@ -31,16 +43,18 @@ function mapService($http)
 		drawGeopointSelection: drawGeopointSelection,
 		showFeaturePopup: showFeaturePopup,
 		hideFeaturePopup: hideFeaturePopup,
+		showTrafficPopup: showTrafficPopup,
+		hideTrafficPopup: hideTrafficPopup,
 		displayChart: displayChart,
-		drawTrafficTrack: drawTrafficTrack,
-		drawMultipleTrafficTracks: drawMultipleTrafficTracks,
-		clearTrafficTracks: clearTrafficTracks,
-		highightPlaneControl: highightPlaneControl
+		clearAllCharts: clearAllCharts,
+		updateLocation: updateLocation,
+		updateTraffic: updateTraffic,
+		highightPlaneControl: highightTrafficControl
 	};
 	
 	
 	// init map
-	function init(onMapClickCallback, onFeatureSelectCallback, onMoveEndCallback, onKmlClicked, onTogglePlanesClicked, mapPos, featureContainer, email, token) {
+	function init(onMapClickCallback, onFeatureSelectCallback, onMoveEndCallback, onKmlClicked, onToggleTrafficClicked, mapPos, featureContainer, trafficContainer, email, token) {
 		// map layer
 		mapLayer = new ol.layer.Tile({
 			source: new ol.source.OSM({
@@ -56,8 +70,14 @@ function mapService($http)
 		});
 
 
-		// plane layer
-		planeLayer = new ol.layer.Vector({
+		// own loaction layer
+		locationLayer = new ol.layer.Vector({
+			source: new ol.source.Vector({})
+		});
+
+
+		// traffic layer
+		trafficLayer = new ol.layer.Vector({
 			source: new ol.source.Vector({})
 		});
 
@@ -78,7 +98,7 @@ function mapService($http)
 		$http.get('php/airports.php')
 			.success(function (data) {
 				if (data.airports) {
-					for (i = 0; i < data.airports.length; i++) {
+					for (var i = 0; i < data.airports.length; i++) {
 						// airport icon
 						var adFeature = new ol.Feature({
 							geometry: new ol.geom.Point(ol.proj.fromLonLat([data.airports[i].longitude, data.airports[i].latitude]))
@@ -124,7 +144,7 @@ function mapService($http)
 		$http.get('php/navaids.php')
 			.success(function (data) {
 				if (data.navaids) {
-					for (i = 0; i < data.navaids.length; i++) {
+					for (var i = 0; i < data.navaids.length; i++) {
 						var navaidFeature = new ol.Feature({
 							geometry: new ol.geom.Point(ol.proj.fromLonLat([data.navaids[i].longitude, data.navaids[i].latitude]))
 						});
@@ -150,11 +170,16 @@ function mapService($http)
 			});
 
 
+		// global waypoint layer
+		globalWpLayer = new ol.layer.Vector({
+			source: new ol.source.Vector({})
+		});
+
 		// add global waypoints to icon layer
 		$http.post('php/userWaypoint.php', obj2json({action: 'readGlobalWaypoints'}))
 			.success(function (data) {
 				if (data.globalWaypoints) {
-					for (i = 0; i < data.globalWaypoints.length; i++) {
+					for (var i = 0; i < data.globalWaypoints.length; i++) {
 						var globalWpFeature = new ol.Feature({
 							geometry: new ol.geom.Point(ol.proj.fromLonLat([data.globalWaypoints[i].longitude, data.globalWaypoints[i].latitude]))
 						});
@@ -168,7 +193,7 @@ function mapService($http)
 						else
 							continue;
 
-						iconLayer.getSource().addFeature(globalWpFeature);
+						globalWpLayer.getSource().addFeature(globalWpFeature);
 					}
 				}
 				else {
@@ -197,10 +222,10 @@ function mapService($http)
 		$http.get('php/airspace.php')
 			.success(function (data, status, headers, config) {
 				if (data.airspace) {
-					for (i = 0; i < data.airspace.length; i++) {
+					for (var i = 0; i < data.airspace.length; i++) {
 						// convert polygon
 						var polygon = [];
-						for (j = 0; j < data.airspace[i].polygon.length; j++)
+						for (var j = 0; j < data.airspace[i].polygon.length; j++)
 							polygon.push(ol.proj.fromLonLat(data.airspace[i].polygon[j]));
 
 						var airspaceFeature = new ol.Feature({
@@ -234,10 +259,11 @@ function mapService($http)
 
 
 		// kml export control
+		/*
 		var kmlLink = document.createElement('a');
 		kmlLink.id = "dlKmlLink";
 		kmlLink.title = "Save KML-Track for Google Earth";
-		kmlLink.innerHTML = '<button type="button" class="btn btn-success btn-circle"><i class="glyphicon glyphicon-globe"></i></button>';
+		kmlLink.innerHTML = '<button type="button" class="btn btn-lg btn-default btn-circle"><span class="glyphicon glyphicon-globe"></span></button>';
 		kmlLink.href = "php/navplanKml.php";
 		kmlLink.target = "_blank";
 		kmlLink.download = "navplan-track.kml";
@@ -247,22 +273,42 @@ function mapService($http)
 		kmlContainer.className = 'mapctrl-kmlexport ol-unselectable ol-control';
 		kmlContainer.appendChild(kmlLink);
 
-		mapControls.kmlControl = new ol.control.Control({element: kmlContainer});
+		mapControls.kmlControl = new ol.control.Control({element: kmlContainer});*/
+
+		mapControls.zoomInControl = createCustomControl(
+			"zoomInCtrl",
+			"zoom in",
+			"btn btn-primary btn-circle btn-lg",
+			"glyphicon glyphicon-plus",
+			"ol-control mapctrl-zoomin",
+			onZoomInClicked);
 
 
-		// toggle planes
-		var togglePlanesLink = document.createElement('a');
-		togglePlanesLink.id = "toggleCurPos";
-		togglePlanesLink.title = "Show/Hide own position";
-		togglePlanesLink.innerHTML = '<button type="button" class="btn btn-success btn-circle"><i class="glyphicon glyphicon-plane"></i></button>';
-		togglePlanesLink.href = "#";
-		togglePlanesLink.addEventListener('click', onTogglePlanesClicked, false);
+		mapControls.zoomOutControl = createCustomControl(
+			"zoomInCtrl",
+			"zoom out",
+			"btn btn-primary btn-circle btn-lg",
+			"glyphicon glyphicon-minus",
+			"ol-control mapctrl-zoomout",
+			onZoomOutClicked);
 
-		var togglePlanesContainer = document.createElement('div');
-		togglePlanesContainer.className = 'mapctrl-toggleplanes ol-unselectable ol-control';
-		togglePlanesContainer.appendChild(togglePlanesLink);
 
-		mapControls.togglePlanesControl = new ol.control.Control({element: togglePlanesContainer});
+		mapControls.kmlControl = createCustomControl(
+			"dlKmlLink",
+			"save KML track for Google Earth",
+			"btn btn-primary btn-circle btn-lg",
+			"glyphicon glyphicon-globe",
+			"ol-control mapctrl-kmlexport",
+			onKmlClicked);
+
+		// toggle traffic
+		mapControls.toggleTrafficControl = createCustomControl(
+			"toggleCurPos",
+			"toggle own position and traffic",
+			"btn btn-primary btn-circle btn-lg",
+			"glyphicon glyphicon-plane",
+			"ol-control mapctrl-toggleplanes",
+			onToggleTrafficClicked);
 
 
 		// feature overlay
@@ -272,27 +318,38 @@ function mapService($http)
 			autoPanAnimation: {duration: 250}
 		}));
 
+		// traffic overlay
+		trafficOverlay = new ol.Overlay(/** @type {olx.OverlayOptions} */ ({
+			element: trafficContainer,
+			autoPan: true,
+			autoPanAnimation: {duration: 250}
+		}));
+
 
 		// map
 		map = new ol.Map({
 			target: 'map',
 			//interactions: ol.interaction.defaults().extend([new dragInteraction()]),
-			controls: ol.control.defaults().extend(
+			controls: //ol.control.defaults().extend(
 				[
-					new ol.control.ScaleLine({units: 'nautical'}),
+					mapControls.zoomInControl,
+					mapControls.zoomOutControl,
 					mapControls.kmlControl,
-					mapControls.togglePlanesControl
-				]),
+					mapControls.toggleTrafficControl,
+					new ol.control.ScaleLine({units: 'nautical'})
+				],
 			layers: [
 				mapLayer,
 				airspaceLayer,
 				iconLayer,
+				globalWpLayer,
 				userWpLayer,
 				trackLayer,
 				geopointLayer,
-				planeLayer
+				trafficLayer,
+				locationLayer
 			],
-			overlays: [featureOverlay],
+			overlays: [featureOverlay, trafficOverlay],
 			view: new ol.View(
 				{
 					center: mapPos.center,
@@ -300,38 +357,83 @@ function mapService($http)
 				})
 		});
 
+		setLayerVisibility();
+
+
+		// restore chart layers
+		for (var i = 0; i < chartLayers.length; i++)
+			map.getLayers().insertAt(i + 1, chartLayers[i]);
+
 
 		// click event
-		map.on('click', function (event) {
+		map.on('singleclick', function (event) {
 			var eventConsumed = false;
 
+			// geopoint layers
 			map.forEachFeatureAtPixel(
 				event.pixel,
 				function (feature, layer) {
 					if (eventConsumed)
 						return;
 
-					if (feature.geopoint || feature.airport || feature.navaid || feature.waypoint || feature.userWaypoint || feature.globalWaypoint) {
+					// specific feature clicked
+					if (feature.geopoint || feature.airport || feature.navaid || feature.waypoint || feature.userWaypoint || feature.globalWaypoint)
+					{
 						onFeatureSelectCallback(event, feature);
 						clearGeopointSelection();
 						eventConsumed = true;
 					}
 				},
 				null,
-				function (layer) {
-					return layer === geopointLayer || layer === iconLayer || layer === userWpLayer || layer === trackLayer;
+				function (layer) // layers to search for features
+				{
+					return layer === geopointLayer || layer === iconLayer || layer === globalWpLayer || layer === userWpLayer || layer === trackLayer;
 				}
 			);
 
-			if (!eventConsumed && !isSelectionActive)
-				onMapClickCallback(event, ol.proj.toLonLat(event.coordinate), getClickRadius(event));
-			else
-				clearGeopointSelection();
+			// traffic layer
+			if (!eventConsumed)
+			{
+				map.forEachFeatureAtPixel(
+					event.pixel,
+					function (feature, layer) {
+						if (eventConsumed)
+							return;
+
+						// specific feature clicked
+						if (feature.icaoHex)
+						{
+							onFeatureSelectCallback(event, feature);
+							clearGeopointSelection();
+							eventConsumed = true;
+						}
+					},
+					null,
+					function (layer) // layers to search for features
+					{
+						return layer === trafficLayer;
+					}
+				);
+			}
+
+
+			if (!eventConsumed)
+			{
+				if (isGeopointSelectionActive)
+					clearGeopointSelection();
+				else if (isFeaturePopupActive)
+					hideFeaturePopup();
+				else if (isTrafficPopupActive)
+					hideTrafficPopup();
+				else
+					onMapClickCallback(event, ol.proj.toLonLat(event.coordinate), getClickRadius(event));
+			}
 		});
 
 
 		// pointermove event
-		map.on('pointermove', function (event) {
+		map.on('pointermove', function (event)
+		{
 			var hitLayer = map.forEachFeatureAtPixel(
 				event.pixel,
 				function (feature, layer) {
@@ -339,19 +441,22 @@ function mapService($http)
 				},
 				null,
 				function (layer) {
-					return layer === geopointLayer || layer === iconLayer || layer === userWpLayer || layer === trackLayer;
+					return layer === geopointLayer || layer === iconLayer || layer === globalWpLayer || layer === userWpLayer || layer === trackLayer || layer == trafficLayer;
 				}
 			);
 
-			if (hitLayer === geopointLayer || hitLayer === iconLayer || hitLayer === userWpLayer || hitLayer === trackLayer)
+			if (hitLayer === geopointLayer || hitLayer === iconLayer || hitLayer === globalWpLayer || hitLayer === userWpLayer || hitLayer === trackLayer || hitLayer === trafficLayer)
 				map.getTargetElement().style.cursor = 'pointer';
 			else
 				map.getTargetElement().style.cursor = '';
 		});
 
 
-		// moveend event
-		map.on('moveend', function (event) {
+		// moveend event (pan / zoom)
+		map.on('moveend', function (event)
+		{
+			setLayerVisibility();
+
 			onMoveEndCallback(event);
 		});
 
@@ -558,25 +663,67 @@ function mapService($http)
 	}
 
 
+	function setLayerVisibility()
+	{
+		var zoom = map.getView().getZoom();
+
+		if (zoom >= minZoomLevel.airspaceLayer)
+			airspaceLayer.setVisible(true);
+		else
+			airspaceLayer.setVisible(false);
+
+		if (zoom >= minZoomLevel.iconLayer)
+			iconLayer.setVisible(true);
+		else
+			iconLayer.setVisible(false);
+
+		if (zoom >= minZoomLevel.userWpLayer)
+			userWpLayer.setVisible(true);
+		else
+			userWpLayer.setVisible(false);
+
+		if (zoom >= minZoomLevel.globalWpLayer)
+			globalWpLayer.setVisible(true);
+		else
+			globalWpLayer.setVisible(false);
+	}
+
+
 	function showFeaturePopup(lat, lon)
 	{
 		var coords = ol.proj.fromLonLat([lon, lat]);
 		//var pixelCoords = map.getPixelFromCoordinate(coords);
-	
+
 		featureOverlay.setPosition(coords);
+		isFeaturePopupActive = true;
 	}
 	
 	
 	function hideFeaturePopup()
 	{
 		featureOverlay.setPosition(undefined);
+		isFeaturePopupActive = false;
 	}
-	
-	
+
+
+	function showTrafficPopup(trafficFeature)
+	{
+		trafficOverlay.setPosition(trafficFeature.getGeometry().getCoordinates());
+		isTrafficPopupActive = true;
+	}
+
+
+	function hideTrafficPopup()
+	{
+		trafficOverlay.setPosition(undefined);
+		isTrafficPopupActive = false;
+	}
+
+
 	function clearGeopointSelection()
 	{
 		geopointLayer.getSource().clear();
-		isSelectionActive = false;
+		isGeopointSelectionActive = false;
 	}
 	
 	
@@ -585,7 +732,7 @@ function mapService($http)
 		var layerSource = geopointLayer.getSource();
 		layerSource.clear();
 		
-		isSelectionActive = true;
+		isGeopointSelectionActive = true;
 		
 		// add clickpoint
 		if (geopoints.length < 8)
@@ -717,7 +864,7 @@ function mapService($http)
 			var rotOffset = 0;
 			var rotInc = Math.PI / 2 / (geopoints.length + 1);
 
-			for (i = 0; i < geopoints.length; i++)
+			for (var i = 0; i < geopoints.length; i++)
 			{
 				var geoPointPixel = map.getPixelFromCoordinate(ol.proj.fromLonLat([geopoints[i].longitude, geopoints[i].latitude]));
 				var labelCoordX = geoPointPixel[0] + Math.sin(rotationRad + (i + 1) * rotInc + rotOffset) * radiusPixel;
@@ -744,7 +891,7 @@ function mapService($http)
 				.success(function(data) {
 					if (data.userWaypoints)
 					{
-						for (i = 0; i < data.userWaypoints.length; i++)
+						for (var i = 0; i < data.userWaypoints.length; i++)
 						{
 							var userWpFeature = new ol.Feature({
 								geometry: new ol.geom.Point(ol.proj.fromLonLat([data.userWaypoints[i].longitude, data.userWaypoints[i].latitude]))
@@ -969,6 +1116,15 @@ function mapService($http)
 			});
 		}
 	}
+
+
+	function getMapPosition()
+	{
+		return {
+			center: ol.proj.toLonLat(map.getView().getCenter()),
+			zoom: map.getView().getZoom()
+		};
+	}
 	
 	
 	function setMapPosition(lat, lon, zoom)
@@ -979,6 +1135,24 @@ function mapService($http)
 
 		if (zoom)
 			map.getView().setZoom(zoom);
+	}
+
+
+	function onZoomInClicked()
+	{
+		var zoom = map.getView().getZoom();
+
+		if (zoom < 18)
+			map.getView().setZoom(zoom + 1);
+	}
+
+
+	function onZoomOutClicked()
+	{
+		var zoom = map.getView().getZoom();
+
+		if (zoom > 1)
+			map.getView().setZoom(zoom - 1);
 	}
 
 
@@ -1013,8 +1187,10 @@ function mapService($http)
 						}),
 						opacity: 0.8
 					});
+
+					chartLayers.push(chartLayer);
 					
-					map.getLayers().insertAt(1, chartLayer);
+					map.getLayers().insertAt(chartLayers.length, chartLayer);
 				}
 				else
 				{
@@ -1024,6 +1200,15 @@ function mapService($http)
 			.error(function(data, status) {
 				console.error("ERROR", status, data);
 			});
+	}
+
+
+	function clearAllCharts()
+	{
+		for (var i = 0; i < chartLayers.length; i++)
+			map.removeLayer(chartLayers[i]);
+
+		chartLayers = [];
 	}
 	
 	
@@ -1049,27 +1234,31 @@ function mapService($http)
 	}
 
 
-	function clearTrafficTracks()
+	function updateLocation(lastPositions)
 	{
-		var planeSource = planeLayer.getSource();
+		var layerSource = locationLayer.getSource();
+		layerSource.clear();
 
-		planeSource.clear();
+		if (lastPositions)
+			drawTrafficTrack(lastPositions, "OWN", layerSource, undefined);
 	}
 
 
-	function drawMultipleTrafficTracks(acList)
+	function updateTraffic(acList)
 	{
-		var planeSource = planeLayer.getSource();
+		var layerSource = trafficLayer.getSource();
+		layerSource.clear();
 
-		for (var ac in acList)
-			drawTrafficTrack(acList[ac].positions, acList[ac].actype);
+		if (acList)
+		{
+			for (var icaoHex in acList)
+				drawTrafficTrack(acList[icaoHex].positions, acList[icaoHex].actype, layerSource,  icaoHex);
+		}
 	}
 
 
-	function drawTrafficTrack(lastPositions, trafficType)
+	function drawTrafficTrack(lastPositions, trafficType, layerSource, icaoHex)
 	{
-		var planeSource = planeLayer.getSource();
-
 		if (!lastPositions)
 			return;
 
@@ -1079,7 +1268,7 @@ function mapService($http)
 		for (var i = 0; i < maxIdx; i++)
 		{
 			var trackDotFeature = createTrackDotFeature(lastPositions[i].longitude, lastPositions[i].latitude, trafficType);
-			planeSource.addFeature(trackDotFeature);
+			layerSource.addFeature(trackDotFeature);
 		}
 
 		// draw plane
@@ -1095,8 +1284,15 @@ function mapService($http)
 					0);
 			}
 
-			var planeFeature = createTrafficFeature(lastPositions[maxIdx].longitude, lastPositions[maxIdx].latitude, lastPositions[maxIdx].altitude, rotation, trafficType);
-			planeSource.addFeature(planeFeature);
+			var planeFeature = createTrafficFeature(
+				icaoHex,
+				lastPositions[maxIdx].longitude,
+				lastPositions[maxIdx].latitude,
+				lastPositions[maxIdx].altitude,
+				rotation,
+				trafficType);
+
+			layerSource.addFeature(planeFeature);
 		}
 
 
@@ -1130,7 +1326,7 @@ function mapService($http)
 		}
 
 
-		function createTrafficFeature(longitude, latitude, altitude, rotation, trafficType)
+		function createTrafficFeature(icaoHex, longitude, latitude, altitude, rotation, trafficType)
 		{
 			var icon = "icon/";
 			var color = "#FF0000";
@@ -1203,19 +1399,45 @@ function mapService($http)
 				})
 			);
 
+			planeFeature.icaoHex = icaoHex;
+
 			return planeFeature;
 		}
 	}
 
 
-	function highightPlaneControl(highlightOn)
+	function createCustomControl(id, title, buttonCss, iconCss, containerCss, clickCallback)
 	{
-		var e = mapControls.togglePlanesControl.element;
+		var element = document.createElement('a');
+		element.id = id;
+		element.title = title;
+		element.className = buttonCss;
+		element.innerHTML = '<i class="' + iconCss + '" style="vertical-align: middle"></i>';
+		//element.innerHTML = '<button type="button" class="btn btn-lg btn-default btn-circle"><span class="' + buttonCss + '"></span></button>';
+		element.href = "#";
+		element.addEventListener('click', clickCallback, false);
+
+		var container = document.createElement('div');
+		container.className = containerCss;
+		container.appendChild(element);
+
+		return new ol.control.Control({element: container});
+	}
+
+
+	function highightTrafficControl(highlightOn) {
+		var button = $(mapControls.toggleTrafficControl.element).find("a").first();
 
 		if (highlightOn)
-			e.style.backgroundColor = "#FF0000";
+			button.addClass("active");
 		else
-			e.style.backgroundColor = "";
+			button.removeClass("active");
 
+		/*
+		if (highlightOn)
+			button.css("background-color", "#0000FF")
+		else
+			button.css("background-color", "")
+			*/
 	}
 }

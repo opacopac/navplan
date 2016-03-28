@@ -8,10 +8,9 @@ navplanApp
 
 function mapCtrl($scope, mapService, locationService, trafficService, geonameService, globalData) {
 	$scope.globalData = globalData;
-	$scope.showPlanes = false;
-	$scope.trafficTimer = undefined;
 	$scope.timerIntervallMs = 5000;
-	
+	$scope.selectedTraffic = {};
+
 	$scope.focusSearchWpInput = function()
 	{
 		document.getElementById('searchWpInput').focus();
@@ -80,8 +79,8 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 				console.error("ERROR", status, data);
 			});
 	};
-	
-	
+
+
 	$scope.onFeatureSelected = function(event, feature)
 	{
 		if (feature.geopoint)
@@ -193,6 +192,36 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 			
 			mapService.showFeaturePopup($scope.globalData.selectedWp.latitude, $scope.globalData.selectedWp.longitude);
 		}
+		else if (feature.icaoHex)
+		{
+			trafficService.readCallSign(feature.icaoHex)
+				.then(
+					function(response)
+					{
+						if (!response.data || !response.data.aircrafts || response.data.aircrafts.length > 1) {
+							console.error("ERROR reading callsign");
+						}
+						else {
+							if (response.data.aircrafts.length == 1) {
+								$scope.selectedTraffic = response.data.aircrafts[0];
+							}
+							else
+							{
+								$scope.selectedTraffic = {
+									registration: "N/A",
+									icaohex: feature.icaoHex
+								}
+							}
+
+							mapService.showTrafficPopup(feature);
+						}
+					},
+					function(response)
+					{
+						console.error("ERROR", response.status, response.data);
+					}
+				)
+		}
 	};
 	
 	
@@ -203,7 +232,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		$scope.globalData.currentMapPos = {
 			center: view.getCenter(),
 			zoom: view.getZoom()
-		}
+		};
 	};
 	
 	
@@ -297,30 +326,60 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 
 	$scope.onTogglePlanesClicked = function()
 	{
-		$scope.showPlanes = !$scope.showPlanes;
+		$scope.globalData.flyMode = !$scope.globalData.flyMode;
 
-		if ($scope.showPlanes) {
+		if ($scope.globalData.flyMode) {
 			locationService.startWatching();
 
-			$scope.trafficTimer = window.setInterval($scope.onTrafficTimer, $scope.timerIntervallMs)
-			$scope.updateTraffic();
+			if (!$scope.globalData.trafficTimer)
+				$scope.globalData.trafficTimer = window.setInterval($scope.onTrafficTimer, $scope.timerIntervallMs)
 
-			mapService.highightPlaneControl(true);
+			$scope.updateTraffic();
 		}
 		else
 		{
 			locationService.stopWatching();
-
-			window.clearInterval($scope.trafficTimer);
-
-			mapService.highightPlaneControl(false);
+			window.clearInterval($scope.globalData.trafficTimer);
+			$scope.globalData.trafficTimer = undefined;
+			mapService.updateTraffic(undefined);
+			mapService.updateLocation(undefined);
 		}
+
+
+		$scope.highlightPlaneControl();
 	};
 
-	$scope.onLocationChanged = function(lastPositions)
+
+	$scope.highlightPlaneControl = function()
 	{
-		// TODO
-		//mapService.setMapPosition(lastPos.latitude, lastPos.longitude);
+		if ($scope.globalData.flyMode)
+			mapService.highightPlaneControl(true);
+		else
+			mapService.highightPlaneControl(false);
+	};
+
+
+	$scope.onLocationChanged = function(currentPosition)
+	{
+		var lastPositions = locationService.lastPositions;
+		
+		mapService.updateLocation(lastPositions);
+
+		if ($scope.globalData.flyMode)
+		{
+			var lastIdx = lastPositions.length - 1;
+
+			if (lastIdx >= 1)
+			{
+				var latDiff = lastPositions[lastIdx].latitude - lastPositions[lastIdx - 1].latitude;
+				var lonDiff = lastPositions[lastIdx].longitude - lastPositions[lastIdx - 1].longitude;
+				var pos = mapService.getMapPosition();
+				
+				mapService.setMapPosition(pos.center[1] + latDiff, pos.center[0] + lonDiff, pos.zoom);
+			}
+			else
+				mapService.setMapPosition(currentPosition.coords.latitude, currentPosition.coords.longitude);
+		}
 	};
 
 
@@ -333,14 +392,13 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 	$scope.updateTraffic = function()
 	{
 		var extent = mapService.getViewExtent();
-		var acList = undefined;
 
 		trafficService.readTraffic(extent, 120)
 			.then(
 				function(response)
 				{
 					if (response.data.aclist)
-						acList = response.data.aclist;
+						mapService.updateTraffic(response.data.aclist);
 					else
 						console.error("ERROR reading traffic");
 				},
@@ -348,32 +406,32 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 				{
 					console.error("ERROR", response.status, response.data);
 				}
-			).then(
-				function()
-				{
-					mapService.clearTrafficTracks();
-					mapService.drawTrafficTrack(locationService.lastPositions, "OWN");
-
-					if (acList)
-						mapService.drawMultipleTrafficTracks(acList);
-				}
 			);
 	};
 
 
 	// init feature popup
 	var featureContainer = document.getElementById('feature-popup');
-	var featureContent = document.getElementById('feature-popup-content');
 	var featureCloser = document.getElementById('feature-popup-closer');
 
-	mapService.init($scope.onMapClicked, $scope.onFeatureSelected, $scope.onMapMoveEnd, $scope.onKmlClicked, $scope.onTogglePlanesClicked, $scope.globalData.currentMapPos, featureContainer, $scope.globalData.user.email, $scope.globalData.user.token);
+	var trafficContainer = document.getElementById('traffic-popup');
+	var trafficCloser = document.getElementById('traffic-popup-closer');
+
+	mapService.init($scope.onMapClicked, $scope.onFeatureSelected, $scope.onMapMoveEnd, $scope.onKmlClicked, $scope.onTogglePlanesClicked, $scope.globalData.currentMapPos, featureContainer, trafficContainer, $scope.globalData.user.email, $scope.globalData.user.token);
 	locationService.init($scope.onLocationChanged);
+	$scope.highlightPlaneControl();
 
 	featureCloser.onclick = function() {
 		mapService.hideFeaturePopup();
 		featureCloser.blur();
 		return false;
 	};
-	
+
+	trafficCloser.onclick = function() {
+		mapService.hideTrafficPopup();
+		trafficCloser.blur();
+		return false;
+	};
+
 	$scope.updateWpList();
 }

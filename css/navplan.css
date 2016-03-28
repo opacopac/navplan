@@ -58,18 +58,28 @@ html, body {
 	background-color: #f1f1f1;
 }
 
+.mapctrl-zoomin {
+  top: .5em;
+  left: .5em;
+}
+
+.mapctrl-zoomout {
+  top: 4.5em;
+  left: .5em;
+}
+
 .mapctrl-kmlexport {
-	top: 70px;
-	left: .5em;
+  top: 10.5em;
+  left: .5em;
 }
 
 .mapctrl-toggleplanes {
-  top: 110px;
+  top: 16.5em;
   left: .5em;
 }
 
 .ol-touch .kml-export {
-	top: 80px;
+  top: 80px;
 }
 
 .ol-popup {

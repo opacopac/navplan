@@ -42,7 +42,7 @@ function locationService() {
 						lastPositions.shift();
 
 					if (locationChangedCallback)
-						locationChangedCallback(lastPositions);
+						locationChangedCallback(position);
 				},
 				function (error) {
 					console.log("ERROR: " + error.code);
@@ -56,5 +56,6 @@ function locationService() {
 	function stopWatching()
 	{
 		navigator.geolocation.clearWatch(geolocationWatch);
+		lastPositions = [];
 	}
 }
