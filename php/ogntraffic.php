@@ -55,6 +55,20 @@
 
                 $position = array("time" => $msg["time"], "latitude" => $msg["latitude"], "longitude" => $msg["longitude"], "altitude" => round($msg["altitude"]));
 
+                $poscount = count($aclist[$msg["id"]]["positions"]);
+                if ($poscount > 1)
+                {
+                    $lastpos = $aclist[$msg["id"]]["positions"][$poscount - 1];
+
+                    // skip time inversions
+                    if ($lastpos["time"] >= $position["time"])
+                        continue;
+
+                    // skip identical positions
+                    if ($lastpos["latitude"] == $position["latitude"] && $lastpos["longitude"] == $position["longitude"])
+                        continue;
+                }
+
                 array_push($aclist[$msg["id"]]["positions"], $position);
 	        }
 	    }

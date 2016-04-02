@@ -5,9 +5,9 @@
 navplanApp
 	.factory('mapService', mapService);
 
-mapService.$inject = ['$http'];
+mapService.$inject = ['$http', 'trafficService'];
 
-function mapService($http)
+function mapService($http, trafficService)
 {
 	var map = {};
 	var mapControls = {};
@@ -1240,7 +1240,7 @@ function mapService($http)
 		layerSource.clear();
 
 		if (lastPositions)
-			drawTrafficTrack(lastPositions, "OWN", layerSource, undefined);
+			drawTrafficTrack(lastPositions, "OWN", layerSource, undefined, undefined);
 	}
 
 
@@ -1251,13 +1251,15 @@ function mapService($http)
 
 		if (acList)
 		{
-			for (var icaoHex in acList)
-				drawTrafficTrack(acList[icaoHex].positions, acList[icaoHex].actype, layerSource,  icaoHex);
+			for (var icaoHex in acList) {
+				var callsign = trafficService.tryReadAcCallsign(icaoHex);
+				drawTrafficTrack(acList[icaoHex].positions, acList[icaoHex].actype, layerSource, icaoHex, callsign);
+			}
 		}
 	}
 
 
-	function drawTrafficTrack(lastPositions, trafficType, layerSource, icaoHex)
+	function drawTrafficTrack(lastPositions, trafficType, layerSource, icaoHex, callsign)
 	{
 		if (!lastPositions)
 			return;
@@ -1293,6 +1295,16 @@ function mapService($http)
 				trafficType);
 
 			layerSource.addFeature(planeFeature);
+
+			if (callsign)
+			{
+				var csFeature = createCallsignFeature(
+					lastPositions[maxIdx].longitude,
+					lastPositions[maxIdx].latitude,
+					callsign);
+
+				layerSource.addFeature(csFeature);
+			}
 		}
 
 
@@ -1326,11 +1338,14 @@ function mapService($http)
 		}
 
 
-		function createTrafficFeature(icaoHex, longitude, latitude, altitude, rotation, trafficType)
+		function createTrafficFeature(icaoHex, longitude, latitude, altitude, rotation, trafficType, callsign)
 		{
 			var icon = "icon/";
 			var color = "#FF0000";
 			var heighttext = "";
+
+			if (!callsign)
+				callsign = "";
 
 			if (altitude > 0)
 				heighttext = Math.round(altitude * 3.28084).toString() + " ft"; // TODO: einstellbar
@@ -1403,6 +1418,37 @@ function mapService($http)
 
 			return planeFeature;
 		}
+	}
+
+
+	function createCallsignFeature(longitude, latitude, callsign)
+	{
+		var icon = "icon/";
+		var color = "#FF0000";
+
+		if (!callsign)
+			callsign = "";
+
+		var csFeature = new ol.Feature({
+			geometry: new ol.geom.Point(ol.proj.fromLonLat([longitude, latitude]))
+		});
+
+		csFeature.setStyle(
+			new ol.style.Style({
+				text: new ol.style.Text({
+					//textAlign: align,
+					//textBaseline: baseline,
+					font: 'bold 14px Calibri,sans-serif',
+					text: callsign,
+					fill: new ol.style.Fill({color: color}),
+					stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2}),
+					offsetX: 0,
+					offsetY: -35
+				})
+			})
+		);
+
+		return csFeature;
 	}
 
 

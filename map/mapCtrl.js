@@ -194,7 +194,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		}
 		else if (feature.icaoHex)
 		{
-			trafficService.readCallSign(feature.icaoHex)
+			trafficService.readAcDetails(feature.icaoHex)
 				.then(
 					function(response)
 					{

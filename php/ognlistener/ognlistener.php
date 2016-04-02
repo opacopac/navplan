@@ -13,6 +13,9 @@ $ogn_filter = "r/46.80/8.23/250"; // center of CH
 //$ogn_filter = "r/46.95/7.45/20"; // bern
 //$ogn_filter = "r/53.56/10.00/50"; // hamburg
 
+$stealthflag_mask = 0b10000000;
+$notrackingflag_mask = 0b01000000;
+
 $address_mask = 0b00000011;
 $address_type = array(
     "RANDOM" => 0b00000000,
@@ -122,6 +125,7 @@ while(!feof($fp))
                 "id" => $matches2["id"],
                 "addresstype" => getAddressType($matches2["details"]),
                 "actype" => getAcType($matches2["details"]),
+                //"notracking" => getFlag($matches2["details"], $notrackingflag_mask),
                 "time" => date("H:i:s", $time_utc),
                 "latitude" => $lat,
                 "longitude" => $lon,
@@ -217,4 +221,13 @@ function getAddressType($details)
         if ((hexdec($details) & $address_mask) == $bitmask)
             return $type;
     }
+}
+
+
+function getFlag($details, $flag_mask)
+{
+    if ((hexdec($details) & $flag_mask) == $flag_mask)
+        return true;
+    else
+        return false;
 }
