@@ -222,6 +222,10 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 					}
 				)
 		}
+		else if (feature.webcam)
+		{
+			window.open(feature.webcam.url);
+		}
 	};
 	
 	
@@ -319,8 +323,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 			waypoints: $scope.globalData.navplan.waypoints
 		};
 	
-		var kmlLink = document.getElementById("dlKmlLink");
-		kmlLink.href = 'php/navplanKml.php?data=' + encodeURIComponent(JSON.stringify(navplanData))
+		window.open('php/navplanKml.php?data=' + encodeURIComponent(JSON.stringify(navplanData)));
 	};
 
 
@@ -329,10 +332,10 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		$scope.globalData.flyMode = !$scope.globalData.flyMode;
 
 		if ($scope.globalData.flyMode) {
-			locationService.startWatching();
+			locationService.startWatching($scope.onLocationChanged);
 
 			if (!$scope.globalData.trafficTimer)
-				$scope.globalData.trafficTimer = window.setInterval($scope.onTrafficTimer, $scope.timerIntervallMs)
+				$scope.globalData.trafficTimer = window.setInterval($scope.onTrafficTimer, $scope.timerIntervallMs);
 
 			$scope.updateTraffic();
 		}
@@ -346,11 +349,11 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		}
 
 
-		$scope.highlightPlaneControl();
+		$scope.setPlaneControlStyle();
 	};
 
 
-	$scope.highlightPlaneControl = function()
+	$scope.setPlaneControlStyle = function()
 	{
 		if ($scope.globalData.flyMode)
 			mapService.highightPlaneControl(true);
@@ -361,8 +364,8 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 
 	$scope.onLocationChanged = function(currentPosition)
 	{
-		var lastPositions = locationService.lastPositions;
-		
+		var lastPositions = locationService.getLastPositions();
+
 		mapService.updateLocation(lastPositions);
 
 		if ($scope.globalData.flyMode)
@@ -380,6 +383,14 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 			else
 				mapService.setMapPosition(currentPosition.coords.latitude, currentPosition.coords.longitude);
 		}
+	};
+
+
+	$scope.onLocationError = function(error)
+	{
+		var i = 0;
+
+		alert("MEEP" + error.code)
 	};
 
 
@@ -418,8 +429,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 	var trafficCloser = document.getElementById('traffic-popup-closer');
 
 	mapService.init($scope.onMapClicked, $scope.onFeatureSelected, $scope.onMapMoveEnd, $scope.onKmlClicked, $scope.onTogglePlanesClicked, $scope.globalData.currentMapPos, featureContainer, trafficContainer, $scope.globalData.user.email, $scope.globalData.user.token);
-	locationService.init($scope.onLocationChanged);
-	$scope.highlightPlaneControl();
+	$scope.setPlaneControlStyle();
 
 	featureCloser.onclick = function() {
 		mapService.hideFeaturePopup();

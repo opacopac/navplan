@@ -11,7 +11,7 @@ function mapService($http, trafficService)
 {
 	var map = {};
 	var mapControls = {};
-	var mapLayer, trackLayer, iconLayer, airspaceLayer, globalWpLayer, userWpLayer, geopointLayer, trafficLayer, locationLayer;
+	var mapLayer, trackLayer, iconLayer, airspaceLayer, globalWpLayer, userWpLayer, geopointLayer, trafficLayer, locationLayer, webcamLayer;
 	var chartLayers = [];
 	var featureOverlay = {};
 	var trafficOverlay = {};
@@ -23,8 +23,9 @@ function mapService($http, trafficService)
 	{
 		iconLayer: 9,
 		airspaceLayer: 9,
-		globalWpLayer: 10,
-		userWpLayer: 10
+		globalWpLayer: 11,
+		userWpLayer: 11,
+		webcamLayer: 9
 	};
 	
 
@@ -54,319 +55,581 @@ function mapService($http, trafficService)
 	
 	
 	// init map
-	function init(onMapClickCallback, onFeatureSelectCallback, onMoveEndCallback, onKmlClicked, onToggleTrafficClicked, mapPos, featureContainer, trafficContainer, email, token) {
-		// map layer
-		mapLayer = new ol.layer.Tile({
-			source: new ol.source.OSM({
-				url: "http://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png",
-				maxZoom: 14,
-				crossOrigin: null,
-				attributions: [
-					new ol.Attribution({html: 'Kartendaten: (c) OpenStreetMap-Mitwirkende, SRTM | Kartendarstellung: (c) <a href="http://www.opentopomap.org/">OpenTopoMap</a> (CC-BY-SA)'}),
-					new ol.Attribution({html: 'Aviation Data: (c) <a href="http://www.openaip.net/">openAIP</a> (CC-BY-SA)'}),
-					ol.source.OSM.ATTRIBUTION
-				]
-			})
-		});
+	function init(onMapClickCallback, onFeatureSelectCallback, onMoveEndCallback, onKmlClicked, onToggleTrafficClicked, mapPos, featureContainer, trafficContainer, email, token)
+	{
+		// init layers
+		mapLayer = createMapLayer();
+		locationLayer = createEmptyVectorLayer();
+		trafficLayer = createEmptyVectorLayer();
+		trackLayer = createEmptyVectorLayer();
+		iconLayer = createEmptyVectorLayer();
+		globalWpLayer = createEmptyVectorLayer();
+		userWpLayer = createEmptyVectorLayer();
+		airspaceLayer = createEmptyVectorLayer();
+		webcamLayer = createEmptyVectorLayer();
+		geopointLayer = createEmptyVectorLayer();
 
-
-		// own loaction layer
-		locationLayer = new ol.layer.Vector({
-			source: new ol.source.Vector({})
-		});
-
-
-		// traffic layer
-		trafficLayer = new ol.layer.Vector({
-			source: new ol.source.Vector({})
-		});
-
-
-		// track layer
-		trackLayer = new ol.layer.Vector({
-			source: new ol.source.Vector({})
-		});
-
-
-		// icon layer
-		iconLayer = new ol.layer.Vector({
-			source: new ol.source.Vector({})
-		});
-
-
-		// add airports to icon layer
-		$http.get('php/airports.php')
-			.success(function (data) {
-				if (data.airports) {
-					for (var i = 0; i < data.airports.length; i++) {
-						// airport icon
-						var adFeature = new ol.Feature({
-							geometry: new ol.geom.Point(ol.proj.fromLonLat([data.airports[i].longitude, data.airports[i].latitude]))
-						});
-
-						adFeature.airport = data.airports[i];
-
-						var adStyle = createAdStyle(data.airports[i].type, data.airports[i].name);
-
-						if (adStyle)
-							adFeature.setStyle(adStyle);
-						else
-							continue;
-
-						iconLayer.getSource().addFeature(adFeature);
-
-
-						// rwy icon
-						var rwyFeature = new ol.Feature({
-							geometry: new ol.geom.Point(ol.proj.fromLonLat([data.airports[i].longitude, data.airports[i].latitude]))
-						});
-
-						var rwyStyle = createRwyStyle(data.airports[i].type, data.airports[i].rwy_surface, data.airports[i].rwy_direction1);
-
-						if (rwyStyle)
-							rwyFeature.setStyle(rwyStyle);
-						else
-							continue;
-
-						iconLayer.getSource().addFeature(rwyFeature);
-					}
-				}
-				else {
-					console.error("ERROR", data);
-				}
-			})
-			.error(function (data, status) {
-				console.error("ERROR", status, data);
-			});
-
-
-		// add navaids to icon layer
-		$http.get('php/navaids.php')
-			.success(function (data) {
-				if (data.navaids) {
-					for (var i = 0; i < data.navaids.length; i++) {
-						var navaidFeature = new ol.Feature({
-							geometry: new ol.geom.Point(ol.proj.fromLonLat([data.navaids[i].longitude, data.navaids[i].latitude]))
-						});
-
-						navaidFeature.navaid = data.navaids[i];
-
-						var navaidStyle = createNavaidStyle(data.navaids[i].type, data.navaids[i].kuerzel);
-
-						if (navaidStyle)
-							navaidFeature.setStyle(navaidStyle);
-						else
-							continue;
-
-						iconLayer.getSource().addFeature(navaidFeature);
-					}
-				}
-				else {
-					console.error("ERROR", data);
-				}
-			})
-			.error(function (data, status) {
-				console.error("ERROR", status, data);
-			});
-
-
-		// global waypoint layer
-		globalWpLayer = new ol.layer.Vector({
-			source: new ol.source.Vector({})
-		});
-
-		// add global waypoints to icon layer
-		$http.post('php/userWaypoint.php', obj2json({action: 'readGlobalWaypoints'}))
-			.success(function (data) {
-				if (data.globalWaypoints) {
-					for (var i = 0; i < data.globalWaypoints.length; i++) {
-						var globalWpFeature = new ol.Feature({
-							geometry: new ol.geom.Point(ol.proj.fromLonLat([data.globalWaypoints[i].longitude, data.globalWaypoints[i].latitude]))
-						});
-
-						globalWpFeature.globalWaypoint = data.globalWaypoints[i];
-
-						var globalWpStyle = createUserWpStyle(data.globalWaypoints[i].type, data.globalWaypoints[i].name); // TODO: different style for global (vs user)?
-
-						if (globalWpStyle)
-							globalWpFeature.setStyle(globalWpStyle);
-						else
-							continue;
-
-						globalWpLayer.getSource().addFeature(globalWpFeature);
-					}
-				}
-				else {
-					console.error("ERROR", data);
-				}
-			})
-			.error(function (data, status) {
-				console.error("ERROR", status, data);
-			});
-
-
-		// user waypoint layer
-		userWpLayer = new ol.layer.Vector({
-			source: new ol.source.Vector({})
-		});
-
+		// populate layers
+		populateAirports(iconLayer);
+		populateNavaids(iconLayer);
+		populateAirspaces(airspaceLayer);
+		populateWebcams(webcamLayer);
+		populateGlobalWaypoints(globalWpLayer);
 		updateUserWaypoints(email, token);
 
+		// controls
+		createMapControls(mapControls);
 
-		// airspace layer
-		airspaceLayer = new ol.layer.Vector({
-			source: new ol.source.Vector({})
-		});
+		// overlays
+		featureOverlay = createOverlay(featureContainer);
+		trafficOverlay = createOverlay(trafficContainer);
 
-		// add airspaces to airspace layer
-		$http.get('php/airspace.php')
-			.success(function (data, status, headers, config) {
-				if (data.airspace) {
-					for (var i = 0; i < data.airspace.length; i++) {
-						// convert polygon
-						var polygon = [];
-						for (var j = 0; j < data.airspace[i].polygon.length; j++)
-							polygon.push(ol.proj.fromLonLat(data.airspace[i].polygon[j]));
+		// init map
+		map = createMap();
 
-						var airspaceFeature = new ol.Feature({
-							geometry: new ol.geom.Polygon([polygon]),
-							airspace: data.airspace[i]
-						});
-
-						var airspaceStyle = createAirspaceStyle(data.airspace[i].category);
-
-						if (airspaceStyle)
-							airspaceFeature.setStyle(airspaceStyle);
-						else
-							continue;
-
-						airspaceLayer.getSource().addFeature(airspaceFeature);
-					}
-				}
-				else {
-					console.error("ERROR", data);
-				}
-			})
-			.error(function (data, status) {
-				console.error("ERROR", status, data);
-			});
-
-
-		// geopoint selection layer
-		geopointLayer = new ol.layer.Vector({
-			source: new ol.source.Vector({})
-		});
-
-
-		// kml export control
-		/*
-		var kmlLink = document.createElement('a');
-		kmlLink.id = "dlKmlLink";
-		kmlLink.title = "Save KML-Track for Google Earth";
-		kmlLink.innerHTML = '<button type="button" class="btn btn-lg btn-default btn-circle"><span class="glyphicon glyphicon-globe"></span></button>';
-		kmlLink.href = "php/navplanKml.php";
-		kmlLink.target = "_blank";
-		kmlLink.download = "navplan-track.kml";
-		kmlLink.addEventListener('click', onKmlClicked, false);
-
-		var kmlContainer = document.createElement('div');
-		kmlContainer.className = 'mapctrl-kmlexport ol-unselectable ol-control';
-		kmlContainer.appendChild(kmlLink);
-
-		mapControls.kmlControl = new ol.control.Control({element: kmlContainer});*/
-
-		mapControls.zoomInControl = createCustomControl(
-			"zoomInCtrl",
-			"zoom in",
-			"btn btn-primary btn-circle btn-lg",
-			"glyphicon glyphicon-plus",
-			"ol-control mapctrl-zoomin",
-			onZoomInClicked);
-
-
-		mapControls.zoomOutControl = createCustomControl(
-			"zoomInCtrl",
-			"zoom out",
-			"btn btn-primary btn-circle btn-lg",
-			"glyphicon glyphicon-minus",
-			"ol-control mapctrl-zoomout",
-			onZoomOutClicked);
-
-
-		mapControls.kmlControl = createCustomControl(
-			"dlKmlLink",
-			"save KML track for Google Earth",
-			"btn btn-primary btn-circle btn-lg",
-			"glyphicon glyphicon-globe",
-			"ol-control mapctrl-kmlexport",
-			onKmlClicked);
-
-		// toggle traffic
-		mapControls.toggleTrafficControl = createCustomControl(
-			"toggleCurPos",
-			"toggle own position and traffic",
-			"btn btn-primary btn-circle btn-lg",
-			"glyphicon glyphicon-plane",
-			"ol-control mapctrl-toggleplanes",
-			onToggleTrafficClicked);
-
-
-		// feature overlay
-		featureOverlay = new ol.Overlay(/** @type {olx.OverlayOptions} */ ({
-			element: featureContainer,
-			autoPan: true,
-			autoPanAnimation: {duration: 250}
-		}));
-
-		// traffic overlay
-		trafficOverlay = new ol.Overlay(/** @type {olx.OverlayOptions} */ ({
-			element: trafficContainer,
-			autoPan: true,
-			autoPanAnimation: {duration: 250}
-		}));
-
-
-		// map
-		map = new ol.Map({
-			target: 'map',
-			//interactions: ol.interaction.defaults().extend([new dragInteraction()]),
-			controls: //ol.control.defaults().extend(
-				[
-					mapControls.zoomInControl,
-					mapControls.zoomOutControl,
-					mapControls.kmlControl,
-					mapControls.toggleTrafficControl,
-					new ol.control.ScaleLine({units: 'nautical'})
-				],
-			layers: [
-				mapLayer,
-				airspaceLayer,
-				iconLayer,
-				globalWpLayer,
-				userWpLayer,
-				trackLayer,
-				geopointLayer,
-				trafficLayer,
-				locationLayer
-			],
-			overlays: [featureOverlay, trafficOverlay],
-			view: new ol.View(
-				{
-					center: mapPos.center,
-					zoom: mapPos.zoom
-				})
-		});
-
-		setLayerVisibility();
-
+		// register map events
+		map.on('singleclick', onSingleClick);
+		map.on('pointermove', onPointerMove);
+		map.on('moveend', onMoveEnd);
 
 		// restore chart layers
 		for (var i = 0; i < chartLayers.length; i++)
 			map.getLayers().insertAt(i + 1, chartLayers[i]);
 
+		setLayerVisibility();
+
+
+		// functions
+
+		function createMap()
+		{
+			return new ol.Map({
+				target: 'map',
+				//interactions: ol.interaction.defaults().extend([new dragInteraction()]),
+				controls: //ol.control.defaults().extend(
+					[
+						mapControls.zoomInControl,
+						mapControls.zoomOutControl,
+						mapControls.kmlControl,
+						mapControls.toggleTrafficControl,
+						new ol.control.ScaleLine({units: 'nautical'})
+					],
+				layers: [
+					mapLayer,
+					airspaceLayer,
+					webcamLayer,
+					iconLayer,
+					globalWpLayer,
+					userWpLayer,
+					trackLayer,
+					geopointLayer,
+					trafficLayer,
+					locationLayer
+				],
+				overlays: [featureOverlay, trafficOverlay],
+				view: new ol.View(
+					{
+						center: mapPos.center,
+						zoom: mapPos.zoom
+					})
+			});
+		}
+
+
+		function createMapLayer()
+		{
+			return new ol.layer.Tile({
+				source: new ol.source.OSM({
+					url: "http://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png",
+					maxZoom: 14,
+					crossOrigin: null,
+					attributions: [
+						new ol.Attribution({html: 'Kartendaten: (c) OpenStreetMap-Mitwirkende, SRTM | Kartendarstellung: (c) <a href="http://www.opentopomap.org/">OpenTopoMap</a> (CC-BY-SA)'}),
+						new ol.Attribution({html: 'Aviation Data: (c) <a href="http://www.openaip.net/">openAIP</a> (CC-BY-SA)'}),
+						ol.source.OSM.ATTRIBUTION
+					]
+				})
+			});
+		}
+
+
+		function createEmptyVectorLayer()
+		{
+			return new ol.layer.Vector({
+				source: new ol.source.Vector({})
+			});
+		}
+
+
+		// add airports to icon layer
+		function populateAirports(iconLayer)
+		{
+			$http.get('php/airports.php')
+				.success(function (data) {
+					if (data.airports) {
+						for (var i = 0; i < data.airports.length; i++) {
+							// airport icon
+							var adFeature = new ol.Feature({
+								geometry: new ol.geom.Point(ol.proj.fromLonLat([data.airports[i].longitude, data.airports[i].latitude]))
+							});
+
+							adFeature.airport = data.airports[i];
+
+							var adStyle = createAdStyle(data.airports[i].type, data.airports[i].icao);
+
+							if (adStyle)
+								adFeature.setStyle(adStyle);
+							else
+								continue;
+
+							iconLayer.getSource().addFeature(adFeature);
+
+
+							// rwy icon
+							var rwyFeature = new ol.Feature({
+								geometry: new ol.geom.Point(ol.proj.fromLonLat([data.airports[i].longitude, data.airports[i].latitude]))
+							});
+
+							var rwyStyle = createRwyStyle(data.airports[i].type, data.airports[i].rwy_surface, data.airports[i].rwy_direction1);
+
+							if (rwyStyle)
+								rwyFeature.setStyle(rwyStyle);
+							else
+								continue;
+
+							iconLayer.getSource().addFeature(rwyFeature);
+						}
+					}
+					else {
+						console.error("ERROR", data);
+					}
+				})
+				.error(function (data, status) {
+					console.error("ERROR", status, data);
+				});
+
+
+			function createAdStyle(ad_type, name)
+			{
+				var textColor = "#451A57";
+				var src;
+
+				if (ad_type == "APT" || ad_type == "INTL_APT")
+					src = 'icon/ad_civ.png';
+				else if (ad_type == "AF_CIVIL" || ad_type == "GLIDING")
+					src = 'icon/ad_civ_nofac.png';
+				else if (ad_type == "AF_MIL_CIVIL")
+					src = 'icon/ad_civmil.png';
+				else if (ad_type == "AD_MIL") {
+					src = 'icon/ad_mil.png';
+					textColor = "#AE1E22";
+				}
+				else
+					return;
+
+				return new ol.style.Style({
+					image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
+						anchor: [0.5, 0.5],
+						anchorXUnits: 'fraction',
+						anchorYUnits: 'fraction',
+						scale: 1,
+						opacity: 0.75,
+						src: src
+					})),
+					text: new ol.style.Text({
+						font: 'bold 14px Calibri,sans-serif',
+						text: name,
+						fill: new ol.style.Fill({color: textColor}),
+						stroke: new ol.style.Stroke({color: "#FFFFFF", width: 2}),
+						offsetX: 0,
+						offsetY: 25
+					})
+				});
+			}
+
+
+			function createRwyStyle(ad_type, rwy_surface, rwy_direction)
+			{
+				var src;
+
+				if (ad_type == "AD_MIL")
+					src = 'icon/rwy_mil.png';
+				else if (rwy_surface == "ASPH" || rwy_surface == "CONC")
+					src = 'icon/rwy_concrete.png';
+				else if (rwy_surface == "GRAS")
+					src = 'icon/rwy_grass.png';
+				else
+					return;
+
+				return new ol.style.Style({
+					image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
+						anchor: [0.5, 0.5],
+						anchorXUnits: 'fraction',
+						anchorYUnits: 'fraction',
+						scale: 1,
+						rotation: (rwy_direction - 45) / 180 * Math.PI,
+						rotateWithView: true,
+						opacity: 0.75,
+						src: src
+					}))
+				});
+			}
+		}
+
+
+		// add navaids to icon layer
+		function populateNavaids(iconLayer)
+		{
+			$http.get('php/navaids.php')
+				.success(function (data) {
+					if (data.navaids) {
+						for (var i = 0; i < data.navaids.length; i++) {
+							var navaidFeature = new ol.Feature({
+								geometry: new ol.geom.Point(ol.proj.fromLonLat([data.navaids[i].longitude, data.navaids[i].latitude]))
+							});
+
+							navaidFeature.navaid = data.navaids[i];
+
+							var navaidStyle = createNavaidStyle(data.navaids[i].type, data.navaids[i].kuerzel);
+
+							if (navaidStyle)
+								navaidFeature.setStyle(navaidStyle);
+							else
+								continue;
+
+							iconLayer.getSource().addFeature(navaidFeature);
+						}
+					}
+					else {
+						console.error("ERROR", data);
+					}
+				})
+				.error(function (data, status) {
+					console.error("ERROR", status, data);
+				});
+
+
+			function createNavaidStyle(navaid_type, name) {
+				var src, offsetY;
+
+				if (navaid_type == "NDB") {
+					src = 'icon/navaid_ndb.png';
+					offsetY = 33;
+				}
+				else if (navaid_type == "VOR-DME" || navaid_type == "DVOR-DME") {
+					src = 'icon/navaid_vor-dme.png';
+					offsetY = 20;
+				}
+				else if (navaid_type == "DME") {
+					src = 'icon/navaid_dme.png';
+					offsetY = 20;
+				}
+				else
+					return;
+
+				return new ol.style.Style({
+					image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
+						anchor: [0.5, 0.5],
+						anchorXUnits: 'fraction',
+						anchorYUnits: 'fraction',
+						scale: 1,
+						opacity: 0.75,
+						src: src
+					})),
+					text: new ol.style.Text({
+						//textAlign: align,
+						//textBaseline: baseline,
+						font: 'bold 14px Calibri,sans-serif',
+						text: name,
+						fill: new ol.style.Fill({color: '#451A57'}),
+						stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2}),
+						offsetX: 0,
+						offsetY: offsetY
+					})
+				});
+			}
+		}
+
+
+		// add global waypoints to icon layer
+		function populateGlobalWaypoints(globalWpLayer)
+		{
+			$http.post('php/userWaypoint.php', obj2json({action: 'readGlobalWaypoints'}))
+				.success(function (data) {
+					if (data.globalWaypoints) {
+						for (var i = 0; i < data.globalWaypoints.length; i++) {
+							var globalWpFeature = new ol.Feature({
+								geometry: new ol.geom.Point(ol.proj.fromLonLat([data.globalWaypoints[i].longitude, data.globalWaypoints[i].latitude]))
+							});
+
+							globalWpFeature.globalWaypoint = data.globalWaypoints[i];
+
+							var globalWpStyle = createGlobalWpStyle(data.globalWaypoints[i].type, data.globalWaypoints[i].name);
+
+							if (globalWpStyle)
+								globalWpFeature.setStyle(globalWpStyle);
+							else
+								continue;
+
+							globalWpLayer.getSource().addFeature(globalWpFeature);
+						}
+					}
+					else {
+						console.error("ERROR", data);
+					}
+				})
+				.error(function (data, status) {
+					console.error("ERROR", status, data);
+				});
+
+
+			function createGlobalWpStyle(wp_type, name) {
+				var src, offsetY;
+
+				if (wp_type == "report") {
+					src = 'icon/wp_report.png';
+					offsetY = 20;
+				}
+				else {
+					src = 'icon/wp_user.png';
+					offsetY = 20;
+				}
+
+				return new ol.style.Style({
+					image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
+						anchor: [0.5, 0.5],
+						anchorXUnits: 'fraction',
+						anchorYUnits: 'fraction',
+						scale: 1,
+						opacity: 0.75,
+						src: src
+					})),
+					text: new ol.style.Text({
+						font: 'bold 14px Calibri,sans-serif',
+						text: name,
+						fill: new ol.style.Fill({color: '#0077FF'}),
+						stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2}),
+						offsetX: 0,
+						offsetY: offsetY
+					})
+				});
+			}
+		}
+
+
+		// add airspaces to airspace layer
+		function populateAirspaces(airspaceLayer) {
+			$http.get('php/airspace.php')
+				.success(function (data, status, headers, config) {
+					if (data.airspace) {
+						for (var i = 0; i < data.airspace.length; i++) {
+							// convert polygon
+							var polygon = [];
+							for (var j = 0; j < data.airspace[i].polygon.length; j++)
+								polygon.push(ol.proj.fromLonLat(data.airspace[i].polygon[j]));
+
+							var airspaceFeature = new ol.Feature({
+								geometry: new ol.geom.Polygon([polygon]),
+								airspace: data.airspace[i]
+							});
+
+							var airspaceStyle = createAirspaceStyle(data.airspace[i].category);
+
+							if (airspaceStyle)
+								airspaceFeature.setStyle(airspaceStyle);
+							else
+								continue;
+
+							airspaceLayer.getSource().addFeature(airspaceFeature);
+						}
+					}
+					else {
+						console.error("ERROR", data);
+					}
+				})
+				.error(function (data, status) {
+					console.error("ERROR", status, data);
+				});
+
+
+			function createAirspaceStyle(category) {
+				if (category == "CTR") {
+					return new ol.style.Style({
+						fill: new ol.style.Fill({
+							color: 'rgba(152, 206, 235, 0.3)'
+						}),
+						stroke: new ol.style.Stroke({
+							color: 'rgba(23, 128, 194, 0.8)',
+							width: 3,
+							lineDash: [10, 7]
+						})
+					});
+				}
+				else if (category == "CTR2") {
+					return new ol.style.Style({
+						stroke: new ol.style.Stroke({
+							color: 'rgba(152, 206, 235, 0.8)',
+							width: 10
+						})
+					});
+				}
+				else if (category == "C" || category == "D") {
+					return new ol.style.Style({
+						stroke: new ol.style.Stroke({
+							color: 'rgba(23, 128, 194, 0.8)',
+							width: 3
+						})
+					});
+				}
+				else if (category == "E") {
+					return new ol.style.Style({
+						stroke: new ol.style.Stroke({
+							color: 'rgba(23, 128, 194, 0.8)',
+							width: 2
+						})
+					});
+				}
+				else if (category == "DANGER" || category == "RESTRICTED") {
+					return new ol.style.Style({
+						stroke: new ol.style.Stroke({
+							color: 'rgba(174, 30, 34, 0.8)',
+							width: 2
+						})
+					});
+				}
+			}
+		}
+
+
+		// add webcams to webcam layer
+		function populateWebcams(webcamLayer) {
+			$http.post('php/webcams.php', obj2json({action: 'readNonAdWebcams'}))
+				.then(
+					function (response) { // success
+						if (!response.data || !response.data.webcams) {
+							console.error("ERROR reading webcams");
+						}
+						else {
+							for (var i = 0; i < response.data.webcams.length; i++) {
+								var webcam = response.data.webcams[i];
+								var webcamFeature = new ol.Feature({
+									geometry: new ol.geom.Point(ol.proj.fromLonLat([webcam.longitude, webcam.latitude])),
+									title: webcam.name
+								});
+
+								var webcamStyle = new ol.style.Style({
+									image: new ol.style.Icon(({
+										anchor: [0.5, 0.5],
+										anchorXUnits: 'fraction',
+										anchorYUnits: 'fraction',
+										scale: 1,
+										opacity: 0.9,
+										src: 'icon/webcam.png',
+										title: webcam.name
+									}))
+								});
+
+								webcamFeature.setStyle(webcamStyle);
+								webcamFeature.webcam = webcam;
+
+								webcamLayer.getSource().addFeature(webcamFeature);
+							}
+						}
+					},
+					function (response) { // error
+						console.error("ERROR", response.status, response.data);
+					}
+				);
+		}
+
+
+		function createMapControls(mapControls)
+		{
+			// map controls
+			mapControls.zoomInControl = createCustomControl(
+				"zoomInCtrl",
+				"zoom in",
+				"btn btn-primary btn-circle btn-lg",
+				"glyphicon glyphicon-plus",
+				"ol-control mapctrl-zoomin",
+				onZoomInClicked);
+
+			mapControls.zoomOutControl = createCustomControl(
+				"zoomInCtrl",
+				"zoom out",
+				"btn btn-primary btn-circle btn-lg",
+				"glyphicon glyphicon-minus",
+				"ol-control mapctrl-zoomout",
+				onZoomOutClicked);
+
+			mapControls.kmlControl = createCustomControl(
+				"dlKmlLink",
+				"save KML track for Google Earth",
+				"btn btn-primary btn-circle btn-lg",
+				"glyphicon glyphicon-globe",
+				"ol-control mapctrl-kmlexport",
+				onKmlClicked);
+
+			mapControls.toggleTrafficControl = createCustomControl(
+				"toggleCurPos",
+				"toggle own position and traffic",
+				"btn btn-primary btn-circle btn-lg",
+				"glyphicon glyphicon-plane",
+				"ol-control mapctrl-toggleplanes",
+				onToggleTrafficClicked);
+
+
+			function createCustomControl(id, title, buttonCss, iconCss, containerCss, clickCallback)
+			{
+				var element = document.createElement('a');
+				element.id = id;
+				element.title = title;
+				element.className = buttonCss;
+				element.innerHTML = '<i class="' + iconCss + '" style="vertical-align: middle"></i>';
+				//element.innerHTML = '<button type="button" class="btn btn-lg btn-default btn-circle"><span class="' + buttonCss + '"></span></button>';
+				element.href = "#";
+				element.addEventListener('click', clickCallback, false);
+
+				var container = document.createElement('div');
+				container.className = containerCss;
+				container.appendChild(element);
+
+				return new ol.control.Control({element: container});
+			}
+
+
+			function onZoomInClicked()
+			{
+				var zoom = map.getView().getZoom();
+
+				if (zoom < 18)
+					map.getView().setZoom(zoom + 1);
+			}
+
+
+			function onZoomOutClicked()
+			{
+				var zoom = map.getView().getZoom();
+
+				if (zoom > 1)
+					map.getView().setZoom(zoom - 1);
+			}
+		}
+
+
+		function createOverlay(container)
+		{
+			return new ol.Overlay(({
+				element: container,
+				autoPan: true,
+				autoPanAnimation: {duration: 250}
+			}));
+		}
+
 
 		// click event
-		map.on('singleclick', function (event) {
+		function onSingleClick(event)
+		{
 			var eventConsumed = false;
 
 			// geopoint layers
@@ -377,7 +640,7 @@ function mapService($http, trafficService)
 						return;
 
 					// specific feature clicked
-					if (feature.geopoint || feature.airport || feature.navaid || feature.waypoint || feature.userWaypoint || feature.globalWaypoint)
+					if (feature.geopoint || feature.airport || feature.navaid || feature.waypoint || feature.userWaypoint || feature.globalWaypoint || feature.webcam)
 					{
 						onFeatureSelectCallback(event, feature);
 						clearGeopointSelection();
@@ -387,7 +650,7 @@ function mapService($http, trafficService)
 				null,
 				function (layer) // layers to search for features
 				{
-					return layer === geopointLayer || layer === iconLayer || layer === globalWpLayer || layer === userWpLayer || layer === trackLayer;
+					return layer === geopointLayer || layer === iconLayer || layer === globalWpLayer || layer === userWpLayer || layer === trackLayer || layer === webcamLayer;
 				}
 			);
 
@@ -428,12 +691,15 @@ function mapService($http, trafficService)
 				else
 					onMapClickCallback(event, ol.proj.toLonLat(event.coordinate), getClickRadius(event));
 			}
-		});
+		}
 
 
 		// pointermove event
-		map.on('pointermove', function (event)
+		function onPointerMove(event)
 		{
+			if (event.dragging)
+				return;
+
 			var hitLayer = map.forEachFeatureAtPixel(
 				event.pixel,
 				function (feature, layer) {
@@ -441,182 +707,28 @@ function mapService($http, trafficService)
 				},
 				null,
 				function (layer) {
-					return layer === geopointLayer || layer === iconLayer || layer === globalWpLayer || layer === userWpLayer || layer === trackLayer || layer == trafficLayer;
+					return layer === geopointLayer || layer === iconLayer || layer === globalWpLayer || layer === userWpLayer || layer === trackLayer || layer === trafficLayer || layer === webcamLayer;
 				}
 			);
 
-			if (hitLayer === geopointLayer || hitLayer === iconLayer || hitLayer === globalWpLayer || hitLayer === userWpLayer || hitLayer === trackLayer || hitLayer === trafficLayer)
+			if (hitLayer === geopointLayer || hitLayer === iconLayer || hitLayer === globalWpLayer || hitLayer === userWpLayer || hitLayer === trackLayer || hitLayer === trafficLayer || hitLayer === webcamLayer)
 				map.getTargetElement().style.cursor = 'pointer';
 			else
 				map.getTargetElement().style.cursor = '';
-		});
+		}
 
 
 		// moveend event (pan / zoom)
-		map.on('moveend', function (event)
+		function onMoveEnd(event)
 		{
 			setLayerVisibility();
 
 			onMoveEndCallback(event);
-		});
-
-
-		function createNavaidStyle(navaid_type, name) {
-			var src, offsetY;
-
-			if (navaid_type == "NDB") {
-				src = 'icon/navaid_ndb.png';
-				offsetY = 33;
-			}
-			else if (navaid_type == "VOR-DME" || navaid_type == "DVOR-DME") {
-				src = 'icon/navaid_vor-dme.png';
-				offsetY = 20;
-			}
-			else if (navaid_type == "DME") {
-				src = 'icon/navaid_dme.png';
-				offsetY = 20;
-			}
-			else
-				return;
-
-			return new ol.style.Style({
-				image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
-					anchor: [0.5, 0.5],
-					anchorXUnits: 'fraction',
-					anchorYUnits: 'fraction',
-					scale: 1,
-					opacity: 0.75,
-					src: src
-				})),
-				text: new ol.style.Text({
-					//textAlign: align,
-					//textBaseline: baseline,
-					font: 'bold 14px Calibri,sans-serif',
-					text: name,
-					fill: new ol.style.Fill({color: '#451A57'}),
-					stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2}),
-					offsetX: 0,
-					offsetY: offsetY
-				})
-			});
 		}
 
 
-		function createAdStyle(ad_type, name) {
-			var textColor = "#451A57";
-			var src;
 
-			if (ad_type == "APT" || ad_type == "INTL_APT")
-				src = 'icon/ad_civ.png';
-			else if (ad_type == "AF_CIVIL" || ad_type == "GLIDING")
-				src = 'icon/ad_civ_nofac.png';
-			else if (ad_type == "AF_MIL_CIVIL")
-				src = 'icon/ad_civmil.png';
-			else if (ad_type == "AD_MIL") {
-				src = 'icon/ad_mil.png';
-				textColor = "#AE1E22";
-			}
-			else
-				return;
-
-			return new ol.style.Style({
-				image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
-					anchor: [0.5, 0.5],
-					anchorXUnits: 'fraction',
-					anchorYUnits: 'fraction',
-					scale: 1,
-					opacity: 0.75,
-					src: src
-				})),
-				text: new ol.style.Text({
-					font: 'bold 14px Calibri,sans-serif',
-					text: name,
-					fill: new ol.style.Fill({color: textColor}),
-					stroke: new ol.style.Stroke({color: "#FFFFFF", width: 2}),
-					offsetX: 0,
-					offsetY: 25
-				})
-			});
-		}
-
-
-		function createRwyStyle(ad_type, rwy_surface, rwy_direction) {
-			var src;
-
-			if (ad_type == "AD_MIL")
-				src = 'icon/rwy_mil.png';
-			else if (rwy_surface == "ASPH" || rwy_surface == "CONC")
-				src = 'icon/rwy_concrete.png';
-			else if (rwy_surface == "GRAS")
-				src = 'icon/rwy_grass.png';
-			else
-				return;
-
-			return new ol.style.Style({
-				image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
-					anchor: [0.5, 0.5],
-					anchorXUnits: 'fraction',
-					anchorYUnits: 'fraction',
-					scale: 1,
-					rotation: (rwy_direction - 45) / 180 * Math.PI,
-					rotateWithView: true,
-					opacity: 0.75,
-					src: src
-				}))
-			});
-		}
-
-
-		function createAirspaceStyle(category) {
-			if (category == "CTR") {
-				return new ol.style.Style({
-					fill: new ol.style.Fill({
-						color: 'rgba(152, 206, 235, 0.3)'
-					}),
-					stroke: new ol.style.Stroke({
-						color: 'rgba(23, 128, 194, 0.8)',
-						width: 3,
-						lineDash: [10, 7]
-					})
-				});
-			}
-			else if (category == "CTR2") {
-				return new ol.style.Style({
-					stroke: new ol.style.Stroke({
-						color: 'rgba(152, 206, 235, 0.8)',
-						width: 10
-					})
-				});
-			}
-			else if (category == "C" || category == "D") {
-				return new ol.style.Style({
-					stroke: new ol.style.Stroke({
-						color: 'rgba(23, 128, 194, 0.8)',
-						width: 3
-					})
-				});
-			}
-			else if (category == "E") {
-				return new ol.style.Style({
-					stroke: new ol.style.Stroke({
-						color: 'rgba(23, 128, 194, 0.8)',
-						width: 2
-					})
-				});
-			}
-			else if (category == "DANGER" || category == "RESTRICTED") {
-				return new ol.style.Style({
-					stroke: new ol.style.Stroke({
-						color: 'rgba(174, 30, 34, 0.8)',
-						width: 2
-					})
-				});
-			}
-		}
-
-
-		function getClickRadius(event)
-		{
+		function getClickRadius(event) {
 			var clickPos = map.getEventPixel(event);
 			var coord1 = map.getCoordinateFromPixel(clickPos);
 			var lon1 = ol.proj.toLonLat(coord1)[0];
@@ -627,39 +739,6 @@ function mapService($http, trafficService)
 
 			return lon2 - lon1;
 		}
-	}
-
-
-	function createUserWpStyle(wp_type, name) {
-		var src, offsetY;
-
-		if (wp_type == "report") {
-			src = 'icon/wp_report.png';
-			offsetY = 20;
-		}
-		else {
-			src = 'icon/wp_user.png';
-			offsetY = 20;
-		}
-
-		return new ol.style.Style({
-			image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
-				anchor: [0.5, 0.5],
-				anchorXUnits: 'fraction',
-				anchorYUnits: 'fraction',
-				scale: 1,
-				opacity: 0.75,
-				src: src
-			})),
-			text: new ol.style.Text({
-				font: 'bold 14px Calibri,sans-serif',
-				text: name,
-				fill: new ol.style.Fill({color: '#0077FF'}),
-				stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2}),
-				offsetX: 0,
-				offsetY: offsetY
-			})
-		});
 	}
 
 
@@ -686,6 +765,11 @@ function mapService($http, trafficService)
 			globalWpLayer.setVisible(true);
 		else
 			globalWpLayer.setVisible(false);
+
+		if (zoom >= minZoomLevel.webcamLayer)
+			webcamLayer.setVisible(true);
+		else
+			webcamLayer.setVisible(false);
 	}
 
 
@@ -918,6 +1002,39 @@ function mapService($http, trafficService)
 					console.error("ERROR", status, data);
 				});
 		}
+
+
+		function createUserWpStyle(wp_type, name) {
+			var src, offsetY;
+
+			if (wp_type == "report") {
+				src = 'icon/wp_report.png';
+				offsetY = 20;
+			}
+			else {
+				src = 'icon/wp_user.png';
+				offsetY = 20;
+			}
+
+			return new ol.style.Style({
+				image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
+					anchor: [0.5, 0.5],
+					anchorXUnits: 'fraction',
+					anchorYUnits: 'fraction',
+					scale: 1,
+					opacity: 0.75,
+					src: src
+				})),
+				text: new ol.style.Text({
+					font: 'bold 14px Calibri,sans-serif',
+					text: name,
+					fill: new ol.style.Fill({color: '#0077FF'}),
+					stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2}),
+					offsetX: 0,
+					offsetY: offsetY
+				})
+			});
+		}
 	}
 	
 	
@@ -1138,24 +1255,6 @@ function mapService($http, trafficService)
 	}
 
 
-	function onZoomInClicked()
-	{
-		var zoom = map.getView().getZoom();
-
-		if (zoom < 18)
-			map.getView().setZoom(zoom + 1);
-	}
-
-
-	function onZoomOutClicked()
-	{
-		var zoom = map.getView().getZoom();
-
-		if (zoom > 1)
-			map.getView().setZoom(zoom - 1);
-	}
-
-
 	function getViewExtent()
 	{
 		var extent = map.getView().calculateExtent(map.getSize());
@@ -1209,28 +1308,6 @@ function mapService($http, trafficService)
 			map.removeLayer(chartLayers[i]);
 
 		chartLayers = [];
-	}
-	
-	
-	function getDistance(lat1, lon1, lat2, lon2)
-	{
-		return (wgs84Sphere.haversineDistance([lon1,lat1],[lon2,lat2]) * 0.000539957);
-	}
-	
-
-	function getBearing(lat1, lon1, lat2, lon2, magvar)
-	{
-		var toRad = (Math.PI / 180);
-		var toDeg = (180 / Math.PI);
-	
-		var f1 = lat1 * toRad;
-		var f2 = lat2 * toRad;
-		var dl = (lon2 - lon1) * toRad;
-		var y = Math.sin(dl) * Math.cos(f2);
-		var x = Math.cos(f1) * Math.sin(f2) - Math.sin(f1) * Math.cos(f2) * Math.cos(dl);
-		var t = Math.atan2(y, x);
-
-		return ((t * toDeg + 360) % 360 - magvar);
 	}
 
 
@@ -1418,72 +1495,70 @@ function mapService($http, trafficService)
 
 			return planeFeature;
 		}
-	}
 
 
-	function createCallsignFeature(longitude, latitude, callsign)
-	{
-		var icon = "icon/";
-		var color = "#FF0000";
+		function createCallsignFeature(longitude, latitude, callsign)
+		{
+			var icon = "icon/";
+			var color = "#FF0000";
 
-		if (!callsign)
-			callsign = "";
+			if (!callsign)
+				callsign = "";
 
-		var csFeature = new ol.Feature({
-			geometry: new ol.geom.Point(ol.proj.fromLonLat([longitude, latitude]))
-		});
+			var csFeature = new ol.Feature({
+				geometry: new ol.geom.Point(ol.proj.fromLonLat([longitude, latitude]))
+			});
 
-		csFeature.setStyle(
-			new ol.style.Style({
-				text: new ol.style.Text({
-					//textAlign: align,
-					//textBaseline: baseline,
-					font: 'bold 14px Calibri,sans-serif',
-					text: callsign,
-					fill: new ol.style.Fill({color: color}),
-					stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2}),
-					offsetX: 0,
-					offsetY: -35
+			csFeature.setStyle(
+				new ol.style.Style({
+					text: new ol.style.Text({
+						//textAlign: align,
+						//textBaseline: baseline,
+						font: 'bold 14px Calibri,sans-serif',
+						text: callsign,
+						fill: new ol.style.Fill({color: color}),
+						stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2}),
+						offsetX: 0,
+						offsetY: -35
+					})
 				})
-			})
-		);
+			);
 
-		return csFeature;
+			return csFeature;
+		}
 	}
 
 
-	function createCustomControl(id, title, buttonCss, iconCss, containerCss, clickCallback)
+
+	function highightTrafficControl(highlightOn)
 	{
-		var element = document.createElement('a');
-		element.id = id;
-		element.title = title;
-		element.className = buttonCss;
-		element.innerHTML = '<i class="' + iconCss + '" style="vertical-align: middle"></i>';
-		//element.innerHTML = '<button type="button" class="btn btn-lg btn-default btn-circle"><span class="' + buttonCss + '"></span></button>';
-		element.href = "#";
-		element.addEventListener('click', clickCallback, false);
-
-		var container = document.createElement('div');
-		container.className = containerCss;
-		container.appendChild(element);
-
-		return new ol.control.Control({element: container});
-	}
-
-
-	function highightTrafficControl(highlightOn) {
 		var button = $(mapControls.toggleTrafficControl.element).find("a").first();
 
 		if (highlightOn)
 			button.addClass("active");
 		else
 			button.removeClass("active");
+	}
 
-		/*
-		if (highlightOn)
-			button.css("background-color", "#0000FF")
-		else
-			button.css("background-color", "")
-			*/
+
+	function getDistance(lat1, lon1, lat2, lon2)
+	{
+		return (wgs84Sphere.haversineDistance([lon1,lat1],[lon2,lat2]) * 0.000539957);
+	}
+
+
+	function getBearing(lat1, lon1, lat2, lon2, magvar)
+	{
+		var toRad = (Math.PI / 180);
+		var toDeg = (180 / Math.PI);
+
+		var f1 = lat1 * toRad;
+		var f2 = lat2 * toRad;
+		var dl = (lon2 - lon1) * toRad;
+		var y = Math.sin(dl) * Math.cos(f2);
+		var x = Math.cos(f1) * Math.sin(f2) - Math.sin(f1) * Math.cos(f2) * Math.cos(dl);
+		var t = Math.atan2(y, x);
+
+		return ((t * toDeg + 360) % 360 - magvar);
 	}
 }

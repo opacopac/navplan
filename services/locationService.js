@@ -5,57 +5,81 @@
 navplanApp
 	.factory('locationService', locationService);
 
-function locationService() {
+function locationService()
+{
 	// init
 	var geolocationWatch;
-	var locationChangedCallback = undefined;
 	var lastPositions = [];
 	var maxPositions = 20;
 
 
 	// return api reference
 	return {
-		init: init,
 		startWatching: startWatching,
 		stopWatching: stopWatching,
-		lastPositions: lastPositions
+		getLastPositions: getLastPositions
 	};
 
 
-	function init(callback)
+	function getLastPositions()
 	{
-		locationChangedCallback = callback;
+		return lastPositions;
 	}
 
 
-	function startWatching() {
-		if (navigator.geolocation) {
-			geolocationWatch = navigator.geolocation.watchPosition(
-				function (position) {
-					lastPositions.push({
-						latitude: position.coords.latitude,
-						longitude: position.coords.longitude,
-						altitude: position.coords.altitude
-					});
+	function startWatching(successCallback, errorCallback)
+	{
+		lastPositions = [];
 
-					if (lastPositions.length > maxPositions)
-						lastPositions.shift();
-
-					if (locationChangedCallback)
-						locationChangedCallback(position);
-				},
-				function (error) {
-					console.log("ERROR: " + error.code);
-				}
-			)
-		}
-		else
+		if (!navigator.geolocation)
+		{
 			console.log("ERROR: Geolocation is not supported!");
+
+			if (errorCallback)
+				errorCallback();
+
+			return;
+		}
+
+		var options = {
+			enableHighAccuracy: true,
+			timeout: 20000,
+			maximumAge: 0
+		};
+
+		geolocationWatch = navigator.geolocation.watchPosition(onPositionUpdate, onPositionError, options);
+
+
+		function onPositionUpdate(position)
+		{
+			// add latest pos
+			lastPositions.push({
+				latitude: position.coords.latitude,
+				longitude: position.coords.longitude,
+				altitude: position.coords.altitude
+			});
+
+			// remove oldest pos
+			if (lastPositions.length > maxPositions)
+				lastPositions.shift();
+
+			if (successCallback)
+				successCallback(position);
+		}
+
+
+		function onPositionError(error)
+		{
+			console.log("ERROR: no position, error code=" + error.code);
+
+			if (errorCallback)
+				errorCallback(error);
+		}
 	}
+
 
 	function stopWatching()
 	{
 		navigator.geolocation.clearWatch(geolocationWatch);
-		lastPositions = [];
 	}
 }

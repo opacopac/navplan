@@ -262,7 +262,9 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 			checkpoint: $scope.globalData.selectedWp.checkpoint,
 			freq: $scope.globalData.selectedWp.freq,
 			callsign: $scope.globalData.selectedWp.callsign,
-			alt: $scope.globalData.selectedWp.alt
+			alt: $scope.globalData.selectedWp.alt,
+			isminalt:  $scope.globalData.selectedWp.isminalt,
+			ismaxalt:  $scope.globalData.selectedWp.ismaxalt
 		}
 	};
 	
@@ -273,6 +275,8 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 		$scope.globalData.selectedWp.freq = $scope.globalData.wpBackup.freq;
 		$scope.globalData.selectedWp.callsign = $scope.globalData.wpBackup.callsign;
 		$scope.globalData.selectedWp.alt = $scope.globalData.wpBackup.alt;
+		$scope.globalData.selectedWp.isminalt = $scope.globalData.wpBackup.isminalt;
+		$scope.globalData.selectedWp.ismaxalt = $scope.globalData.wpBackup.ismaxalt;
 	};
 	
 

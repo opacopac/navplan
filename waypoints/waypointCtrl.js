@@ -125,6 +125,8 @@ function waypointCtrl($scope, $http, geonameService, fuelService, userService, g
 			mt: '',
 			dist: '',
 			alt: wp_data.alt,
+			isminalt: wp_data.isminalt,
+			ismaxalt: wp_data.ismaxalt,
 			remark: wp_data.remark
 		};
 	};
