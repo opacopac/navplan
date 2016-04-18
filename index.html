@@ -1,5 +1,5 @@
-<!DOCTYPE html>
-<html lang="de" data-ng-app="navplanApp" data-ng-controller="navplanCtrl">
+<!DOCTYPE HTML>
+<html manifest="manifest.php" lang="de" data-ng-app="navplanApp" data-ng-controller="navplanCtrl">
 <head>
 	<title>NAV-Flightplan</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
@@ -68,7 +68,7 @@
 	</div>
 	<!-- error messages -->
 	<div class="container messages">
-		<div id="error_alert_box" class="alert alert-warning" role="alert" ng-show="error_alert_message">{{ error_alert_message }}</div>
+		<div id="error_alert_box" class="alert alert-danger" role="alert" ng-show="error_alert_message">{{ error_alert_message }}</div>
 	</div>
 	<!-- content -->
 	<div ng-view style="position: relative" width="100%" height="100%"></div>

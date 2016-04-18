@@ -17,14 +17,7 @@ function loginCtrl($scope, $location, globalData, userService)
 			.success(function(data) {
 				if (data.resultcode == 0)
 				{
-					var rememberDays;
-
-					if ($scope.rememberMeChecked == true)
-						rememberDays = 90;
-					else
-						rememberDays = 0;
-						
-					$scope.loginUser($scope.email, data.token, rememberDays);
+					$scope.loginUser($scope.email, data.token, $scope.rememberMeChecked);
 					
 					$location.path("/map");
 				}
@@ -44,14 +37,7 @@ function loginCtrl($scope, $location, globalData, userService)
 			.success(function(data) {
 				if (data.resultcode == 0)
 				{
-					var rememberDays;
-
-					if ($scope.rememberMeChecked == true)
-						rememberDays = 90;
-					else
-						rememberDays = 0;
-						
-					$scope.loginUser($scope.email, data.token, rememberDays);
+					$scope.loginUser($scope.email, data.token, $scope.rememberMeChecked);
 					
 					$location.path("/map");
 				}

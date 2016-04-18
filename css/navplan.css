@@ -36,24 +36,47 @@ html, body {
   /*width: 90%;*/
 }
 
-.mapctrl-zoomin {
-  top: 50px;
+.mapbutton-zoom {
+  position: absolute;
+  top: 55px;
   left: 10px;
+  z-index: 20;
 }
 
-.mapctrl-zoomout {
-  top: 105px;
+.mapbutton-location {
+  position: absolute;
+  top: 165px;
   left: 10px;
+  z-index: 20;
 }
 
-.mapctrl-kmlexport {
-  top: 170px;
+.mapbutton-traffic {
+  position: absolute;
+  top: 225px;
   left: 10px;
+  z-index: 20;
 }
 
-.mapctrl-toggleplanes {
-  top: 235px;
-  left: 10px;
+.mapbutton-kmlexport {
+  position: absolute;
+  top: 55px;
+  right: 10px;
+  z-index: 20;
+}
+
+.mapbutton-offlinecache {
+  position: absolute;
+  top: 115px;
+  right: 10px;
+  z-index: 20;
+}
+
+.map-cacheprogress {
+  position: absolute;
+  width: 50px;
+  top: 175px;
+  right: 10px;
+  z-index: 20;
 }
 
 .btn-circle {

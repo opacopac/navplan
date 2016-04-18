@@ -17,51 +17,83 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 	
 	$scope.initGlobalData = function()
 	{
-		// init global data
-		$scope.globalData.user =
+		var storedGlobalData = window.sessionStorage.getItem("globalData");
+		
+		if (storedGlobalData) // load session data
 		{
-			email: undefined,
-			token: undefined,
-			navplanList: []
-		};
-		$scope.globalData.pilot =
+			var data = json2obj(storedGlobalData);
+			
+			$scope.globalData.user = data.user;
+			$scope.globalData.pilot = data.pilot;
+			$scope.globalData.aircraft = data.aircraft;
+			$scope.globalData.fuel = data.fuel;
+			$scope.globalData.navplan =  data.navplan;
+			$scope.globalData.settings = data.settings;
+			$scope.globalData.currentMapPos = data.currentMapPos;
+			$scope.globalData.selectedWp = data.selectedWp;
+			$scope.globalData.wpBackup = data.wpBackup;
+			$scope.globalData.trafficTimer = data.trafficTimer;
+			$scope.globalData.showLocation = data.showLocation;
+			$scope.globalData.showTraffic = data.showTraffic;
+			$scope.globalData.offlineCache = data.offlineCache;
+			$scope.globalData.locationStatus = data.locationStatus;
+			$scope.globalData.trafficStatus = data.trafficStatus;
+			$scope.globalData.cacheStatus = data.cacheStatus;
+			$scope.globalData.cacheProgress = data.cacheProgress;
+		}
+		else // load default values
 		{
-			name: '' // TODO => cookie
-		};
-		$scope.globalData.aircraft =
-		{
-			id: '', // TODO => cookie
-			speed: 100,  // TODO => cookie
-			consumption: 20  // TODO => cookie
-		};
-		$scope.globalData.fuel =
-		{
-			tripTime: 0,
-			alternatTime: 0,
-			reserveTime: 45,
-			extraTime: 0
-		};
-		$scope.globalData.navplan = 
-		{
-			id: undefined,
-			name: '',
-			waypoints: [ ],
-			alternate: undefined,
-			selectedWaypoint: undefined
-		};
-		$scope.globalData.settings =
-		{
-			variation: 2
-		};
-		$scope.globalData.currentMapPos = 
-		{
-			center: ol.proj.fromLonLat([7.4971, 46.9141]), // LSZB, TODO => nearest ap
-			zoom: 11
-		};
-		$scope.globalData.selectedWp = undefined;
-		$scope.globalData.wpBackup = undefined;
-		$scope.globalData.trafficTimer = undefined;
-		$scope.globalData.flyMode = false;
+			$scope.globalData.user =
+			{
+				email: undefined,
+				token: undefined,
+				navplanList: []
+			};
+			$scope.globalData.pilot =
+			{
+				name: ''
+			};
+			$scope.globalData.aircraft =
+			{
+				id: '',
+				speed: 100,
+				consumption: 20
+			};
+			$scope.globalData.fuel =
+			{
+				tripTime: 0,
+				alternatTime: 0,
+				reserveTime: 45,
+				extraTime: 0
+			};
+			$scope.globalData.navplan = 
+			{
+				id: undefined,
+				name: '',
+				waypoints: [ ],
+				alternate: undefined,
+				selectedWaypoint: undefined
+			};
+			$scope.globalData.settings =
+			{
+				variation: 2
+			};
+			$scope.globalData.currentMapPos = 
+			{
+				center: ol.proj.fromLonLat([7.4971, 46.9141]), // LSZB, TODO => nearest ap
+				zoom: 11
+			};
+			$scope.globalData.selectedWp = undefined;
+			$scope.globalData.wpBackup = undefined;
+			$scope.globalData.trafficTimer = undefined;
+			$scope.globalData.showLocation = false;
+			$scope.globalData.showTraffic = false;
+			$scope.globalData.offlineCache = false;
+			$scope.globalData.locationStatus = "off"; // "off", "waiting", "current", "error"
+			$scope.globalData.trafficStatus = "off"; // "off", "waiting", "current", "error"
+			$scope.globalData.cacheStatus = "off"; // "off", "updating", "updated", "error"
+			$scope.globalData.cacheProgress =  { loaded: 0, total: 100, percent: 0 };
+		}
 	};
 	
 	
@@ -83,21 +115,32 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 	
 	$scope.initUser = function()
 	{
-		// init user
-		var	email = getCookie("email");
-		var token = getCookie("token");
+		var storedUser = window.localStorage.getItem("user");
 
-		if (email && token)
-			$scope.loginUser(email, token, 90)
+		if (storedUser)
+		{
+			$scope.globalData.user = json2obj(storedUser);
+
+			if ($scope.globalData.user.email && $scope.globalData.user.token)
+				$scope.loginUser($scope.globalData.user.email, $scope.globalData.user.token, true)
+		}
+
+		// cached waypoints
+		var cachewaypoints = getCookie("cachewaypoints");
+		
+		if (cachewaypoints)
+		{
+			$scope.globalData.offlineCache = true;
+			$scope.globalData.cacheStatus = "updated"; // TODO: check cache
+		}
 	};
 	
 	
 	$scope.initDisclaimer = function()
 	{
-		// init disclaimer
-		var hideDisclaimer = getCookie("hideDisclaimer");
+		var storedHideDisclaimer = window.localStorage.getItem("hideDisclaimer");
 
-		if (hideDisclaimer != "1")
+		if (storedHideDisclaimer != "true")
 			$('#disclaimerDialog').modal('show');
 	};
 
@@ -120,17 +163,16 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 	};
 	
 	
-	$scope.loginUser = function(email, token, rememberDays)
+	$scope.loginUser = function(email, token, remember)
 	{
-		setCookie("email", email, rememberDays);
-		setCookie("token", token, rememberDays);
-	
 		$scope.globalData.user.email = email;
 		$scope.globalData.user.token = token;
-
 		$scope.readNavplanList();
-		
+
 		//TODO: read user data (name, plane, settings, etc.)
+
+		if (remember)
+			window.localStorage.setItem("user", obj2json($scope.globalData.user));
 
 		$scope.showSuccessMessage("Welcome " + email + "!");
 	};
@@ -146,12 +188,10 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 	{
 		$scope.globalData.user.email = undefined;
 		$scope.globalData.user.token = undefined;
-		
-		deleteCookie("email");
-		deleteCookie("token");
-		
-		$scope.initGlobalData();
+		$scope.globalData.user.navplanList = [];
 
+		window.localStorage.removeItem("user");
+		
 		$scope.showSuccessMessage("User Logged out successfully!");
 	};
 
@@ -159,7 +199,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 	$scope.onDisclaimerOKClicked = function()
 	{
 		if ($scope.hideDisclaimer)
-			setCookie("hideDisclaimer", "1", 90);
+			window.localStorage.setItem("hideDisclaimer", "true");
 	};
 
 	
@@ -279,9 +319,19 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 		$scope.globalData.selectedWp.ismaxalt = $scope.globalData.wpBackup.ismaxalt;
 	};
 	
-
+	
+	$scope.onLeaving = function()
+	{
+		window.sessionStorage.setItem("globalData", obj2json($scope.globalData));
+	}
+	
+	
 	// init stuff
 	$scope.initGlobalData();
 	$scope.initUser();
 	$scope.initDisclaimer();
+	
+	// event listeners
+	window.addEventListener("beforeunload", $scope.onLeaving);
+	window.addEventListener("pagehide", $scope.onLeaving);
 }

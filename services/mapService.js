@@ -10,7 +10,6 @@ mapService.$inject = ['$http', 'trafficService'];
 function mapService($http, trafficService)
 {
 	var map = {};
-	var mapControls = {};
 	var mapLayer, trackLayer, iconLayer, airspaceLayer, globalWpLayer, userWpLayer, geopointLayer, trafficLayer, locationLayer, webcamLayer;
 	var chartLayers = [];
 	var featureOverlay = {};
@@ -49,13 +48,12 @@ function mapService($http, trafficService)
 		displayChart: displayChart,
 		clearAllCharts: clearAllCharts,
 		updateLocation: updateLocation,
-		updateTraffic: updateTraffic,
-		highightPlaneControl: highightTrafficControl
+		updateTraffic: updateTraffic
 	};
 	
 	
 	// init map
-	function init(onMapClickCallback, onFeatureSelectCallback, onMoveEndCallback, onKmlClicked, onToggleTrafficClicked, mapPos, featureContainer, trafficContainer, email, token)
+	function init(onMapClickCallback, onFeatureSelectCallback, onMoveEndCallback, mapPos, featureContainer, trafficContainer, email, token)
 	{
 		// init layers
 		mapLayer = createMapLayer();
@@ -76,9 +74,6 @@ function mapService($http, trafficService)
 		populateWebcams(webcamLayer);
 		populateGlobalWaypoints(globalWpLayer);
 		updateUserWaypoints(email, token);
-
-		// controls
-		createMapControls(mapControls);
 
 		// overlays
 		featureOverlay = createOverlay(featureContainer);
@@ -108,10 +103,6 @@ function mapService($http, trafficService)
 				//interactions: ol.interaction.defaults().extend([new dragInteraction()]),
 				controls: //ol.control.defaults().extend(
 					[
-						mapControls.zoomInControl,
-						mapControls.zoomOutControl,
-						mapControls.kmlControl,
-						mapControls.toggleTrafficControl,
 						new ol.control.ScaleLine({units: 'nautical'})
 					],
 				layers: [
@@ -140,7 +131,8 @@ function mapService($http, trafficService)
 		{
 			return new ol.layer.Tile({
 				source: new ol.source.OSM({
-					url: "http://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png",
+					//url: "http://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png",
+					url: "http://a.tile.opentopomap.org/{z}/{x}/{y}.png",
 					maxZoom: 14,
 					crossOrigin: null,
 					attributions: [
@@ -540,80 +532,6 @@ function mapService($http, trafficService)
 						console.error("ERROR", response.status, response.data);
 					}
 				);
-		}
-
-
-		function createMapControls(mapControls)
-		{
-			// map controls
-			mapControls.zoomInControl = createCustomControl(
-				"zoomInCtrl",
-				"zoom in",
-				"btn btn-primary btn-circle btn-lg",
-				"glyphicon glyphicon-plus",
-				"ol-control mapctrl-zoomin",
-				onZoomInClicked);
-
-			mapControls.zoomOutControl = createCustomControl(
-				"zoomInCtrl",
-				"zoom out",
-				"btn btn-primary btn-circle btn-lg",
-				"glyphicon glyphicon-minus",
-				"ol-control mapctrl-zoomout",
-				onZoomOutClicked);
-
-			mapControls.kmlControl = createCustomControl(
-				"dlKmlLink",
-				"save KML track for Google Earth",
-				"btn btn-primary btn-circle btn-lg",
-				"glyphicon glyphicon-globe",
-				"ol-control mapctrl-kmlexport",
-				onKmlClicked);
-
-			mapControls.toggleTrafficControl = createCustomControl(
-				"toggleCurPos",
-				"toggle own position and traffic",
-				"btn btn-primary btn-circle btn-lg",
-				"glyphicon glyphicon-plane",
-				"ol-control mapctrl-toggleplanes",
-				onToggleTrafficClicked);
-
-
-			function createCustomControl(id, title, buttonCss, iconCss, containerCss, clickCallback)
-			{
-				var element = document.createElement('a');
-				element.id = id;
-				element.title = title;
-				element.className = buttonCss;
-				element.innerHTML = '<i class="' + iconCss + '" style="vertical-align: middle"></i>';
-				//element.innerHTML = '<button type="button" class="btn btn-lg btn-default btn-circle"><span class="' + buttonCss + '"></span></button>';
-				element.href = "#";
-				element.addEventListener('click', clickCallback, false);
-
-				var container = document.createElement('div');
-				container.className = containerCss;
-				container.appendChild(element);
-
-				return new ol.control.Control({element: container});
-			}
-
-
-			function onZoomInClicked()
-			{
-				var zoom = map.getView().getZoom();
-
-				if (zoom < 18)
-					map.getView().setZoom(zoom + 1);
-			}
-
-
-			function onZoomOutClicked()
-			{
-				var zoom = map.getView().getZoom();
-
-				if (zoom > 1)
-					map.getView().setZoom(zoom - 1);
-			}
 		}
 
 
@@ -1246,9 +1164,11 @@ function mapService($http, trafficService)
 	
 	function setMapPosition(lat, lon, zoom)
 	{
-		var pos = ol.proj.fromLonLat([lon, lat]);
-		
-		map.getView().setCenter(pos);
+		if (lat && lon)
+		{
+			var pos = ol.proj.fromLonLat([lon, lat]);
+			map.getView().setCenter(pos);
+		}
 
 		if (zoom)
 			map.getView().setZoom(zoom);
@@ -1526,18 +1446,6 @@ function mapService($http, trafficService)
 
 			return csFeature;
 		}
-	}
-
-
-
-	function highightTrafficControl(highlightOn)
-	{
-		var button = $(mapControls.toggleTrafficControl.element).find("a").first();
-
-		if (highlightOn)
-			button.addClass("active");
-		else
-			button.removeClass("active");
 	}
 
 

@@ -1,1 +1,1 @@
-nohup php -q ognlistener.php >/dev/null &
+nohup php -q ognlistener.php >./ognlistener.log &

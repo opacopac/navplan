@@ -47,7 +47,13 @@ function undef2null(key, val)
 
 function obj2json(obj)
 {
-	 return JSON.stringify(obj, undef2null)
+	 return JSON.stringify(obj, undef2null);
+}
+
+
+function json2obj(json)
+{
+	 return JSON.parse(json);
 }
 
 

@@ -40,26 +40,9 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 	};
 	
 	
-	// adding geopoint from search with (+) sign 
 	$scope.onGeonameSearch = function()
 	{
-		/*
-		var wp = {
-			type: $scope.globalData.navplan.selectedWaypoint.type,
-			freq: $scope.globalData.navplan.selectedWaypoint.freq,
-			callsign: $scope.globalData.navplan.selectedWaypoint.callsign,
-			checkpoint: $scope.globalData.navplan.selectedWaypoint.checkpoint,
-			latitude: $scope.globalData.navplan.selectedWaypoint.latitude,
-			longitude: $scope.globalData.navplan.selectedWaypoint.longitude,
-			mt: '',
-			dist: '',
-			alt: '',
-			remark: ''
-		};
-			
-		$scope.addWaypoint(wp);
-		
-		$scope.globalData.navplan.selectedWaypoint = undefined;*/
+		// TODO
 	};
 
 	
@@ -259,7 +242,6 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		mapService.hideFeaturePopup();
 	};
 	
-
 	
 	$scope.onRemoveSelectedWaypointClicked = function()
 	{
@@ -315,6 +297,24 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		mapService.displayChart(chartId);
 		mapService.hideFeaturePopup();
 	};
+	
+	
+	$scope.onZoomInClicked = function()
+	{
+		var zoom = mapService.getMapPosition().zoom;
+
+		if (zoom < 18)
+			mapService.setMapPosition(null, null, zoom + 1);
+	}
+
+
+	$scope.onZoomOutClicked = function()
+	{
+		var zoom = mapService.getMapPosition().zoom;
+
+		if (zoom > 1)
+			mapService.setMapPosition(null, null, zoom - 1);
+	}
 
 
 	$scope.onKmlClicked = function()
@@ -325,14 +325,33 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 	
 		window.open('php/navplanKml.php?data=' + encodeURIComponent(JSON.stringify(navplanData)));
 	};
-
-
-	$scope.onTogglePlanesClicked = function()
+	
+	
+	$scope.onLocationClicked = function()
 	{
-		$scope.globalData.flyMode = !$scope.globalData.flyMode;
+		$scope.globalData.showLocation = !$scope.globalData.showLocation;
 
-		if ($scope.globalData.flyMode) {
-			locationService.startWatching($scope.onLocationChanged);
+		if ($scope.globalData.showLocation)
+		{
+			$scope.globalData.locationStatus = "waiting";
+			locationService.startWatching($scope.onLocationChanged, $scope.onLocationError);
+		}
+		else
+		{
+			locationService.stopWatching();
+			mapService.updateLocation(undefined);
+			$scope.globalData.locationStatus = "off";
+		}		
+	}
+	
+
+	$scope.onTrafficClicked = function()
+	{
+		$scope.globalData.showTraffic = !$scope.globalData.showTraffic;
+
+		if ($scope.globalData.showTraffic)
+		{				
+			$scope.globalData.trafficStatus = "waiting";
 
 			if (!$scope.globalData.trafficTimer)
 				$scope.globalData.trafficTimer = window.setInterval($scope.onTrafficTimer, $scope.timerIntervallMs);
@@ -341,25 +360,136 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		}
 		else
 		{
-			locationService.stopWatching();
 			window.clearInterval($scope.globalData.trafficTimer);
 			$scope.globalData.trafficTimer = undefined;
 			mapService.updateTraffic(undefined);
-			mapService.updateLocation(undefined);
+			$scope.globalData.trafficStatus = "off";
+		}
+	};
+	
+	
+	$scope.onOfflineCacheClicked = function()
+	{
+		// TODO
+		//if (window.applicationCache.status === window.applicationCache.DOWNLOADING) 
+
+		$scope.globalData.offlineCache = !$scope.globalData.offlineCache;
+
+		if ($scope.globalData.offlineCache)
+		{
+			setWaypointCacheCookie();
+			updateAppCache();
+		}
+		else
+		{
+			deleteCookie("cachewaypoints");
+			updateAppCache();
+		}
+		
+		
+		function setWaypointCacheCookie()
+		{
+			var cacheWps = [];
+			var wps = $scope.globalData.navplan.waypoints;
+			var variation = globalData.settings.variation ? globalData.settings.variation : 0;
+			
+			if (wps && wps.length > 0)
+			{
+				for (var i = 0; i < wps.length; i++)
+					cacheWps.push(getCacheWaypoint(wps[i]));
+				
+				if ($scope.globalData.navplan.alternate)
+					cacheWps.push(getCacheWaypoint($scope.globalData.navplan.alternate));
+
+				// start high res
+				cacheWps.push({
+					lat: wps[0].latitude,
+					lon: wps[0].longitude,
+					tt: 0,
+					dist: 0,
+					rad: 5,
+					maxzoom: 13
+				});
+				
+				// destination high res
+				cacheWps.push({
+					lat: wps[wps.length - 1].latitude,
+					lon: wps[wps.length - 1].longitude,
+					tt: 0,
+					dist: 0,
+					rad: 5,
+					maxzoom: 13
+				});
+			}
+			
+			setCookie("cachewaypoints", obj2json(cacheWps), 0);
+			
+			
+			function getCacheWaypoint(wp)
+			{
+				var tt = (wp.mt) ? (wp.mt + variation + 180) % 360 : 0; // reverse direction, pointing back from waypoint
+				var dist = (wp.dist) ? wp.dist : 0;
+			
+				return {
+					lat: wp.latitude,
+					lon: wp.longitude,
+					tt: tt,
+					dist: dist,
+					rad: 2.5,
+					maxzoom: 12
+				};
+			}
 		}
 
 
-		$scope.setPlaneControlStyle();
-	};
+		function updateAppCache()
+		{
+			if (window.applicationCache.status === window.applicationCache.DOWNLOADING) 
+				window.applicationCache.abort();
 
-
-	$scope.setPlaneControlStyle = function()
+			$scope.globalData.cacheStatus = "updating";
+			$scope.globalData.cacheProgress = { loaded: 0, total: 100, percent: 0 };
+				
+			window.applicationCache.update(); // TODO: catch error
+		}		
+	}
+	
+	
+	$scope.onCacheProgress = function(e)
 	{
-		if ($scope.globalData.flyMode)
-			mapService.highightPlaneControl(true);
+		if (!e.loaded || !e.total) // hack for firefox
+		{
+			e.loaded = $scope.globalData.cacheProgress.loaded + 1;
+			e.total = $scope.globalData.cacheProgress.total;
+			
+			if (e.loaded > e.total)
+				e.total += 100;
+		}
+		
+		$scope.globalData.cacheProgress = { loaded: e.loaded, total: e.total, percent: Math.round(e.loaded / e.total * 100) };
+		$scope.$apply();
+	}
+
+	
+	$scope.onCacheReady = function(e)
+	{
+		if (window.applicationCache.status == window.applicationCache.UPDATEREADY)
+			window.applicationCache.swapCache();
+		
+		if ($scope.globalData.offlineCache)
+			$scope.globalData.cacheStatus = "updated";
 		else
-			mapService.highightPlaneControl(false);
-	};
+			$scope.globalData.cacheStatus = "off";
+		
+		$scope.$apply();
+	}
+	
+	
+	$scope.onCacheError = function(e)
+	{
+		$scope.globalData.cacheStatus = "error";
+		$scope.$apply();
+	}
 
 
 	$scope.onLocationChanged = function(currentPosition)
@@ -368,7 +498,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 
 		mapService.updateLocation(lastPositions);
 
-		if ($scope.globalData.flyMode)
+		if ($scope.globalData.showLocation)
 		{
 			var lastIdx = lastPositions.length - 1;
 
@@ -383,25 +513,33 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 			else
 				mapService.setMapPosition(currentPosition.coords.latitude, currentPosition.coords.longitude);
 		}
+		
+		$scope.globalData.locationStatus = "current";
+		$scope.$apply();
 	};
 
 
 	$scope.onLocationError = function(error)
 	{
-		var i = 0;
-
-		alert("MEEP" + error.code)
+		// TODO
+		$scope.showErrorMessage(error.message);
+		$scope.globalData.locationStatus = "error";
+		$scope.$apply();
 	};
 
 
 	$scope.onTrafficTimer = function()
 	{
-		$scope.updateTraffic();
+		if (navigator.onLine)
+			$scope.updateTraffic();
 	};
 
 
 	$scope.updateTraffic = function()
 	{
+		if (!$scope.globalData.showTraffic)
+			return;
+		
 		var extent = mapService.getViewExtent();
 
 		trafficService.readTraffic(extent, 120)
@@ -409,12 +547,19 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 				function(response)
 				{
 					if (response.data.aclist)
+					{
 						mapService.updateTraffic(response.data.aclist);
+						$scope.globalData.trafficStatus = "current";
+					}
 					else
+					{
+						$scope.globalData.trafficStatus = "error";
 						console.error("ERROR reading traffic");
+					}
 				},
 				function(response)
 				{
+					$scope.globalData.trafficStatus = "error";
 					console.error("ERROR", response.status, response.data);
 				}
 			);
@@ -428,8 +573,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 	var trafficContainer = document.getElementById('traffic-popup');
 	var trafficCloser = document.getElementById('traffic-popup-closer');
 
-	mapService.init($scope.onMapClicked, $scope.onFeatureSelected, $scope.onMapMoveEnd, $scope.onKmlClicked, $scope.onTogglePlanesClicked, $scope.globalData.currentMapPos, featureContainer, trafficContainer, $scope.globalData.user.email, $scope.globalData.user.token);
-	$scope.setPlaneControlStyle();
+	mapService.init($scope.onMapClicked, $scope.onFeatureSelected, $scope.onMapMoveEnd, $scope.globalData.currentMapPos, featureContainer, trafficContainer, $scope.globalData.user.email, $scope.globalData.user.token);
 
 	featureCloser.onclick = function() {
 		mapService.hideFeaturePopup();
@@ -442,6 +586,14 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		trafficCloser.blur();
 		return false;
 	};
+
+	// app cache event listeners
+	window.applicationCache.addEventListener('progress', $scope.onCacheProgress, false);
+	window.applicationCache.addEventListener('noupdate', $scope.onCacheReady, false);
+	window.applicationCache.addEventListener('cached', $scope.onCacheReady, false);
+	window.applicationCache.addEventListener('updateready', $scope.onCacheReady, false);
+	window.applicationCache.addEventListener('obsolete', $scope.onCacheReady, false);
+	window.applicationCache.addEventListener('error', $scope.onCacheError, false);
 
 	$scope.updateWpList();
 }
