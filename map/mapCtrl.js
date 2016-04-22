@@ -75,8 +75,11 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 				freq: feature.geopoint.frequency,
 				callsign: feature.geopoint.callsign,
 				checkpoint: feature.geopoint.wpname,
+				airport_icao: feature.geopoint.airport_icao,
 				latitude: feature.geopoint.latitude,
 				longitude: feature.geopoint.longitude,
+				charts: feature.geopoint.charts,
+				webcams: feature.geopoint.webcams,
 				mt: '',
 				dist: '',
 				alt: '',
@@ -95,8 +98,11 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 				freq: feature.airport.frequency,
 				callsign: feature.airport.callsign,
 				checkpoint: feature.airport.icao,
+				airport_icao: feature.airport.icao,
 				latitude: feature.airport.latitude,
 				longitude: feature.airport.longitude,
+				charts: feature.airport.charts,
+				webcams: feature.airport.webcams,
 				mt: '',
 				dist: '',
 				alt: '',
@@ -175,39 +181,51 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 			
 			mapService.showFeaturePopup($scope.globalData.selectedWp.latitude, $scope.globalData.selectedWp.longitude);
 		}
-		else if (feature.icaoHex)
+		else if (feature.acInfo)
 		{
-			trafficService.readAcDetails(feature.icaoHex)
-				.then(
-					function(response)
-					{
-						if (!response.data || !response.data.aircrafts || response.data.aircrafts.length > 1) {
-							console.error("ERROR reading callsign");
-						}
-						else {
-							if (response.data.aircrafts.length == 1) {
-								$scope.selectedTraffic = response.data.aircrafts[0];
+			if (feature.acInfo.addresstype != "ICAO")
+			{
+				$scope.selectedTraffic = getUnknownTrafficInfo(feature.acInfo);
+				mapService.showTrafficPopup(feature);
+				$scope.$apply();
+			}
+			else {
+				trafficService.readAcDetails(feature.acInfo.address)
+					.then(
+						function (response) {
+							if (!response.data || !response.data.aircrafts || response.data.aircrafts.length > 1) {
+								console.error("ERROR reading callsign");
 							}
-							else
-							{
-								$scope.selectedTraffic = {
-									registration: "N/A",
-									icaohex: feature.icaoHex
-								}
-							}
+							else {
+								if (response.data.aircrafts.length == 1)
+									$scope.selectedTraffic = response.data.aircrafts[0];
+								else
+									$scope.selectedTraffic = getUnknownTrafficInfo(feature.acInfo);
 
-							mapService.showTrafficPopup(feature);
+								mapService.showTrafficPopup(feature);
+							}
+						},
+						function (response) {
+							console.error("ERROR", response.status, response.data);
 						}
-					},
-					function(response)
-					{
-						console.error("ERROR", response.status, response.data);
-					}
-				)
+					)
+			}
 		}
 		else if (feature.webcam)
 		{
 			window.open(feature.webcam.url);
+		}
+
+
+		function getUnknownTrafficInfo(acInfo)
+		{
+			return {
+				registration: "N/A",
+				aircraftModelType: "N/A",
+				manufacturer: "N/A",
+				address: acInfo.address,
+				addresstype: acInfo.addresstype
+			};
 		}
 	};
 	
@@ -378,11 +396,13 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		if ($scope.globalData.offlineCache)
 		{
 			setWaypointCacheCookie();
+			setChartCacheCookie();
 			updateAppCache();
 		}
 		else
 		{
 			deleteCookie("cachewaypoints");
+			deleteCookie("cachecharts");
 			updateAppCache();
 		}
 		
@@ -442,6 +462,30 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		}
 
 
+		function setChartCacheCookie()
+		{
+			var chartUrls = [];
+			var wps = $scope.globalData.navplan.waypoints;
+
+			for (var i = 0; i < wps.length; i++)
+			{
+				if (wps[i].charts && wps[i].charts.length > 0)
+				{
+					for (var j = 0; j < wps[i].charts.length; j++)
+					{
+						var restUrl = 'php/ad_charts.php?id=' + wps[i].charts[j].id;
+						var chartUrl = 'charts/' + wps[i].charts[j].filename;
+						
+						pushUnique(chartUrls, restUrl);
+						pushUnique(chartUrls, chartUrl);
+					}
+				}
+			}
+
+			setCookie("cachecharts", obj2json(chartUrls), 0);
+		}
+
+
 		function updateAppCache()
 		{
 			if (window.applicationCache.status === window.applicationCache.DOWNLOADING) 
@@ -452,7 +496,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 				
 			window.applicationCache.update(); // TODO: catch error
 		}		
-	}
+	};
 	
 	
 	$scope.onCacheProgress = function(e)
@@ -468,7 +512,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		
 		$scope.globalData.cacheProgress = { loaded: e.loaded, total: e.total, percent: Math.round(e.loaded / e.total * 100) };
 		$scope.$apply();
-	}
+	};
 
 	
 	$scope.onCacheReady = function(e)
@@ -482,14 +526,14 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 			$scope.globalData.cacheStatus = "off";
 		
 		$scope.$apply();
-	}
+	};
 	
 	
 	$scope.onCacheError = function(e)
 	{
 		$scope.globalData.cacheStatus = "error";
 		$scope.$apply();
-	}
+	};
 
 
 	$scope.onLocationChanged = function(currentPosition)

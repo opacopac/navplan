@@ -17,6 +17,7 @@
 	{
 		addStaticUrls();
 		addTileUrls(json_decode($_COOKIE["cachewaypoints"]), true);
+		addChartUrls(json_decode($_COOKIE["cachecharts"]), true);
 	}
 	else // don't cache anything
 	{
@@ -114,6 +115,21 @@
 		echo "login/login.html offline.html\n";
 		echo "\n";
 	}
+
+
+	function addChartUrls($charturls)
+	{
+	    if (!$charturls)
+	        return;
+
+	    echo "CACHE:\n";
+
+	    foreach ($charturls as $url)
+	        echo $url . "\n";
+
+	    echo "\n";
+    }
+
 	
 	function addTileUrls($waypoints)
 	{
@@ -153,11 +169,9 @@
 			}
 		}
 
-		// create urls and fallback urls
+		// create urls
 		$counter = 0;
 		$tileUrls = [];
-		$fallbackTileUrls = [];
-		$fallbackTileUrls2 = [];
 		foreach ($urlSuffixList as $urlSuffix)
 		{
 			$counter = ($counter + 1) % 3;
@@ -165,9 +179,7 @@
 			$c3 = ($counter + 2) % 3;
 			
 			//$tileUrls[] = $urlPrefix[$counter] . $urlSuffix;
-			$tileUrls[] = $urlPrefix[0] . $urlSuffix;
-			$fallbackTileUrls[] = $urlPrefix[$c2] . $urlSuffix;
-			$fallbackTileUrls2[] = $urlPrefix[$c3] . $urlSuffix;
+			$tileUrls[] = $urlPrefix[1] . $urlSuffix;
 		}
 		
 		
@@ -176,16 +188,7 @@
 
 		foreach ($tileUrls as $tileUrl)
 			echo $tileUrl . "\n";
-			
-		/*echo "\n";
-		echo "# map tiles fallbacks\n";
-		echo "FALLBACK:\n";
 
-		for ($i = 0; $i < count($tileUrls); $i++)
-		{
-			echo $fallbackTileUrls[$i] . " " . $tileUrls[$i] . "\n";
-			echo $fallbackTileUrls2[$i] . " " . $tileUrls[$i] . "\n";
-		}*/
 	}
 
 	

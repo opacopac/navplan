@@ -27,7 +27,8 @@
 	{
 	    $aircrafts[] = array(
 	        id => $rs["id"],
-	        icaohex => $rs["icaohex"],
+	        address => $rs["icaohex"],
+	        addresstype => 'ICAO',
 	        registration => $rs["registration"],
 	        aircraftModelType => $rs["aircraftModelType"],
 	        manufacturer => $rs["manufacturer"],

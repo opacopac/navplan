@@ -57,6 +57,13 @@ function json2obj(json)
 }
 
 
+function pushUnique(itemList, item)
+{
+	if (itemList.indexOf(item) == - 1)
+		itemList.push(item);
+}
+
+
 function removeFromArray(array, value)
 {
 	var idx = array.indexOf(value);

@@ -132,7 +132,7 @@ function mapService($http, trafficService)
 			return new ol.layer.Tile({
 				source: new ol.source.OSM({
 					//url: "http://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png",
-					url: "http://a.tile.opentopomap.org/{z}/{x}/{y}.png",
+					url: "http://b.tile.opentopomap.org/{z}/{x}/{y}.png",
 					maxZoom: 14,
 					crossOrigin: null,
 					attributions: [
@@ -582,7 +582,7 @@ function mapService($http, trafficService)
 							return;
 
 						// specific feature clicked
-						if (feature.icaoHex)
+						if (feature.acInfo)
 						{
 							onFeatureSelectCallback(event, feature);
 							clearGeopointSelection();
@@ -1186,39 +1186,40 @@ function mapService($http, trafficService)
 	function displayChart(chartId)
 	{
 		// load chart data
-		$http.post('php/ad_charts.php', obj2json({ action: 'read', id: chartId }))
-			.success(function(data) {
-				if (data.chart)
-				{
-					var extent = [data.chart.mercator_w, data.chart.mercator_s, data.chart.mercator_e, data.chart.mercator_n];
-					
-					var projection = new ol.proj.Projection({
-						code: 'chart',
-						units: 'm',
-						extent: extent
-					});
-					
-					var chartLayer = new ol.layer.Image({
-						source: new ol.source.ImageStatic({
-							url: 'charts/' + data.chart.filename,
-							projection: projection,
-							imageExtent: extent
-						}),
-						opacity: 0.8
-					});
+		$http.get('php/ad_charts.php?id=' + chartId)
+			.then(
+				function(response) { // success
 
-					chartLayers.push(chartLayer);
-					
-					map.getLayers().insertAt(chartLayers.length, chartLayer);
+					if (!response.data || !response.data.chart) {
+						console.error("ERROR reading chart");
+					}
+					else {
+						var extent = [response.data.chart.mercator_w, response.data.chart.mercator_s, response.data.chart.mercator_e, response.data.chart.mercator_n];
+
+						var projection = new ol.proj.Projection({
+							code: 'chart',
+							units: 'm',
+							extent: extent
+						});
+
+						var chartLayer = new ol.layer.Image({
+							source: new ol.source.ImageStatic({
+								url: 'charts/' + response.data.chart.filename,
+								projection: projection,
+								imageExtent: extent
+							}),
+							opacity: 0.8
+						});
+
+						chartLayers.push(chartLayer);
+
+						map.getLayers().insertAt(chartLayers.length, chartLayer);
+					}
+				},
+				function(response) { // error
+					console.error("ERROR reading chart", response.status, response.data);
 				}
-				else
-				{
-					console.error("ERROR", data);
-				}
-			})
-			.error(function(data, status) {
-				console.error("ERROR", status, data);
-			});
+			);
 	}
 
 
@@ -1237,7 +1238,7 @@ function mapService($http, trafficService)
 		layerSource.clear();
 
 		if (lastPositions)
-			drawTrafficTrack(lastPositions, "OWN", layerSource, undefined, undefined);
+			drawTrafficTrack(lastPositions, layerSource, { actype: "OWN" });
 	}
 
 
@@ -1248,15 +1249,25 @@ function mapService($http, trafficService)
 
 		if (acList)
 		{
-			for (var icaoHex in acList) {
-				var callsign = trafficService.tryReadAcCallsign(icaoHex);
-				drawTrafficTrack(acList[icaoHex].positions, acList[icaoHex].actype, layerSource, icaoHex, callsign);
+			for (var acAddress in acList)
+			{
+				var acInfo = {
+					actype: acList[acAddress].actype,
+					address: acAddress,
+					addresstype: acList[acAddress].addresstype,
+					callsign: ''
+				};
+				
+				if (acList[acAddress].addresstype == "ICAO")
+					acInfo.callsign = trafficService.tryReadAcCallsign(acAddress);
+				
+				drawTrafficTrack(acList[acAddress].positions, layerSource, acInfo);
 			}
 		}
 	}
 
 
-	function drawTrafficTrack(lastPositions, trafficType, layerSource, icaoHex, callsign)
+	function drawTrafficTrack(lastPositions, layerSource, acInfo)
 	{
 		if (!lastPositions)
 			return;
@@ -1266,7 +1277,7 @@ function mapService($http, trafficService)
 
 		for (var i = 0; i < maxIdx; i++)
 		{
-			var trackDotFeature = createTrackDotFeature(lastPositions[i].longitude, lastPositions[i].latitude, trafficType);
+			var trackDotFeature = createTrackDotFeature(lastPositions[i].longitude, lastPositions[i].latitude, acInfo.actype);
 			layerSource.addFeature(trackDotFeature);
 		}
 
@@ -1284,21 +1295,20 @@ function mapService($http, trafficService)
 			}
 
 			var planeFeature = createTrafficFeature(
-				icaoHex,
 				lastPositions[maxIdx].longitude,
 				lastPositions[maxIdx].latitude,
 				lastPositions[maxIdx].altitude,
 				rotation,
-				trafficType);
+				acInfo);
 
 			layerSource.addFeature(planeFeature);
 
-			if (callsign)
+			if (acInfo.callsign)
 			{
 				var csFeature = createCallsignFeature(
 					lastPositions[maxIdx].longitude,
 					lastPositions[maxIdx].latitude,
-					callsign);
+					acInfo.callsign);
 
 				layerSource.addFeature(csFeature);
 			}
@@ -1326,7 +1336,6 @@ function mapService($http, trafficService)
 						fill: new ol.style.Fill({
 							color: color
 						})
-						//stroke: new ol.style.Stroke({color: color,width: 2})
 					})
 				})
 			);
@@ -1335,19 +1344,19 @@ function mapService($http, trafficService)
 		}
 
 
-		function createTrafficFeature(icaoHex, longitude, latitude, altitude, rotation, trafficType, callsign)
+		function createTrafficFeature(longitude, latitude, altitude, rotation, acInfo)
 		{
 			var icon = "icon/";
 			var color = "#FF0000";
 			var heighttext = "";
 
-			if (!callsign)
-				callsign = "";
+			if (!acInfo.callsign)
+				acInfo.callsign = "";
 
 			if (altitude > 0)
 				heighttext = Math.round(altitude * 3.28084).toString() + " ft"; // TODO: einstellbar
 
-			switch (trafficType)
+			switch (acInfo.actype)
 			{
 				case "OWN":
 					icon += "own_plane.png";
@@ -1399,8 +1408,6 @@ function mapService($http, trafficService)
 						src: icon
 					}),
 					text: new ol.style.Text({
-						//textAlign: align,
-						//textBaseline: baseline,
 						font: 'bold 14px Calibri,sans-serif',
 						text: heighttext,
 						fill: new ol.style.Fill({color: color}),
@@ -1411,7 +1418,7 @@ function mapService($http, trafficService)
 				})
 			);
 
-			planeFeature.icaoHex = icaoHex;
+			planeFeature.acInfo = acInfo;
 
 			return planeFeature;
 		}
@@ -1432,8 +1439,6 @@ function mapService($http, trafficService)
 			csFeature.setStyle(
 				new ol.style.Style({
 					text: new ol.style.Text({
-						//textAlign: align,
-						//textBaseline: baseline,
 						font: 'bold 14px Calibri,sans-serif',
 						text: callsign,
 						fill: new ol.style.Fill({color: color}),

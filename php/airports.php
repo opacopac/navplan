@@ -1,6 +1,7 @@
 <?php
 	include "config.php";
 	include "helper.php";
+	include "adinfo_helper.php";
 
 	// open db connection
 	$conn = new mysqli($db_host, $db_user, $db_pw, $db_name);
@@ -31,28 +32,8 @@
 		die("error reading airports: " . $conn->error . " query:" . $query);
 	
 	
-	// build return object
-	
 	while ($rs = $result->fetch_array(MYSQLI_ASSOC))
 	{
-		// find charts
-		$query = "SELECT id, type FROM ad_charts WHERE airport_icao = '" . $rs["icao"] . "'";
-		
-		$result2 = $conn->query($query);
-		
-		if ($result2 === FALSE)
-			die("error reading charts: " . $conn->error . " query:" . $query);
-		
-		$charts = [];
-		
-		while ($rs2 = $result2->fetch_array(MYSQLI_ASSOC))
-		{
-			$charts[] = array(
-				id => $rs2["id"],
-				type => $rs2["type"]
-			);
-		}
-		
 		// build return object
 		$airports[] = array(
 			id => $rs["id"],
@@ -67,7 +48,8 @@
 			rwy_direction1 => $rs["direction1"],
 			frequency => $rs["frequency"],
 			callsign => $rs["callsign"],
-			charts => $charts
+			charts => getAdCharts($rs["icao"], $conn),
+			webcams => getAdWebcams($rs["icao"], $conn)
 		);
 	}
 	

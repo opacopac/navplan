@@ -1,6 +1,7 @@
 <?php
 	include "config.php";
 	include "helper.php";
+	include "adinfo_helper.php";
 
 	$raw_input = file_get_contents('php://input');
 	$input = json_decode($raw_input, true);
@@ -97,7 +98,7 @@
 			die("no navplan with id: '" . $navplan_id . "' of current user found");
 		
 		// get navplan waypoints
-		$query = "SELECT wp.type, wp.freq, wp.callsign, wp.checkpoint, wp.alt, wp.isminalt, wp.ismaxalt, wp.remark, wp.latitude, wp.longitude, wp.is_alternate FROM navplan_waypoints AS wp";
+		$query = "SELECT wp.type, wp.freq, wp.callsign, wp.checkpoint, wp.alt, wp.isminalt, wp.ismaxalt, wp.remark, wp.latitude, wp.longitude, wp.airport_icao, wp.is_alternate FROM navplan_waypoints AS wp";
 		$query .= " WHERE wp.navplan_id = '" . $navplan_id . "'";
 		$query .= " ORDER BY wp.sortorder ASC";
 		
@@ -114,12 +115,15 @@
 				freq => $row["freq"],
 				callsign => $row["callsign"],
 				checkpoint => $row["checkpoint"],
+				airport_icao => $row["airport_icao"],
 				latitude => $row["latitude"],
 				longitude => $row["longitude"],
 				alt => $row["alt"],
 				isminalt => $row["isminalt"],
 				ismaxalt => $row["ismaxalt"],
-				remark => $row["remark"]
+				remark => $row["remark"],
+				charts => getAdCharts($row["airport_icao"], $conn),
+				webcams => getAdWebcams($row["airport_icao"], $conn)
 			);
 			
 			if ($row["is_alternate"] == 1)
@@ -304,6 +308,7 @@
 		$wp["freq"] = mysqli_real_escape_string($conn, $waypoint["freq"]);
 		$wp["callsign"] = mysqli_real_escape_string($conn, $waypoint["callsign"]);
 		$wp["checkpoint"] = mysqli_real_escape_string($conn, $waypoint["checkpoint"]);
+		$wp["airport_icao"] = $waypoint["airport_icao"] ? mysqli_real_escape_string($conn, $waypoint["airport_icao"]) : NULL;
 		$wp["latitude"] = mysqli_real_escape_string($conn, $waypoint["latitude"]);
 		$wp["longitude"] = mysqli_real_escape_string($conn, $waypoint["longitude"]);
 		$wp["alt"] = mysqli_real_escape_string($conn, $waypoint["alt"]);
@@ -339,13 +344,14 @@
 	
 	function createInsertWaypointQuery($waypoint, $sortorder, $navplan_id, $is_alternate)
 	{
-		$query = "INSERT INTO navplan_waypoints (navplan_id, sortorder, type, freq, callsign, checkpoint, latitude, longitude, alt, isminalt, ismaxalt, remark, is_alternate) VALUES (";
+		$query = "INSERT INTO navplan_waypoints (navplan_id, sortorder, type, freq, callsign, checkpoint, airport_icao, latitude, longitude, alt, isminalt, ismaxalt, remark, is_alternate) VALUES (";
 		$query .= "'" . $navplan_id . "',";
 		$query .= "'" . $sortorder . "',";
 		$query .= "'" . $waypoint["type"] . "',";
 		$query .= "'" . $waypoint["freq"] . "',";
 		$query .= "'" . $waypoint["callsign"] . "',";
 		$query .= "'" . $waypoint["checkpoint"] . "',";
+		$query .= $waypoint["airport_icao"] ? "'" . $waypoint["airport_icao"] . "'," : "NULL, ";
 		$query .= "'" . $waypoint["latitude"] . "',";
 		$query .= "'" . $waypoint["longitude"] . "',";
 		$query .= "'" . $waypoint["alt"] . "',";

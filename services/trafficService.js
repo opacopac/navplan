@@ -55,7 +55,7 @@ function trafficService($http)
 				{
 					console.error("ERROR", response.status, response.data);
 				}
-			)
+			);
 
 
 		return undefined;
