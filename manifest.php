@@ -183,12 +183,19 @@
 		}
 		
 		
+        $urlcount = 0;
+
 		echo "# map tiles\n";
 		echo "CACHE:\n";
 
 		foreach ($tileUrls as $tileUrl)
+		{
 			echo $tileUrl . "\n";
+		    $urlcount ++;
 
+		    if ($urlcount > 1000)
+		        exit;
+		}
 	}
 
 	

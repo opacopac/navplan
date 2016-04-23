@@ -488,13 +488,15 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 
 		function updateAppCache()
 		{
-			if (window.applicationCache.status === window.applicationCache.DOWNLOADING) 
+			if (window.applicationCache.status === window.applicationCache.DOWNLOADING) {
 				window.applicationCache.abort();
+			}
+			else {
+				$scope.globalData.cacheStatus = "updating";
+				$scope.globalData.cacheProgress = {loaded: 0, total: 100, percent: 0};
 
-			$scope.globalData.cacheStatus = "updating";
-			$scope.globalData.cacheProgress = { loaded: 0, total: 100, percent: 0 };
-				
-			window.applicationCache.update(); // TODO: catch error
+				window.applicationCache.update(); // TODO: catch error
+			}
 		}		
 	};
 	
