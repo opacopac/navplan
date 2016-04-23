@@ -31,28 +31,29 @@ html, body {
 .mapsearch {
   position: absolute;
   top: 10px;
-  /*left: 10px;*/
+  left: 55px;
   z-index: 20;
-  /*width: 90%;*/
+  opacity: 0.9;
+  max-width: 90%;
 }
 
 .mapbutton-zoom {
   position: absolute;
-  top: 55px;
+  top: 10px;
   left: 10px;
   z-index: 20;
 }
 
 .mapbutton-location {
   position: absolute;
-  top: 165px;
+  top: 120px;
   left: 10px;
   z-index: 20;
 }
 
 .mapbutton-traffic {
   position: absolute;
-  top: 225px;
+  top: 180px;
   left: 10px;
   z-index: 20;
 }

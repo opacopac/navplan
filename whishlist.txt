@@ -1,12 +1,7 @@
-- cache charts
 - about: data versions
-- about: ogn
 - attributions bigger
-- charts: god mode
 - map: sectors
 - charts: adjust position
-- feature-popup: ad cams
-- feature-popup: charts/cams when via geopointselection
 - airspace: altitudes
 - ognlistener: autostart
 - openaip: basel airport
@@ -16,3 +11,4 @@
 - https / files local
 - m / ft
 - import data admin
+- metar/taf/notam
