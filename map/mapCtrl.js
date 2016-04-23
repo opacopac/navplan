@@ -270,6 +270,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 			
 		$scope.globalData.selectedWp = undefined;
 		$scope.updateWpList();
+		$scope.discardCache();
 
 		mapService.hideFeaturePopup();
 	};
@@ -297,8 +298,9 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 			return;
 			
 		$scope.globalData.navplan.waypoints.push(newWp);
-		
+
 		$scope.updateWpList();
+		$scope.discardCache();
 	};
 	
 	
@@ -307,6 +309,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		$scope.globalData.navplan.alternate = altWp;
 		
 		$scope.updateWpList();
+		$scope.discardCache();
 	};
 	
 	
@@ -475,22 +478,47 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 			var chartUrls = [];
 			var wps = $scope.globalData.navplan.waypoints;
 
+			// waypoints
 			for (var i = 0; i < wps.length; i++)
 			{
 				if (wps[i].charts && wps[i].charts.length > 0)
 				{
 					for (var j = 0; j < wps[i].charts.length; j++)
 					{
-						var restUrl = 'php/ad_charts.php?id=' + wps[i].charts[j].id;
-						var chartUrl = 'charts/' + wps[i].charts[j].filename;
-						
-						pushUnique(chartUrls, restUrl);
-						pushUnique(chartUrls, chartUrl);
+						pushUnique(chartUrls, getRestUrl(wps[i].charts[j].id));
+						pushUnique(chartUrls, getChartUrl(wps[i].charts[j].filename));
+					}
+				}
+			}
+
+			// alternate
+			var wpAlt = $scope.globalData.navplan.alternate;
+
+			if (wpAlt)
+			{
+				if (wpAlt.charts && wpAlt.charts.length > 0)
+				{
+					for (var k = 0; k < wpAlt.charts.length; k++)
+					{
+						pushUnique(chartUrls, getRestUrl(wpAlt.charts[k].id));
+						pushUnique(chartUrls, getChartUrl(wpAlt.charts[k].filename));
 					}
 				}
 			}
 
 			setCookie("cachecharts", obj2json(chartUrls), 0);
+
+
+			function getRestUrl(chartId)
+			{
+				return 'php/ad_charts.php?id=' + chartId;
+			}
+
+
+			function getChartUrl(filename)
+			{
+				return 'charts/' + filename;
+			}
 		}
 
 

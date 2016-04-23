@@ -8,7 +8,7 @@
 
 	// manifest header
 	echo "CACHE MANIFEST\n";
-	echo "# v7\n";
+	echo "# v8\n";
 	echo "\n";
 	
 	
@@ -23,7 +23,7 @@
 	{
 		echo "NETWORK:\n";
 		echo "*\n";
-		echo "./\n";
+		echo "\n";
 	}
 
 	function addStaticUrls()
@@ -107,7 +107,7 @@
 		echo "NETWORK:\n";
 		echo "*\n";
 		echo "\n";
-		
+
 		
 		echo "FALLBACK:\n";
 		echo "edituser/edituser.html offline.html\n";
@@ -122,6 +122,7 @@
 	    if (!$charturls)
 	        return;
 
+		echo "# charts\n";
 	    echo "CACHE:\n";
 
 	    foreach ($charturls as $url)
@@ -193,9 +194,11 @@
 			echo $tileUrl . "\n";
 		    $urlcount ++;
 
-		    if ($urlcount > 1000)
+		    if ($urlcount > 1000) // circuit breaker
 		        exit;
 		}
+
+		echo "\n";
 	}
 
 	

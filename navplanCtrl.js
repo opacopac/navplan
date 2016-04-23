@@ -291,6 +291,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 		$scope.globalData.selectedWp = undefined;
 	
 		$scope.updateWpList();
+		$scope.discardCache();
 
 		mapService.clearAllCharts();
 	};
@@ -322,6 +323,8 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 
 	$scope.discardCache = function()
 	{
+		$scope.globalData.offlineCache = false;
+
 		deleteCookie("cachewaypoints");
 		deleteCookie("cachecharts");
 
