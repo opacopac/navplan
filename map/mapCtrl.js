@@ -391,8 +391,18 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		// TODO
 		//if (window.applicationCache.status === window.applicationCache.DOWNLOADING) 
 
-		$scope.globalData.offlineCache = !$scope.globalData.offlineCache;
+		//$scope.globalData.offlineCache = !$scope.globalData.offlineCache;
 
+		switch ($scope.globalData.cacheStatus)
+		{
+			case "off" :
+				$scope.globalData.offlineCache = true;
+				break;
+			default :
+				$scope.globalData.offlineCache = false;
+		}
+
+		
 		if ($scope.globalData.offlineCache)
 		{
 			setWaypointCacheCookie();
@@ -401,9 +411,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		}
 		else
 		{
-			deleteCookie("cachewaypoints");
-			deleteCookie("cachecharts");
-			updateAppCache();
+			$scope.discardCache();
 		}
 		
 		
@@ -501,43 +509,6 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 	};
 	
 	
-	$scope.onCacheProgress = function(e)
-	{
-		if (!e.loaded || !e.total) // hack for firefox
-		{
-			e.loaded = $scope.globalData.cacheProgress.loaded + 1;
-			e.total = $scope.globalData.cacheProgress.total;
-			
-			if (e.loaded > e.total)
-				e.total += 100;
-		}
-		
-		$scope.globalData.cacheProgress = { loaded: e.loaded, total: e.total, percent: Math.round(e.loaded / e.total * 100) };
-		$scope.$apply();
-	};
-
-	
-	$scope.onCacheReady = function(e)
-	{
-		if (window.applicationCache.status == window.applicationCache.UPDATEREADY)
-			window.applicationCache.swapCache();
-		
-		if ($scope.globalData.offlineCache)
-			$scope.globalData.cacheStatus = "updated";
-		else
-			$scope.globalData.cacheStatus = "off";
-		
-		$scope.$apply();
-	};
-	
-	
-	$scope.onCacheError = function(e)
-	{
-		$scope.globalData.cacheStatus = "error";
-		$scope.$apply();
-	};
-
-
 	$scope.onLocationChanged = function(currentPosition)
 	{
 		var lastPositions = locationService.getLastPositions();
@@ -632,14 +603,6 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		trafficCloser.blur();
 		return false;
 	};
-
-	// app cache event listeners
-	window.applicationCache.addEventListener('progress', $scope.onCacheProgress, false);
-	window.applicationCache.addEventListener('noupdate', $scope.onCacheReady, false);
-	window.applicationCache.addEventListener('cached', $scope.onCacheReady, false);
-	window.applicationCache.addEventListener('updateready', $scope.onCacheReady, false);
-	window.applicationCache.addEventListener('obsolete', $scope.onCacheReady, false);
-	window.applicationCache.addEventListener('error', $scope.onCacheError, false);
 
 	$scope.updateWpList();
 }
