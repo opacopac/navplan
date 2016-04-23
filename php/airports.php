@@ -1,6 +1,7 @@
 <?php
 	include "config.php";
 	include "helper.php";
+	include "adinfo_helper.php";
 
 	// open db connection
 	$conn = new mysqli($db_host, $db_user, $db_pw, $db_name);
@@ -27,9 +28,34 @@
 		
 	$result = $conn->query($query);
 	
-	// build return object
-	$return_object = buildReturnObject($result);
+	if ($result === FALSE)
+		die("error reading airports: " . $conn->error . " query:" . $query);
+	
+	
+	while ($rs = $result->fetch_array(MYSQLI_ASSOC))
+	{
+		// build return object
+		$airports[] = array(
+			id => $rs["id"],
+			type => $rs["type"],
+//				country => $rs["country"],
+			name => $rs["name"],
+			icao => $rs["icao"],
+			latitude => $rs["latitude"],
+			longitude => $rs["longitude"],
+//				elevation => $rs["elevation"],
+			rwy_surface => $rs["surface"],
+			rwy_direction1 => $rs["direction1"],
+			frequency => $rs["frequency"],
+			callsign => $rs["callsign"],
+			charts => getAdCharts($rs["icao"], $conn),
+			webcams => getAdWebcams($rs["icao"], $conn)
+		);
+	}
+	
 	$conn->close();
+	
+	$return_object = json_encode(array("airports" => $airports), JSON_NUMERIC_CHECK);
 	
 	
 	// return output
@@ -51,29 +77,5 @@
 		header("Content-Type: application/json; charset=UTF-8");
 	
 		echo($return_object);
-	}
-	
-	
-	function buildReturnObject($result)
-	{
-		while ($rs = $result->fetch_array(MYSQLI_ASSOC))
-		{
-			$airports[] = array(
-				id => $rs["id"],
-				type => $rs["type"],
-//				country => $rs["country"],
-				name => $rs["name"],
-				icao => $rs["icao"],
-				latitude => $rs["latitude"],
-				longitude => $rs["longitude"],
-//				elevation => $rs["elevation"],
-				rwy_surface => $rs["surface"],
-				rwy_direction1 => $rs["direction1"],
-				frequency => $rs["frequency"],
-				callsign => $rs["callsign"]
-			);
-		}
-		
-		return json_encode(array("airports" => $airports), JSON_NUMERIC_CHECK);
 	}
 ?> 

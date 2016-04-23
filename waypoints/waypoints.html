@@ -1,4 +1,4 @@
-<div class="container">
+<div class="container nonmapcontent">
 	<div class="form-horizontal">
 		<div class="form-group" ng-show="isLoggedIn()">
 			<label for="navplan_name" class="control-label col-sm-3">Navplan Name</label>
@@ -60,7 +60,7 @@
 					<td>{{ wp.freq }}</td>
 					<td>{{ wp.callsign }}</td>
 					<td>{{ wp.checkpoint }}</td>
-					<td>{{ wp.alt }}</td>
+					<td><span ng-style="{ 'text-decoration': (wp.isminalt ? 'underline' : '') + (wp.ismaxalt ? ' overline' : '') }">{{ wp.alt }}</span></td>
 					<td>{{ wp.mtText }}</td>
 					<td>{{ wp.distText }}</td>
 					<td>{{ wp.eetText }}</td>
@@ -98,7 +98,7 @@
 					<td>{{ globalData.navplan.alternate.freq }}</td>
 					<td>{{ globalData.navplan.alternate.callsign }}</td>
 					<td>{{ globalData.navplan.alternate.checkpoint }}</td>
-					<td>{{ globalData.navplan.alternate.alt }}</td>
+					<td><span ng-style="{ 'text-decoration': (globalData.navplan.alternate.isminalt ? 'underline' : '') + (globalData.navplan.alternate.ismaxalt ? ' overline' : '') }">{{ globalData.navplan.alternate.alt }}</span></td>
 					<td>{{ globalData.navplan.alternate.mtText }}</td>
 					<td>{{ globalData.navplan.alternate.distText }}</td>
 					<td>{{ globalData.navplan.alternate.eetText }}</td>

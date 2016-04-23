@@ -1,0 +1,1 @@
+nohup php -q ognlistener.php >./ognlistener.log &

@@ -15,7 +15,7 @@ function edituserCtrl($scope, $location, globalData, userService)
 	{
 		$scope.logoutUser();
 		$location.path("/map");
-	}
+	};
 	
 	$scope.onChangePwClicked = function()
 	{

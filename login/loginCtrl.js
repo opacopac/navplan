@@ -17,12 +17,7 @@ function loginCtrl($scope, $location, globalData, userService)
 			.success(function(data) {
 				if (data.resultcode == 0)
 				{
-					if ($scope.rememberMeChecked == true)
-						rememberDays = 90;
-					else
-						rememberDays = 0;
-						
-					$scope.loginUser($scope.email, data.token, rememberDays);
+					$scope.loginUser($scope.email, data.token, $scope.rememberMeChecked);
 					
 					$location.path("/map");
 				}
@@ -34,7 +29,7 @@ function loginCtrl($scope, $location, globalData, userService)
 			.error(function(data, status) {
 				console.error("ERROR", status, data);
 			});
-	}
+	};
 	
     $scope.onRegisterClicked = function()
 	{
@@ -42,12 +37,7 @@ function loginCtrl($scope, $location, globalData, userService)
 			.success(function(data) {
 				if (data.resultcode == 0)
 				{
-					if ($scope.rememberMeChecked == true)
-						rememberDays = 90;
-					else
-						rememberDays = 0;
-						
-					$scope.loginUser($scope.email, data.token, rememberDays);
+					$scope.loginUser($scope.email, data.token, $scope.rememberMeChecked);
 					
 					$location.path("/map");
 				}
@@ -55,5 +45,5 @@ function loginCtrl($scope, $location, globalData, userService)
 					$scope.showErrorMessage("Email already exists!");
 			})
 			.error(function(data, status) { console.error("ERROR", status, data); });
-    }	
+    };
 }

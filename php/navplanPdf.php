@@ -95,7 +95,16 @@
 			if ($j == 0 && ($i >= 3 && $i <= 7))  // grey filled cells in first row
 				$pdf->Cell($ckpColWidth[$i], $rowHeight, "", "LTRB", 0, $align, true);
 			else
+			{
+			    $pos_x0 = $pdf->GetX();
+			    $pos_y0 = $pdf->GetY();
 				$pdf->Cell($ckpColWidth[$i], $rowHeight, getWaypointString($j, $ckpKeys[$i]), "LTRB", 0, $align);
+			    $pos_x1 = $pdf->GetX();
+			    $pos_y1 = $pdf->GetY();
+
+			    if ($ckpKeys[$i] == "alt")
+			        drawMinMaxLines($j, $pos_x0, $pos_y0, $pos_x1, $pos_y1);
+			}
 		}
 
 		$pdf->SetY($pdf->GetY() + $rowHeight); // new line
@@ -193,6 +202,24 @@
 			return false;
 			
 		return $waypoints[$index]["isAlternate"] == true;
+	}
+
+
+	function drawMinMaxLines($index, $pos_x0, $pos_y0, $pos_x1, $pos_y1)
+	{
+		global $pdf, $waypoints, $rowHeight;
+
+		if (!isset($waypoints))
+			return;
+
+		if (!isset($waypoints[$index]))
+			return;
+
+		if ($waypoints[$index]["isminalt"])
+		    $pdf->Line($pos_x0 + 1, $pos_y0 + 4.9, $pos_x1 - 1, $pos_y1 + 4.9);
+
+		if ($waypoints[$index]["ismaxalt"])
+		    $pdf->Line($pos_x0 + 1, $pos_y0 + 0.75, $pos_x1 - 1, $pos_y1 + 0.75);
 	}
 	
 	

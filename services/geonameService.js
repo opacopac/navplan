@@ -23,13 +23,16 @@ function geonameService($http)
 	// search by name
 	function searchGeonamesByValue(search, email, token)
 	{
-		var gradMinSecPattern = /^(\d+)°\s*(\d+)('|’|`|\xB4)\s*(\d+)("|”|''|’’|``|\xB4\xB4)\s*([NS]?)[^\d\w]*(\d+)°\s*(\d+)('|’|`|\xB4)\s*(\d+)("|”|''|’’|``|\xB4\xB4)\s*([EOW]?)$/i;
+		//var gradMinSecPattern = /^(\d+)ï¿½\s*(\d+)('|ï¿½|`|\xB4)\s*(\d+)("|ï¿½|''|ï¿½ï¿½|``|\xB4\xB4)\s*([NS]?)[^\d\w]*(\d+)ï¿½\s*(\d+)('|ï¿½|`|\xB4)\s*(\d+)("|ï¿½|''|ï¿½ï¿½|``|\xB4\xB4)\s*([EOW]?)$/i;
+		var gradMinSecPattern = /^(\d+)\D+(\d+)\D+(\d+)(\D+)(\d+)\D+(\d+)\D+(\d+)(\D*)$/i;
 		var decGradPattern = /^([+-]?\d+\.\d+)[^\d\.+-]+([+-]?\d+\.\d+)$/i;
 		var matchGradMinSec = gradMinSecPattern.exec(search);
 		var matchDecGrad = decGradPattern.exec(search);
 		
 		if (matchGradMinSec != null || matchDecGrad != null)
 		{
+			var lonLat;
+
 			if (matchGradMinSec != null)
 				lonLat = getLonLatFromGradMinSec(matchGradMinSec);
 				
@@ -65,7 +68,7 @@ function geonameService($http)
 				latitude: lonLat[1],
 				longitude: lonLat[0]
 			} ]
-		}
+		};
 		
 		return results.geonames.map(function(item)
 		{
@@ -78,18 +81,18 @@ function geonameService($http)
 	{
 		var latG = parseInt(matchGradMinSec[1]);
 		var latM = parseInt(matchGradMinSec[2]);
-		var latS = parseInt(matchGradMinSec[4]);
-		var latDir = matchGradMinSec[6];
+		var latS = parseInt(matchGradMinSec[3]);
+		var latDir = matchGradMinSec[4];
 		var lat = latG + latM / 60 + latS / 3600;
-		if (latDir.toUpperCase() == "S")
+		if (latDir.toUpperCase().indexOf("S") >= 0)
 			lat = -lat;
 		
-		var lonG = parseInt(matchGradMinSec[7]);
-		var lonM = parseInt(matchGradMinSec[8]);
-		var lonS = parseInt(matchGradMinSec[10]);
-		var lonDir = matchGradMinSec[12];
+		var lonG = parseInt(matchGradMinSec[5]);
+		var lonM = parseInt(matchGradMinSec[6]);
+		var lonS = parseInt(matchGradMinSec[7]);
+		var lonDir = matchGradMinSec[8];
 		var lon = lonG + lonM / 60 + lonS / 3600;
-		if (lonDir.toUpperCase() == "W")
+		if (lonDir.toUpperCase().indexOf("W") >= 0)
 			lon = -lon;
 
 		return [ lon, lat ];

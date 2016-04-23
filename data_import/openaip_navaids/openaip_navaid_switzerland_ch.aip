@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 
 <!--
-*  Exported on: 17.07.2015
+*  Exported on: 24.03.2016
 *  This data is owned by Butterfly Avionics GmbH and licensed under the CC BY-NC-SA,
 *  not to be used for commercial purposes. For more information on commercial licensing visit
 *  
@@ -24,7 +24,7 @@
 *  POSSIBILITY OF SUCH DAMAGES.
 -->
 
-<OPENAIP VERSION="981224" DATAFORMAT="1.1">
+<OPENAIP VERSION="1198301" DATAFORMAT="1.1">
 <NAVAIDS>
 <NAVAID TYPE="NDB">
   <COUNTRY>CH</COUNTRY>
