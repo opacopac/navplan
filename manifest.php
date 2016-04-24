@@ -140,12 +140,7 @@
 	
 	function addTileUrls($waypoints)
 	{
-		$urlPrefix = array(
-			"//a.tile.opentopomap.org/",
-			"//b.tile.opentopomap.org/",
-			"//c.tile.opentopomap.org/"
-		);
-		$urlSuffixList = [];
+		$tileUrls = [];
 		
 		foreach ($waypoints as $waypoint)
 		{
@@ -167,29 +162,15 @@
 					for ($j = -$rad; $j <= $rad; $j += $stepdist)
 					{
 						$latLon2 = moveBearDist($latLon[0], $latLon[1], ($dir + 90) % 360, $j);
-						$url = getTileUrlSuffix($latLon2[0], $latLon2[1], $zoom);
+						$url = getTileUrl($latLon2[0], $latLon2[1], $zoom);
 						
-						if (!in_array($url, $urlSuffixList))
-							$urlSuffixList[] = $url;
+						if (!in_array($url, $tileUrls))
+							$tileUrls[] = $url;
 					}
 				}
 			}
 		}
 
-		// create urls
-		$counter = 0;
-		$tileUrls = [];
-		foreach ($urlSuffixList as $urlSuffix)
-		{
-			$counter = ($counter + 1) % 3;
-			$c2 = ($counter + 1) % 3;
-			$c3 = ($counter + 2) % 3;
-			
-			//$tileUrls[] = $urlPrefix[$counter] . $urlSuffix;
-			$tileUrls[] = $urlPrefix[1] . $urlSuffix;
-		}
-		
-		
         $urlcount = 0;
 
 		echo "# map tiles\n";
@@ -210,16 +191,23 @@
 	
 	function getStepDistNm($lat, $zoom)
 	{
-		return 156543.03 * cos(deg2rad($lat)) / pow(2, $zoom) * 256 / 1852.0 / 2;
+		return 156543.03 * cos(deg2rad($lat)) / pow(2, $zoom) * 256 / 1852.0 / 3; // 1/3 of a tile side length
 	}
 
 	
-	function getTileUrlSuffix($lat, $lon, $zoom)
+	function getTileUrl($lat, $lon, $zoom)
 	{
+		$urlPrefix = array(
+			"//a.tile.opentopomap.org/",
+			"//b.tile.opentopomap.org/",
+			"//c.tile.opentopomap.org/"
+		);
+
 		$xtile = floor((($lon + 180) / 360) * pow(2, $zoom));
 		$ytile = floor((1 - log(tan(deg2rad($lat)) + 1 / cos(deg2rad($lat))) / pi()) /2 * pow(2, $zoom));
+		$n = ($zoom + $ytile + $xtile) % 3;
 		
-		return $zoom . "/" . $xtile . "/" . $ytile . ".png";
+		return $urlPrefix[$n] . $zoom . "/" . $xtile . "/" . $ytile . ".png";
 	}
 	
 	

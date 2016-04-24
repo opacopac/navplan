@@ -9,8 +9,6 @@ mapService.$inject = ['$http', 'trafficService'];
 
 function mapService($http, trafficService)
 {
-	const DEFAULT_TILE_URL = "//{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png";
-	const CACHE_TILE_URL = "//b.tile.opentopomap.org/{z}/{x}/{y}.png";
 	const MAX_ZOOMLEVEL = 17;
 
 	var map = {};
@@ -21,7 +19,6 @@ function mapService($http, trafficService)
 	var isGeopointSelectionActive = false;
 	var isFeaturePopupActive = false;
 	var isTrafficPopupActive = false;
-	var isCacheMode = false;
 	var wgs84Sphere = new ol.Sphere(6378137);
 	var minZoomLevel =
 	{
@@ -55,15 +52,12 @@ function mapService($http, trafficService)
 		clearAllCharts: clearAllCharts,
 		updateLocation: updateLocation,
 		updateTraffic: updateTraffic,
-		setCacheMode: setCacheMode
 	};
 	
 	
 	// init map
-	function init(onMapClickCallback, onFeatureSelectCallback, onMoveEndCallback, mapPos, featureContainer, trafficContainer, email, token, cacheMode)
+	function init(onMapClickCallback, onFeatureSelectCallback, onMoveEndCallback, mapPos, featureContainer, trafficContainer, email, token)
 	{
-		isCacheMode = cacheMode;
-
 		// init layers
 		mapLayer = createMapLayer();
 		locationLayer = createEmptyVectorLayer();
@@ -1445,32 +1439,12 @@ function mapService($http, trafficService)
 	}
 
 
-	function setCacheMode(newStatus)
-	{
-		if (isCacheMode ==  newStatus)
-			return;
-
-		isCacheMode = newStatus;
-
-		var tileSource = mapLayer.getSource();
-
-		if (isCacheMode)
-			tileSource.setUrl(CACHE_TILE_URL);
-		else
-			tileSource.setUrl(DEFAULT_TILE_URL);
-	}
-
-
 	function createMapLayer()
 	{
-		var url = DEFAULT_TILE_URL;
-
-		if (isCacheMode)
-			url = CACHE_TILE_URL;
-
 		return new ol.layer.Tile({
 			source: new ol.source.XYZ({
-				url: url,
+				tileUrlFunction: getTileUrl,
+				minZoom: 0,
 				maxZoom: MAX_ZOOMLEVEL,
 				crossOrigin: null,
 				attributions:
@@ -1483,6 +1457,15 @@ function mapService($http, trafficService)
 				]
 			})
 		});
+
+
+		function getTileUrl(coordinate)
+		{
+			var baseUrls = [ "//a.tile.opentopomap.org/", "//b.tile.opentopomap.org/", "//c.tile.opentopomap.org/" ];
+			var n = (coordinate[0] + coordinate[1] + (-coordinate[2] - 1)) % baseUrls.length;
+
+			return baseUrls[n] + coordinate[0] + "/" + coordinate[1] + "/" + (-coordinate[2] - 1) + ".png";
+		}
 	}
 
 	function getDistance(lat1, lon1, lat2, lon2)
