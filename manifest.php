@@ -8,7 +8,7 @@
 
 	// manifest header
 	echo "CACHE MANIFEST\n";
-	echo "# v7\n";
+	echo "# v8\n";
 	echo "\n";
 	
 	
@@ -23,7 +23,7 @@
 	{
 		echo "NETWORK:\n";
 		echo "*\n";
-		echo "./\n";
+		echo "\n";
 	}
 
 	function addStaticUrls()
@@ -45,15 +45,21 @@
 		echo "php/navaids.php\n";
 		echo "php/webcams.php\n";
 		
-		// css & fonts
+		// css
 		echo "css/navplan.css\n";
-		echo "//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css\n";
-		echo "//openlayers.org/en/v3.9.0/css/ol.css\n";
-		//echo "//allfont.net/allfont.css?fonts=arial-narrow\n";
-		echo "//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/fonts/glyphicons-halflings-regular.woff2\n";
-		echo "//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/fonts/glyphicons-halflings-regular.woff\n";
-		echo "//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/fonts/glyphicons-halflings-regular.ttf\n";
-		
+		echo "css/bootstrap.min.css\n";
+		echo "css/ol.css\n";
+		echo "css/arial-narrow.css\n";
+
+		// fonts
+        echo "fonts/arial-narrow_d0eb64ed2b91fe9a67f7800c1b14868b.ttf\n";
+        echo "fonts/arial-narrow_d0eb64ed2b91fe9a67f7800c1b14868b.woff\n";
+		echo "fonts/glyphicons-halflings-regular.woff2\n";
+		echo "fonts/glyphicons-halflings-regular.woff\n";
+		echo "fonts/glyphicons-halflings-regular.ttf\n";
+		echo "fonts/glyphicons-halflings-regular.eot\n";
+		echo "fonts/glyphicons-halflings-regular.svg\n";
+
 		// images
 		echo "icon/ad_civ.png\n";
 		echo "icon/ad_civ_nofac.png\n";
@@ -76,15 +82,15 @@
 		echo "icon/wp_user.png\n";
 
 		// js
-		echo "//ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js\n";
-		echo "//ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js\n";
-		echo "js/jquery.ui.touch-punch.min.js\n";
-		echo "//ajax.googleapis.com/ajax/libs/angularjs/1.4.2/angular.min.js\n";
-		echo "//ajax.googleapis.com/ajax/libs/angularjs/1.4.2/angular-route.min.js\n";
-		echo "//ajax.googleapis.com/ajax/libs/angularjs/1.4.2/angular-resource.min.js\n";
-		echo "//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js\n";
-		echo "//cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/0.13.0/ui-bootstrap-tpls.min.js\n";
-		echo "//openlayers.org/en/v3.14.1/build/ol.js\n";
+	    echo "js/jquery-1.12.3.min.js\n";
+        echo "js/jquery-ui.min.js\n";
+        echo "js/jquery.ui.touch-punch.min.js\n";
+        echo "js/angular.min.js\n";
+        echo "js/angular-route.min.js\n";
+        echo "js/angular-resource.min.js\n";
+        echo "js/bootstrap.min.js\n";
+        echo "js/ui-bootstrap-tpls-1.3.2.min.js\n";
+        echo "js/ol.js\n";
 		echo "navplanHelper.js\n";
 		echo "navplanApp.js\n";
 		echo "navplanCtrl.js\n";
@@ -107,7 +113,7 @@
 		echo "NETWORK:\n";
 		echo "*\n";
 		echo "\n";
-		
+
 		
 		echo "FALLBACK:\n";
 		echo "edituser/edituser.html offline.html\n";
@@ -122,6 +128,7 @@
 	    if (!$charturls)
 	        return;
 
+		echo "# charts\n";
 	    echo "CACHE:\n";
 
 	    foreach ($charturls as $url)
@@ -193,9 +200,11 @@
 			echo $tileUrl . "\n";
 		    $urlcount ++;
 
-		    if ($urlcount > 1000)
+		    if ($urlcount > 1000) // circuit breaker
 		        exit;
 		}
+
+		echo "\n";
 	}
 
 	

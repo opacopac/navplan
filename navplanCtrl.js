@@ -291,11 +291,12 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 		$scope.globalData.selectedWp = undefined;
 	
 		$scope.updateWpList();
+		$scope.discardCache();
 
 		mapService.clearAllCharts();
 	};
-	
-	
+
+
 	$scope.backupSelectedWaypoint = function()
 	{
 		$scope.globalData.wpBackup = {
@@ -318,14 +319,72 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 		$scope.globalData.selectedWp.isminalt = $scope.globalData.wpBackup.isminalt;
 		$scope.globalData.selectedWp.ismaxalt = $scope.globalData.wpBackup.ismaxalt;
 	};
-	
-	
+
+
+	$scope.discardCache = function()
+	{
+		$scope.globalData.offlineCache = false;
+
+		deleteCookie("cachewaypoints");
+		deleteCookie("cachecharts");
+
+		if (window.applicationCache.status === window.applicationCache.DOWNLOADING)
+		{
+			window.applicationCache.abort();
+		}
+		else if (window.applicationCache.status !== window.applicationCache.UNCACHED)
+		{
+			$scope.globalData.cacheStatus = "updating";
+			$scope.globalData.cacheProgress = {loaded: 0, total: 100, percent: 0};
+
+			window.applicationCache.update();
+		}
+	};
+
+
+	$scope.onCacheProgress = function(e)
+	{
+		if (!e.loaded || !e.total) // hack for firefox
+		{
+			e.loaded = $scope.globalData.cacheProgress.loaded + 1;
+			e.total = $scope.globalData.cacheProgress.total;
+
+			if (e.loaded > e.total)
+				e.total += 100;
+		}
+
+		$scope.globalData.cacheProgress = { loaded: e.loaded, total: e.total, percent: Math.round(e.loaded / e.total * 100) };
+		$scope.$apply();
+	};
+
+
+	$scope.onCacheReady = function(e)
+	{
+		if (window.applicationCache.status == window.applicationCache.UPDATEREADY)
+			window.applicationCache.swapCache();
+
+		if ($scope.globalData.offlineCache)
+			$scope.globalData.cacheStatus = "updated";
+		else
+			$scope.globalData.cacheStatus = "off";
+
+		$scope.$apply();
+	};
+
+
+	$scope.onCacheError = function(e)
+	{
+		$scope.globalData.cacheStatus = "error";
+		$scope.$apply();
+	};
+
+
 	$scope.onLeaving = function()
 	{
 		window.sessionStorage.setItem("globalData", obj2json($scope.globalData));
-	}
-	
-	
+	};
+
+
 	// init stuff
 	$scope.initGlobalData();
 	$scope.initUser();
@@ -334,4 +393,10 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 	// event listeners
 	window.addEventListener("beforeunload", $scope.onLeaving);
 	window.addEventListener("pagehide", $scope.onLeaving);
+	window.applicationCache.addEventListener('progress', $scope.onCacheProgress, false);
+	window.applicationCache.addEventListener('noupdate', $scope.onCacheReady, false);
+	window.applicationCache.addEventListener('cached', $scope.onCacheReady, false);
+	window.applicationCache.addEventListener('updateready', $scope.onCacheReady, false);
+	window.applicationCache.addEventListener('obsolete', $scope.onCacheReady, false);
+	window.applicationCache.addEventListener('error', $scope.onCacheError, false);
 }

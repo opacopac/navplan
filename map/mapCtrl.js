@@ -270,6 +270,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 			
 		$scope.globalData.selectedWp = undefined;
 		$scope.updateWpList();
+		$scope.discardCache();
 
 		mapService.hideFeaturePopup();
 	};
@@ -297,8 +298,9 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 			return;
 			
 		$scope.globalData.navplan.waypoints.push(newWp);
-		
+
 		$scope.updateWpList();
+		$scope.discardCache();
 	};
 	
 	
@@ -307,6 +309,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		$scope.globalData.navplan.alternate = altWp;
 		
 		$scope.updateWpList();
+		$scope.discardCache();
 	};
 	
 	
@@ -391,8 +394,18 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		// TODO
 		//if (window.applicationCache.status === window.applicationCache.DOWNLOADING) 
 
-		$scope.globalData.offlineCache = !$scope.globalData.offlineCache;
+		//$scope.globalData.offlineCache = !$scope.globalData.offlineCache;
 
+		switch ($scope.globalData.cacheStatus)
+		{
+			case "off" :
+				$scope.globalData.offlineCache = true;
+				break;
+			default :
+				$scope.globalData.offlineCache = false;
+		}
+
+		
 		if ($scope.globalData.offlineCache)
 		{
 			setWaypointCacheCookie();
@@ -401,9 +414,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		}
 		else
 		{
-			deleteCookie("cachewaypoints");
-			deleteCookie("cachecharts");
-			updateAppCache();
+			$scope.discardCache();
 		}
 		
 		
@@ -467,22 +478,47 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 			var chartUrls = [];
 			var wps = $scope.globalData.navplan.waypoints;
 
+			// waypoints
 			for (var i = 0; i < wps.length; i++)
 			{
 				if (wps[i].charts && wps[i].charts.length > 0)
 				{
 					for (var j = 0; j < wps[i].charts.length; j++)
 					{
-						var restUrl = 'php/ad_charts.php?id=' + wps[i].charts[j].id;
-						var chartUrl = 'charts/' + wps[i].charts[j].filename;
-						
-						pushUnique(chartUrls, restUrl);
-						pushUnique(chartUrls, chartUrl);
+						pushUnique(chartUrls, getRestUrl(wps[i].charts[j].id));
+						pushUnique(chartUrls, getChartUrl(wps[i].charts[j].filename));
+					}
+				}
+			}
+
+			// alternate
+			var wpAlt = $scope.globalData.navplan.alternate;
+
+			if (wpAlt)
+			{
+				if (wpAlt.charts && wpAlt.charts.length > 0)
+				{
+					for (var k = 0; k < wpAlt.charts.length; k++)
+					{
+						pushUnique(chartUrls, getRestUrl(wpAlt.charts[k].id));
+						pushUnique(chartUrls, getChartUrl(wpAlt.charts[k].filename));
 					}
 				}
 			}
 
 			setCookie("cachecharts", obj2json(chartUrls), 0);
+
+
+			function getRestUrl(chartId)
+			{
+				return 'php/ad_charts.php?id=' + chartId;
+			}
+
+
+			function getChartUrl(filename)
+			{
+				return 'charts/' + filename;
+			}
 		}
 
 
@@ -501,43 +537,6 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 	};
 	
 	
-	$scope.onCacheProgress = function(e)
-	{
-		if (!e.loaded || !e.total) // hack for firefox
-		{
-			e.loaded = $scope.globalData.cacheProgress.loaded + 1;
-			e.total = $scope.globalData.cacheProgress.total;
-			
-			if (e.loaded > e.total)
-				e.total += 100;
-		}
-		
-		$scope.globalData.cacheProgress = { loaded: e.loaded, total: e.total, percent: Math.round(e.loaded / e.total * 100) };
-		$scope.$apply();
-	};
-
-	
-	$scope.onCacheReady = function(e)
-	{
-		if (window.applicationCache.status == window.applicationCache.UPDATEREADY)
-			window.applicationCache.swapCache();
-		
-		if ($scope.globalData.offlineCache)
-			$scope.globalData.cacheStatus = "updated";
-		else
-			$scope.globalData.cacheStatus = "off";
-		
-		$scope.$apply();
-	};
-	
-	
-	$scope.onCacheError = function(e)
-	{
-		$scope.globalData.cacheStatus = "error";
-		$scope.$apply();
-	};
-
-
 	$scope.onLocationChanged = function(currentPosition)
 	{
 		var lastPositions = locationService.getLastPositions();
@@ -632,14 +631,6 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		trafficCloser.blur();
 		return false;
 	};
-
-	// app cache event listeners
-	window.applicationCache.addEventListener('progress', $scope.onCacheProgress, false);
-	window.applicationCache.addEventListener('noupdate', $scope.onCacheReady, false);
-	window.applicationCache.addEventListener('cached', $scope.onCacheReady, false);
-	window.applicationCache.addEventListener('updateready', $scope.onCacheReady, false);
-	window.applicationCache.addEventListener('obsolete', $scope.onCacheReady, false);
-	window.applicationCache.addEventListener('error', $scope.onCacheError, false);
 
 	$scope.updateWpList();
 }
