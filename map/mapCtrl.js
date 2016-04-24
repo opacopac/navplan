@@ -324,9 +324,9 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 	{
 		var zoom = mapService.getMapPosition().zoom;
 
-		if (zoom < 18)
+		if (zoom < mapService.MAX_ZOOMLEVEL)
 			mapService.setMapPosition(null, null, zoom + 1);
-	}
+	};
 
 
 	$scope.onZoomOutClicked = function()
@@ -335,7 +335,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 
 		if (zoom > 1)
 			mapService.setMapPosition(null, null, zoom - 1);
-	}
+	};
 
 
 	$scope.onKmlClicked = function()
@@ -363,7 +363,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 			mapService.updateLocation(undefined);
 			$scope.globalData.locationStatus = "off";
 		}		
-	}
+	};
 	
 
 	$scope.onTrafficClicked = function()
@@ -391,11 +391,6 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 	
 	$scope.onOfflineCacheClicked = function()
 	{
-		// TODO
-		//if (window.applicationCache.status === window.applicationCache.DOWNLOADING) 
-
-		//$scope.globalData.offlineCache = !$scope.globalData.offlineCache;
-
 		switch ($scope.globalData.cacheStatus)
 		{
 			case "off" :
@@ -408,6 +403,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		
 		if ($scope.globalData.offlineCache)
 		{
+			mapService.setCacheMode(true);
 			setWaypointCacheCookie();
 			setChartCacheCookie();
 			updateAppCache();
@@ -618,7 +614,16 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 	var trafficContainer = document.getElementById('traffic-popup');
 	var trafficCloser = document.getElementById('traffic-popup-closer');
 
-	mapService.init($scope.onMapClicked, $scope.onFeatureSelected, $scope.onMapMoveEnd, $scope.globalData.currentMapPos, featureContainer, trafficContainer, $scope.globalData.user.email, $scope.globalData.user.token);
+	mapService.init(
+		$scope.onMapClicked,
+		$scope.onFeatureSelected,
+		$scope.onMapMoveEnd,
+		$scope.globalData.currentMapPos,
+		featureContainer,
+		trafficContainer,
+		$scope.globalData.user.email,
+		$scope.globalData.user.token,
+		$scope.globalData.offlineCache);
 
 	featureCloser.onclick = function() {
 		mapService.hideFeaturePopup();
