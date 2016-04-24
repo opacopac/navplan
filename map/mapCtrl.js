@@ -403,7 +403,6 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		
 		if ($scope.globalData.offlineCache)
 		{
-			mapService.setCacheMode(true);
 			setWaypointCacheCookie();
 			setChartCacheCookie();
 			updateAppCache();
@@ -462,7 +461,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 					lon: wp.longitude,
 					tt: tt,
 					dist: dist,
-					rad: 2.5,
+					rad: 3,
 					maxzoom: 12
 				};
 			}
@@ -622,8 +621,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		featureContainer,
 		trafficContainer,
 		$scope.globalData.user.email,
-		$scope.globalData.user.token,
-		$scope.globalData.offlineCache);
+		$scope.globalData.user.token);
 
 	featureCloser.onclick = function() {
 		mapService.hideFeaturePopup();

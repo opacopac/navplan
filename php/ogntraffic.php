@@ -31,6 +31,9 @@
 
 	    foreach ($dumpfiles as $dumpfile)
 	    {
+			if(!file_exists($dumpfile))
+				die("ERROR: File not found");
+
 	        $file = fopen($dumpfile, "r");
 
 	        while (!feof($file))

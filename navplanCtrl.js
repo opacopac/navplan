@@ -324,7 +324,6 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 	$scope.discardCache = function()
 	{
 		$scope.globalData.offlineCache = false;
-		mapService.setCacheMode(false);
 
 		deleteCookie("cachewaypoints");
 		deleteCookie("cachecharts");
