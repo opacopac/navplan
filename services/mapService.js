@@ -645,9 +645,8 @@ function mapService($http, trafficService)
 		}
 
 
-
 		function getClickRadius(event) {
-			var clickPos = map.getEventPixel(event);
+			var clickPos = event.pixel;
 			var coord1 = map.getCoordinateFromPixel(clickPos);
 			var lon1 = ol.proj.toLonLat(coord1)[0];
 
