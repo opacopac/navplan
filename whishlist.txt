@@ -6,9 +6,7 @@
 - ognlistener: autostart
 - openaip: basel airport
 - openaip: airspace black/whitelist
-- search: list nicht über buttons
 - cams: add more
-- https / files local
 - m / ft
 - import data admin
 - metar/taf/notam

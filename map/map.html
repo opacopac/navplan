@@ -3,7 +3,7 @@
 	<div class="container mapsearch">
 		<div class="input-group">
 			<input id="searchWpInput" type="text" class="form-control" placeholder="search waypoint / coordinates or click on map" ng-model="globalData.navplan.selectedWaypoint.checkpoint"
-				   typeahead="geoname.name for geoname in searchGeonamesByValue($viewValue)" typeahead-min-length="2"
+				   uib-typeahead="geoname.name for geoname in searchGeonamesByValue($viewValue)" typeahead-min-length="2"
 				   typeahead-on-select="onGeonameSelect($item)"
 				   ng-blur="updateTrack()" />
 			<span class="input-group-btn">

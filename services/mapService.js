@@ -9,6 +9,10 @@ mapService.$inject = ['$http', 'trafficService'];
 
 function mapService($http, trafficService)
 {
+	const DEFAULT_TILE_URL = "//{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png";
+	const CACHE_TILE_URL = "//b.tile.opentopomap.org/{z}/{x}/{y}.png";
+	const MAX_ZOOMLEVEL = 17;
+
 	var map = {};
 	var mapLayer, trackLayer, iconLayer, airspaceLayer, globalWpLayer, userWpLayer, geopointLayer, trafficLayer, locationLayer, webcamLayer;
 	var chartLayers = [];
@@ -17,6 +21,7 @@ function mapService($http, trafficService)
 	var isGeopointSelectionActive = false;
 	var isFeaturePopupActive = false;
 	var isTrafficPopupActive = false;
+	var isCacheMode = false;
 	var wgs84Sphere = new ol.Sphere(6378137);
 	var minZoomLevel =
 	{
@@ -30,6 +35,7 @@ function mapService($http, trafficService)
 
 	// return api reference
 	return {
+		MAX_ZOOMLEVEL: MAX_ZOOMLEVEL,
 		map: map,
 		featureOverlay: featureOverlay,
 		init: init,
@@ -48,13 +54,16 @@ function mapService($http, trafficService)
 		displayChart: displayChart,
 		clearAllCharts: clearAllCharts,
 		updateLocation: updateLocation,
-		updateTraffic: updateTraffic
+		updateTraffic: updateTraffic,
+		setCacheMode: setCacheMode
 	};
 	
 	
 	// init map
-	function init(onMapClickCallback, onFeatureSelectCallback, onMoveEndCallback, mapPos, featureContainer, trafficContainer, email, token)
+	function init(onMapClickCallback, onFeatureSelectCallback, onMoveEndCallback, mapPos, featureContainer, trafficContainer, email, token, cacheMode)
 	{
+		isCacheMode = cacheMode;
+
 		// init layers
 		mapLayer = createMapLayer();
 		locationLayer = createEmptyVectorLayer();
@@ -103,7 +112,8 @@ function mapService($http, trafficService)
 				//interactions: ol.interaction.defaults().extend([new dragInteraction()]),
 				controls: //ol.control.defaults().extend(
 					[
-						new ol.control.ScaleLine({units: 'nautical'})
+						new ol.control.ScaleLine({ units: 'nautical' }),
+						new ol.control.Attribution()
 					],
 				layers: [
 					mapLayer,
@@ -123,24 +133,6 @@ function mapService($http, trafficService)
 						center: mapPos.center,
 						zoom: mapPos.zoom
 					})
-			});
-		}
-
-
-		function createMapLayer()
-		{
-			return new ol.layer.Tile({
-				source: new ol.source.OSM({
-					//url: "http://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png",
-					url: "//b.tile.opentopomap.org/{z}/{x}/{y}.png",
-					maxZoom: 14,
-					crossOrigin: null,
-					attributions: [
-						new ol.Attribution({html: 'Kartendaten: (c) OpenStreetMap-Mitwirkende, SRTM | Kartendarstellung: (c) <a href="http://www.opentopomap.org/">OpenTopoMap</a> (CC-BY-SA)'}),
-						new ol.Attribution({html: 'Aviation Data: (c) <a href="http://www.openaip.net/">openAIP</a> (CC-BY-SA)'}),
-						ol.source.OSM.ATTRIBUTION
-					]
-				})
 			});
 		}
 
@@ -645,17 +637,16 @@ function mapService($http, trafficService)
 		}
 
 
-
 		function getClickRadius(event) {
-			var clickPos = map.getEventPixel(event);
+			var clickPos = [event.pixel[0], event.pixel[1]];
 			var coord1 = map.getCoordinateFromPixel(clickPos);
-			var lon1 = ol.proj.toLonLat(coord1)[0];
+			var lat1 = ol.proj.toLonLat(coord1)[1];
 
-			clickPos[0] += 50;
+			clickPos[1] -= 50;
 			var coord2 = map.getCoordinateFromPixel(clickPos);
-			var lon2 = ol.proj.toLonLat(coord2)[0];
+			var lat2 = ol.proj.toLonLat(coord2)[1];
 
-			return lon2 - lon1;
+			return Math.abs(lat2 - lat1);
 		}
 	}
 
@@ -1453,6 +1444,46 @@ function mapService($http, trafficService)
 		}
 	}
 
+
+	function setCacheMode(newStatus)
+	{
+		if (isCacheMode ==  newStatus)
+			return;
+
+		isCacheMode = newStatus;
+
+		var tileSource = mapLayer.getSource();
+
+		if (isCacheMode)
+			tileSource.setUrl(CACHE_TILE_URL);
+		else
+			tileSource.setUrl(DEFAULT_TILE_URL);
+	}
+
+
+	function createMapLayer()
+	{
+		var url = DEFAULT_TILE_URL;
+
+		if (isCacheMode)
+			url = CACHE_TILE_URL;
+
+		return new ol.layer.Tile({
+			source: new ol.source.XYZ({
+				url: url,
+				maxZoom: MAX_ZOOMLEVEL,
+				crossOrigin: null,
+				attributions:
+				[
+					ol.source.OSM.ATTRIBUTION,
+					new ol.Attribution({ html: 'Map Visualization: <a href="http://www.opentopomap.org/" target="_blank">OpenTopoMap</a> | <a href="https://lta.cr.usgs.gov/SRTM" target="_blank">SRTM</a>' }),
+					new ol.Attribution({ html: 'Aviation Data: <a href="http://www.openaip.net/" target="_blank">openAIP</a>' }),
+					new ol.Attribution({ html: 'Traffic Data: <a href="http://wiki.glidernet.org/about" target="_blank">Open Glider Network</a>' }),
+					new ol.Attribution({ html: 'Links to Webcams: all images are digital property of the webcam owners. check the reference for details.' })
+				]
+			})
+		});
+	}
 
 	function getDistance(lat1, lon1, lat2, lon2)
 	{
