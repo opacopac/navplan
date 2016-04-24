@@ -332,7 +332,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 		{
 			window.applicationCache.abort();
 		}
-		else
+		else if (window.applicationCache.status !== window.applicationCache.UNCACHED)
 		{
 			$scope.globalData.cacheStatus = "updating";
 			$scope.globalData.cacheProgress = {loaded: 0, total: 100, percent: 0};

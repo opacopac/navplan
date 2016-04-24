@@ -132,7 +132,7 @@ function mapService($http, trafficService)
 			return new ol.layer.Tile({
 				source: new ol.source.OSM({
 					//url: "http://{a-c}.tile.opentopomap.org/{z}/{x}/{y}.png",
-					url: "http://b.tile.opentopomap.org/{z}/{x}/{y}.png",
+					url: "//b.tile.opentopomap.org/{z}/{x}/{y}.png",
 					maxZoom: 14,
 					crossOrigin: null,
 					attributions: [
