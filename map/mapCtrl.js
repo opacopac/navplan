@@ -3,10 +3,10 @@
  */
 
 navplanApp
-	.controller('mapCtrl', [ '$scope', 'mapService', 'locationService', 'trafficService', 'geonameService', 'globalData', mapCtrl ]);
+	.controller('mapCtrl', [ '$scope', 'mapService', 'locationService', 'trafficService', 'geonameService', 'weatherService', 'globalData', mapCtrl ]);
 
 
-function mapCtrl($scope, mapService, locationService, trafficService, geonameService, globalData) {
+function mapCtrl($scope, mapService, locationService, trafficService, geonameService, weatherService, globalData) {
 	$scope.globalData = globalData;
 	$scope.timerIntervallMs = 5000;
 	$scope.selectedTraffic = {};
@@ -214,6 +214,12 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		else if (feature.webcam)
 		{
 			window.open(feature.webcam.url);
+		}
+		else if (feature.weatherInfo)
+		{
+			$scope.selectedWeather = feature.weatherInfo;
+			mapService.showWeatherPopup(feature);
+			$scope.$apply();
 		}
 
 
@@ -613,6 +619,9 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 	var trafficContainer = document.getElementById('traffic-popup');
 	var trafficCloser = document.getElementById('traffic-popup-closer');
 
+	var weatherContainer = document.getElementById('weather-popup');
+	var weatherCloser = document.getElementById('weather-popup-closer');
+
 	mapService.init(
 		$scope.onMapClicked,
 		$scope.onFeatureSelected,
@@ -620,6 +629,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		$scope.globalData.currentMapPos,
 		featureContainer,
 		trafficContainer,
+		weatherContainer,
 		$scope.globalData.user.email,
 		$scope.globalData.user.token);
 
@@ -632,6 +642,12 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 	trafficCloser.onclick = function() {
 		mapService.hideTrafficPopup();
 		trafficCloser.blur();
+		return false;
+	};
+
+	weatherCloser.onclick = function() {
+		mapService.hideWeatherPopup();
+		weatherCloser.blur();
 		return false;
 	};
 

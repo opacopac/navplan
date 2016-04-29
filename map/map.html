@@ -74,6 +74,23 @@
 			</table>
 		</div>
 	</div>
+	<!-- weather popup -->
+	<div id="weather-popup" class="ol-popup">
+		<a href="#" id="weather-popup-closer" class="ol-popup-closer"></a>
+		<div id="weather-popup-content">
+			<h4>{{ selectedWeather.airport_icao }}</h4>
+			<table>
+				<tr>
+					<td valign="top">METAR:</td>
+					<td>{{ selectedWeather.metar.raw_text }}</td>
+				</tr>
+				<tr>
+					<td valign="top">TAF:</td>
+					<td>{{ selectedWeather.taf.raw_text }}</td>
+				</tr>
+			</table>
+		</div>
+	</div>
 	<!-- map -->
 	<div id="map" class="map"></div>
 <!--</div>-->

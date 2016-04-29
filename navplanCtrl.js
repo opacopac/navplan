@@ -339,6 +339,10 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 
 			window.applicationCache.update();
 		}
+		else
+		{
+			$scope.globalData.cacheStatus = "off";
+		}
 	};
 
 

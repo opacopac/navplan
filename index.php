@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<html manifest="manifest.php" lang="de" data-ng-app="navplanApp" data-ng-controller="navplanCtrl">
+<html manifest='manifest.php' lang="de" data-ng-app="navplanApp" data-ng-controller="navplanCtrl">
 <head>
 	<title>NAV-Flightplan</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
@@ -33,6 +33,7 @@
 	<script src="services/waypointService.js"></script>
 	<script src="services/fuelService.js"></script>
 	<script src="services/userService.js"></script>
+	<script src="services/weatherService.js"></script>
 </head>
 <body>
 	<nav class="navbar navbar-default">
