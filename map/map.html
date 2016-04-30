@@ -38,8 +38,8 @@
 		</div>
 	</div>
 	<!-- feature popup -->
-	<div id="feature-popup" class="ol-popup">
-		<a href="#" id="feature-popup-closer" class="ol-popup-closer"></a>
+	<div id="feature-popup" class="ol-popup" style="visibility: hidden">
+		<a href="#" id="feature-popup-closer" class="ol-popup-closer ol-popup-feature" ng-click="$event.preventDefault(); onCloseOverlayClicked();"></a>
 		<div id="feature-popup-content">
 			<h4>{{ globalData.selectedWp.checkpoint }}</h4>
 			<p ng-show="globalData.selectedWp.isNew"><button type="button" class="btn btn-success btn-circle" ng-click="onAddSelectedWaypointClicked()"><i class="glyphicon glyphicon-plus"></i></button> Add to Track</p>
@@ -47,15 +47,16 @@
 			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-warning btn-circle" ng-click="onEditSelectedWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Edit Track Waypoint</p>
 			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-danger btn-circle" ng-click="onRemoveSelectedWaypointClicked()"><i class="glyphicon glyphicon-remove"></i></button> Remove from Track</p>
 			<p ng-show="isLoggedIn() && (globalData.selectedWp.type == 'user' || globalData.selectedWp.type == 'geoname')"><button type="button" class="btn btn-primary btn-circle" ng-click="onEditUserWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Edit/Save User Waypoint</p>
-			<hr ng-show="globalData.selectedWp.webcams && globalData.selectedWp.webcams.length > 0" />
+			<hr ng-show="globalData.selectedWp.airport.weatherInfo || (globalData.selectedWp.webcams && globalData.selectedWp.webcams.length > 0)" />
+			<p ng-show="globalData.selectedWp.airport.weatherInfo"><a href="#" ng-click="$event.preventDefault(); onShowWeatherInfo();" class="btn btn-success btn-circle"><i class="glyphicon glyphicon-file"></i></a> METAR / TAF</p>
 			<p ng-repeat="webcam in globalData.selectedWp.webcams"><a href="{{ webcam.url }}" target="_blank" class="btn btn-success btn-circle"><i class="glyphicon glyphicon-facetime-video"></i></a> {{ webcam.name }}</p>
 			<hr ng-show="globalData.selectedWp.charts && globalData.selectedWp.charts.length > 0" />
 			<p ng-repeat="chart in globalData.selectedWp.charts"><button type="button" class="btn btn-info btn-circle" ng-click="onDisplayChartClicked(chart.id)"><i class="glyphicon glyphicon-file"></i></button> {{ chart.type }}</p>
 		</div>
 	</div>
 	<!-- traffic popup -->
-	<div id="traffic-popup" class="ol-popup">
-		<a href="#" id="traffic-popup-closer" class="ol-popup-closer"></a>
+	<div id="traffic-popup" class="ol-popup ol-popup-traffic" style="visibility: hidden">
+		<a href="#" id="traffic-popup-closer" class="ol-popup-closer" ng-click="$event.preventDefault(); onCloseOverlayClicked();"></a>
 		<div id="traffic-popup-content">
 			<h4>{{ selectedTraffic.registration }}</h4>
 			<table>
@@ -75,20 +76,20 @@
 		</div>
 	</div>
 	<!-- weather popup -->
-	<div id="weather-popup" class="ol-popup">
-		<a href="#" id="weather-popup-closer" class="ol-popup-closer"></a>
+	<div id="weather-popup" class="ol-popup ol-popup-weather" style="visibility: hidden">
+		<a href="#" id="weather-popup-closer" class="ol-popup-closer" ng-click="$event.preventDefault(); onCloseOverlayClicked()"></a>
 		<div id="weather-popup-content">
-			<h4>{{ selectedWeather.airport_icao }}</h4>
-			<table>
-				<tr>
-					<td valign="top">METAR:</td>
-					<td>{{ selectedWeather.metar.raw_text }}</td>
-				</tr>
-				<tr>
-					<td valign="top">TAF:</td>
-					<td>{{ selectedWeather.taf.raw_text }}</td>
-				</tr>
-			</table>
+			<h4>METAR / TAF {{ selectedWeather.airport_icao }}</h4>
+			<p ng-show="selectedWeather.metar" >
+				METAR {{ selectedWeather.metar.raw_text }}
+				<br />
+				<i>({{ getAgeString(selectedWeather.metar.observation_time); }} old)</i>
+			</p>
+			<p ng-show="selectedWeather.taf" >
+				{{ selectedWeather.taf.raw_text }}
+				<br />
+				<i>({{ getAgeString(selectedWeather.taf.issue_time); }} old)</i>
+			</p>
 		</div>
 	</div>
 	<!-- map -->

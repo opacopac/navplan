@@ -81,13 +81,13 @@ function deg2rad(deg)
 }
 
 
-/*function rad2deg(rad)
+function rad2deg(rad)
 {
 	return rad / (2 * Math.PI) * 360;
 }
 
 
-function dmsToDec(posDms)
+/*function dmsToDec(posDms)
 {
 	 var parts = posDms.split(/^(\d+)\D+(\d+)\D+(\d+)\D*(\w+)$/);
 	 var posDec = parseInt(parts[1]) + parseInt(parts[2])/60 + parseInt(parts[3])/(60*60);

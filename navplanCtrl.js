@@ -378,6 +378,9 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 
 	$scope.onCacheError = function(e)
 	{
+		if ($scope.globalData.offlineCache == false && $scope.globalData.cacheStatus == "off")
+			return;
+
 		$scope.globalData.cacheStatus = "error";
 		$scope.$apply();
 	};

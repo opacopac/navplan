@@ -10,3 +10,5 @@
 - m / ft
 - import data admin
 - metar/taf/notam
+- frequency table
+- click offline => coordinates

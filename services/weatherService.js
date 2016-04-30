@@ -10,8 +10,7 @@ trafficService.$inject = ['$http'];
 function weatherService($http)
 {
 	// init
-	var metarlist = [];
-	var taflist = [];
+	var weatherinfolist = [];
 	var lastUpdated = 0;
 	const MAXAGE = 5 * 60 * 1000; // 5 min
 
@@ -19,59 +18,51 @@ function weatherService($http)
 
 	// return api reference
 	return {
-		getAirportMetar: getAirportMetar,
-		getAirportTaf: getAirportTaf,
-		getWeatherInfos: getWeatherInfo,
+		getAirportWeatherInfo: getAirportWeatherInfo,
+		getAllWeatherInfos: getAllWeatherInfo,
 		getWorstSkyCondition: getWorstSkyCondition
 	};
 	
 	
-	function getAirportMetar(airport_icao)
+	function getAirportWeatherInfo(airport_icao)
 	{
-		return metarlist[airport_icao];
+		return weatherinfolist[airport_icao];
 	}
 
 
-	function getAirportTaf(airport_icao)
-	{
-		return taflist[airport_icao];
-	}
-
-
-	function getWeatherInfo(callback)
+	function getAllWeatherInfo(callback)
 	{
 		if (Date.now() > lastUpdated + MAXAGE)
 			updateWeatherInfos(callback);
 		else if (callback)
-			callback(metarlist, taflist);
+			callback(weatherinfolist);
 	}
 
 
 	function updateWeatherInfos(onUpdatedCallback)
 	{
 		// get metars
-		$http.get('php/weather.php?allWeather=1')
+		$http.get('php/weather.php')
 			.then(
 				function(response)
 				{
 					if (!response.data) {
-						console.error("ERROR reading METAR");
+						console.error("ERROR reading METAR/TAF");
 					}
 					else {
-						metarlist = response.data.metarlist;
-						taflist = response.data.taflist;
+						weatherinfolist = response.data.weatherinfolist;
 						lastUpdated = Date.now();
 					}
 				},
 				function(response)
 				{
-					console.error("ERROR reading METAR", response.status, response.data);
+					console.error("ERROR reading METAR/TAF", response.status, response.data);
 				}
 			)
 			.then(
 				function () {
 					if (onUpdatedCallback)
-						onUpdatedCallback(metarlist, taflist);
+						onUpdatedCallback(weatherinfolist);
 				}
 			)
 	}
@@ -83,6 +74,8 @@ function weatherService($http)
 		var worstRank = 0;
 		var worstSkyCond;
 
+		if (!metar || !metar.sky_condition)
+			return undefined;
 
 		for (var i = 0; i < metar.sky_condition.length; i++)
 		{
