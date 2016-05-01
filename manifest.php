@@ -1,18 +1,12 @@
 <?php
-	// content type
-	header('Content-Type: text/cache-manifest');
-	/*header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
-	header("Cache-Control: post-check=0, pre-check=0", false);
-	header("Pragma: no-cache");*/
+    // content type
+    header('Content-Type: text/cache-manifest');
+
+    // manifest header
+    echo "CACHE MANIFEST\n";
+    echo "\n";
 
 
-	// manifest header
-	echo "CACHE MANIFEST\n";
-	echo "# v8\n";
-	echo "\n";
-	
-	
-	// map tiles
 	if(isset($_COOKIE["cachewaypoints"]))
 	{
 		addStaticUrls();
@@ -21,10 +15,13 @@
 	}
 	else // don't cache anything
 	{
+        echo "# " . time() . "\n"; // change manifest constantly
+    	echo "\n";
 		echo "NETWORK:\n";
 		echo "*\n";
 		echo "\n";
 	}
+
 
 	function addStaticUrls()
 	{
@@ -33,7 +30,7 @@
 		echo "CACHE:\n";
 
 		// html
-		echo "index.html\n";
+		echo "index.php\n";
 		echo "about/about.html\n";
 		echo "map/map.html\n";
 		echo "settings/settings.html\n";

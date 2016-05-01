@@ -3,9 +3,9 @@
 
 
 	// get flightplan data
-	if (isset($_GET["data"]))
+	if (isset($_POST["data"]))
 	{
-		$data = json_decode($_GET["data"], true);
+		$data = json_decode(urldecode($_POST["data"]), true);
 		$waypoints = $data["waypoints"];
 		$alternate = $data["alternate"];
 		$fuel = $data["fuel"];

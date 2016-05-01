@@ -1,11 +1,10 @@
 <?php
 	// add rotation support
 	require('fpdf/rotation.php');
-		
-	
-	if (isset($_GET["data"]))
+
+	if (isset($_POST["data"]))
 	{
-		$data = json_decode($_GET["data"], true);
+		$data = json_decode(urldecode($_POST["data"]), true);
 		$waypoints = $data["waypoints"];
 		$alternate = $data["alternate"];
 		$fuel = $data["fuel"];
@@ -188,23 +187,6 @@
 	$pdf->Output();
 	
 	
-	function checkIsAlternate($index)
-	{
-		global $waypoints;
-	
-		if (!isset($waypoints))
-			return false;
-			
-		if (!isset($waypoints[$index]))
-			return false;
-			
-		if (!isset($waypoints[$index]["isAlternate"]))
-			return false;
-			
-		return $waypoints[$index]["isAlternate"] == true;
-	}
-
-
 	function drawMinMaxLines($index, $pos_x0, $pos_y0, $pos_x1, $pos_y1)
 	{
 		global $pdf, $waypoints, $rowHeight;

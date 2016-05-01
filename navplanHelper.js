@@ -36,6 +36,28 @@ function deleteCookie(cname)
 }
 
 
+function sendPostForm(action, target, varName, varData)
+{
+	var form = document.createElement("form");
+	form.target = target;
+	form.method = "POST";
+	form.action = action;
+
+	var input = document.createElement("input");
+	input.type = "hidden";
+	input.name = varName;
+	input.value = encodeURIComponent(varData);
+
+	form.appendChild(input);
+
+	document.body.appendChild(form);
+
+	form.submit();
+
+	//document.body.removeChild(form);
+}
+
+
 function undef2null(key, val)
 {
 	if (val === undefined)
@@ -81,13 +103,13 @@ function deg2rad(deg)
 }
 
 
-/*function rad2deg(rad)
+function rad2deg(rad)
 {
 	return rad / (2 * Math.PI) * 360;
 }
 
 
-function dmsToDec(posDms)
+/*function dmsToDec(posDms)
 {
 	 var parts = posDms.split(/^(\d+)\D+(\d+)\D+(\d+)\D*(\w+)$/);
 	 var posDec = parseInt(parts[1]) + parseInt(parts[2])/60 + parseInt(parts[3])/(60*60);

@@ -11,6 +11,11 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 	$scope.timerIntervallMs = 5000;
 	$scope.selectedTraffic = {};
 
+	var featureContainer = document.getElementById('feature-popup');
+	var trafficContainer = document.getElementById('traffic-popup');
+	var weatherContainer = document.getElementById('weather-popup');
+
+
 	$scope.focusSearchWpInput = function()
 	{
 		document.getElementById('searchWpInput').focus();
@@ -52,7 +57,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 			.success(function(data) {
 				if (data.geonames)
 				{
-					mapService.hideFeaturePopup();
+					mapService.closeOverlay();
 					mapService.drawGeopointSelection(data.geonames, event.pixel);
 				}
 				else
@@ -71,6 +76,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 			$scope.globalData.selectedWp = {
 				type: feature.geopoint.type,
 				geopoint: feature.geopoint,
+				airport: feature.airport, // where available
 				id: feature.geopoint.id,
 				freq: feature.geopoint.frequency,
 				callsign: feature.geopoint.callsign,
@@ -78,8 +84,6 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 				airport_icao: feature.geopoint.airport_icao,
 				latitude: feature.geopoint.latitude,
 				longitude: feature.geopoint.longitude,
-				charts: feature.geopoint.charts,
-				webcams: feature.geopoint.webcams,
 				mt: '',
 				dist: '',
 				alt: '',
@@ -88,7 +92,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 			};
 			$scope.$apply();
 
-			mapService.showFeaturePopup($scope.globalData.selectedWp.latitude, $scope.globalData.selectedWp.longitude);
+			mapService.addOverlay(mapService.getMercatorCoordinates(feature.geopoint.latitude, feature.geopoint.longitude), featureContainer);
 		}
 		else if (feature.airport)
 		{
@@ -101,8 +105,6 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 				airport_icao: feature.airport.icao,
 				latitude: feature.airport.latitude,
 				longitude: feature.airport.longitude,
-				charts: feature.airport.charts,
-				webcams: feature.airport.webcams,
 				mt: '',
 				dist: '',
 				alt: '',
@@ -110,8 +112,8 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 				isNew: true
 			};
 			$scope.$apply();
-				
-			mapService.showFeaturePopup($scope.globalData.selectedWp.latitude, $scope.globalData.selectedWp.longitude);
+
+			mapService.addOverlay(feature.getGeometry().getCoordinates(), featureContainer);
 		}
 		else if (feature.navaid)
 		{
@@ -130,8 +132,8 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 				isNew: true
 			};
 			$scope.$apply();
-				
-			mapService.showFeaturePopup($scope.globalData.selectedWp.latitude, $scope.globalData.selectedWp.longitude);
+
+			mapService.addOverlay(feature.getGeometry().getCoordinates(), featureContainer);
 		}
 		else if (feature.globalWaypoint)
 		{
@@ -150,8 +152,8 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 				isNew: true
 			};
 			$scope.$apply();
-				
-			mapService.showFeaturePopup($scope.globalData.selectedWp.latitude, $scope.globalData.selectedWp.longitude);
+
+			mapService.addOverlay(feature.getGeometry().getCoordinates(), featureContainer);
 		}
 		else if (feature.userWaypoint)
 		{
@@ -171,22 +173,22 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 				isNew: true
 			};
 			$scope.$apply();
-				
-			mapService.showFeaturePopup($scope.globalData.selectedWp.latitude, $scope.globalData.selectedWp.longitude);
+
+			mapService.addOverlay(feature.getGeometry().getCoordinates(), featureContainer);
 		}
 		else if (feature.waypoint)
 		{
 			$scope.globalData.selectedWp = feature.waypoint;
 			$scope.$apply();
-			
-			mapService.showFeaturePopup($scope.globalData.selectedWp.latitude, $scope.globalData.selectedWp.longitude);
+
+			mapService.addOverlay(feature.getGeometry().getCoordinates(), featureContainer);
 		}
 		else if (feature.acInfo)
 		{
 			if (feature.acInfo.addresstype != "ICAO")
 			{
 				$scope.selectedTraffic = getUnknownTrafficInfo(feature.acInfo);
-				mapService.showTrafficPopup(feature);
+				mapService.addOverlay(feature.getGeometry().getCoordinates(), trafficContainer);
 				$scope.$apply();
 			}
 			else {
@@ -202,7 +204,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 								else
 									$scope.selectedTraffic = getUnknownTrafficInfo(feature.acInfo);
 
-								mapService.showTrafficPopup(feature);
+								mapService.addOverlay(feature.getGeometry().getCoordinates(), trafficContainer);
 							}
 						},
 						function (response) {
@@ -214,6 +216,12 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		else if (feature.webcam)
 		{
 			window.open(feature.webcam.url);
+		}
+		else if (feature.weatherInfo)
+		{
+			$scope.selectedWeather = feature.weatherInfo;
+			mapService.addOverlay(feature.getGeometry().getCoordinates(), weatherContainer);
+			$scope.$apply();
 		}
 
 
@@ -247,7 +255,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		$scope.addWaypoint($scope.globalData.selectedWp);
 		$scope.globalData.selectedWp = undefined;
 
-		mapService.hideFeaturePopup();
+		mapService.closeOverlay();
 	};
 	
 
@@ -257,7 +265,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		$scope.setAlternate($scope.globalData.selectedWp);
 		$scope.globalData.selectedWp = undefined;
 
-		mapService.hideFeaturePopup();
+		mapService.closeOverlay();
 	};
 	
 	
@@ -272,7 +280,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		$scope.updateWpList();
 		$scope.discardCache();
 
-		mapService.hideFeaturePopup();
+		mapService.closeOverlay();
 	};
 	
 
@@ -316,10 +324,25 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 	$scope.onDisplayChartClicked = function(chartId)
 	{
 		mapService.displayChart(chartId);
-		mapService.hideFeaturePopup();
+		mapService.closeOverlay();
 	};
-	
-	
+
+
+	$scope.onShowWeatherInfo = function()
+	{
+		$scope.selectedWeather = $scope.globalData.selectedWp.airport.weatherInfo;
+		$scope.selectedWeather.airport_icao = $scope.globalData.selectedWp.airport.icao;
+		var coords = mapService.getMercatorCoordinates($scope.globalData.selectedWp.airport.latitude, $scope.globalData.selectedWp.airport.longitude);
+		mapService.addOverlay(coords, weatherContainer);
+	};
+
+
+	$scope.onCloseOverlayClicked =  function(event)
+	{
+		mapService.closeOverlay();
+	};
+
+
 	$scope.onZoomInClicked = function()
 	{
 		var zoom = mapService.getMapPosition().zoom;
@@ -337,16 +360,6 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 			mapService.setMapPosition(null, null, zoom - 1);
 	};
 
-
-	$scope.onKmlClicked = function()
-	{
-		var navplanData = {
-			waypoints: $scope.globalData.navplan.waypoints
-		};
-	
-		window.open('php/navplanKml.php?data=' + encodeURIComponent(JSON.stringify(navplanData)));
-	};
-	
 	
 	$scope.onLocationClicked = function()
 	{
@@ -476,12 +489,12 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 			// waypoints
 			for (var i = 0; i < wps.length; i++)
 			{
-				if (wps[i].charts && wps[i].charts.length > 0)
+				if (wps[i].airport && wps[i].airport.charts && wps[i].airport.charts.length > 0)
 				{
-					for (var j = 0; j < wps[i].charts.length; j++)
+					for (var j = 0; j < wps[i].airport.charts.length; j++)
 					{
-						pushUnique(chartUrls, getRestUrl(wps[i].charts[j].id));
-						pushUnique(chartUrls, getChartUrl(wps[i].charts[j].filename));
+						pushUnique(chartUrls, getRestUrl(wps[i].airport.charts[j].id));
+						pushUnique(chartUrls, getChartUrl(wps[i].airport.charts[j].filename));
 					}
 				}
 			}
@@ -491,12 +504,12 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 
 			if (wpAlt)
 			{
-				if (wpAlt.charts && wpAlt.charts.length > 0)
+				if (wpAlt.airport && wpAlt.airport.charts && wpAlt.airport.charts.length > 0)
 				{
-					for (var k = 0; k < wpAlt.charts.length; k++)
+					for (var k = 0; k < wpAlt.airport.charts.length; k++)
 					{
-						pushUnique(chartUrls, getRestUrl(wpAlt.charts[k].id));
-						pushUnique(chartUrls, getChartUrl(wpAlt.charts[k].filename));
+						pushUnique(chartUrls, getRestUrl(wpAlt.airport.charts[k].id));
+						pushUnique(chartUrls, getChartUrl(wpAlt.airport.charts[k].filename));
 					}
 				}
 			}
@@ -606,34 +619,26 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 	};
 
 
-	// init feature popup
-	var featureContainer = document.getElementById('feature-popup');
-	var featureCloser = document.getElementById('feature-popup-closer');
+	$scope.getAgeString = function(datestring)
+	{
+		var ms = Date.now() - Date.parse(datestring);
+		var h = Math.floor(ms / 1000 / 3600);
+		var m = Math.floor(ms / 1000 / 60 - h * 60);
 
-	var trafficContainer = document.getElementById('traffic-popup');
-	var trafficCloser = document.getElementById('traffic-popup-closer');
+		if (h > 0)
+			return h + "h " + m + "min";
+		else
+			return m + "min";
+	};
+
 
 	mapService.init(
 		$scope.onMapClicked,
 		$scope.onFeatureSelected,
 		$scope.onMapMoveEnd,
 		$scope.globalData.currentMapPos,
-		featureContainer,
-		trafficContainer,
 		$scope.globalData.user.email,
 		$scope.globalData.user.token);
-
-	featureCloser.onclick = function() {
-		mapService.hideFeaturePopup();
-		featureCloser.blur();
-		return false;
-	};
-
-	trafficCloser.onclick = function() {
-		mapService.hideTrafficPopup();
-		trafficCloser.blur();
-		return false;
-	};
 
 	$scope.updateWpList();
 }

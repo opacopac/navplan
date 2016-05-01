@@ -30,7 +30,7 @@
 		$token = mysqli_real_escape_string($conn, $input["token"]);
 	
 	
-		// cols: type, id, name, wpname, frequency, callsign, latitude, longitude, elevation
+		// cols: type, id, name, wpname, frequency, callsign, airport_icao, latitude, longitude, elevation
 	
 		$query = "(SELECT 'airport' AS type, 0 AS id, CONCAT(icao, ' (', name ,')') AS name, icao AS wpname, NULL AS frequency, NULL AS callsign, icao AS airport_icao, latitude, longitude, elevation FROM openaip_airports WHERE";
 		$query .= " icao LIKE '" . $search . "%'";
@@ -191,12 +191,6 @@
 				longitude => $rs["longitude"],
 				elevation => $rs["elevation"]
 			);
-
-			if ($rs["type"] == "airport")
-			{
-			    $geoname["charts"] = getAdCharts($rs["wpname"], $conn);
-			    $geoname["webcams"] = getAdWebcams($rs["wpname"], $conn);
-			}
 
 			$geonames[] = $geoname;
 		}

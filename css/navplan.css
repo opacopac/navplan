@@ -133,6 +133,23 @@ html, body {
   top: 80px;
 }
 
+.ol-overlaycontainer, .ol-overlaycontainer-stopevent, .ol-overlay-container {
+  width: inherit;
+}
+
+.ol-popup-feature {
+}
+
+.ol-popup-weather {
+  width: 600px;
+  max-width: 95%;
+}
+
+.ol-popup-traffic {
+  width: 500px;
+  max-width: 95%;
+}
+
 .ol-popup {
   position: absolute;
   background-color: white;
@@ -156,18 +173,18 @@ html, body {
   pointer-events: none;
 }
 
-.ol-popup:after {
-  border-top-color: white;
-  border-width: 10px;
-  left: 48px;
-  margin-left: -10px;
-}
-
 .ol-popup:before {
   border-top-color: #cccccc;
   border-width: 11px;
   left: 48px;
   margin-left: -11px;
+}
+
+.ol-popup:after {
+  border-top-color: white;
+  border-width: 10px;
+  left: 48px;
+  margin-left: -10px;
 }
 
 .ol-popup-closer {
@@ -176,6 +193,7 @@ html, body {
   top: 2px;
   right: 8px;
 }
+
 .ol-popup-closer:after {
   content: "X";
 }

@@ -1,5 +1,12 @@
-<!DOCTYPE HTML>
-<html manifest="manifest.php" lang="de" data-ng-app="navplanApp" data-ng-controller="navplanCtrl">
+<?php
+    if(empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == "off")
+    {
+        $redirect = 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+        header('HTTP/1.1 301 Moved Permanently');
+        header('Location: ' . $redirect);
+    }
+?><!DOCTYPE HTML>
+<html manifest='manifest.php' lang="de" data-ng-app="navplanApp" data-ng-controller="navplanCtrl">
 <head>
 	<title>NAV-Flightplan</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
@@ -33,6 +40,7 @@
 	<script src="services/waypointService.js"></script>
 	<script src="services/fuelService.js"></script>
 	<script src="services/userService.js"></script>
+	<script src="services/weatherService.js"></script>
 </head>
 <body>
 	<nav class="navbar navbar-default">

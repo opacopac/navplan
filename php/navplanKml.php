@@ -1,9 +1,8 @@
 <?php
-	if (isset($_GET["data"]))
-	{
-		$data = json_decode($_GET["data"], true);
-		$waypoints = $data["waypoints"];
-	}
+	if (isset($_POST["waypoints"]))
+		$waypoints = json_decode(urldecode($_POST["waypoints"]), true);
+	else
+	    die("ERROR: waypoints parameter missing!");
 
 	$xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n" .
 		'<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">' . "\n" .
@@ -30,12 +29,13 @@
 
 	for ($i = 0; $i < count($waypoints); $i++)
 	{
-		if ($i == 0 || $i == count($waypoints) - 1)
+		/*if ($i == 0 || $i == count($waypoints) - 1)
 			$alt = 0;
 		else
-			$alt = 1000;
+			$alt = 1000;*/
+		$alt = 1000;
 		
-		$xml .= $waypoints[$i]["longitude"] . "," . $waypoints[$i]["latitude"] . "," . $alt . " \n";
+		$xml .= $waypoints[$i]["lon"] . "," . $waypoints[$i]["lat"] . "," . $alt . " \n";
 	}
 	
 	$xml .= '				</coordinates>' . "\n" .
