@@ -297,6 +297,27 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 	};
 
 
+	$scope.onKmlClicked = function()
+	{
+		var waypoints = [];
+
+		for (var i = 0; i < $scope.globalData.navplan.waypoints.length; i++)
+		{
+			var wp = $scope.globalData.navplan.waypoints[i];
+
+			waypoints.push({
+				name: wp.checkpoint,
+				lat: wp.latitude,
+				lon: wp.longitude
+			});
+		}
+
+		sendPostForm('php/navplanKml.php', '_blank', 'waypoints', JSON.stringify(waypoints));
+
+		//window.open('php/navplanKml.php?waypoints=' + encodeURIComponent(JSON.stringify(waypoints)), "_blank");
+	};
+
+
 	$scope.backupSelectedWaypoint = function()
 	{
 		$scope.globalData.wpBackup = {

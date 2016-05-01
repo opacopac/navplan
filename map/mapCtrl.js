@@ -76,6 +76,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 			$scope.globalData.selectedWp = {
 				type: feature.geopoint.type,
 				geopoint: feature.geopoint,
+				airport: feature.airport, // where available
 				id: feature.geopoint.id,
 				freq: feature.geopoint.frequency,
 				callsign: feature.geopoint.callsign,
@@ -83,8 +84,6 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 				airport_icao: feature.geopoint.airport_icao,
 				latitude: feature.geopoint.latitude,
 				longitude: feature.geopoint.longitude,
-				charts: feature.geopoint.charts,
-				webcams: feature.geopoint.webcams,
 				mt: '',
 				dist: '',
 				alt: '',
@@ -106,8 +105,6 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 				airport_icao: feature.airport.icao,
 				latitude: feature.airport.latitude,
 				longitude: feature.airport.longitude,
-				charts: feature.airport.charts,
-				webcams: feature.airport.webcams,
 				mt: '',
 				dist: '',
 				alt: '',
@@ -363,16 +360,6 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 			mapService.setMapPosition(null, null, zoom - 1);
 	};
 
-
-	$scope.onKmlClicked = function()
-	{
-		var navplanData = {
-			waypoints: $scope.globalData.navplan.waypoints
-		};
-	
-		window.open('php/navplanKml.php?data=' + encodeURIComponent(JSON.stringify(navplanData)));
-	};
-	
 	
 	$scope.onLocationClicked = function()
 	{
@@ -502,12 +489,12 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 			// waypoints
 			for (var i = 0; i < wps.length; i++)
 			{
-				if (wps[i].charts && wps[i].charts.length > 0)
+				if (wps[i].airport && wps[i].airport.charts && wps[i].airport.charts.length > 0)
 				{
-					for (var j = 0; j < wps[i].charts.length; j++)
+					for (var j = 0; j < wps[i].airport.charts.length; j++)
 					{
-						pushUnique(chartUrls, getRestUrl(wps[i].charts[j].id));
-						pushUnique(chartUrls, getChartUrl(wps[i].charts[j].filename));
+						pushUnique(chartUrls, getRestUrl(wps[i].airport.charts[j].id));
+						pushUnique(chartUrls, getChartUrl(wps[i].airport.charts[j].filename));
 					}
 				}
 			}
@@ -517,12 +504,12 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 
 			if (wpAlt)
 			{
-				if (wpAlt.charts && wpAlt.charts.length > 0)
+				if (wpAlt.airport && wpAlt.airport.charts && wpAlt.airport.charts.length > 0)
 				{
-					for (var k = 0; k < wpAlt.charts.length; k++)
+					for (var k = 0; k < wpAlt.airport.charts.length; k++)
 					{
-						pushUnique(chartUrls, getRestUrl(wpAlt.charts[k].id));
-						pushUnique(chartUrls, getChartUrl(wpAlt.charts[k].filename));
+						pushUnique(chartUrls, getRestUrl(wpAlt.airport.charts[k].id));
+						pushUnique(chartUrls, getChartUrl(wpAlt.airport.charts[k].filename));
 					}
 				}
 			}

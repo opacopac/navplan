@@ -36,6 +36,28 @@ function deleteCookie(cname)
 }
 
 
+function sendPostForm(action, target, varName, varData)
+{
+	var form = document.createElement("form");
+	form.target = target;
+	form.method = "POST";
+	form.action = action;
+
+	var input = document.createElement("input");
+	input.type = "hidden";
+	input.name = varName;
+	input.value = encodeURIComponent(varData);
+
+	form.appendChild(input);
+
+	document.body.appendChild(form);
+
+	form.submit();
+
+	//document.body.removeChild(form);
+}
+
+
 function undef2null(key, val)
 {
 	if (val === undefined)

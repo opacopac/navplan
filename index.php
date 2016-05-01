@@ -1,4 +1,11 @@
-<!DOCTYPE HTML>
+<?php
+    if(empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == "off")
+    {
+        $redirect = 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+        header('HTTP/1.1 301 Moved Permanently');
+        header('Location: ' . $redirect);
+    }
+?><!DOCTYPE HTML>
 <html manifest='manifest.php' lang="de" data-ng-app="navplanApp" data-ng-controller="navplanCtrl">
 <head>
 	<title>NAV-Flightplan</title>

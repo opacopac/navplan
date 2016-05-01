@@ -38,18 +38,14 @@
 		$airports[] = array(
 			id => $rs["id"],
 			type => $rs["type"],
-//				country => $rs["country"],
 			name => $rs["name"],
 			icao => $rs["icao"],
 			latitude => $rs["latitude"],
 			longitude => $rs["longitude"],
-//				elevation => $rs["elevation"],
 			rwy_surface => $rs["surface"],
 			rwy_direction1 => $rs["direction1"],
 			frequency => $rs["frequency"],
-			callsign => $rs["callsign"],
-			charts => getAdCharts($rs["icao"], $conn),
-			webcams => getAdWebcams($rs["icao"], $conn)
+			callsign => $rs["callsign"]
 		);
 	}
 	

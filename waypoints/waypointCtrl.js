@@ -28,45 +28,55 @@ function waypointCtrl($scope, $http, geonameService, fuelService, userService, g
 	
 	$scope.createPdfNavplan = function()
 	{
-		var navplanData = {
-			waypoints: $scope.globalData.navplan.waypoints,
-			alternate: $scope.globalData.navplan.alternate,
-			fuel: $scope.globalData.fuel,
-			pilot: $scope.globalData.pilot,
-			aircraft: $scope.globalData.aircraft
-		};
+		var navplanData = $scope.getNavplanExportData();
 		
-		var pdfLink = document.getElementById("dlPdfLink");
-		pdfLink.href = 'php/navplanPdf.php?data=' + encodeURIComponent(JSON.stringify(navplanData))
+		sendPostForm('php/navplanPdf.php', '_blank', 'data', JSON.stringify(navplanData));
 	};
 	
 	
 	$scope.createExcelNavplan = function()
 	{
-		var navplanData = {
-			waypoints: $scope.globalData.navplan.waypoints,
-			alternate: $scope.globalData.navplan.alternate,
+		var navplanData = $scope.getNavplanExportData();
+		
+		sendPostForm('php/navplanExcel.php', '_blank', 'data', JSON.stringify(navplanData));
+	};
+
+
+	$scope.getNavplanExportData = function ()
+	{
+		var waypoints = [];
+
+		for (var i = 0; i < $scope.globalData.navplan.waypoints.length; i++)
+			waypoints.push(getWaypointData($scope.globalData.navplan.waypoints[i]));
+
+
+		return {
+			waypoints: waypoints,
+			alternate: $scope.globalData.navplan.alternate ? getWaypointData($scope.globalData.navplan.alternate) : undefined,
 			fuel: $scope.globalData.fuel,
 			pilot: $scope.globalData.pilot,
 			aircraft: $scope.globalData.aircraft
 		};
-		
-		var excelLink = document.getElementById("dlExcelLink");
-		excelLink.href = 'php/navplanExcel.php?data=' + encodeURIComponent(JSON.stringify(navplanData))
-	};
-	
-	
-	$scope.onKmlClicked = function()
-	{
-		var navplanData = {
-			waypoints: $scope.globalData.navplan.waypoints
+
+
+		function getWaypointData(wp)
+		{
+			return {
+				freq: wp.freq,
+				callsign: wp.callsign,
+				checkpoint: wp.checkpoint,
+				mtText: wp.mtText,
+				distText: wp.distText,
+				alt: wp.alt,
+				isminalt: wp.isminalt,
+				ismaxalt: wp.ismaxalt,
+				eetText: wp.eetText,
+				remark: wp.remark
+			};
 		};
-	
-		var kmlLink = document.getElementById("dlKmlLink2");
-		kmlLink.href = 'php/navplanKml.php?data=' + encodeURIComponent(JSON.stringify(navplanData))
 	};
-	
-	
+
+
 	$scope.loadNavplan = function()
 	{
 		userService.readNavplan($scope.selectedNavplanId, $scope.globalData.user.email, $scope.globalData.user.token)

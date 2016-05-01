@@ -187,6 +187,16 @@ function mapService($http, trafficService, weatherService)
 				)
 				.then(
 					function() {
+						populateAdWebcams();
+					}
+				)
+				.then(
+					function() {
+						populateAdCharts();
+					}
+				)
+				.then(
+					function() {
 						weatherService.getAllWeatherInfos(populateWeatherInfo);
 					}
 				);
@@ -211,7 +221,7 @@ function mapService($http, trafficService, weatherService)
 					return;
 
 				return new ol.style.Style({
-					image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
+					image: new ol.style.Icon(({
 						anchor: [0.5, 0.5],
 						anchorXUnits: 'fraction',
 						anchorYUnits: 'fraction',
@@ -245,7 +255,7 @@ function mapService($http, trafficService, weatherService)
 					return;
 
 				return new ol.style.Style({
-					image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
+					image: new ol.style.Icon(({
 						anchor: [0.5, 0.5],
 						anchorXUnits: 'fraction',
 						anchorYUnits: 'fraction',
@@ -257,156 +267,216 @@ function mapService($http, trafficService, weatherService)
 					}))
 				});
 			}
-		}
 
 
-		function populateWeatherInfo(weatherinfolist)
-		{
-			for (var icao in weatherinfolist)
+			function populateAdWebcams()
 			{
-				var ap = airports[icao];
+				$http.post('php/webcams.php', obj2json({action: 'readAdWebcams'}))
+					.then(
+						function (response) { // success
+							if (!response.data || !response.data.webcams) {
+								console.error("ERROR reading webcams");
+							}
+							else {
+								for (var i = 0; i < response.data.webcams.length; i++) {
+									var webcam = response.data.webcams[i];
+									var ap = airports[webcam.airport_icao];
 
-				if (!ap)
-					continue;
-				else
-					ap.weatherInfo = weatherinfolist[icao];
+									if (!ap)
+										continue;
 
-				// sky conditions
-				var skycondFeature = new ol.Feature({
-					geometry: new ol.geom.Point(ol.proj.fromLonLat([ap.longitude, ap.latitude]))
-				});
+									if (!ap.webcams)
+										ap.webcams = [];
 
-				skycondFeature.weatherInfo = {
-					airport_icao: icao,
-					metar: 	weatherinfolist[icao].metar,
-					taf: weatherinfolist[icao].taf
-				};
-
-				var skycondStyle = createSkycondStyle(weatherinfolist[icao].metar);
-
-				if (skycondStyle) {
-					skycondFeature.setStyle(skycondStyle);
-					weatherLayer.getSource().addFeature(skycondFeature);
-				}
-
-
-				// wind
-				var windFeature = new ol.Feature({
-					geometry: new ol.geom.Point(ol.proj.fromLonLat([ap.longitude, ap.latitude]))
-				});
-
-				windFeature.weatherInfo = {
-					airport_icao: icao,
-					metar: 	weatherinfolist[icao].metar,
-					taf: weatherinfolist[icao].taf
-				};
-
-				var windStyle = createWindStyle(weatherinfolist[icao].metar);
-
-				if (windStyle) {
-					windFeature.setStyle(windStyle);
-					weatherLayer.getSource().addFeature(windFeature);
-				}
-
+									ap.webcams.push(webcam);
+								}
+							}
+						},
+						function (response) { // error
+							console.error("ERROR reading webcams", response.status, response.data);
+						}
+					)
 			}
 
 
-			function createSkycondStyle(metar)
+			function populateAdCharts()
 			{
-				if (!metar)
-					return;
+				$http.get('php/ad_charts.php?all=1')
+					.then(
+						function (response) { // success
+							if (!response.data || !response.data.chartlist) {
+								console.error("ERROR reading charts");
+							}
+							else {
+								for (var i = 0; i < response.data.chartlist.length; i++) {
+									var chart = response.data.chartlist[i];
+									var ap = airports[chart.airport_icao];
 
-				var worstSkyCond = weatherService.getWorstSkyCondition(metar);
-				var wx_cond = metar.wx_string ? metar.wx_string : "";
-				var src;
+									if (!ap)
+										continue;
 
-				switch (worstSkyCond)
-				{
-					case "CAVOK" :
-					case "SKC" :
-					case "CLR" :
-					case "NSC" :
-						src = "icon/sky_skc.png";
-						break;
-					case "FEW" :
-						src = "icon/sky_few.png";
-						break;
-					case "SCT" :
-						src = "icon/sky_sct.png";
-						break;
-					case "BKN" :
-						src = "icon/sky_bkn.png";
-						break;
-					case "OVC" :
-						src = "icon/sky_ovc.png";
-						break;
-					default:
-						return;
-				}
+									if (!ap.charts)
+										ap.charts = [];
 
-				return new ol.style.Style({
-					image: new ol.style.Icon(({
-						anchor: [-25, 20],
-						anchorXUnits: 'pixels',
-						anchorYUnits: 'pixels',
-						scale: 1,
-						//opacity: 0.75,
-						src: src
-					})),
-					text: new ol.style.Text({
-						textAlign: "start",
-						//textBaseline: baseline,
-						font: '13px Calibri,sans-serif',
-						text: wx_cond,
-						fill: new ol.style.Fill({color: '#000000'}),
-						stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2}),
-						offsetX: 43,
-						offsetY: -11
-					})
-				});
+									ap.charts.push(chart);
+								}
+							}
+						},
+						function (response) { // error
+							console.error("ERROR reading charts", response.status, response.data);
+						}
+					)
 			}
 
 
-			function createWindStyle(metar)
+			function populateWeatherInfo(weatherinfolist)
 			{
-				if (!metar)
-					return;
-
-				var src;
-				var rot = metar.wind_dir_degrees ? deg2rad(metar.wind_dir_degrees - 90) : undefined;
-				var windrange = [[0, "0"], [2, "1-2"], [7, "5"], [12, "10"], [17, "15"], [22, "20"], [27, "25"], [32, "30"], [37, "35"], [42, "40"], [47, "45"], [55, "50"], [65, "60"], [75, "70"], [85, "80"], [95, "90"], [105, "100"]];
-
-				for (var i = 0; i < windrange.length; i++)
+				for (var icao in weatherinfolist)
 				{
-					if (metar.wind_speed_kt <= windrange[i][0])
-					{
-						src = "icon/wind_" + windrange[i][1] + "kt.png";
-						break;
+					var ap = airports[icao];
+
+					if (!ap)
+						continue;
+					else
+						ap.weatherInfo = weatherinfolist[icao];
+
+					// sky conditions
+					var skycondFeature = new ol.Feature({
+						geometry: new ol.geom.Point(ol.proj.fromLonLat([ap.longitude, ap.latitude]))
+					});
+
+					skycondFeature.weatherInfo = {
+						airport_icao: icao,
+						metar: 	weatherinfolist[icao].metar,
+						taf: weatherinfolist[icao].taf
+					};
+
+					var skycondStyle = createSkycondStyle(weatherinfolist[icao].metar);
+
+					if (skycondStyle) {
+						skycondFeature.setStyle(skycondStyle);
+						weatherLayer.getSource().addFeature(skycondFeature);
 					}
+
+
+					// wind
+					var windFeature = new ol.Feature({
+						geometry: new ol.geom.Point(ol.proj.fromLonLat([ap.longitude, ap.latitude]))
+					});
+
+					windFeature.weatherInfo = {
+						airport_icao: icao,
+						metar: 	weatherinfolist[icao].metar,
+						taf: weatherinfolist[icao].taf
+					};
+
+					var windStyle = createWindStyle(weatherinfolist[icao].metar);
+
+					if (windStyle) {
+						windFeature.setStyle(windStyle);
+						weatherLayer.getSource().addFeature(windFeature);
+					}
+
 				}
 
-				if (!src)
-					return;
 
-				var anchorX = -15 - 17;
-				var anchorY = 5 - 17;
-				var fakeX = anchorX * Math.cos(-rot) - anchorY * Math.sin(-rot) + 17;
-				var fakeY = anchorX * Math.sin(-rot) + anchorY * Math.cos(-rot) + 17;
+				function createSkycondStyle(metar)
+				{
+					if (!metar)
+						return;
 
-				return new ol.style.Style({
-					image: new ol.style.Icon(({
-						anchor: [fakeX, fakeY],
-						anchorXUnits: 'pixels',
-						anchorYUnits: 'pixels',
-						//anchor: [0.5, 0.5],
-						//anchorXUnits: 'fraction',
-						//anchorYUnits: 'fraction',
-						scale: 1,
-						rotation: rot,
-						rotateWithView: true,
-						src: src
-					}))
-				});
+					var worstSkyCond = weatherService.getWorstSkyCondition(metar);
+					var wx_cond = metar.wx_string ? metar.wx_string : "";
+					var src;
+
+					switch (worstSkyCond)
+					{
+						case "CAVOK" :
+						case "SKC" :
+						case "CLR" :
+						case "NSC" :
+							src = "icon/sky_skc.png";
+							break;
+						case "FEW" :
+							src = "icon/sky_few.png";
+							break;
+						case "SCT" :
+							src = "icon/sky_sct.png";
+							break;
+						case "BKN" :
+							src = "icon/sky_bkn.png";
+							break;
+						case "OVC" :
+							src = "icon/sky_ovc.png";
+							break;
+						default:
+							return;
+					}
+
+					return new ol.style.Style({
+						image: new ol.style.Icon(({
+							anchor: [-25, 20],
+							anchorXUnits: 'pixels',
+							anchorYUnits: 'pixels',
+							scale: 1,
+							//opacity: 0.75,
+							src: src
+						})),
+						text: new ol.style.Text({
+							textAlign: "start",
+							textBaseline: "baseline",
+							font: '13px Calibri,sans-serif',
+							text: wx_cond,
+							fill: new ol.style.Fill({color: '#000000'}),
+							stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2}),
+							offsetX: 43,
+							offsetY: -8
+						})
+					});
+				}
+
+
+				function createWindStyle(metar)
+				{
+					if (!metar)
+						return;
+
+					var src;
+					var rot = metar.wind_dir_degrees ? deg2rad(metar.wind_dir_degrees - 90) : undefined;
+					var windrange = [[0, "0"], [2, "1-2"], [7, "5"], [12, "10"], [17, "15"], [22, "20"], [27, "25"], [32, "30"], [37, "35"], [42, "40"], [47, "45"], [55, "50"], [65, "60"], [75, "70"], [85, "80"], [95, "90"], [105, "100"]];
+
+					for (var i = 0; i < windrange.length; i++)
+					{
+						if (metar.wind_speed_kt <= windrange[i][0])
+						{
+							src = "icon/wind_" + windrange[i][1] + "kt.png";
+							break;
+						}
+					}
+
+					if (!src)
+						return;
+
+					var anchorX = -15 - 17;
+					var anchorY = 5 - 17;
+					var fakeX = anchorX * Math.cos(-rot) - anchorY * Math.sin(-rot) + 17;
+					var fakeY = anchorX * Math.sin(-rot) + anchorY * Math.cos(-rot) + 17;
+
+					return new ol.style.Style({
+						image: new ol.style.Icon(({
+							anchor: [fakeX, fakeY],
+							anchorXUnits: 'pixels',
+							anchorYUnits: 'pixels',
+							//anchor: [0.5, 0.5],
+							//anchorXUnits: 'fraction',
+							//anchorYUnits: 'fraction',
+							scale: 1,
+							rotation: rot,
+							rotateWithView: true,
+							src: src
+						}))
+					});
+				}
 			}
 		}
 
@@ -847,7 +917,7 @@ function mapService($http, trafficService, weatherService)
 		
 		isGeopointSelectionActive = true;
 		
-		// add clickpoint
+		// add clickpoint (coordinates only)
 		if (geopoints.length < 8)
 		{
 			var clickLonLat = ol.proj.toLonLat(map.getCoordinateFromPixel(clickPixel));
@@ -894,7 +964,7 @@ function mapService($http, trafficService, weatherService)
 			});
 			
 			geoPoint.geopoint = geopoints[i];
-			
+
 			geoPoint.setStyle(
 				new ol.style.Style({
 					image: new ol.style.Circle({
@@ -965,6 +1035,18 @@ function mapService($http, trafficService, weatherService)
 			);
 			
 			layerSource.addFeature(line);
+
+
+			// add airport object
+			if (geopoints[i].airport_icao)
+			{
+				var ap = airports[geopoints[i].airport_icao];
+
+				if (ap) {
+					geoPoint.airport = ap;
+					labelPoint.airport = ap;
+				}
+			}
 		}
 
 
