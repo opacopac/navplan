@@ -607,7 +607,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 					else
 					{
 						$scope.globalData.trafficStatus = "error";
-						console.error("ERROR reading traffic");
+						console.error("ERROR reading traffic", response.data);
 					}
 				},
 				function(response)
