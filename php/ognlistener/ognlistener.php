@@ -3,6 +3,7 @@
 
 $dumpfiles[0] = './ogndump0.txt';
 $dumpfiles[1] = './ogndump1.txt';
+$lockfile = './ognlistener.lock';
 
 $ogn_host = 'aprs.glidernet.org';
 $ogn_port = 14580;
@@ -84,6 +85,17 @@ $logrotatesec = 120;
 $lastswitch = 0;
 $dumpindex = 1;
 
+
+// start
+
+createLockFile();
+
+foreach ($dumpfiles as $dumpfile)
+{
+    if (file_exists($dumpfile))
+        touch($dumpfile);
+}
+
 $fp = connect();
 
 while(!feof($fp))
@@ -138,6 +150,21 @@ while(!feof($fp))
 }
 
 disconnect($fp);
+
+unlink($lockfile); // remove lock file
+
+
+function createLockFile()
+{
+    global $lockfile;
+
+    if (file_exists($lockfile))
+        die("ERROR: lockfile already present\n");
+
+    $file = fopen($lockfile, "w");
+    fwrite($file, getmypid() . "\n");
+    fclose($file);
+}
 
 
 function switchfile($file)

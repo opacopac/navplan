@@ -3,6 +3,7 @@
 
     $dumpfiles[0] = './ognlistener/ogndump0.txt';
     $dumpfiles[1] = './ognlistener/ogndump1.txt';
+    $dumpfileMaxAgeSec = 5 * 60;
 
 	$raw_input = file_get_contents('php://input');
 	$input = json_decode($raw_input, true);
@@ -19,7 +20,7 @@
 
 	function read()
 	{
-		global $input, $dumpfiles;
+		global $input, $dumpfiles, $dumpfileMaxAgeSec;
 
 		$minlat = floatval($input["minlat"]);
 		$maxlat = floatval($input["maxlat"]);
@@ -32,7 +33,16 @@
 	    foreach ($dumpfiles as $dumpfile)
 	    {
 			if(!file_exists($dumpfile))
-				die("ERROR: File not found");
+			{
+			    tryRestartListener();
+				die("ERROR: dump file not found, trying to restart ogn listener");
+			}
+
+			if (time() > filemtime($dumpfile) + $dumpfileMaxAgeSec)
+			{
+			    tryRestartListener();
+			    die("ERROR: dumpfile too old, trying to restarting ogn listener");
+			}
 
 	        $file = fopen($dumpfile, "r");
 
@@ -94,5 +104,11 @@
 
 	function removeDuplicate($messages)
 	{
+	}
+
+
+	function tryRestartListener()
+	{
+	    shell_exec("cd ./ognlistener; ./start_listener");
 	}
 ?>
