@@ -760,9 +760,15 @@ function mapService($http, trafficService, weatherService)
 						return;
 
 					// specific feature clicked
-					if (feature.geopoint || feature.airport || feature.navaid || feature.waypoint || feature.userWaypoint || feature.globalWaypoint || feature.webcam || feature.weatherInfo)
+					if (feature.geopoint || feature.airport || feature.navaid || feature.waypoint || feature.userWaypoint || feature.globalWaypoint || feature.webcam || feature.weatherInfo || feature.closeLayer)
 					{
-						onFeatureSelectCallback(event, feature);
+						if (feature.closeLayer) {
+							map.removeLayer(feature.closeLayer);
+							iconLayer.getSource().removeFeature(feature);
+						}
+						else
+							onFeatureSelectCallback(event, feature);
+
 						clearGeopointSelection();
 						eventConsumed = true;
 					}
@@ -1167,7 +1173,7 @@ function mapService($http, trafficService, weatherService)
 		var trackAlternateStyle = new ol.style.Style({
 			stroke : new ol.style.Stroke({
 				color: '#FF00FF',
-				width: 5,
+				width: 4,
 				lineDash: [10, 10]
 			})
 		});
@@ -1407,12 +1413,38 @@ function mapService($http, trafficService, weatherService)
 						chartLayers.push(chartLayer);
 
 						map.getLayers().insertAt(chartLayers.length, chartLayer);
+
+						addChartCloseFeature(chartId, chartLayer, extent);
 					}
 				},
 				function(response) { // error
 					console.error("ERROR reading chart", response.status, response.data);
 				}
 			);
+
+
+		function addChartCloseFeature(chartId, chartLayer, extent)
+		{
+			var closerFeature = new ol.Feature({
+				geometry: new ol.geom.Point([extent[2], extent[3]])
+			});
+
+			var closerStyle = new ol.style.Style({
+				image: new ol.style.Icon(({
+					anchor: [0.5, 0.5],
+					anchorXUnits: 'fraction',
+					anchorYUnits: 'fraction',
+					scale: 1,
+					opacity: 0.90,
+					src: 'icon/closerbutton.png'
+				}))
+			});
+
+			closerFeature.setStyle(closerStyle);
+			closerFeature.closeLayer = chartLayer;
+
+			iconLayer.getSource().addFeature(closerFeature);
+		}
 	}
 
 
@@ -1420,6 +1452,16 @@ function mapService($http, trafficService, weatherService)
 	{
 		for (var i = 0; i < chartLayers.length; i++)
 			map.removeLayer(chartLayers[i]);
+
+
+		var iconFeatures = iconLayer.getSource().getFeatures();
+
+
+		for (var j = 0; j < iconFeatures.length; j++)
+		{
+			if (iconFeatures[j].closeLayer)
+				iconLayer.getSource().removeFeature(iconFeatures[j]);
+		}
 
 		chartLayers = [];
 	}
