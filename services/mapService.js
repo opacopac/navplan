@@ -1522,7 +1522,7 @@ function mapService($http, trafficService, weatherService)
 
 		for (var i = 0; i < maxIdx; i++)
 		{
-			var trackDotFeature = createTrackDotFeature(lastPositions[i].longitude, lastPositions[i].latitude, acInfo.actype);
+			var trackDotFeature = createTrackDotFeature(lastPositions[i], acInfo.actype);
 			layerSource.addFeature(trackDotFeature);
 		}
 
@@ -1540,9 +1540,7 @@ function mapService($http, trafficService, weatherService)
 			}
 
 			var planeFeature = createTrafficFeature(
-				lastPositions[maxIdx].longitude,
-				lastPositions[maxIdx].latitude,
-				lastPositions[maxIdx].altitude,
+				lastPositions[maxIdx],
 				rotation,
 				acInfo);
 
@@ -1551,8 +1549,7 @@ function mapService($http, trafficService, weatherService)
 			if (acInfo.callsign)
 			{
 				var csFeature = createCallsignFeature(
-					lastPositions[maxIdx].longitude,
-					lastPositions[maxIdx].latitude,
+					lastPositions[maxIdx],
 					acInfo.callsign);
 
 				layerSource.addFeature(csFeature);
@@ -1561,7 +1558,7 @@ function mapService($http, trafficService, weatherService)
 
 
 
-		function createTrackDotFeature(longitude, latitude, trafficType)
+		function createTrackDotFeature(position, trafficType)
 		{
 			var color;
 
@@ -1571,7 +1568,7 @@ function mapService($http, trafficService, weatherService)
 				color = "#FF0000";
 
 			var trackPoint = new ol.Feature({
-				geometry: new ol.geom.Point(ol.proj.fromLonLat([longitude, latitude]))
+				geometry: new ol.geom.Point(ol.proj.fromLonLat([position.longitude, position.latitude]))
 			});
 
 			trackPoint.setStyle(
@@ -1589,7 +1586,7 @@ function mapService($http, trafficService, weatherService)
 		}
 
 
-		function createTrafficFeature(longitude, latitude, altitude, rotation, acInfo)
+		function createTrafficFeature(position, rotation, acInfo)
 		{
 			var icon = "icon/";
 			var color = "#FF0000";
@@ -1598,8 +1595,12 @@ function mapService($http, trafficService, weatherService)
 			if (!acInfo.callsign)
 				acInfo.callsign = "";
 
-			if (altitude > 0)
-				heighttext = Math.round(altitude * 3.28084).toString() + " ft"; // TODO: einstellbar
+			if (position.altitude > 0)
+				heighttext = Math.round(position.altitude * 3.28084).toString() + " ft"; // TODO: einstellbar
+
+			var iconSuffix = "";
+			if (getAgeMs(position.time) > 30000)
+				iconSuffix = "_inactive";
 
 			switch (acInfo.actype)
 			{
@@ -1608,20 +1609,20 @@ function mapService($http, trafficService, weatherService)
 					color = "#0000FF";
 					break;
 				case "HELICOPTER_ROTORCRAFT":
-					icon += "traffic_heli.png";
+					icon += "traffic_heli" + iconSuffix + ".png";
 					break;
 				case "GLIDER":
-					icon += "traffic_glider.png";
+					icon += "traffic_glider" + iconSuffix + ".png";
 					break;
 				case "PARACHUTE":
 				case "HANG_GLIDER":
 				case "PARA_GLIDER":
-					icon += "traffic_parachute.png";
+					icon += "traffic_parachute" + iconSuffix + ".png";
 					rotation = 0;
 					break;
 				case "BALLOON":
 				case "AIRSHIP":
-					icon += "traffic_balloon.png";
+					icon += "traffic_balloon" + iconSuffix + ".png";
 					rotation = 0;
 					break;
 				case "UKNOWN":
@@ -1633,12 +1634,12 @@ function mapService($http, trafficService, weatherService)
 				case "UAV":
 				case "STATIC_OBJECT":
 				default:
-					icon += "traffic_plane.png";
+					icon += "traffic_plane" + iconSuffix + ".png";
 					break;
 			}
 
 			var planeFeature = new ol.Feature({
-				geometry: new ol.geom.Point(ol.proj.fromLonLat([longitude, latitude]))
+				geometry: new ol.geom.Point(ol.proj.fromLonLat([position.longitude, position.latitude]))
 			});
 
 			planeFeature.setStyle(
@@ -1666,10 +1667,20 @@ function mapService($http, trafficService, weatherService)
 			planeFeature.acInfo = acInfo;
 
 			return planeFeature;
+
+
+			function getAgeMs(timeString)
+			{
+				var timeParts = timeString.split(":", 3);
+				var today = new Date();
+				var timeMs = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), timeParts[0], timeParts[1], timeParts[2]);
+
+				return Date.now() - timeMs;
+			}
 		}
 
 
-		function createCallsignFeature(longitude, latitude, callsign)
+		function createCallsignFeature(position, callsign)
 		{
 			var icon = "icon/";
 			var color = "#FF0000";
@@ -1678,7 +1689,7 @@ function mapService($http, trafficService, weatherService)
 				callsign = "";
 
 			var csFeature = new ol.Feature({
-				geometry: new ol.geom.Point(ol.proj.fromLonLat([longitude, latitude]))
+				geometry: new ol.geom.Point(ol.proj.fromLonLat([position.longitude, position.latitude]))
 			});
 
 			csFeature.setStyle(

@@ -10,4 +10,3 @@
 - notam
 - frequency table
 - click offline => coordinates
-- expired traffic icons
