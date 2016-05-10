@@ -1599,7 +1599,7 @@ function mapService($http, trafficService, weatherService)
 				heighttext = Math.round(position.altitude * 3.28084).toString() + " ft"; // TODO: einstellbar
 
 			var iconSuffix = "";
-			if (getAgeMs(position.time) > 30000)
+			if (position.time && getAgeMs(position.time) > 30000)
 				iconSuffix = "_inactive";
 
 			switch (acInfo.actype)
