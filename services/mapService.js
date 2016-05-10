@@ -23,14 +23,15 @@ function mapService($http, trafficService, weatherService)
 	// return api reference
 	return {
 		MAX_ZOOMLEVEL: MAX_ZOOMLEVEL,
-		//map: map,
 		init: init,
 		getMapPosition: getMapPosition,
 		setMapPosition: setMapPosition,
+		updateSize: updateSize,
 		getViewExtent: getViewExtent,
 		updateTrack: updateTrack,
 		updateUserWaypoints: updateUserWaypoints,
 		getMercatorCoordinates: getMercatorCoordinates,
+		getLatLonCoordinates: getLatLonCoordinates,
 		getDistance: getDistance,
 		getBearing: getBearing,
 		drawGeopointSelection: drawGeopointSelection,
@@ -600,7 +601,7 @@ function mapService($http, trafficService, weatherService)
 				}
 
 				return new ol.style.Style({
-					image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
+					image: new ol.style.Icon(({
 						anchor: [0.5, 0.5],
 						anchorXUnits: 'fraction',
 						anchorYUnits: 'fraction',
@@ -924,7 +925,7 @@ function mapService($http, trafficService, weatherService)
 		isGeopointSelectionActive = true;
 		
 		// add clickpoint (coordinates only)
-		if (geopoints.length < 8)
+		if (geopoints.length < 8 && clickPixel)
 		{
 			var clickLonLat = ol.proj.toLonLat(map.getCoordinateFromPixel(clickPixel));
 			
@@ -1134,7 +1135,7 @@ function mapService($http, trafficService, weatherService)
 			}
 
 			return new ol.style.Style({
-				image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
+				image: new ol.style.Icon(({
 					anchor: [0.5, 0.5],
 					anchorXUnits: 'fraction',
 					anchorYUnits: 'fraction',
@@ -1361,7 +1362,7 @@ function mapService($http, trafficService, weatherService)
 	}
 	
 	
-	function setMapPosition(lat, lon, zoom)
+	function setMapPosition(lat, lon, zoom, forceRender)
 	{
 		if (lat && lon)
 		{
@@ -1371,6 +1372,15 @@ function mapService($http, trafficService, weatherService)
 
 		if (zoom)
 			map.getView().setZoom(zoom);
+
+		if (forceRender)
+			map.renderSync();
+	}
+
+
+	function updateSize()
+	{
+		map.updateSize();
 	}
 
 
@@ -1699,11 +1709,13 @@ function mapService($http, trafficService, weatherService)
 				crossOrigin: null,
 				attributions:
 				[
-					ol.source.OSM.ATTRIBUTION,
-					new ol.Attribution({ html: 'Map Visualization: <a href="http://www.opentopomap.org/" target="_blank">OpenTopoMap</a> | <a href="https://lta.cr.usgs.gov/SRTM" target="_blank">SRTM</a>' }),
-					new ol.Attribution({ html: 'Aviation Data: <a href="http://www.openaip.net/" target="_blank">openAIP</a>' }),
+					new ol.Attribution({ html: 'Map Data: &copy; <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors <a href="https://creativecommons.org/licenses/by-sa/2.0/" target="_blank">(CC-BY-SA)</a>' }),
+					new ol.Attribution({ html: 'Elevation Data: <a href="https://lta.cr.usgs.gov/SRTM" target="_blank">SRTM</a>' }),
+					new ol.Attribution({ html: 'Map Visualization: <a href="http://www.opentopomap.org/" target="_blank">OpenTopoMap</a> <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank">(CC-BY-SA)</a>' }),
+					new ol.Attribution({ html: 'Aviation Data: <a href="http://www.openaip.net/" target="_blank">openAIP</a> <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/" target="_blank">(BY-NC-SA)</a>' }),
 					new ol.Attribution({ html: 'Traffic Data: <a href="http://wiki.glidernet.org/about" target="_blank">Open Glider Network</a>' }),
 					new ol.Attribution({ html: 'Weather Data: <a href="https://www.aviationweather.gov/" target="_blank">NOAA - Aviation Weather Center</a>' }),
+					new ol.Attribution({ html: 'Geographical Data: <a href="http://www.geonames.org/" target="_blank">GeoNames</a> <a href="http://creativecommons.org/licenses/by/3.0/" target="_blank">(CC-BY)</a>' }),
 					new ol.Attribution({ html: 'Links to Webcams: all images are digital property of the webcam owners. check the reference for details.' })
 				]
 			})
@@ -1723,6 +1735,13 @@ function mapService($http, trafficService, weatherService)
 	function getMercatorCoordinates(lat, lon)
 	{
 		return ol.proj.fromLonLat([lon, lat]);
+	}
+
+
+	function getLatLonCoordinates(mercatorPosition)
+	{
+		var latLon = ol.proj.toLonLat(mercatorPosition);
+		return { latitude: latLon[1], longitude: latLon[0] };
 	}
 
 

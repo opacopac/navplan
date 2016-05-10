@@ -9,7 +9,7 @@
 <html manifest='manifest.php' lang="de" data-ng-app="navplanApp" data-ng-controller="navplanCtrl">
 <head>
 	<title>NAV-Flightplan</title>
-	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1">
 	<meta charset="utf-8">
 	<link rel="stylesheet" href = "css/bootstrap.min.css">
 	<link rel="stylesheet" href = "css/ol.css">
@@ -43,10 +43,10 @@
 	<script src="services/weatherService.js"></script>
 </head>
 <body>
-	<nav class="navbar navbar-default">
+	<nav id="navbar" class="navbar navbar-default">
 		<div class="container-fluid">
-			<div class="navbar-header">
-				<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false">
+			<div id="navbarheader" class="navbar-header">
+				<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbarcontent" aria-expanded="false">
 					<span class="sr-only">Toggle navigation</span>
 					<span class="icon-bar"></span>
 					<span class="icon-bar"></span>
@@ -54,17 +54,17 @@
 				</button>
 				<a class="navbar-brand" href="#/">NAV-FLIGHTPLAN</a>
 			</div>
-			<div class="collapse navbar-collapse" id="navbar">
+			<div id="navbarcontent" class="collapse navbar-collapse">
 				<ul class="nav navbar-nav">
-					<li><a href="#/map" title="Show Map" data-toggle="collapse" data-target="#navbar">Map</a></li>
-					<li><a href="#/waypoints" title="Show Waypoint List" data-toggle="collapse" data-target="#navbar">Waypoints</a></li>
-					<li><a href="#/map" title="Clear All Waypoints" data-toggle="collapse" data-target="#navbar" ng-click="onClearAllWaypointsClicked()"><i class="glyphicon glyphicon-trash"></i></a></li>
+					<li><a href="#/map" title="Show Map" data-toggle="collapse" data-target="#navbarcontent">Map</a></li>
+					<li><a href="#/waypoints" title="Show Waypoint List" data-toggle="collapse" data-target="#navbarcontent">Waypoints</a></li>
+					<li><a href="#/map" title="Clear All Waypoints" data-toggle="collapse" data-target="#navbarcontent" ng-click="onClearAllWaypointsClicked()"><i class="glyphicon glyphicon-trash"></i></a></li>
 				</ul>
 				<ul class="nav navbar-nav navbar-right">
-					<li ng-hide="isLoggedIn()"><a href="#/login" title="Login or Register" data-toggle="collapse" data-target="#navbar">Login</a></li>
-					<li ng-show="isLoggedIn()"><a href="#/edituser" title="Edit User" data-toggle="collapse" data-target="#navbar">{{ globalData.user.email }}</a></li>
-					<li><a href="#/settings" title="Edit Settings" data-toggle="collapse" data-target="#navbar"><i class="glyphicon glyphicon-cog"></i></a></li>
-					<li><a href="#/about" data-toggle="collapse" data-target="#navbar">About</a></li>
+					<li ng-hide="isLoggedIn()"><a href="#/login" title="Login or Register" data-toggle="collapse" data-target="#navbarcontent">Login</a></li>
+					<li ng-show="isLoggedIn()"><a href="#/edituser" title="Edit User" data-toggle="collapse" data-target="#navbarcontent">{{ globalData.user.email }}</a></li>
+					<li><a href="#/settings" title="Edit Settings" data-toggle="collapse" data-target="#navbarcontent"><i class="glyphicon glyphicon-cog"></i></a></li>
+					<li><a href="#/about" data-toggle="collapse" data-target="#navbarcontent">About</a></li>
 				</ul>
 			</div>
 		</div>
