@@ -8,7 +8,7 @@ navplanApp
 
 function mapCtrl($scope, mapService, locationService, trafficService, geonameService, globalData) {
 	$scope.globalData = globalData;
-	$scope.timerIntervallMs = 5000;
+	$scope.trafficTimerIntervallMs = 5000;
 	$scope.selectedTraffic = {};
 	$scope.followTrafficAddress = undefined;
 	$scope.followTrafficLastPosition = undefined;
@@ -382,16 +382,76 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 	{
 		$scope.globalData.locationStatus = "waiting";
 		locationService.startWatching($scope.onLocationChanged, $scope.onLocationError);
+		$scope.startClockTimer();
 	};
 
 
 	$scope.stopLocationService = function ()
 	{
+		$scope.stopClockTimer();
 		locationService.stopWatching();
 		mapService.updateLocation(undefined);
 		$scope.globalData.locationStatus = "off";
 	};
+
+
+	$scope.startClockTimer = function()
+	{
+		$scope.globalData.clockTimer = window.setInterval($scope.onClockTimer, 1000);
+		$scope.globalData.timer = {
+			currentTime: new Date(),
+			currentTimeString: (new Date()).toLocaleTimeString()
+		};
+	};
+
+
+	$scope.stopClockTimer = function()
+	{
+		window.clearInterval($scope.globalData.clockTimer);
+		$scope.globalData.timer = undefined;
+	};
+
+
+	$scope.onClockTimer = function()
+	{
+		var timer = $scope.globalData.timer;
+
+		if (!timer)
+			return;
+
+		// current time
+		var d = new Date();
+		timer.currentTime =  d;
+		timer.currentTimeString =  d.toLocaleTimeString();
+
+		// elapsed time
+		if (timer.stopTime)
+		{
+			timer.elapsedTime = Math.round((timer.currentTime - timer.stopTime) / 1000);
+			timer.elapsedTimeString = "+" + zeroPad(Math.floor(timer.elapsedTime / 60)) + ":" + zeroPad(timer.elapsedTime % 60);
+		}
+
+		$scope.$apply();
+		
+		function zeroPad(number)
+		{
+			if (number < 10)
+				return "0" + number;
+			else
+				return "" + number;
+		}
+	};
 	
+	
+	$scope.onTimerClicked = function()
+	{
+		var d = new Date();
+		$scope.globalData.timer.stopTime = d;
+		$scope.globalData.timer.stopTimeString = d.toLocaleTimeString();
+		$scope.globalData.timer.elapsedTime = 0;
+		$scope.globalData.timer.elapsedTimeString = "+00:00";
+	};
+
 
 	$scope.onTrafficClicked = function()
 	{
@@ -404,7 +464,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 			$scope.globalData.trafficStatus = "waiting";
 
 			if (!$scope.globalData.trafficTimer)
-				$scope.globalData.trafficTimer = window.setInterval($scope.onTrafficTimer, $scope.timerIntervallMs);
+				$scope.globalData.trafficTimer = window.setInterval($scope.onTrafficTimer, $scope.trafficTimerIntervallMs);
 
 			$scope.updateTraffic();
 		}

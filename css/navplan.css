@@ -80,6 +80,36 @@ html, body {
   z-index: 20;
 }
 
+.mapbutton-timer {
+  position: absolute;
+  top: 50px;
+  left: 70px;
+  z-index: 20;
+}
+
+.map-currenttime {
+  font-size: 18px;
+  font-weight: bold;
+  text-shadow: -1px 0px #FFFFFF, 1px 0px #FFFFFF, 0px -1px #FFFFFF, 0px 1px #FFFFFF;
+  color: #000000;
+}
+
+.map-stoptime {
+  font-size: large;
+  font-style: italic;
+  font-weight: bold;
+  text-shadow: -1px 0px #FFFFFF, 1px 0px #FFFFFF, 0px -1px #FFFFFF, 0px 1px #FFFFFF;
+  color: #666666;
+}
+
+.map-timer {
+  font-size: large;
+  font-style: italic;
+  font-weight: bold;
+  text-shadow: -1px 0px #FFFFFF, 1px 0px #FFFFFF, 0px -1px #FFFFFF, 0px 1px #FFFFFF;
+  color: #FF0000;
+}
+
 .btn-circle {
   width: 30px;
   height: 30px;

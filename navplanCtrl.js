@@ -86,6 +86,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 			$scope.globalData.selectedWp = undefined;
 			$scope.globalData.wpBackup = undefined;
 			$scope.globalData.trafficTimer = undefined;
+			$scope.globalData.clockTimer = undefined;
 			$scope.globalData.showLocation = false;
 			$scope.globalData.showTraffic = false;
 			$scope.globalData.offlineCache = false;
