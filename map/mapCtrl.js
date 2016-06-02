@@ -3,10 +3,10 @@
  */
 
 navplanApp
-	.controller('mapCtrl', [ '$scope', 'mapService', 'locationService', 'trafficService', 'geonameService', 'globalData', mapCtrl ]);
+	.controller('mapCtrl', [ '$scope', 'mapService', 'locationService', 'trafficService', 'geonameService', 'userService', 'globalData', mapCtrl ]);
 
 
-function mapCtrl($scope, mapService, locationService, trafficService, geonameService, globalData) {
+function mapCtrl($scope, mapService, locationService, trafficService, geonameService, userService, globalData) {
 	$scope.globalData = globalData;
 	$scope.trafficTimerIntervallMs = 5000;
 	$scope.selectedTraffic = {};
@@ -281,7 +281,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 			removeFromArray($scope.globalData.navplan.waypoints, $scope.globalData.selectedWp);
 			
 		$scope.globalData.selectedWp = undefined;
-		$scope.updateWpList();
+		$scope.updateWaypoints();
 		$scope.discardCache();
 
 		mapService.closeOverlay();
@@ -311,7 +311,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 			
 		$scope.globalData.navplan.waypoints.push(newWp);
 
-		$scope.updateWpList();
+		$scope.updateWaypoints();
 		$scope.discardCache();
 	};
 	
@@ -320,7 +320,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 	{
 		$scope.globalData.navplan.alternate = altWp;
 		
-		$scope.updateWpList();
+		$scope.updateWaypoints();
 		$scope.discardCache();
 	};
 	
@@ -374,7 +374,17 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		if ($scope.globalData.showLocation)
 			$scope.startLocationService();
 		else
+		{
 			$scope.stopLocationService();
+
+			if ($scope.isLoggedIn())
+			{
+				if ($scope.globalData.navplan && $scope.globalData.navplan.title)
+					$scope.saveTrackName = $scope.globalData.navplan.title;
+
+				$('#saveTrackDialog').modal('show');
+			}
+		}
 	};
 
 
@@ -397,10 +407,12 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 
 	$scope.startClockTimer = function()
 	{
+		var d = new Date();
+		d.setMilliseconds(0);
 		$scope.globalData.clockTimer = window.setInterval($scope.onClockTimer, 1000);
 		$scope.globalData.timer = {
-			currentTime: new Date(),
-			currentTimeString: (new Date()).toLocaleTimeString()
+			currentTime: d,
+			currentTimeString: getHourMinSecString(d)
 		};
 	};
 
@@ -412,44 +424,32 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 	};
 
 
-	$scope.onClockTimer = function()
-	{
-		var timer = $scope.globalData.timer;
-
-		if (!timer)
-			return;
-
-		// current time
-		var d = new Date();
-		timer.currentTime =  d;
-		timer.currentTimeString =  d.toLocaleTimeString();
-
-		// elapsed time
-		if (timer.stopTime)
-		{
-			timer.elapsedTime = Math.round((timer.currentTime - timer.stopTime) / 1000);
-			timer.elapsedTimeString = "+" + zeroPad(Math.floor(timer.elapsedTime / 60)) + ":" + zeroPad(timer.elapsedTime % 60);
-		}
-
-		$scope.$apply();
-		
-		function zeroPad(number)
-		{
-			if (number < 10)
-				return "0" + number;
-			else
-				return "" + number;
-		}
-	};
-	
-	
 	$scope.onTimerClicked = function()
 	{
-		var d = new Date();
-		$scope.globalData.timer.stopTime = d;
-		$scope.globalData.timer.stopTimeString = d.toLocaleTimeString();
-		$scope.globalData.timer.elapsedTime = 0;
+		$scope.globalData.timer.stopTime = $scope.globalData.timer.currentTime;
+		$scope.globalData.timer.stopTimeString = getHourMinSecString($scope.globalData.timer.stopTime);
 		$scope.globalData.timer.elapsedTimeString = "+00:00";
+	};
+
+
+	$scope.onSaveTrackClicked = function()
+	{
+		var positions = shrinkPositions(locationService.getLastPositions());
+
+		userService.createUserTrack($scope.saveTrackName, positions, $scope.globalData.user.email, $scope.globalData.user.token)
+			.then(
+				function (response) {
+					if (response.data && response.data.success == 1) {
+						$scope.showSuccessMessage("Track successfully saved!");
+						$scope.readTrackList();
+					}
+					else
+						console.error("ERROR saving track:", response.status, response.data);
+				},
+				function (response) {
+					console.error("ERROR saving track:", response.status, response.data);
+				}
+			);
 	};
 
 
@@ -620,8 +620,14 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 			}
 		}		
 	};
-	
-	
+
+
+	$scope.onKmlClicked = function()
+	{
+		$scope.exportKml();
+	};
+
+
 	$scope.onLocationChanged = function(currentPosition)
 	{
 		var lastPositions = locationService.getLastPositions();
@@ -678,6 +684,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 				{
 					if (response.data.aclist)
 					{
+						trafficService.calcTimestamps(response.data.aclist); // TODO: temp => calc ms in php
 						mapService.updateTraffic(response.data.aclist);
 						$scope.globalData.trafficStatus = "current";
 
@@ -773,7 +780,8 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		$scope.globalData.user.email,
 		$scope.globalData.user.token);
 
-	$scope.updateWpList();
+	$scope.updateWaypoints();
+	$scope.updateFlightTrack();
 	$scope.resizeMap();
 
 	window.removeEventListener("resize", $scope.resizeMap);

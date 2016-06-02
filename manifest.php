@@ -35,7 +35,8 @@
 		echo "map/map.html\n";
 		echo "settings/settings.html\n";
 		echo "waypoints/waypoints.html\n";
-			
+		echo "tracks/tracks.html\n";
+
 		// php TODO: post => get
 		echo "php/airports.php\n";
 		echo "php/airspace.php\n";
@@ -96,6 +97,7 @@
 		echo "forgotpw/forgotpwCtrl.js\n";
 		echo "edituser/edituserCtrl.js\n";
 		echo "waypoints/waypointCtrl.js\n";
+		echo "tracks/trackCtrl.js\n";
 		echo "settings/settingsCtrl.js\n";
 		echo "services/mapService.js\n";
 		echo "services/locationService.js\n";

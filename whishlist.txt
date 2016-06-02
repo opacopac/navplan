@@ -8,5 +8,7 @@
 - m / ft
 - import data admin
 - notam
+- taf LSMP, LSMM, etc
 - frequency table
 - click offline => coordinates
+- dialog: are you sure?

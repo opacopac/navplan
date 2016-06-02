@@ -17,19 +17,19 @@
 </div>
 <!-- location button -->
 <div class="mapbutton-location">
-	<button type="button" class="btn btn-circle btn-lg" ng-class="{ 'btn-primary' : globalData.locationStatus == 'off', 'btn-success' : globalData.locationStatus == 'current', 'btn-warning' : globalData.locationStatus == 'waiting', 'btn-danger' : globalData.locationStatus == 'error' }" ng-class="{ 'active': globalData.showLocation }" ng-click="onLocationClicked();" title="own location"><span class="glyphicon glyphicon-record"></span></button>
+	<button type="button" class="btn btn-circle btn-lg" ng-class="{ 'btn-primary' : globalData.locationStatus == 'off', 'btn-success' : globalData.locationStatus == 'current', 'btn-warning' : globalData.locationStatus == 'waiting', 'btn-danger' : globalData.locationStatus == 'error' }" ng-class="{ 'active': globalData.showLocation }" ng-click="onLocationClicked();" title="start/stop tracking own position"><span class="glyphicon glyphicon-record"></span></button>
 </div>
 <!-- traffic button -->
 <div class="mapbutton-traffic">
-	<button type="button" class="btn btn-primary btn-circle btn-lg" ng-class="{ 'btn-primary' : globalData.trafficStatus == 'off', 'btn-success' : globalData.trafficStatus == 'current', 'btn-warning' : globalData.trafficStatus == 'waiting', 'btn-danger' : globalData.trafficStatus == 'error' }" ng-class="{ 'active': globalData.showTraffic }" ng-click="onTrafficClicked();" title="traffic"><span class="glyphicon glyphicon-plane"></span></button>
+	<button type="button" class="btn btn-primary btn-circle btn-lg" ng-class="{ 'btn-primary' : globalData.trafficStatus == 'off', 'btn-success' : globalData.trafficStatus == 'current', 'btn-warning' : globalData.trafficStatus == 'waiting', 'btn-danger' : globalData.trafficStatus == 'error' }" ng-class="{ 'active': globalData.showTraffic }" ng-click="onTrafficClicked();" title="show/hide traffic"><span class="glyphicon glyphicon-plane"></span></button>
 </div>
 <!-- kml export button -->
 <div class="mapbutton-kmlexport" ng-show="globalData.navplan.waypoints.length > 0">
-	<button type="button" class="btn btn-primary btn-circle btn-lg" ng-click="onKmlClicked();" title="export kml"><span class="glyphicon glyphicon-globe"></span></button>
+	<button type="button" class="btn btn-primary btn-circle btn-lg" ng-click="onKmlClicked();" title="export kml for google earth"><span class="glyphicon glyphicon-globe"></span></button>
 </div>
 <!-- offline cache button -->
 <div class="mapbutton-offlinecache" ng-show="globalData.navplan.waypoints.length > 0 || globalData.cacheStatus != 'off'">
-	<button type="button" class="btn btn-primary btn-circle btn-lg" ng-class="{ 'btn-primary' : globalData.cacheStatus == 'off', 'btn-success' : globalData.cacheStatus == 'updated', 'btn-warning' : globalData.cacheStatus == 'updating', 'btn-danger' : globalData.cacheStatus == 'error' }" ng-class="{ 'active': globalData.offlineCache }" ng-click="onOfflineCacheClicked();" title="offline cache"><span class="glyphicon glyphicon-cloud-download"></span></button>
+	<button type="button" class="btn btn-primary btn-circle btn-lg" ng-class="{ 'btn-primary' : globalData.cacheStatus == 'off', 'btn-success' : globalData.cacheStatus == 'updated', 'btn-warning' : globalData.cacheStatus == 'updating', 'btn-danger' : globalData.cacheStatus == 'error' }" ng-class="{ 'active': globalData.offlineCache }" ng-click="onOfflineCacheClicked();" title="activate/deactivate offline cache"><span class="glyphicon glyphicon-cloud-download"></span></button>
 </div>
 <div class="progress map-cacheprogress" ng-show="globalData.cacheStatus == 'updating'">
 	<div class="progress-bar progress-bar-warning progress-bar-striped active" role="progressbar" aria-valuenow="{{ globalData.cacheProgress.loaded }}" aria-valuemin="0" aria-valuemax="{{ globalData.cacheProgress.total }}" style="width: {{ globalData.cacheProgress.percent }}%;">
@@ -107,6 +107,24 @@
 			<br />
 			<i>({{ getAgeString(selectedWeather.taf.issue_time); }} old)</i>
 		</p>
+	</div>
+</div>
+<!-- save track dialog -->
+<div class="modal fade" id="saveTrackDialog" tabindex="-1" role="dialog" aria-labelledby="saveTrackModalLabel">
+	<div class="modal-dialog" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+				<h4 class="modal-title" id="saveTrackModalLabel">Save Recorded Track?</h4>
+			</div>
+			<div class="modal-body">
+				Track Name: <input type="text" class="form-control" ng-model="saveTrackName" />
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-primary" data-dismiss="modal" ng-click="onSaveTrackClicked()" ng-disabled="!saveTrackName"><i class="glyphicon glyphicon-save"></i> Save Track</button>
+				<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+			</div>
+		</div>
 	</div>
 </div>
 <!-- map -->

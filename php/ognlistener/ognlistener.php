@@ -169,12 +169,17 @@ function createLockFile()
 
     if (file_exists($lockfile))
     {
-        writelog("ERROR", "lockfile already present");
-        die;
+        $pid = file_get_contents($lockfile);
+
+        if (posix_kill($pid, 0))
+        {
+            writelog("ERROR", "process already running");
+            die;
+        }
     }
 
     $file = fopen($lockfile, "w");
-    fwrite($file, getmypid() . "\n");
+    fwrite($file, getmypid());
     fclose($file);
 }
 

@@ -33,6 +33,7 @@
 	<script src="forgotpw/forgotpwCtrl.js"></script>
 	<script src="edituser/edituserCtrl.js"></script>
 	<script src="waypoints/waypointCtrl.js"></script>
+	<script src="tracks/trackCtrl.js"></script>
 	<script src="settings/settingsCtrl.js"></script>
 	<script src="services/mapService.js"></script>
 	<script src="services/locationService.js"></script>
@@ -58,8 +59,9 @@
 			<div id="navbarcontent" class="collapse navbar-collapse">
 				<ul class="nav navbar-nav">
 					<li><a href="#/map" title="Show Map" data-toggle="collapse" data-target="#navbarcontent">Map</a></li>
-					<li><a href="#/waypoints" title="Show Waypoint List" data-toggle="collapse" data-target="#navbarcontent">Waypoints</a></li>
-					<li><a href="#/map" title="Clear All Waypoints" data-toggle="collapse" data-target="#navbarcontent" ng-click="onClearAllWaypointsClicked()"><i class="glyphicon glyphicon-trash"></i></a></li>
+					<li><a href="#/waypoints" title="Waypoint List" data-toggle="collapse" data-target="#navbarcontent">Waypoints</a></li>
+					<li ng-show="isLoggedIn()"><a href="#/tracks" title="Recorded Tracks" data-toggle="collapse" data-target="#navbarcontent">Tracks</a></li>
+					<li><a href="#/map" title="Clear Waypoints and Track" data-toggle="collapse" data-target="#navbarcontent" ng-click="onTrashClicked()"><i class="glyphicon glyphicon-trash"></i></a></li>
 				</ul>
 				<ul class="nav navbar-nav navbar-right">
 					<li ng-hide="isLoggedIn()"><a href="#/login" title="Login or Register" data-toggle="collapse" data-target="#navbarcontent">Login</a></li>
@@ -99,7 +101,7 @@
 			</div>
 		</div>
 	</div>
-	<!-- selected waypoint -->
+	<!-- selected waypoint dialog -->
 	<div class="modal fade" id="selectedWaypointDialog" tabindex="-1" role="dialog" aria-labelledby="selectedWaypointModalLabel">
 		<div class="modal-dialog" role="document">
 			<div class="modal-content">
@@ -132,7 +134,7 @@
 			</div>
 		</div>
 	</div>
-	<!-- user waypoint -->
+	<!-- user waypoint dialog -->
 	<div class="modal fade" id="userWaypointDialog" tabindex="-1" role="dialog" aria-labelledby="userWpModalLabel">
 		<div class="modal-dialog" role="document">
 			<div class="modal-content">

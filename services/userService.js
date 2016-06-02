@@ -21,7 +21,11 @@ function userService($http)
 		updateNavplan: updateNavplan,
 		deleteNavplan: deleteNavplan,
 		saveUserWaypoint: saveUserWaypoint,
-		deleteUserWaypoint: deleteUserWaypoint
+		deleteUserWaypoint: deleteUserWaypoint,
+		createUserTrack: createUserTrack,
+		readUserTrackList: readUserTrackList,
+		readUserTrack: readUserTrack,
+		deleteUserTrack: deleteUserTrack
 	};
 	
 
@@ -88,5 +92,29 @@ function userService($http)
 	function deleteUserWaypoint(wp_id, email, token)
 	{
 		return $http.post('php/userWaypoint.php', obj2json({ action: 'deleteUserWaypoint', wp_id: wp_id, email: email, token: token }));
+	}
+
+
+	function createUserTrack(name, positions, email, token)
+	{
+		return $http.post('php/userTrack.php', obj2json({ name: name, positions: positions, email: email, token: token }));
+	}
+
+
+	function readUserTrackList()
+	{
+		return $http.get('php/userTrack.php');
+	}
+
+
+	function readUserTrack(trackid)
+	{
+		return $http.get('php/userTrack.php?id=' + encodeURI(trackid));
+	}
+
+
+	function deleteUserTrack(trackid)
+	{
+		return $http.delete('php/userTrack.php?id=' + encodeURI(trackid));
 	}
 }

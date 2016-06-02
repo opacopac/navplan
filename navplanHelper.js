@@ -7,13 +7,12 @@ function setCookie(cname, cvalue, exdays)
 	if (exdays > 0)
 	{
 		var d = new Date();
-		d.setTime(d.getTime() + (exdays*24*60*60*1000));
-		var expires = "expires="+d.toUTCString();
+		d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
+		var expires = "expires=" + d.toUTCString();
 		document.cookie = cname + "=" + cvalue + "; " + expires;
 	}
 	else
 		document.cookie = cname + "=" + cvalue;
-	
 }
 
 
@@ -21,9 +20,10 @@ function getCookie(cname)
 {
     var name = cname + "=";
     var ca = document.cookie.split(';');
-    for(var i=0; i<ca.length; i++) {
+    for (var i = 0; i < ca.length; i++)
+	{
         var c = ca[i];
-        while (c.charAt(0)==' ') c = c.substring(1);
+        while (c.charAt(0) == ' ') c = c.substring(1);
         if (c.indexOf(name) == 0) return c.substring(name.length, c.length);
     }
     return "";
@@ -94,6 +94,71 @@ function removeFromArray(array, value)
 		array.splice(idx, 1);
 
 	return array;
+}
+
+
+function getMinSecString(timeMs)
+{
+	return zeroPad(Math.floor(timeMs / 60000)) + ":" + zeroPad(Math.floor(timeMs / 1000) % 60);
+}
+
+
+function getHourMinSecString(date)
+{
+	return zeroPad(date.getHours()) + ":" + zeroPad(date.getMinutes()) + ":" + zeroPad(date.getSeconds());
+}
+
+
+function getHourMinString(date)
+{
+	return zeroPad(date.getHours()) + ":" + zeroPad(date.getMinutes());
+}
+
+
+function getYearMonthDayString(date)
+{
+	return date.getFullYear() + "-" + zeroPad(date.getMonth() + 1) + "-" + zeroPad(date.getDate());
+}
+
+
+function zeroPad(number)
+{
+	if (number < 10)
+		return "0" + number;
+	else
+		return "" + number;
+}
+
+
+function shrinkPositions(positions)
+{
+	var shrinkedpos = [];
+
+	for (var i = 0; i < positions.length; i++)
+		shrinkedpos.push([
+			positions[i].latitude.toFixed(7),
+			positions[i].longitude.toFixed(7),
+			positions[i].altitude ? positions[i].altitude.toFixed(1) : null,
+			positions[i].timestamp
+		]);
+
+	return shrinkedpos;
+}
+
+
+function unshrinkPositions(positions)
+{
+	var unshrinkedpos = [];
+
+	for (var i = 0; i < positions.length; i++)
+		unshrinkedpos.push({
+			latitude: positions[i][0],
+			longitude: positions[i][1],
+			altitude: positions[i][2],
+			timestamp: positions[i][3]
+		});
+
+	return unshrinkedpos;
 }
 
 

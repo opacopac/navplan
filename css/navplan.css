@@ -13,7 +13,7 @@ html, body {
 }
 
 .messages {
-  top: 130px;
+  bottom: 50px;
   position: absolute;
   margin-left: auto;
   margin-right: auto;
@@ -22,11 +22,15 @@ html, body {
   z-index: 30;
 }
 
+.alert {
+  box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.4);
+}
+
 #map {
-	height: 95%;
-	width: 100%;
-	position: fixed;
-    z-index: 10;
+  height: 95%;
+  width: 100%;
+  position: fixed;
+  z-index: 10;
 }
 .mapsearch {
   position: absolute;

@@ -10,7 +10,6 @@ function locationService()
 	// init
 	var geolocationWatch;
 	var lastPositions = [];
-	var maxPositions = 20;
 
 
 	// return api reference
@@ -56,12 +55,9 @@ function locationService()
 			lastPositions.push({
 				latitude: position.coords.latitude,
 				longitude: position.coords.longitude,
-				altitude: position.coords.altitude
+				altitude: position.coords.altitude,
+				timestamp: position.timestamp
 			});
-
-			// remove oldest pos
-			if (lastPositions.length > maxPositions)
-				lastPositions.shift();
 
 			if (successCallback)
 				successCallback(position);

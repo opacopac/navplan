@@ -11,11 +11,11 @@ function waypointService(mapService)
 {
 	// service api
 	return {
-		updateWpList: updateWpList
+		recalcWaypoints: recalcWaypoints
 	};
 	
 	
-	function updateWpList(wps, altWp, magvar, speed)
+	function recalcWaypoints(wps, altWp, magvar, speed)
 	{
 		var prevWp;
 

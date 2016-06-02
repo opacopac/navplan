@@ -18,7 +18,7 @@ function waypointCtrl($scope, $http, geonameService, fuelService, userService, g
 		$scope.globalData.navplan.waypoints.splice(startIndex, 1);
 		$scope.globalData.navplan.waypoints.splice(endIndex, 0, movedElement);
 		
-		$scope.updateWpList();
+		$scope.updateWaypoints();
 		$scope.discardCache();
 		$scope.$apply();
 	};
@@ -113,7 +113,7 @@ function waypointCtrl($scope, $http, geonameService, fuelService, userService, g
 						$scope.globalData.navplan.alternate = wp;
 					}
 
-					$scope.updateWpList();
+					$scope.updateWaypoints();
 					$scope.discardCache();
 				}
 				else
@@ -222,7 +222,7 @@ function waypointCtrl($scope, $http, geonameService, fuelService, userService, g
 	{
 		var idx = $scope.globalData.navplan.waypoints.indexOf(wp);
 		$scope.globalData.navplan.waypoints.splice(idx, 1);
-		$scope.updateWpList();
+		$scope.updateWaypoints();
 		$scope.discardCache();
 	};
 	
@@ -230,8 +230,14 @@ function waypointCtrl($scope, $http, geonameService, fuelService, userService, g
 	$scope.removeAlternate = function()
 	{
 		$scope.globalData.navplan.alternate = undefined;
-		$scope.updateWpList();
+		$scope.updateWaypoints();
 		$scope.discardCache();
+	};
+
+
+	$scope.onKmlClicked = function()
+	{
+		$scope.exportKml();
 	};
 	
 	

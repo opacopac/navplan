@@ -73,8 +73,8 @@
                 {
                     $lastpos = $aclist[$msg["id"]]["positions"][$poscount - 1];
 
-                    // skip time inversions
-                    if ($lastpos["time"] >= $position["time"])
+                    // skip identical times
+                    if ($lastpos["time"] == $position["time"])
                         continue;
 
                     // skip identical positions
