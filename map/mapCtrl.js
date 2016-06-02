@@ -3,13 +3,15 @@
  */
 
 navplanApp
-	.controller('mapCtrl', [ '$scope', 'mapService', 'locationService', 'trafficService', 'geonameService', 'globalData', mapCtrl ]);
+	.controller('mapCtrl', [ '$scope', 'mapService', 'locationService', 'trafficService', 'geonameService', 'userService', 'globalData', mapCtrl ]);
 
 
-function mapCtrl($scope, mapService, locationService, trafficService, geonameService, globalData) {
+function mapCtrl($scope, mapService, locationService, trafficService, geonameService, userService, globalData) {
 	$scope.globalData = globalData;
-	$scope.timerIntervallMs = 5000;
+	$scope.trafficTimerIntervallMs = 5000;
 	$scope.selectedTraffic = {};
+	$scope.followTrafficAddress = undefined;
+	$scope.followTrafficLastPosition = undefined;
 
 	var featureContainer = document.getElementById('feature-popup');
 	var trafficContainer = document.getElementById('traffic-popup');
@@ -40,8 +42,8 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 			longitude: $item.longitude
 		};
 
-		mapService.setMapPosition($item.latitude, $item.longitude, 12);
-		mapService.drawGeopointSelection([ $item ], [0, 0]);
+		mapService.setMapPosition($item.latitude, $item.longitude, 12, true);
+		mapService.drawGeopointSelection([ $item ], undefined);
 	};
 	
 	
@@ -188,6 +190,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 			if (feature.acInfo.addresstype != "ICAO")
 			{
 				$scope.selectedTraffic = getUnknownTrafficInfo(feature.acInfo);
+				$scope.selectedTraffic.position = mapService.getLatLonCoordinates(feature.getGeometry().getCoordinates());
 				mapService.addOverlay(feature.getGeometry().getCoordinates(), trafficContainer);
 				$scope.$apply();
 			}
@@ -204,6 +207,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 								else
 									$scope.selectedTraffic = getUnknownTrafficInfo(feature.acInfo);
 
+								$scope.selectedTraffic.position = mapService.getLatLonCoordinates(feature.getGeometry().getCoordinates());
 								mapService.addOverlay(feature.getGeometry().getCoordinates(), trafficContainer);
 							}
 						},
@@ -277,7 +281,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 			removeFromArray($scope.globalData.navplan.waypoints, $scope.globalData.selectedWp);
 			
 		$scope.globalData.selectedWp = undefined;
-		$scope.updateWpList();
+		$scope.updateWaypoints();
 		$scope.discardCache();
 
 		mapService.closeOverlay();
@@ -307,7 +311,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 			
 		$scope.globalData.navplan.waypoints.push(newWp);
 
-		$scope.updateWpList();
+		$scope.updateWaypoints();
 		$scope.discardCache();
 	};
 	
@@ -316,7 +320,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 	{
 		$scope.globalData.navplan.alternate = altWp;
 		
-		$scope.updateWpList();
+		$scope.updateWaypoints();
 		$scope.discardCache();
 	};
 	
@@ -365,30 +369,102 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 	{
 		$scope.globalData.showLocation = !$scope.globalData.showLocation;
 
+		$scope.stopFollowTraffic();
+
 		if ($scope.globalData.showLocation)
-		{
-			$scope.globalData.locationStatus = "waiting";
-			locationService.startWatching($scope.onLocationChanged, $scope.onLocationError);
-		}
+			$scope.startLocationService();
 		else
 		{
-			locationService.stopWatching();
-			mapService.updateLocation(undefined);
-			$scope.globalData.locationStatus = "off";
-		}		
+			$scope.stopLocationService();
+
+			if ($scope.isLoggedIn())
+			{
+				if ($scope.globalData.navplan && $scope.globalData.navplan.title)
+					$scope.saveTrackName = $scope.globalData.navplan.title;
+
+				$('#saveTrackDialog').modal('show');
+			}
+		}
 	};
-	
+
+
+	$scope.startLocationService = function ()
+	{
+		$scope.globalData.locationStatus = "waiting";
+		locationService.startWatching($scope.onLocationChanged, $scope.onLocationError);
+		$scope.startClockTimer();
+	};
+
+
+	$scope.stopLocationService = function ()
+	{
+		$scope.stopClockTimer();
+		locationService.stopWatching();
+		mapService.updateLocation(undefined);
+		$scope.globalData.locationStatus = "off";
+	};
+
+
+	$scope.startClockTimer = function()
+	{
+		var d = new Date();
+		d.setMilliseconds(0);
+		$scope.globalData.clockTimer = window.setInterval($scope.onClockTimer, 1000);
+		$scope.globalData.timer = {
+			currentTime: d,
+			currentTimeString: getHourMinSecString(d)
+		};
+	};
+
+
+	$scope.stopClockTimer = function()
+	{
+		window.clearInterval($scope.globalData.clockTimer);
+		$scope.globalData.timer = undefined;
+	};
+
+
+	$scope.onTimerClicked = function()
+	{
+		$scope.globalData.timer.stopTime = $scope.globalData.timer.currentTime;
+		$scope.globalData.timer.stopTimeString = getHourMinSecString($scope.globalData.timer.stopTime);
+		$scope.globalData.timer.elapsedTimeString = "+00:00";
+	};
+
+
+	$scope.onSaveTrackClicked = function()
+	{
+		var positions = shrinkPositions(locationService.getLastPositions());
+
+		userService.createUserTrack($scope.saveTrackName, positions, $scope.globalData.user.email, $scope.globalData.user.token)
+			.then(
+				function (response) {
+					if (response.data && response.data.success == 1) {
+						$scope.showSuccessMessage("Track successfully saved!");
+						$scope.readTrackList();
+					}
+					else
+						console.error("ERROR saving track:", response.status, response.data);
+				},
+				function (response) {
+					console.error("ERROR saving track:", response.status, response.data);
+				}
+			);
+	};
+
 
 	$scope.onTrafficClicked = function()
 	{
 		$scope.globalData.showTraffic = !$scope.globalData.showTraffic;
+
+		$scope.stopFollowTraffic();
 
 		if ($scope.globalData.showTraffic)
 		{				
 			$scope.globalData.trafficStatus = "waiting";
 
 			if (!$scope.globalData.trafficTimer)
-				$scope.globalData.trafficTimer = window.setInterval($scope.onTrafficTimer, $scope.timerIntervallMs);
+				$scope.globalData.trafficTimer = window.setInterval($scope.onTrafficTimer, $scope.trafficTimerIntervallMs);
 
 			$scope.updateTraffic();
 		}
@@ -396,6 +472,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		{
 			window.clearInterval($scope.globalData.trafficTimer);
 			$scope.globalData.trafficTimer = undefined;
+			$scope.stopFollowTraffic();
 			mapService.updateTraffic(undefined);
 			$scope.globalData.trafficStatus = "off";
 		}
@@ -543,8 +620,14 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 			}
 		}		
 	};
-	
-	
+
+
+	$scope.onKmlClicked = function()
+	{
+		$scope.exportKml();
+	};
+
+
 	$scope.onLocationChanged = function(currentPosition)
 	{
 		var lastPositions = locationService.getLastPositions();
@@ -601,8 +684,12 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 				{
 					if (response.data.aclist)
 					{
+						trafficService.calcTimestamps(response.data.aclist); // TODO: temp => calc ms in php
 						mapService.updateTraffic(response.data.aclist);
 						$scope.globalData.trafficStatus = "current";
+
+						if ($scope.followTrafficAddress)
+							$scope.followTraffic(response.data.aclist);
 					}
 					else
 					{
@@ -619,6 +706,52 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 	};
 
 
+	$scope.followTraffic = function(aclist)
+	{
+		var ac = aclist[$scope.followTrafficAddress];
+
+		if (!ac || !ac.positions || ac.positions.length == 0)
+			return;
+
+		var currentAcPosition = ac.positions[ac.positions.length - 1];
+
+		var latDiff = currentAcPosition.latitude - $scope.followTrafficLastPosition.latitude;
+		var lonDiff = currentAcPosition.longitude - $scope.followTrafficLastPosition.longitude;
+		var pos = mapService.getMapPosition();
+
+		mapService.setMapPosition(pos.center[1] + latDiff, pos.center[0] + lonDiff, pos.zoom);
+
+		$scope.followTrafficLastPosition = currentAcPosition;
+	};
+	
+	
+	$scope.onFollowSelectedTraffic = function()
+	{
+		if ($scope.globalData.showLocation)
+			$scope.stopLocationService();
+
+		$scope.startFollowTraffic();
+
+		mapService.closeOverlay();
+	};
+
+
+	$scope.startFollowTraffic = function()
+	{
+		$scope.followTrafficAddress = $scope.selectedTraffic.address;
+		$scope.followTrafficLastPosition = $scope.selectedTraffic.position;
+
+		mapService.setMapPosition($scope.followTrafficLastPosition.latitude, $scope.followTrafficLastPosition.longitude);
+	};
+
+
+	$scope.stopFollowTraffic = function()
+	{
+		$scope.followTrafficAddress = undefined;
+		$scope.followTrafficLastPosition = undefined;
+	};
+
+
 	$scope.getAgeString = function(datestring)
 	{
 		var ms = Date.now() - Date.parse(datestring);
@@ -632,6 +765,13 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 	};
 
 
+	$scope.resizeMap = function(event)
+	{
+		$('#map').height($(window).height() - $('#navbarheader').height());
+		$('#map').width($(window).width());
+		mapService.updateSize();
+	};
+
 	mapService.init(
 		$scope.onMapClicked,
 		$scope.onFeatureSelected,
@@ -640,5 +780,10 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		$scope.globalData.user.email,
 		$scope.globalData.user.token);
 
-	$scope.updateWpList();
+	$scope.updateWaypoints();
+	$scope.updateFlightTrack();
+	$scope.resizeMap();
+
+	window.removeEventListener("resize", $scope.resizeMap);
+	window.addEventListener("resize", $scope.resizeMap);
 }

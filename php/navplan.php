@@ -42,7 +42,7 @@
 		$query = "SELECT nav.id AS nav_id, nav.title AS nav_title FROM navplan AS nav";
 		$query .= " INNER JOIN users AS usr ON nav.user_id = usr.id";
 		$query .= " WHERE usr.email = '" . $email . "' AND usr.token = '" . $token . "'";
-		$query .= " ORDER BY nav.id ASC";
+		$query .= " ORDER BY nav.title ASC";
 
 		$result = $conn->query($query);
 		

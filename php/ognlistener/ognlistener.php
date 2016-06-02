@@ -87,16 +87,17 @@ $dumpindex = 1;
 
 
 // start
+writelog("INFO", "starting ognlistener");
 
 createLockFile();
+
+$fp = connect();
 
 foreach ($dumpfiles as $dumpfile)
 {
     if (file_exists($dumpfile))
         touch($dumpfile);
 }
-
-$fp = connect();
 
 while(!feof($fp))
 {
@@ -153,16 +154,32 @@ disconnect($fp);
 
 unlink($lockfile); // remove lock file
 
+writelog("INFO", "closing ognlistener");
+
+
+function writelog($loglevel, $message)
+{
+    echo date("Y-m-d H:i:s") . " " . $loglevel . ": " . $message . "\n";
+}
+
 
 function createLockFile()
 {
     global $lockfile;
 
     if (file_exists($lockfile))
-        die("ERROR: lockfile already present\n");
+    {
+        $pid = file_get_contents($lockfile);
+
+        if (posix_kill($pid, 0))
+        {
+            writelog("ERROR", "process already running");
+            die;
+        }
+    }
 
     $file = fopen($lockfile, "w");
-    fwrite($file, getmypid() . "\n");
+    fwrite($file, getmypid());
     fclose($file);
 }
 
@@ -184,12 +201,16 @@ function switchfile($file)
 
 function connect()
 {
-    global $ogn_host, $ogn_port, $ogn_user, $ogn_software, $ogn_software_version, $ogn_filter;
+    global $ogn_host, $ogn_port, $ogn_user, $ogn_software, $ogn_software_version, $ogn_filter, $lockfile;
 
     $fp = fsockopen($ogn_host, $ogn_port, $errno, $errstr, 30);
 
     if (!$fp)
-        die("$errstr ($errno)<br />\n");
+	{
+		unlink($lockfile); // remove lock file
+        writelog("ERROR", "unable to connect: $errstr ($errno)");
+        die;
+	}
 
     // login
     $loginStr = "user " . $ogn_user;
@@ -258,3 +279,4 @@ function getFlag($details, $flag_mask)
     else
         return false;
 }
+?>

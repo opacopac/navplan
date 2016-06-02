@@ -14,6 +14,7 @@ function trafficService($http)
 	// return api reference
 	return {
 		readTraffic: readTraffic,
+		calcTimestamps: calcTimestamps, // TODO: temp => ms direkt in php
 		readAcDetails: readAcDetails,
 		tryReadAcCallsign: tryReadAcCallsign
 	};
@@ -59,5 +60,25 @@ function trafficService($http)
 
 
 		return undefined;
+	}
+
+
+	function calcTimestamps(acList)
+	{
+		for (var acAddress in acList)
+		{
+			var ac = acList[acAddress];
+
+			for (var j = 0; j < ac.positions.length; j++)
+				ac.positions[j].timestamp = getMs(ac.positions[j].time);
+		}
+
+
+		function getMs(timeString)
+		{
+			var timeParts = timeString.split(":", 3);
+			var today = new Date();
+			return Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), timeParts[0], timeParts[1], timeParts[2]);
+		}
 	}
 }

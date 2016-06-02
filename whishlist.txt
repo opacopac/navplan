@@ -1,14 +1,14 @@
 - about: data versions
-- attributions bigger
 - map: sectors
 - charts: adjust position
 - airspace: altitudes
-- ognlistener: autostart
 - openaip: basel airport
 - openaip: airspace black/whitelist
-- cams: add more
+- cams: add more (all aps)
 - m / ft
 - import data admin
-- metar/taf/notam
+- notam
+- taf LSMP, LSMM, etc
 - frequency table
 - click offline => coordinates
+- dialog: are you sure?

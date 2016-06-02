@@ -22,12 +22,14 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 		if (storedGlobalData) // load session data
 		{
 			var data = json2obj(storedGlobalData);
-			
+
+			$scope.globalData.initialData = false;
 			$scope.globalData.user = data.user;
 			$scope.globalData.pilot = data.pilot;
 			$scope.globalData.aircraft = data.aircraft;
 			$scope.globalData.fuel = data.fuel;
 			$scope.globalData.navplan =  data.navplan;
+			$scope.globalData.track =  data.track;
 			$scope.globalData.settings = data.settings;
 			$scope.globalData.currentMapPos = data.currentMapPos;
 			$scope.globalData.selectedWp = data.selectedWp;
@@ -43,11 +45,13 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 		}
 		else // load default values
 		{
+			$scope.globalData.initialData = true;
 			$scope.globalData.user =
 			{
 				email: undefined,
 				token: undefined,
-				navplanList: []
+				navplanList: [],
+				trackList: []
 			};
 			$scope.globalData.pilot =
 			{
@@ -74,6 +78,10 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 				alternate: undefined,
 				selectedWaypoint: undefined
 			};
+			$scope.globalData.track =
+			{
+				positions: [ ]
+			};
 			$scope.globalData.settings =
 			{
 				variation: 2
@@ -86,6 +94,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 			$scope.globalData.selectedWp = undefined;
 			$scope.globalData.wpBackup = undefined;
 			$scope.globalData.trafficTimer = undefined;
+			$scope.globalData.clockTimer = undefined;
 			$scope.globalData.showLocation = false;
 			$scope.globalData.showTraffic = false;
 			$scope.globalData.offlineCache = false;
@@ -115,7 +124,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 	
 	$scope.initUser = function()
 	{
-		var storedUser = window.localStorage.getItem("user");
+		/*var storedUser = window.localStorage.getItem("user");
 
 		if (storedUser)
 		{
@@ -123,7 +132,14 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 
 			if ($scope.globalData.user.email && $scope.globalData.user.token)
 				$scope.loginUser($scope.globalData.user.email, $scope.globalData.user.token, true)
-		}
+		}*/
+
+		// var user
+		var email = getCookie("email");
+		var token = getCookie("token");
+
+		if (email && token)
+			$scope.loginUser(email, token, true); // TODO: remember-flag korrigieren
 
 		// cached waypoints
 		var cachewaypoints = getCookie("cachewaypoints");
@@ -145,6 +161,20 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 	};
 
 
+	$scope.initPosition = function()
+	{
+		if ($scope.globalData.initialData && navigator.geolocation)
+			navigator.geolocation.getCurrentPosition($scope.setPosition);
+	};
+
+
+	$scope.setPosition = function(position)
+	{
+		mapService.setMapPosition(position.coords.latitude, position.coords.longitude, 11);
+		$scope.globalData.currentMapPos = mapService.getMapPosition();
+	};
+
+
 	$scope.readNavplanList = function()
 	{
 		var email = $scope.globalData.user.email;
@@ -161,18 +191,42 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 				console.error("ERROR", status, data);
 			});
 	};
-	
-	
+
+
+	$scope.readTrackList = function()
+	{
+		userService.readUserTrackList()
+			.then(
+				function (response) {
+					if (!response.data || !response.data.tracks)
+						console.error("ERROR reading tracks", response.status, response.data);
+					else
+						$scope.globalData.user.trackList = response.data.tracks;
+				},
+				function (response) {
+					console.error("ERROR reading tracks: ", response.status, response.data);
+				}
+			);
+	};
+
+
 	$scope.loginUser = function(email, token, remember)
 	{
 		$scope.globalData.user.email = email;
 		$scope.globalData.user.token = token;
 		$scope.readNavplanList();
+		$scope.readTrackList();
 
-		//TODO: read user data (name, plane, settings, etc.)
-
+		/*if (remember)
+			window.localStorage.setItem("user", obj2json($scope.globalData.user));*/
+		
+		var rememberDays = 0;
+		
 		if (remember)
-			window.localStorage.setItem("user", obj2json($scope.globalData.user));
+			rememberDays = 90;
+		
+		setCookie("email", email, rememberDays);
+		setCookie("token", token, rememberDays);
 
 		$scope.showSuccessMessage("Welcome " + email + "!");
 	};
@@ -189,8 +243,11 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 		$scope.globalData.user.email = undefined;
 		$scope.globalData.user.token = undefined;
 		$scope.globalData.user.navplanList = [];
+		$scope.globalData.user.trackList = [];
 
-		window.localStorage.removeItem("user");
+		//window.localStorage.removeItem("user");
+		deleteCookie("email");
+		deleteCookie("token");
 		
 		$scope.showSuccessMessage("User Logged out successfully!");
 	};
@@ -203,11 +260,18 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 	};
 
 	
-	$scope.updateWpList = function()
+	$scope.updateWaypoints = function()
 	{
-		waypointService.updateWpList($scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.settings.variation, $scope.globalData.aircraft.speed);
+		waypointService.recalcWaypoints($scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.settings.variation, $scope.globalData.aircraft.speed);
 		fuelService.updateFuelCalc($scope.globalData.fuel, $scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.aircraft);
-		mapService.updateTrack($scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.settings);
+		mapService.updateWpTrack($scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.settings);
+	};
+
+
+	$scope.updateFlightTrack = function()
+	{
+		if ($scope.globalData.track && $scope.globalData.track.positions)
+			mapService.updateFlightTrack($scope.globalData.track.positions);
 	};
 
 	
@@ -278,41 +342,62 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 	};
 
 	
-	$scope.onClearAllWaypointsClicked = function()
+	$scope.onTrashClicked = function()
 	{
 		$scope.globalData.navplan = 
 		{
 			id: undefined,
 			name: '',
-			waypoints: [ ],
+			waypoints: [],
 			selectedWaypoint: undefined,
 			alternate: undefined
 		};
 		$scope.globalData.selectedWp = undefined;
+
+		$scope.globalData.track =
+		{
+			positions: []
+		};
 	
-		$scope.updateWpList();
+		$scope.updateWaypoints();
+		$scope.updateFlightTrack();
 		$scope.discardCache();
 
 		mapService.clearAllCharts();
 	};
 
 
-	$scope.onKmlClicked = function()
+	$scope.exportKml = function()
 	{
 		var waypoints = [];
 
-		for (var i = 0; i < $scope.globalData.navplan.waypoints.length; i++)
-		{
-			var wp = $scope.globalData.navplan.waypoints[i];
+		if ($scope.globalData.navplan && $scope.globalData.navplan.waypoints) {
+			for (var i = 0; i < $scope.globalData.navplan.waypoints.length; i++) {
+				var wp = $scope.globalData.navplan.waypoints[i];
 
-			waypoints.push({
-				name: wp.checkpoint,
-				lat: wp.latitude,
-				lon: wp.longitude
-			});
+				waypoints.push({
+					name: wp.checkpoint,
+					lat: wp.latitude,
+					lon: wp.longitude
+				});
+			}
 		}
 
-		sendPostForm('php/navplanKml.php', '_blank', 'waypoints', JSON.stringify(waypoints));
+		var flightPositions = [];
+
+		if ($scope.globalData.track && $scope.globalData.track.positions) {
+			for (var j = 0; j < $scope.globalData.track.positions.length; j++) {
+				var pos = $scope.globalData.track.positions[j];
+
+				flightPositions.push({
+					lat: pos.latitude,
+					lon: pos.longitude,
+					alt: pos.altitude
+				});
+			}
+		}
+
+		sendPostForm('php/navplanKml.php', '_blank', 'data', JSON.stringify({ wpPositions: waypoints, flightPositions: flightPositions }));
 
 		//window.open('php/navplanKml.php?waypoints=' + encodeURIComponent(JSON.stringify(waypoints)), "_blank");
 	};
@@ -413,11 +498,33 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 	};
 
 
+	$scope.onClockTimer = function()
+	{
+		var timer = $scope.globalData.timer;
+
+		if (!timer)
+			return;
+
+		// current time
+		var d = new Date();
+		d.setMilliseconds(0);
+		timer.currentTime =  d;
+		timer.currentTimeString = getHourMinSecString(d);
+
+		// elapsed time
+		if (timer.stopTime)
+			timer.elapsedTimeString = "+" + getMinSecString(timer.currentTime - timer.stopTime);
+
+		$scope.$apply();
+	};
+	
+	
 	// init stuff
 	$scope.initGlobalData();
 	$scope.initUser();
 	$scope.initDisclaimer();
-	
+	$scope.initPosition();
+
 	// event listeners
 	window.addEventListener("beforeunload", $scope.onLeaving);
 	window.addEventListener("pagehide", $scope.onLeaving);

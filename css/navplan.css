@@ -1,5 +1,5 @@
 html, body {
-  font-family: Arial, Helvetica, sans-serif;
+  /*font-family: Arial, Helvetica, sans-serif;*/
   width: 100%;
   height: 100%;
 }
@@ -13,7 +13,7 @@ html, body {
 }
 
 .messages {
-  top: 130px;
+  bottom: 50px;
   position: absolute;
   margin-left: auto;
   margin-right: auto;
@@ -22,11 +22,15 @@ html, body {
   z-index: 30;
 }
 
+.alert {
+  box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.4);
+}
+
 #map {
-	height: 95%;
-	width: 100%;
-	position: fixed;
-    z-index: 10;
+  height: 95%;
+  width: 100%;
+  position: fixed;
+  z-index: 10;
 }
 .mapsearch {
   position: absolute;
@@ -78,6 +82,36 @@ html, body {
   top: 175px;
   right: 10px;
   z-index: 20;
+}
+
+.mapbutton-timer {
+  position: absolute;
+  top: 50px;
+  left: 70px;
+  z-index: 20;
+}
+
+.map-currenttime {
+  font-size: 18px;
+  font-weight: bold;
+  text-shadow: -1px 0px #FFFFFF, 1px 0px #FFFFFF, 0px -1px #FFFFFF, 0px 1px #FFFFFF;
+  color: #000000;
+}
+
+.map-stoptime {
+  font-size: large;
+  font-style: italic;
+  font-weight: bold;
+  text-shadow: -1px 0px #FFFFFF, 1px 0px #FFFFFF, 0px -1px #FFFFFF, 0px 1px #FFFFFF;
+  color: #666666;
+}
+
+.map-timer {
+  font-size: large;
+  font-style: italic;
+  font-weight: bold;
+  text-shadow: -1px 0px #FFFFFF, 1px 0px #FFFFFF, 0px -1px #FFFFFF, 0px 1px #FFFFFF;
+  color: #FF0000;
 }
 
 .btn-circle {
@@ -196,4 +230,16 @@ html, body {
 
 .ol-popup-closer:after {
   content: "X";
+}
+
+.ol-attribution {
+  text-align: left;
+}
+
+.ol-attribution ul {
+  font-size: 1.2rem;
+}
+
+.ol-attribution li {
+  display: block;
 }

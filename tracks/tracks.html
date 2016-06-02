@@ -1,0 +1,29 @@
+<div class="container nonmapcontent">
+	<div class="table-responsive">
+		<table id="track_list" class="table table-condensed table-striped table-hover">
+			<thead>
+				<tr>
+					<th>Recorded</th>
+					<th>Track</th>
+					<th>&nbsp;</th>
+				</tr>
+			</thead>
+			<tbody>
+				<!-- trip checkpoints -->
+				<tr ng-repeat="track in globalData.user.trackList as results" ng-class="{ success: track.id == globalData.track.id }" ng-click="onTrackSelected(track);" title="select to show on map">
+					<td>{{ getDateString(track.timestamp) }}</td>
+					<td>{{ track.name }}</td>
+					<td>
+						<button type="button" class="btn btn-primary btn-circle" ng-click="$event.preventDefault(); $event.stopPropagation(); onKmlClicked(track);" title="export kml track for google earth"><i class="glyphicon glyphicon-globe"></i></button>
+						<button type="button" class="btn btn-warning btn-circle" ng-click="$event.stopPropagation(); onEditTrackClicked(track);" title="edit track"><i class="glyphicon glyphicon-edit"></i></button>
+						<button type="button" class="btn btn-danger btn-circle" ng-click="$event.stopPropagation(); onRemoveTrackClicked(track);" title="delete track"><i class="glyphicon glyphicon-remove"></i></button>
+					</td>
+				</tr>
+				<!-- empty list -->
+				<tr ng-if="results.length == 0">
+					<td colspan="9"><i>No tracks recorded yet.</i></td>
+				</tr>
+			</tbody>			
+		</table>
+	</div> 
+</div>
