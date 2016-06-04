@@ -1777,10 +1777,41 @@ function mapService($http, trafficService, weatherService)
 
 		function getTileUrl(coordinate)
 		{
-			var baseUrls = [ "//a.tile.opentopomap.org/", "//b.tile.opentopomap.org/", "//c.tile.opentopomap.org/" ];
-			var n = (coordinate[0] + coordinate[1] + (-coordinate[2] - 1)) % baseUrls.length;
+			var otmBaseUrls = [ "//a.tile.opentopomap.org/", "//b.tile.opentopomap.org/", "//c.tile.opentopomap.org/" ];
+			var localBaseUrl = "maptiles/";
+			var z = coordinate[0];
+			var y = coordinate[1];
+			var x = (-coordinate[2] - 1);
 
-			return baseUrls[n] + coordinate[0] + "/" + coordinate[1] + "/" + (-coordinate[2] - 1) + ".png";
+			if (isLocalTile(z, y, x))
+			{
+				return localBaseUrl + z + "/" + y + "/" + x + ".png";
+			}
+			else
+			{
+				var n = (z + y + x) % otmBaseUrls.length;
+				return otmBaseUrls[n] + z + "/" + y + "/" + x + ".png";
+			}
+		}
+
+
+		function isLocalTile(z, y, x)
+		{
+			var zrange = [ 6, 13 ];
+			var zoomfact = Math.pow(2, (z - 6));
+			var yrange = [33 * zoomfact, 33 * zoomfact + zoomfact - 1 ];
+			var xrange = [22 * zoomfact, 22 * zoomfact + zoomfact - 1 ];
+
+			if (z < zrange[0] || z > zrange[1])
+				return false;
+
+			if (y < yrange[0] || y > yrange[1])
+				return false;
+
+			if (x < xrange[0] || x > xrange[1])
+				return false;
+
+			return true;
 		}
 	}
 
