@@ -26,7 +26,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 
 	$scope.searchGeonamesByValue = function(search)
 	{
-		return geonameService.searchGeonamesByValue(search, $scope.globalData.user.email, $scope.globalData.user.token);
+		return geonameService.searchGeonamesByValue(search);
 	};
 
 	
@@ -55,7 +55,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 	
 	$scope.onMapClicked = function(event, clickCoordinates, maxRadius)
 	{
-		geonameService.searchGeonamesByPosition(clickCoordinates[1], clickCoordinates[0], maxRadius, $scope.globalData.user.email, $scope.globalData.user.token)
+		geonameService.searchGeonamesByPosition(clickCoordinates[1], clickCoordinates[0], maxRadius)
 			.success(function(data) {
 				if (data.geonames)
 				{
@@ -63,10 +63,10 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 					mapService.drawGeopointSelection(data.geonames, event.pixel);
 				}
 				else
-					console.error("ERROR", data);
+					console.error("ERROR searching geonames", data);
 			})
 			.error(function(data, status) {
-				console.error("ERROR", status, data);
+				console.error("ERROR searching geonames", status, data);
 			});
 	};
 
@@ -212,7 +212,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 							}
 						},
 						function (response) {
-							console.error("ERROR", response.status, response.data);
+							console.error("ERROR reading ac details", response.status, response.data);
 						}
 					)
 			}
@@ -436,7 +436,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 	{
 		var positions = shrinkPositions(locationService.getLastPositions());
 
-		userService.createUserTrack($scope.saveTrackName, positions, $scope.globalData.user.email, $scope.globalData.user.token)
+		userService.createUserTrack($scope.saveTrackName, positions)
 			.then(
 				function (response) {
 					if (response.data && response.data.success == 1) {
@@ -776,9 +776,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		$scope.onMapClicked,
 		$scope.onFeatureSelected,
 		$scope.onMapMoveEnd,
-		$scope.globalData.currentMapPos,
-		$scope.globalData.user.email,
-		$scope.globalData.user.token);
+		$scope.globalData.currentMapPos);
 
 	$scope.updateWaypoints();
 	$scope.updateFlightTrack();

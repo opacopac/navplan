@@ -2,9 +2,7 @@
 	include "config.php";
 	include "helper.php";
 
-	$input = json_decode(file_get_contents('php://input'), true);
-
-	switch($input["action"])
+	switch($_GET["action"])
 	{
 		case "readNonAdWebcams":
 			readNonAdWebcams();

@@ -1,35 +1,37 @@
 <?php
 	include "config.php";
 	include "helper.php";
-	include "adinfo_helper.php";
 
-	$raw_input = file_get_contents('php://input');
-	$input = json_decode($raw_input, true);
-	
-	switch($input["action"])
+	$conn = openDb();
+
+	switch($_GET["action"])
 	{
 		case "searchByName":
-			searchByName();
+			searchByName(
+			    checkEscapeString($conn, $_GET["search"], 1, 100),
+			    $_COOKIE["email"] ? checkEscapeEmail($conn, $_COOKIE["email"]) : NULL,
+                $_COOKIE["token"] ? checkEscapeToken($conn, $_COOKIE["token"]) : NULL
+			);
 			break;
 		case "searchByPosition":
-			searchByPosition();
+			searchByPosition(
+			    checkNumeric($_GET["lat"]),
+			    checkNumeric($_GET["lon"]),
+			    checkNumeric($_GET["rad"]),
+			    $_COOKIE["email"] ? checkEscapeEmail($conn, $_COOKIE["email"]) : NULL,
+                $_COOKIE["token"] ? checkEscapeToken($conn, $_COOKIE["token"]) : NULL
+            );
 			break;
 		default:
-			die("missing or unknown action!");
+			die("unknown action!");
 	}
+
 	
-	
-	function searchByName()
+	function searchByName($search, $email, $token)
 	{
-		global $input;
+		global $conn;
 
-		$conn = openDb();
 
-		$search = mysqli_real_escape_string($conn, $input["search"]);
-		$email = mysqli_real_escape_string($conn, $input["email"]);
-		$token = mysqli_real_escape_string($conn, $input["token"]);
-	
-	
 		// cols: type, id, name, wpname, frequency, callsign, airport_icao, latitude, longitude, elevation
 	
 		$query = "(SELECT 'airport' AS type, 0 AS id, CONCAT(icao, ' (', name ,')') AS name, icao AS wpname, NULL AS frequency, NULL AS callsign, icao AS airport_icao, latitude, longitude, elevation FROM openaip_airports WHERE";
@@ -53,14 +55,17 @@
 		$query .= " ORDER BY name ASC";
 		$query .= " LIMIT 10)";
 
-		$query .= " UNION ";
-		
-		$query .= "(SELECT 'user' AS type, uwp.id, name, name AS wpname, NULL AS frequency, NULL AS callsign, NULL AS airport_icao, latitude, longitude, NULL AS elevation FROM user_waypoints AS uwp";
-		$query .= " INNER JOIN users AS usr ON uwp.user_id = usr.id";
-		$query .= " WHERE usr.email = '" . $email . "' AND usr.token = '" . $token . "'";
-		$query .= " AND name LIKE '" . $search . "%'";
-		$query .= " ORDER BY name ASC";
-		$query .= " LIMIT 10)";
+        if ($email && $token)
+        {
+            $query .= " UNION ";
+
+            $query .= "(SELECT 'user' AS type, uwp.id, name, name AS wpname, NULL AS frequency, NULL AS callsign, NULL AS airport_icao, latitude, longitude, NULL AS elevation FROM user_waypoints AS uwp";
+            $query .= " INNER JOIN users AS usr ON uwp.user_id = usr.id";
+            $query .= " WHERE usr.email = '" . $email . "' AND usr.token = '" . $token . "'";
+            $query .= " AND name LIKE '" . $search . "%'";
+            $query .= " ORDER BY name ASC";
+            $query .= " LIMIT 10)";
+		}
 
 		$query .= " UNION ";
 		
@@ -82,19 +87,11 @@
 	}
 	
 	
-	function searchByPosition()
+	function searchByPosition($lat, $lon, $rad, $email, $token)
 	{
-		global $input;
+		global $conn;
 
-		$conn = openDb();
 
-		$lat = mysqli_real_escape_string($conn, $input["lat"]);
-		$lon = mysqli_real_escape_string($conn, $input["lon"]);
-		$rad = mysqli_real_escape_string($conn, $input["rad"]);
-		$email = mysqli_real_escape_string($conn, $input["email"]);
-		$token = mysqli_real_escape_string($conn, $input["token"]);
-
-	
 		// cols: sortorder, type, id, name, frequency, callsign, latitude, longitude, elevation
 
 		$query .= "SELECT 1 AS sortOrder, 'airport' AS type, 0 AS id, CONCAT(icao, ' (', name ,')') AS name, icao as wpname, NULL AS frequency, NULL AS callsign, icao AS airport_icao, latitude, longitude, elevation FROM openaip_airports WHERE";
@@ -118,16 +115,19 @@
 		$query .= " AND latitude < " . ($lat + $rad);
 		$query .= " AND longitude > " . ($lon - $rad);
 		$query .= " AND longitude < " . ($lon + $rad);
-		
-		$query .= " UNION ";
-		
-		$query .= "SELECT 4 AS sortOrder, 'user' AS type, uwp.id, name, name AS wpname, NULL AS frequency, NULL AS callsign, NULL AS airport_icao, latitude, longitude, NULL AS elevation FROM user_waypoints AS uwp";
-		$query .= " INNER JOIN users AS usr ON uwp.user_id = usr.id";
-		$query .= " WHERE usr.email = '" . $email . "' AND usr.token = '" . $token . "'";
-		$query .= " AND latitude > " . ($lat - $rad);
-		$query .= " AND latitude < " . ($lat + $rad);
-		$query .= " AND longitude > " . ($lon - $rad);
-		$query .= " AND longitude < " . ($lon + $rad);
+
+        if ($email && $token)
+        {
+            $query .= " UNION ";
+
+            $query .= "SELECT 4 AS sortOrder, 'user' AS type, uwp.id, name, name AS wpname, NULL AS frequency, NULL AS callsign, NULL AS airport_icao, latitude, longitude, NULL AS elevation FROM user_waypoints AS uwp";
+            $query .= " INNER JOIN users AS usr ON uwp.user_id = usr.id";
+            $query .= " WHERE usr.email = '" . $email . "' AND usr.token = '" . $token . "'";
+            $query .= " AND latitude > " . ($lat - $rad);
+            $query .= " AND latitude < " . ($lat + $rad);
+            $query .= " AND longitude > " . ($lon - $rad);
+            $query .= " AND longitude < " . ($lon + $rad);
+        }
 		
 		$query .= " UNION ";
 		

@@ -11,33 +11,33 @@
             if ($_GET["id"])
             {
                 readUserTrack(
-                    checkId($conn, intval($_GET["id"])),
-                    checkEmail($conn, $_COOKIE["email"]),
-                    checkToken($conn, $_COOKIE["token"])
+                    checkId(intval($_GET["id"])),
+                    checkEscapeEmail($conn, $_COOKIE["email"]),
+                    checkEscapeToken($conn, $_COOKIE["token"])
                 );
             }
             else
             {
                 readUserTrackList(
-                    checkEmail($conn, $_COOKIE["email"]),
-                    checkToken($conn, $_COOKIE["token"])
+                    checkEscapeEmail($conn, $_COOKIE["email"]),
+                    checkEscapeToken($conn, $_COOKIE["token"])
                 );
             }
             break;
         case 'POST':
             $input = json_decode(file_get_contents('php://input'), true);
             createUserTrack(
-                checkEmail($conn, $_COOKIE["email"]),
-                checkToken($conn, $_COOKIE["token"]),
-                checkString($conn, $input["name"], 1, 100),
-                checkString($conn, json_encode($input["positions"], JSON_NUMERIC_CHECK), 1, NULL)
+                checkEscapeEmail($conn, $_COOKIE["email"]),
+                checkEscapeToken($conn, $_COOKIE["token"]),
+                checkEscapeString($conn, $input["name"], 1, 100),
+                checkEscapeString($conn, json_encode($input["positions"], JSON_NUMERIC_CHECK), 1, NULL)
             );
             break;
         case 'DELETE':
             deleteUserTrack(
-                checkId($conn, intval($_GET["id"])),
-                checkEmail($conn, $_COOKIE["email"]),
-                checkToken($conn, $_COOKIE["token"])
+                checkId(intval($_GET["id"])),
+                checkEscapeEmail($conn, $_COOKIE["email"]),
+                checkEscapeToken($conn, $_COOKIE["token"])
             );
             break;
         default:
