@@ -109,23 +109,5 @@
 		</p>
 	</div>
 </div>
-<!-- save track dialog -->
-<div class="modal fade" id="saveTrackDialog" tabindex="-1" role="dialog" aria-labelledby="saveTrackModalLabel">
-	<div class="modal-dialog" role="document">
-		<div class="modal-content">
-			<div class="modal-header">
-				<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-				<h4 class="modal-title" id="saveTrackModalLabel">Save Recorded Track?</h4>
-			</div>
-			<div class="modal-body">
-				Track Name: <input type="text" class="form-control" ng-model="saveTrackName" />
-			</div>
-			<div class="modal-footer">
-				<button type="button" class="btn btn-primary" data-dismiss="modal" ng-click="onSaveTrackClicked()" ng-disabled="!saveTrackName"><i class="glyphicon glyphicon-save"></i> Save Track</button>
-				<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-			</div>
-		</div>
-	</div>
-</div>
 <!-- map -->
 <div id="map" class="map"></div>

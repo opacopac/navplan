@@ -372,18 +372,13 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		$scope.stopFollowTraffic();
 
 		if ($scope.globalData.showLocation)
+		{
 			$scope.startLocationService();
+		}
 		else
 		{
 			$scope.stopLocationService();
-
-			if ($scope.isLoggedIn())
-			{
-				if ($scope.globalData.navplan && $scope.globalData.navplan.title)
-					$scope.saveTrackName = $scope.globalData.navplan.title;
-
-				$('#saveTrackDialog').modal('show');
-			}
+			$scope.storeTrackLocal();
 		}
 	};
 
@@ -432,24 +427,22 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 	};
 
 
-	$scope.onSaveTrackClicked = function()
+	$scope.storeTrackLocal = function()
 	{
-		var positions = shrinkPositions(locationService.getLastPositions());
+		var lastTrack = {
+			timestamp: Math.floor(Date.now() / 1000),
+			name: "",
+			positions: shrinkPositions(locationService.getLastPositions())
+		};
 
-		userService.createUserTrack($scope.saveTrackName, positions)
-			.then(
-				function (response) {
-					if (response.data && response.data.success == 1) {
-						$scope.showSuccessMessage("Track successfully saved!");
-						$scope.readTrackList();
-					}
-					else
-						console.error("ERROR saving track:", response.status, response.data);
-				},
-				function (response) {
-					console.error("ERROR saving track:", response.status, response.data);
-				}
-			);
+		if ($scope.isLoggedIn()) {
+			if ($scope.globalData.navplan && $scope.globalData.navplan.title)
+				lastTrack.name = $scope.globalData.navplan.title;
+		}
+
+		localStorage.setItem("lasttrack", obj2json(lastTrack));
+
+		$scope.showSuccessMessage("Track sucessfully stored in 'tracks' tab!");
 	};
 
 

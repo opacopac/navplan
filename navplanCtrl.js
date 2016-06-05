@@ -229,12 +229,6 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 	};
 	
 	
-	$scope.isLoggedIn = function()
-	{
-		return ($scope.globalData.user.email && $scope.globalData.user.token);
-	};
-
-	
 	$scope.logoutUser = function()
 	{
 		$scope.globalData.user.email = undefined;
@@ -247,6 +241,18 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 		deleteCookie("token");
 		
 		$scope.showSuccessMessage("User Logged out successfully!");
+	};
+
+
+	$scope.isLoggedIn = function()
+	{
+		return ($scope.globalData.user.email && $scope.globalData.user.token);
+	};
+
+
+	$scope.hasLastTrack = function()
+	{
+		return (localStorage.getItem('lasttrack') !== null);
 	};
 
 
@@ -271,7 +277,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 			mapService.updateFlightTrack($scope.globalData.track.positions);
 	};
 
-	
+
 	$scope.editSelectedWaypoint = function ()
 	{
 		$scope.backupSelectedWaypoint();

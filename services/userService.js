@@ -22,9 +22,10 @@ function userService($http)
 		deleteNavplan: deleteNavplan,
 		saveUserWaypoint: saveUserWaypoint,
 		deleteUserWaypoint: deleteUserWaypoint,
-		createUserTrack: createUserTrack,
 		readUserTrackList: readUserTrackList,
 		readUserTrack: readUserTrack,
+		createUserTrack: createUserTrack,
+		updateUserTrack: updateUserTrack,
 		deleteUserTrack: deleteUserTrack
 	};
 	
@@ -98,9 +99,15 @@ function userService($http)
 	}
 
 
-	function createUserTrack(name, positions)
+	function createUserTrack(timestamp, name, positions)
 	{
-		return $http.post('php/userTrack.php', obj2json({ name: name, positions: positions }));
+		return $http.post('php/userTrack.php', obj2json({ timestamp: timestamp, name: name, positions: positions }));
+	}
+
+
+	function updateUserTrack(id, name)
+	{
+		return $http.put('php/userTrack.php', obj2json({ id: id, name: name }));
 	}
 
 
