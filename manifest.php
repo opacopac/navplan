@@ -196,17 +196,46 @@
 	
 	function getTileUrl($lat, $lon, $zoom)
 	{
-		$urlPrefix = array(
+	    $localBaseUrl = "maptiles/";
+		$otmBaseUrl = array(
 			"//a.tile.opentopomap.org/",
 			"//b.tile.opentopomap.org/",
 			"//c.tile.opentopomap.org/"
 		);
 
-		$xtile = floor((($lon + 180) / 360) * pow(2, $zoom));
-		$ytile = floor((1 - log(tan(deg2rad($lat)) + 1 / cos(deg2rad($lat))) / pi()) /2 * pow(2, $zoom));
-		$n = ($zoom + $ytile + $xtile) % 3;
-		
-		return $urlPrefix[$n] . $zoom . "/" . $xtile . "/" . $ytile . ".png";
+		$ytile = floor((($lon + 180) / 360) * pow(2, $zoom));
+		$xtile = floor((1 - log(tan(deg2rad($lat)) + 1 / cos(deg2rad($lat))) / pi()) /2 * pow(2, $zoom));
+
+		if (isLocalTile($zoom, $ytile, $xtile))
+		{
+            return $localBaseUrl . $zoom . "/" . $ytile . "/" . $xtile . ".png";
+		}
+		else
+		{
+            $n = ($zoom + $xtile + $ytile) % 3;
+            return $otmBaseUrl[$n] . $zoom . "/" . $ytile . "/" . $xtile . ".png";
+        }
+	}
+
+
+	function isLocalTile($z, $y, $x)
+	{
+	    $zrange = [6, 13];
+
+        if ($z < $zrange[0] || $z > $zrange[1])
+            return false;
+
+        $zoomfact = pow(2, ($z - 6));
+        $yrange = [33 * $zoomfact, 33 * $zoomfact + $zoomfact - 1 ];
+        $xrange = [22 * $zoomfact, 22 * $zoomfact + $zoomfact - 1 ];
+
+        if ($y < $yrange[0] || $y > $yrange[1])
+            return false;
+
+        if ($x < $xrange[0] || $x > $xrange[1])
+            return false;
+
+        return true;
 	}
 	
 	
