@@ -136,9 +136,9 @@ function shrinkPositions(positions)
 
 	for (var i = 0; i < positions.length; i++)
 		shrinkedpos.push([
-			positions[i].latitude.toFixed(7),
-			positions[i].longitude.toFixed(7),
-			positions[i].altitude ? positions[i].altitude.toFixed(1) : null,
+			roundToDigits(positions[i].latitude, 7),
+			roundToDigits(positions[i].longitude, 7),
+			positions[i].altitude ? roundToDigits(positions[i].altitude, 1) : null,
 			positions[i].timestamp
 		]);
 
@@ -159,6 +159,12 @@ function unshrinkPositions(positions)
 		});
 
 	return unshrinkedpos;
+}
+
+
+function roundToDigits(num, digits)
+{
+	return Math.round(num * Math.pow(10, digits)) / Math.pow(10, digits);
 }
 
 

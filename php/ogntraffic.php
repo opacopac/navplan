@@ -5,105 +5,81 @@
     $dumpfiles[1] = './ognlistener/ogndump1.txt';
     $dumpfileMaxAgeSec = 5 * 60;
 
-	$raw_input = file_get_contents('php://input');
-	$input = json_decode($raw_input, true);
+    $minlat = checkNumeric($_GET["minlat"]);
+    $maxlat = checkNumeric($_GET["maxlat"]);
+    $minlon = checkNumeric($_GET["minlon"]);
+    $maxlon = checkNumeric($_GET["maxlon"]);
+    $maxagesec = checkNumeric($_GET["maxagesec"]);
 
-	switch($input["action"])
-	{
-		case "read":
-			read();
-			break;
-		default:
-			die("missing or unknown action!");
-	}
+    $aclist = array();
 
+    foreach ($dumpfiles as $dumpfile)
+    {
+        if(!file_exists($dumpfile))
+        {
+            tryRestartListener();
+            die("ERROR: dump file not found, trying to restart ogn listener");
+        }
 
-	function read()
-	{
-		global $input, $dumpfiles, $dumpfileMaxAgeSec;
+        if (time() > filemtime($dumpfile) + $dumpfileMaxAgeSec)
+        {
+            tryRestartListener();
+            die("ERROR: dumpfile too old, trying to restarting ogn listener");
+        }
 
-		$minlat = floatval($input["minlat"]);
-		$maxlat = floatval($input["maxlat"]);
-		$minlon = floatval($input["minlon"]);
-		$maxlon = floatval($input["maxlon"]);
-		$maxagesec = intval($input["maxagesec"]);
+        $file = fopen($dumpfile, "r");
 
-		$aclist = array();
+        while (!feof($file))
+        {
+            $line = fgets($file);
+            $msg = json_decode($line, true);
 
-	    foreach ($dumpfiles as $dumpfile)
-	    {
-			if(!file_exists($dumpfile))
-			{
-			    tryRestartListener();
-				die("ERROR: dump file not found, trying to restart ogn listener");
-			}
+            if ($msg["latitude"] > $maxlat || $msg["latitude"] < $minlat)
+                continue;
 
-			if (time() > filemtime($dumpfile) + $dumpfileMaxAgeSec)
-			{
-			    tryRestartListener();
-			    die("ERROR: dumpfile too old, trying to restarting ogn listener");
-			}
+            if ($msg["longitude"] > $maxlon || $msg["longitude"] < $minlon)
+                continue;
 
-	        $file = fopen($dumpfile, "r");
+            if (gmmktime() - strtotime($msg["time"] . " UTC") > $maxagesec)
+                continue;
 
-	        while (!feof($file))
-	        {
-	            $line = fgets($file);
-	            $msg = json_decode($line, true);
+            if (!$aclist[$msg["id"]])
+            {
+                $ac = array("id" => $msg["id"], "addresstype" => $msg["addresstype"], "actype" => $msg["actype"], "positions" => array());
+                $aclist[$msg["id"]] = $ac;
+            }
 
-	            if ($msg["latitude"] > $maxlat || $msg["latitude"] < $minlat)
-	                continue;
+            $position = array("time" => $msg["time"], "latitude" => $msg["latitude"], "longitude" => $msg["longitude"], "altitude" => round($msg["altitude"]));
 
-	            if ($msg["longitude"] > $maxlon || $msg["longitude"] < $minlon)
-	                continue;
+            $poscount = count($aclist[$msg["id"]]["positions"]);
+            if ($poscount > 1)
+            {
+                $lastpos = $aclist[$msg["id"]]["positions"][$poscount - 1];
 
-	            if (gmmktime() - strtotime($msg["time"] . " UTC") > $maxagesec)
-	                continue;
+                // skip identical times
+                if ($lastpos["time"] == $position["time"])
+                    continue;
 
-                if (!$aclist[$msg["id"]])
-                {
-                    $ac = array("id" => $msg["id"], "addresstype" => $msg["addresstype"], "actype" => $msg["actype"], "positions" => array());
-                    $aclist[$msg["id"]] = $ac;
-                }
+                // skip identical positions
+                if ($lastpos["latitude"] == $position["latitude"] && $lastpos["longitude"] == $position["longitude"])
+                    continue;
+            }
 
-                $position = array("time" => $msg["time"], "latitude" => $msg["latitude"], "longitude" => $msg["longitude"], "altitude" => round($msg["altitude"]));
+            array_push($aclist[$msg["id"]]["positions"], $position);
+        }
+    }
 
-                $poscount = count($aclist[$msg["id"]]["positions"]);
-                if ($poscount > 1)
-                {
-                    $lastpos = $aclist[$msg["id"]]["positions"][$poscount - 1];
+    foreach ($aclist as $ac)
+    {
+        usort($aclist[$ac["id"]]["positions"], "timecompare");
+    }
 
-                    // skip identical times
-                    if ($lastpos["time"] == $position["time"])
-                        continue;
-
-                    // skip identical positions
-                    if ($lastpos["latitude"] == $position["latitude"] && $lastpos["longitude"] == $position["longitude"])
-                        continue;
-                }
-
-                array_push($aclist[$msg["id"]]["positions"], $position);
-	        }
-	    }
-
-	    foreach ($aclist as $ac)
-	    {
-	        usort($aclist[$ac["id"]]["positions"], "timecompare");
-	    }
-
-
-		echo json_encode(array("aclist" => $aclist), JSON_NUMERIC_CHECK);
-	}
+    echo json_encode(array("aclist" => $aclist), JSON_NUMERIC_CHECK);
 
 
 	function timecompare($posa, $posb)
 	{
 	    return strcmp($posa["time"], $posb["time"]);
-	}
-
-
-	function removeDuplicate($messages)
-	{
 	}
 
 

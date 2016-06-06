@@ -49,7 +49,7 @@ function mapService($http, trafficService, weatherService)
 	
 	
 	// init map
-	function init(onMapClickCallback, onFeatureSelectCallback, onMoveEndCallback, mapPos, email, token)
+	function init(onMapClickCallback, onFeatureSelectCallback, onMoveEndCallback, mapPos)
 	{
 		// init layers
 		mapLayer = createMapLayer();
@@ -71,7 +71,7 @@ function mapService($http, trafficService, weatherService)
 		populateAirspaces(airspaceLayer);
 		populateWebcams(webcamLayer);
 		populateGlobalWaypoints(globalWpLayer);
-		updateUserWaypoints(email, token);
+		updateUserWaypoints();
 
 
 		// init map
@@ -278,7 +278,7 @@ function mapService($http, trafficService, weatherService)
 
 			function populateAdWebcams()
 			{
-				$http.post('php/webcams.php', obj2json({action: 'readAdWebcams'}))
+				$http.get('php/webcams.php?action=readAdWebcams')
 					.then(
 						function (response) { // success
 							if (!response.data || !response.data.webcams) {
@@ -516,11 +516,11 @@ function mapService($http, trafficService, weatherService)
 						}
 					}
 					else {
-						console.error("ERROR", data);
+						console.error("ERROR reading navaids", data);
 					}
 				})
 				.error(function (data, status) {
-					console.error("ERROR", status, data);
+					console.error("ERROR reading navaids", status, data);
 				});
 
 
@@ -569,7 +569,7 @@ function mapService($http, trafficService, weatherService)
 		// add global waypoints to icon layer
 		function populateGlobalWaypoints(globalWpLayer)
 		{
-			$http.post('php/userWaypoint.php', obj2json({action: 'readGlobalWaypoints'}))
+			$http.get('php/userWaypoint.php?action=readGlobalWaypoints')
 				.success(function (data) {
 					if (data.globalWaypoints) {
 						for (var i = 0; i < data.globalWaypoints.length; i++) {
@@ -590,11 +590,11 @@ function mapService($http, trafficService, weatherService)
 						}
 					}
 					else {
-						console.error("ERROR", data);
+						console.error("ERROR reading global waypoints", data);
 					}
 				})
 				.error(function (data, status) {
-					console.error("ERROR", status, data);
+					console.error("ERROR reading global waypoints", status, data);
 				});
 
 
@@ -659,11 +659,11 @@ function mapService($http, trafficService, weatherService)
 						}
 					}
 					else {
-						console.error("ERROR", data);
+						console.error("ERROR reading airspaces", data);
 					}
 				})
 				.error(function (data, status) {
-					console.error("ERROR", status, data);
+					console.error("ERROR reading airspaces", status, data);
 				});
 
 
@@ -718,7 +718,7 @@ function mapService($http, trafficService, weatherService)
 
 		// add webcams to webcam layer
 		function populateWebcams(webcamLayer) {
-			$http.post('php/webcams.php', obj2json({action: 'readNonAdWebcams'}))
+			$http.get('php/webcams.php?action=readNonAdWebcams')
 				.then(
 					function (response) { // success
 						if (!response.data || !response.data.webcams) {
@@ -752,7 +752,7 @@ function mapService($http, trafficService, weatherService)
 						}
 					},
 					function (response) { // error
-						console.error("ERROR", response.status, response.data);
+						console.error("ERROR reading webcams", response.status, response.data);
 					}
 				);
 		}
@@ -1088,7 +1088,7 @@ function mapService($http, trafficService, weatherService)
 	}
 
 	
-	function updateUserWaypoints(email, token)
+	function updateUserWaypoints()
 	{
 		if (typeof userWpLayer === "undefined")
 			return;
@@ -1097,39 +1097,36 @@ function mapService($http, trafficService, weatherService)
 		layerSource.clear();
 			
 			
-		if (email && token)
-		{
-			$http.post('php/userWaypoint.php', obj2json({ action: 'readUserWaypoints', email: email, token: token }))
-				.success(function(data) {
-					if (data.userWaypoints)
+		$http.get('php/userWaypoint.php')
+			.success(function(data) {
+				if (data.userWaypoints)
+				{
+					for (var i = 0; i < data.userWaypoints.length; i++)
 					{
-						for (var i = 0; i < data.userWaypoints.length; i++)
-						{
-							var userWpFeature = new ol.Feature({
-								geometry: new ol.geom.Point(ol.proj.fromLonLat([data.userWaypoints[i].longitude, data.userWaypoints[i].latitude]))
-							});
-							
-							userWpFeature.userWaypoint = data.userWaypoints[i];
+						var userWpFeature = new ol.Feature({
+							geometry: new ol.geom.Point(ol.proj.fromLonLat([data.userWaypoints[i].longitude, data.userWaypoints[i].latitude]))
+						});
+						
+						userWpFeature.userWaypoint = data.userWaypoints[i];
 
-							var userWpStyle = createUserWpStyle(data.userWaypoints[i].type, data.userWaypoints[i].name);
-							
-							if (userWpStyle)
-								userWpFeature.setStyle(userWpStyle);
-							else
-								continue;
-					
-							layerSource.addFeature(userWpFeature);
-						}
+						var userWpStyle = createUserWpStyle(data.userWaypoints[i].type, data.userWaypoints[i].name);
+						
+						if (userWpStyle)
+							userWpFeature.setStyle(userWpStyle);
+						else
+							continue;
+				
+						layerSource.addFeature(userWpFeature);
 					}
-					else
-					{
-						console.error("ERROR", data);
-					}
-				})
-				.error(function(data, status) {
-					console.error("ERROR", status, data);
-				});
-		}
+				}
+				else
+				{
+					console.error("ERROR reading user waypoints", data);
+				}
+			})
+			.error(function(data, status) {
+				console.error("ERROR reading user waypoints", status, data);
+			});
 
 
 		function createUserWpStyle(wp_type, name) {

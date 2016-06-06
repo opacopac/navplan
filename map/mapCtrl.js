@@ -3,10 +3,10 @@
  */
 
 navplanApp
-	.controller('mapCtrl', [ '$scope', 'mapService', 'locationService', 'trafficService', 'geonameService', 'userService', 'globalData', mapCtrl ]);
+	.controller('mapCtrl', [ '$scope', '$route', 'mapService', 'locationService', 'trafficService', 'geonameService', 'userService', 'globalData', mapCtrl ]);
 
 
-function mapCtrl($scope, mapService, locationService, trafficService, geonameService, userService, globalData) {
+function mapCtrl($scope, $route, mapService, locationService, trafficService, geonameService, userService, globalData) {
 	$scope.globalData = globalData;
 	$scope.trafficTimerIntervallMs = 5000;
 	$scope.selectedTraffic = {};
@@ -26,7 +26,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 
 	$scope.searchGeonamesByValue = function(search)
 	{
-		return geonameService.searchGeonamesByValue(search, $scope.globalData.user.email, $scope.globalData.user.token);
+		return geonameService.searchGeonamesByValue(search);
 	};
 
 	
@@ -55,7 +55,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 	
 	$scope.onMapClicked = function(event, clickCoordinates, maxRadius)
 	{
-		geonameService.searchGeonamesByPosition(clickCoordinates[1], clickCoordinates[0], maxRadius, $scope.globalData.user.email, $scope.globalData.user.token)
+		geonameService.searchGeonamesByPosition(clickCoordinates[1], clickCoordinates[0], maxRadius)
 			.success(function(data) {
 				if (data.geonames)
 				{
@@ -63,10 +63,10 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 					mapService.drawGeopointSelection(data.geonames, event.pixel);
 				}
 				else
-					console.error("ERROR", data);
+					console.error("ERROR searching geonames", data);
 			})
 			.error(function(data, status) {
-				console.error("ERROR", status, data);
+				console.error("ERROR searching geonames", status, data);
 			});
 	};
 
@@ -212,7 +212,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 							}
 						},
 						function (response) {
-							console.error("ERROR", response.status, response.data);
+							console.error("ERROR reading ac details", response.status, response.data);
 						}
 					)
 			}
@@ -372,18 +372,13 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		$scope.stopFollowTraffic();
 
 		if ($scope.globalData.showLocation)
+		{
 			$scope.startLocationService();
+		}
 		else
 		{
 			$scope.stopLocationService();
-
-			if ($scope.isLoggedIn())
-			{
-				if ($scope.globalData.navplan && $scope.globalData.navplan.title)
-					$scope.saveTrackName = $scope.globalData.navplan.title;
-
-				$('#saveTrackDialog').modal('show');
-			}
+			$scope.storeTrackLocal();
 		}
 	};
 
@@ -432,24 +427,22 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 	};
 
 
-	$scope.onSaveTrackClicked = function()
+	$scope.storeTrackLocal = function()
 	{
-		var positions = shrinkPositions(locationService.getLastPositions());
+		var lastTrack = {
+			timestamp: Math.floor(Date.now() / 1000),
+			name: "",
+			positions: shrinkPositions(locationService.getLastPositions())
+		};
 
-		userService.createUserTrack($scope.saveTrackName, positions, $scope.globalData.user.email, $scope.globalData.user.token)
-			.then(
-				function (response) {
-					if (response.data && response.data.success == 1) {
-						$scope.showSuccessMessage("Track successfully saved!");
-						$scope.readTrackList();
-					}
-					else
-						console.error("ERROR saving track:", response.status, response.data);
-				},
-				function (response) {
-					console.error("ERROR saving track:", response.status, response.data);
-				}
-			);
+		if ($scope.isLoggedIn()) {
+			if ($scope.globalData.navplan && $scope.globalData.navplan.title)
+				lastTrack.name = $scope.globalData.navplan.title;
+		}
+
+		localStorage.setItem("lasttrack", obj2json(lastTrack));
+
+		$scope.showSuccessMessage("Track sucessfully stored in 'tracks' tab!");
 	};
 
 
@@ -776,9 +769,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 		$scope.onMapClicked,
 		$scope.onFeatureSelected,
 		$scope.onMapMoveEnd,
-		$scope.globalData.currentMapPos,
-		$scope.globalData.user.email,
-		$scope.globalData.user.token);
+		$scope.globalData.currentMapPos);
 
 	$scope.updateWaypoints();
 	$scope.updateFlightTrack();
@@ -786,4 +777,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 
 	window.removeEventListener("resize", $scope.resizeMap);
 	window.addEventListener("resize", $scope.resizeMap);
+
+	if ($route.current.$$route.showtraffic && !$scope.globalData.showTraffic)
+		$scope.onTrafficClicked();
 }

@@ -1,42 +1,61 @@
 <?php
 	include "config.php";
 	include "helper.php";
-	include "adinfo_helper.php";
 
-	$raw_input = file_get_contents('php://input');
-	$input = json_decode($raw_input, true);
+    $conn = openDb();
+
+    switch ($_SERVER['REQUEST_METHOD'])
+    {
+        case 'GET':
+            if ($_GET["id"])
+            {
+                readNavplan(
+                    checkId(intval($_GET["id"])),
+                    checkEscapeEmail($conn, $_COOKIE["email"]),
+                    checkEscapeToken($conn, $_COOKIE["token"])
+                );
+            }
+            else
+            {
+                readNavplanList(
+                    checkEscapeEmail($conn, $_COOKIE["email"]),
+                    checkEscapeToken($conn, $_COOKIE["token"])
+                );
+            }
+            break;
+        case 'POST':
+            $input = json_decode(file_get_contents('php://input'), true);
+            createNavplan(
+                escapeNavplanData($conn, $input["globalData"]),
+                checkEscapeEmail($conn, $_COOKIE["email"]),
+                checkEscapeToken($conn, $_COOKIE["token"])
+            );
+            break;
+        case 'PUT':
+            $input = json_decode(file_get_contents('php://input'), true);
+            updateNavplan(
+                escapeNavplanData($conn, $input["globalData"]),
+                checkEscapeEmail($conn, $_COOKIE["email"]),
+                checkEscapeToken($conn, $_COOKIE["token"])
+            );
+            break;
+        case 'DELETE':
+            deleteNavplan(
+                checkId(intval($_GET["id"])),
+                checkEscapeEmail($conn, $_COOKIE["email"]),
+                checkEscapeToken($conn, $_COOKIE["token"])
+            );
+            break;
+        default:
+            die("unknown request");
+    }
+
+	$conn->close();
+
 	
-	switch($input["action"])
+	function readNavplanList($email, $token)
 	{
-		case "readList":
-			readNavplanList();
-			break;
-		case "read":
-			readNavplan();
-			break;
-		case "update":
-//			die(var_dump($raw_input));
-			updateNavplan();
-			break;
-		case "create":
-			createNavplan();
-			break;
-		case "delete":
-			deleteNavplan();
-			break;
-		default:
-			die("missing or unknown action!");
-	}
-	
-	
-	function readNavplanList()
-	{
-		global $input;
-
-		$conn = openDb();
-
-		$email = mysqli_real_escape_string($conn, $input["email"]);
-		$token = mysqli_real_escape_string($conn, $input["token"]);
+		global $conn;
 
 		// get navplan list
 		$query = "SELECT nav.id AS nav_id, nav.title AS nav_title FROM navplan AS nav";
@@ -57,23 +76,14 @@
 				title => $row["nav_title"]
 			);
 		}
-		
-		$conn->close();
 
 		echo json_encode(array("navplanList" => $navplans), JSON_NUMERIC_CHECK);
 	}
 	
 	
-	function readNavplan()
+	function readNavplan($navplan_id, $email, $token)
 	{
-		global $input;
-
-		// open db
-		$conn = openDb();
-
-		$navplan_id = mysqli_real_escape_string($conn, $input["navplan_id"]);
-		$email = mysqli_real_escape_string($conn, $input["email"]);
-		$token = mysqli_real_escape_string($conn, $input["token"]);
+		global $conn;
 
 		// get navplan details
 		$query = "SELECT nav.id AS id, nav.title AS title, nav.aircraft_speed AS aircraft_speed, nav.aircraft_consumption AS aircraft_consumption, nav.extra_fuel AS extra_fuel FROM navplan AS nav";
@@ -121,9 +131,7 @@
 				alt => $row["alt"],
 				isminalt => $row["isminalt"],
 				ismaxalt => $row["ismaxalt"],
-				remark => $row["remark"],
-				charts => getAdCharts($row["airport_icao"], $conn),
-				webcams => getAdWebcams($row["airport_icao"], $conn)
+				remark => $row["remark"]
 			);
 			
 			if ($row["is_alternate"] == 1)
@@ -134,23 +142,15 @@
 		
 		$navplan["waypoints"] = $waypoints;
 		$navplan["alternate"] = $alternate;
-		
-		$conn->close();
-		
+
+
 		echo json_encode(array("navplan" => $navplan), JSON_NUMERIC_CHECK);
 	}
 	
 	
-	function updateNavplan()
+	function updateNavplan($navplan, $email, $token)
 	{
-		global $input;
-
-		// open db
-		$conn = openDb();
-
-		$navplan = escapeNavplanData($conn, $input["globalData"]);
-		$email = mysqli_real_escape_string($conn, $input["globalData"]["user"]["email"]);
-		$token = mysqli_real_escape_string($conn, $input["globalData"]["user"]["token"]);
+		global $conn;
 
 		// check if navplan exists
 		$query = "SELECT nav.id FROM navplan AS nav";
@@ -188,24 +188,16 @@
 
 		createWaypoints($conn, $navplan["waypoints"], $navplan["alternate"], $navplan["id"]);
 		
-		$conn->close();
-		
+
 		echo json_encode(array("success" => 1), JSON_NUMERIC_CHECK);
 	}
 
 	
-	function createNavplan()
+	function createNavplan($navplan, $email, $token)
 	{
-		global $input;
+		global $conn;
 
-		// open db
-		$conn = openDb();
-
-		$navplan = escapeNavplanData($conn, $input["globalData"]);
-		$email = mysqli_real_escape_string($conn, $input["globalData"]["user"]["email"]);
-		$token = mysqli_real_escape_string($conn, $input["globalData"]["user"]["token"]);
-
-		// check if user + navplan exists
+		// check if user exists
 		$query = "SELECT id FROM users WHERE email = '" . $email . "' AND token = '" . $token . "'";
 		
 		$result = $conn->query($query);
@@ -239,23 +231,16 @@
 		
 		// update waypoints
 		createWaypoints($conn, $navplan["waypoints"], $navplan["alternate"], $navplan_id);
-		
-		$conn->close();
+
 
 		echo json_encode(array("navplan_id" => $navplan_id), JSON_NUMERIC_CHECK);
 	}
 	
 	
-	function deleteNavplan()
+	function deleteNavplan($navplan_id, $email, $token)
 	{
-		global $input;
+		global $conn;
 
-		// open db
-		$conn = openDb();
-
-		$navplan_id = mysqli_real_escape_string($conn, $input["navplan_id"]);
-		$email = mysqli_real_escape_string($conn, $input["email"]);
-		$token = mysqli_real_escape_string($conn, $input["token"]);
 
 		// check if navplan exists
 		$query = "SELECT nav.id FROM navplan AS nav";
@@ -278,8 +263,7 @@
 		if ($result === FALSE)
 			die("error deleting navplan: " . $conn->error . " query:" . $query);
 		
-		$conn->close();
-		
+
 		echo json_encode(array("success" => 1), JSON_NUMERIC_CHECK);
 	}
 

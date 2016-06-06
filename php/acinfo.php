@@ -3,18 +3,14 @@
 	include "helper.php";
 
 	// open db connection
-	$conn = new mysqli($db_host, $db_user, $db_pw, $db_name);
-	$conn->set_charset("utf8");
+	$conn = openDb();
 
 
     // get query string
 	if (!isset($_GET["icaohex"]))
 	    die("no icao address");
 
-	$icaohex = mysqli_real_escape_string($conn, strtoupper($_GET["icaohex"]));
-
-	if (strlen($icaohex) < 1 || strlen($icaohex) > 6)
-	    die("invalid icao address");
+	$icaohex = checkEscapeString($conn, strtoupper($_GET["icaohex"]), 1, 6);
 
 
     // exec query

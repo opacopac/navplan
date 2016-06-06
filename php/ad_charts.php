@@ -2,6 +2,7 @@
 	include "config.php";
 	include "helper.php";
 
+	$conn = openDb();
 
 	if ($_GET["id"])
 	    readById();
@@ -12,14 +13,15 @@
 	else
     	die("ERROR: unknown action!");
 
+	$conn->close();
+
 
 	function readById()
 	{
-		$conn = openDb();
+		global $conn;
 		
-		$id = mysqli_real_escape_string($conn, $_GET["id"]);
-		checkNumeric($id);
-	
+		$id = checkId($_GET["id"]);
+
 		$query = "SELECT ";
 		$query .= "  id, ";
 		$query .= "  airport_icao, ";
@@ -58,16 +60,14 @@
 		}
 		else
 		    die("ERROR: unknown id!");
-
-		$conn->close();
 	}
 
 
 	function readByIcao()
 	{
-		$conn = openDb();
+		global $conn;
 
-		$icao = mysqli_real_escape_string($conn, $_GET["icao"]);
+		$icao = checkEscapeString($conn, $_GET["icao"], 4, 4);
 
 		$query = "SELECT ";
 		$query .= "  id, ";
@@ -105,14 +105,12 @@
 		}
 
    		echo json_encode(array("chartlist" => $chartlist), JSON_NUMERIC_CHECK);
-
-		$conn->close();
 	}
 
 
 	function readAll()
 	{
-		$conn = openDb();
+		global $conn;
 
 		$query = "SELECT ";
 		$query .= "  id, ";
@@ -148,7 +146,5 @@
 		}
 
    		echo json_encode(array("chartlist" => $chartlist), JSON_NUMERIC_CHECK);
-
-		$conn->close();
 	}
 ?>

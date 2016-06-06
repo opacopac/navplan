@@ -5,25 +5,62 @@
 				<tr>
 					<th>Recorded</th>
 					<th>Track</th>
+					<th>Status</th>
+					<th>KML</th>
 					<th>&nbsp;</th>
 				</tr>
 			</thead>
 			<tbody>
-				<!-- trip checkpoints -->
+				<!-- last recorded track -->
+				<tr ng-show="lasttrack" ng-class="{ success: globalData.track.islasttrack }"  ng-click="onLastTrackSelected();">
+					<td>{{ getDateString(lasttrack.timestamp) }}</td>
+					<td>{{ lasttrack.name }}</td>
+					<td><i>unsaved</i></td>
+					<td>
+						<button type="button" class="btn btn-primary btn-circle" ng-click="$event.preventDefault(); $event.stopPropagation(); onKmlClicked(lasttrack);" title="export kml for google earth"><i class="glyphicon glyphicon-globe"></i></button>
+					</td>
+					<td>
+						<button type="button" class="btn btn-success btn-circle" ng-disable="isLoggedIn()" ng-click="$event.stopPropagation(); onSaveLasttrackClicked();" title="save track"><i class="glyphicon glyphicon-save"></i></button>
+						<button type="button" class="btn btn-danger btn-circle" ng-click="$event.stopPropagation(); onRemoveLasttrackClicked();" title="delete track"><i class="glyphicon glyphicon-remove"></i></button>
+					</td>
+				</tr>
+				<!-- saved tracks -->
 				<tr ng-repeat="track in globalData.user.trackList as results" ng-class="{ success: track.id == globalData.track.id }" ng-click="onTrackSelected(track);" title="select to show on map">
 					<td>{{ getDateString(track.timestamp) }}</td>
 					<td>{{ track.name }}</td>
+					<td><i>saved</i></td>
 					<td>
-						<button type="button" class="btn btn-primary btn-circle" ng-click="$event.preventDefault(); $event.stopPropagation(); onKmlClicked(track);" title="export kml track for google earth"><i class="glyphicon glyphicon-globe"></i></button>
+						<button type="button" class="btn btn-primary btn-circle" ng-click="$event.preventDefault(); $event.stopPropagation(); onKmlClicked(track);" title="export kml for google earth"><i class="glyphicon glyphicon-globe"></i></button>
+					</td>
+					<td>
 						<button type="button" class="btn btn-warning btn-circle" ng-click="$event.stopPropagation(); onEditTrackClicked(track);" title="edit track"><i class="glyphicon glyphicon-edit"></i></button>
 						<button type="button" class="btn btn-danger btn-circle" ng-click="$event.stopPropagation(); onRemoveTrackClicked(track);" title="delete track"><i class="glyphicon glyphicon-remove"></i></button>
 					</td>
 				</tr>
 				<!-- empty list -->
-				<tr ng-if="results.length == 0">
-					<td colspan="9"><i>No tracks recorded yet.</i></td>
+				<tr ng-if="results.length == 0 && !lasttrack">
+					<td colspan="5"><i>No tracks.</i></td>
 				</tr>
-			</tbody>			
+			</tbody>
 		</table>
 	</div> 
+</div>
+<!-- save track dialog -->
+<div class="modal fade" id="saveTrackDialog" tabindex="-1" role="dialog" aria-labelledby="saveTrackModalLabel">
+	<div class="modal-dialog" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+				<h4 class="modal-title" id="saveTrackModalLabel">Track</h4>
+			</div>
+			<div class="modal-body">
+				<p>Recorded: {{ editTrack.recorded }}</p>
+				Track Name: <input type="text" class="form-control" ng-model="editTrack.name" />
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-primary" data-dismiss="modal" ng-click="onSaveTrackClicked()" ng-disabled="!editTrack.name"><i class="glyphicon glyphicon-save"></i> Save Track</button>
+				<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+			</div>
+		</div>
+	</div>
 </div>

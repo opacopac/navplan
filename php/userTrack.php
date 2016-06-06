@@ -11,33 +11,43 @@
             if ($_GET["id"])
             {
                 readUserTrack(
-                    checkId($conn, intval($_GET["id"])),
-                    checkEmail($conn, $_COOKIE["email"]),
-                    checkToken($conn, $_COOKIE["token"])
+                    checkId(intval($_GET["id"])),
+                    checkEscapeEmail($conn, $_COOKIE["email"]),
+                    checkEscapeToken($conn, $_COOKIE["token"])
                 );
             }
             else
             {
                 readUserTrackList(
-                    checkEmail($conn, $_COOKIE["email"]),
-                    checkToken($conn, $_COOKIE["token"])
+                    checkEscapeEmail($conn, $_COOKIE["email"]),
+                    checkEscapeToken($conn, $_COOKIE["token"])
                 );
             }
             break;
         case 'POST':
             $input = json_decode(file_get_contents('php://input'), true);
             createUserTrack(
-                checkEmail($conn, $_COOKIE["email"]),
-                checkToken($conn, $_COOKIE["token"]),
-                checkString($conn, $input["name"], 1, 100),
-                checkString($conn, json_encode($input["positions"], JSON_NUMERIC_CHECK), 1, NULL)
+                checkEscapeEmail($conn, $_COOKIE["email"]),
+                checkEscapeToken($conn, $_COOKIE["token"]),
+                checkNumeric($input["timestamp"]),
+                checkEscapeString($conn, $input["name"], 1, 100),
+                checkEscapeString($conn, json_encode($input["positions"], JSON_NUMERIC_CHECK), 1, NULL)
+            );
+            break;
+        case 'PUT':
+            $input = json_decode(file_get_contents('php://input'), true);
+            updateUserTrack(
+                checkEscapeEmail($conn, $_COOKIE["email"]),
+                checkEscapeToken($conn, $_COOKIE["token"]),
+                checkId($input["id"]),
+                checkEscapeString($conn, $input["name"], 1, 100)
             );
             break;
         case 'DELETE':
             deleteUserTrack(
-                checkId($conn, intval($_GET["id"])),
-                checkEmail($conn, $_COOKIE["email"]),
-                checkToken($conn, $_COOKIE["token"])
+                checkId(intval($_GET["id"])),
+                checkEscapeEmail($conn, $_COOKIE["email"]),
+                checkEscapeToken($conn, $_COOKIE["token"])
             );
             break;
         default:
@@ -105,7 +115,7 @@
 	}
 		
 		
-	function createUserTrack($email, $token, $name, $positions)
+	function createUserTrack($email, $token, $timestamp, $name, $positions)
 	{
 	    global $conn;
 
@@ -125,10 +135,10 @@
 		else
 			die("no valid user found");
 
-		// create wp
+		// create track
 		$query =  "INSERT INTO user_tracks";
-		$query .= " (user_id, name, positions)";
-		$query .= " VALUES ('" . $user_id . "', '" . $name . "', '" . $positions . "')";
+		$query .= " (user_id, timestamp, name, positions)";
+		$query .= " VALUES ('" . $user_id . "', '" . date('Y-m-d G:i:s', $timestamp) . "', '" . $name . "', '" . $positions . "')";
 
 		$result = $conn->query($query);
 		
@@ -140,6 +150,42 @@
 	}
 	
 	
+	function updateUserTrack($email, $token, $trackid, $name)
+	{
+	    global $conn;
+
+		// check if user & track exists
+		$query = "SELECT usr.id FROM users AS usr";
+		$query .= " INNER JOIN user_tracks AS utr ON utr.user_id = usr.id";
+		$query .= " WHERE utr.id = '" . $trackid . "' AND usr.email = '" . $email . "' AND usr.token = '" . $token . "'";
+
+		$result = $conn->query($query);
+
+		if ($result === FALSE)
+			die("error reading user/track id: " . $conn->error . " query:" . $query);
+
+		if ($result->num_rows == 1)
+		{
+			$row = $result->fetch_assoc();
+			$user_id = $row["id"];
+		}
+		else
+			die("no valid user / track found");
+
+        // update track
+		$query =  "UPDATE user_tracks SET";
+		$query .= " name='" . $name . "'";
+		$query .= " WHERE id='" . $trackid . "'";
+
+		$result = $conn->query($query);
+
+		if ($result === FALSE)
+			die("error updating user track: " . $conn->error . " query:" . $query);
+
+		echo json_encode(array("success" => 1), JSON_NUMERIC_CHECK);
+	}
+
+
 	function deleteUserTrack($trackid, $email, $token)
 	{
 	    global $conn;

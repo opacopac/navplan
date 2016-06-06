@@ -79,7 +79,7 @@ function waypointCtrl($scope, $http, geonameService, fuelService, userService, g
 
 	$scope.loadNavplan = function()
 	{
-		userService.readNavplan($scope.selectedNavplanId, $scope.globalData.user.email, $scope.globalData.user.token)
+		userService.readNavplan($scope.selectedNavplanId)
 			.success(function(data) {
 				if (data.navplan)
 				{
@@ -156,13 +156,13 @@ function waypointCtrl($scope, $http, geonameService, fuelService, userService, g
 					if (data.success == 1)
 					{
 						$scope.readNavplanList();
-						$scope.showSuccessMessage("Navplan successfully saved!");
+						$scope.showSuccessMessage("Navplan successfully updated!");
 					}
 					else
-						console.error("ERROR", data);
+						console.error("ERROR updating navplan", data);
 				})
 				.error(function(data, status) {
-					console.error("ERROR", status, data);
+					console.error("ERROR updating navplan", status, data);
 				});
 		}
 		else
@@ -173,12 +173,13 @@ function waypointCtrl($scope, $http, geonameService, fuelService, userService, g
 					{
 						$scope.globalData.navplan.id = data.navplan_id;
 						$scope.readNavplanList();
+						$scope.showSuccessMessage("Navplan successfully saved!");
 					}
 					else
-						console.error("ERROR", data);
+						console.error("ERROR creating navplan", data);
 				})
 				.error(function(data, status) {
-					console.error("ERROR", status, data);
+					console.error("ERROR creating navplan", status, data);
 				});
 		}
 	};
@@ -188,7 +189,7 @@ function waypointCtrl($scope, $http, geonameService, fuelService, userService, g
 	{
 		if ($scope.selectedNavplanId)
 		{
-			userService.deleteNavplan($scope.selectedNavplanId, $scope.globalData.user.email, $scope.globalData.user.token)
+			userService.deleteNavplan($scope.selectedNavplanId)
 				.success(function(data) {
 					if (data.success == 1)
 					{

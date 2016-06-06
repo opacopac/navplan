@@ -22,13 +22,13 @@ function trafficService($http)
 
 	function readTraffic(extent, maxagesec)
 	{
-		return $http.post('php/ogntraffic.php', obj2json({ action: 'read', minlon: extent[0], minlat: extent[1], maxlon: extent[2], maxlat: extent[3], maxagesec: maxagesec }));
+		return $http.get('php/ogntraffic.php?minlon=' + extent[0] + '&minlat=' + extent[1] + '&maxlon=' + extent[2] + '&maxlat=' + extent[3] + '&maxagesec=' + maxagesec);
 	}
 	
 	
 	function readAcDetails(icaoCode)
 	{
-		return $http.get('php/lfr_ch.php?icaohex=' + icaoCode);
+		return $http.get('php/acinfo.php?icaohex=' + icaoCode);
 	}
 
 
@@ -38,12 +38,12 @@ function trafficService($http)
 			return callsignCache[icaoCode];
 
 		// add to cache asynchronously (for next try)
-		$http.get('php/lfr_ch.php?icaohex=' + icaoCode)
+		$http.get('php/acinfo.php?icaohex=' + icaoCode)
 			.then(
 				function(response)
 				{
 					if (!response.data || !response.data.aircrafts || response.data.aircrafts.length > 1) {
-						console.error("ERROR reading callsign");
+						console.error("ERROR reading ac info");
 					}
 					else {
 						if (response.data.aircrafts.length == 1)
@@ -54,7 +54,7 @@ function trafficService($http)
 				},
 				function(response)
 				{
-					console.error("ERROR", response.status, response.data);
+					console.error("ERROR reading ac info", response.status, response.data);
 				}
 			);
 

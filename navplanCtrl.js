@@ -177,10 +177,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 
 	$scope.readNavplanList = function()
 	{
-		var email = $scope.globalData.user.email;
-		var token = $scope.globalData.user.token;
-		
-		userService.readNavplanList(email, token)
+		userService.readNavplanList()
 			.success(function(data) {
 				if (data.navplanList || data.navplanList === null)
 					$scope.globalData.user.navplanList = data.navplanList;
@@ -232,12 +229,6 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 	};
 	
 	
-	$scope.isLoggedIn = function()
-	{
-		return ($scope.globalData.user.email && $scope.globalData.user.token);
-	};
-
-	
 	$scope.logoutUser = function()
 	{
 		$scope.globalData.user.email = undefined;
@@ -250,6 +241,18 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 		deleteCookie("token");
 		
 		$scope.showSuccessMessage("User Logged out successfully!");
+	};
+
+
+	$scope.isLoggedIn = function()
+	{
+		return ($scope.globalData.user.email && $scope.globalData.user.token);
+	};
+
+
+	$scope.hasLastTrack = function()
+	{
+		return (localStorage.getItem('lasttrack') !== null);
 	};
 
 
@@ -274,7 +277,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 			mapService.updateFlightTrack($scope.globalData.track.positions);
 	};
 
-	
+
 	$scope.editSelectedWaypoint = function ()
 	{
 		$scope.backupSelectedWaypoint();
@@ -305,11 +308,12 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 	
 	$scope.onSaveUserWaypointClicked = function()
 	{
-		userService.saveUserWaypoint($scope.globalData.selectedWp, $scope.globalData.user.email, $scope.globalData.user.token)
+		userService.saveUserWaypoint($scope.globalData.selectedWp)
 			.success(function(data) {
 				if (data.success == 1)
 				{
-					mapService.updateUserWaypoints($scope.globalData.user.email, $scope.globalData.user.token);
+					mapService.updateUserWaypoints();
+					mapService.closeOverlay();
 
 					$scope.showSuccessMessage("User Waypoint successfully saved");
 				}
@@ -324,20 +328,20 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 
 	$scope.onDeleteUserWaypointClicked = function()
 	{
-		userService.deleteUserWaypoint($scope.globalData.selectedWp.id, $scope.globalData.user.email, $scope.globalData.user.token)
+		userService.deleteUserWaypoint($scope.globalData.selectedWp.id)
 			.success(function(data) {
 				if (data.success == 1)
 				{
-					mapService.updateUserWaypoints($scope.globalData.user.email, $scope.globalData.user.token);
-					mapService.hideFeaturePopup();
-			
+					mapService.updateUserWaypoints();
+					mapService.closeOverlay();
+
 					$scope.showSuccessMessage("User Waypoint successfully deleted");
 				}
 				else
-					console.error("ERROR", data);
+					console.error("ERROR deleting user waypoint", data);
 			})
 			.error(function(data, status) {
-				console.error("ERROR", status, data);
+				console.error("ERROR deleting user waypoint", status, data);
 			});
 	};
 
@@ -454,6 +458,9 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 
 	$scope.onCacheProgress = function(e)
 	{
+		if ($scope.globalData.offlineCache == false && $scope.globalData.cacheStatus == "off")
+			return;
+
 		if (!e.loaded || !e.total) // hack for firefox
 		{
 			e.loaded = $scope.globalData.cacheProgress.loaded + 1;

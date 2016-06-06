@@ -22,9 +22,10 @@ function userService($http)
 		deleteNavplan: deleteNavplan,
 		saveUserWaypoint: saveUserWaypoint,
 		deleteUserWaypoint: deleteUserWaypoint,
-		createUserTrack: createUserTrack,
 		readUserTrackList: readUserTrackList,
 		readUserTrack: readUserTrack,
+		createUserTrack: createUserTrack,
+		updateUserTrack: updateUserTrack,
 		deleteUserTrack: deleteUserTrack
 	};
 	
@@ -53,51 +54,60 @@ function userService($http)
 	}
 	
 	
-	function readNavplanList(email, token)
+	function readNavplanList()
 	{
-		return $http.post('php/navplan.php', obj2json({ action: 'readList', email: email, token: token }));
+		return $http.get('php/navplan.php');
 	}
 
 
-	function readNavplan(navplan_id, email, token)
+	function readNavplan(navplan_id)
 	{
-		return $http.post('php/navplan.php', obj2json({ action: 'read', navplan_id: navplan_id, email: email, token: token }));
+		return $http.get('php/navplan.php?id=' + navplan_id);
 	}
 	
 	
 	function createNavplan(globalData)
 	{
-		return $http.post('php/navplan.php', obj2json({ action: 'create', globalData: globalData }));
+		return $http.post('php/navplan.php', obj2json({ globalData: globalData }));
 	}
 
 	
 	function updateNavplan(globalData)
 	{
-		return $http.post('php/navplan.php', obj2json({ action: 'update', globalData: globalData }));
+		return $http.put('php/navplan.php', obj2json({ globalData: globalData }));
 	}
 
 
-	function deleteNavplan(navplan_id, email, token)
+	function deleteNavplan(navplan_id)
 	{
-		return $http.post('php/navplan.php', obj2json({ action: 'delete', navplan_id: navplan_id, email: email, token: token }));
-	}
-
-	
-	function saveUserWaypoint(wp, email, token)
-	{
-		return $http.post('php/userWaypoint.php', obj2json({ action: 'saveUserWaypoint', wp: wp, email: email, token: token }));
+		return $http.delete('php/navplan.php?id=' + navplan_id);
 	}
 
 	
-	function deleteUserWaypoint(wp_id, email, token)
+	function saveUserWaypoint(wp)
 	{
-		return $http.post('php/userWaypoint.php', obj2json({ action: 'deleteUserWaypoint', wp_id: wp_id, email: email, token: token }));
+		if (wp.id > 0)
+			return $http.put('php/userWaypoint.php', obj2json({ wp: wp }));
+		else
+			return $http.post('php/userWaypoint.php', obj2json({ wp: wp }));
+	}
+
+	
+	function deleteUserWaypoint(id)
+	{
+		return $http.delete('php/userWaypoint.php?id=' + id);
 	}
 
 
-	function createUserTrack(name, positions, email, token)
+	function createUserTrack(timestamp, name, positions)
 	{
-		return $http.post('php/userTrack.php', obj2json({ name: name, positions: positions, email: email, token: token }));
+		return $http.post('php/userTrack.php', obj2json({ timestamp: timestamp, name: name, positions: positions }));
+	}
+
+
+	function updateUserTrack(id, name)
+	{
+		return $http.put('php/userTrack.php', obj2json({ id: id, name: name }));
 	}
 
 

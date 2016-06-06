@@ -21,9 +21,8 @@ function geonameService($http)
 
 
 	// search by name
-	function searchGeonamesByValue(search, email, token)
+	function searchGeonamesByValue(search)
 	{
-		//var gradMinSecPattern = /^(\d+)�\s*(\d+)('|�|`|\xB4)\s*(\d+)("|�|''|��|``|\xB4\xB4)\s*([NS]?)[^\d\w]*(\d+)�\s*(\d+)('|�|`|\xB4)\s*(\d+)("|�|''|��|``|\xB4\xB4)\s*([EOW]?)$/i;
 		var gradMinSecPattern = /^(\d+)\D+(\d+)\D+(\d+)(\D+)(\d+)\D+(\d+)\D+(\d+)(\D*)$/i;
 		var decGradPattern = /^([+-]?\d+\.\d+)[^\d\.+-]+([+-]?\d+\.\d+)$/i;
 		var matchGradMinSec = gradMinSecPattern.exec(search);
@@ -42,7 +41,7 @@ function geonameService($http)
 			return getCoordinateGeoPoint(lonLat, search);
 		}
 		
-		return $http.post(base_url, obj2json({ action: 'searchByName', search: search, email: email, token: token }))
+		return $http.get(base_url + "?action=searchByName&search=" + search)
 			.then(function(response)
 			{
 				return response.data.geonames.map(function(item)
@@ -54,9 +53,9 @@ function geonameService($http)
 	
 
 	// search by pos
-	function searchGeonamesByPosition(lat, lon, rad, email, token)
+	function searchGeonamesByPosition(lat, lon, rad)
 	{
-		return $http.post(base_url, obj2json({ action: 'searchByPosition', lat: lat, lon: lon, rad: rad, email: email, token: token }));
+		return $http.get(base_url + "?action=searchByPosition&lat=" + lat + "&lon=" + lon + "&rad=" + rad);
 	}
 	
 	
