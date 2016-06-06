@@ -3,10 +3,10 @@
  */
 
 navplanApp
-	.controller('mapCtrl', [ '$scope', 'mapService', 'locationService', 'trafficService', 'geonameService', 'userService', 'globalData', mapCtrl ]);
+	.controller('mapCtrl', [ '$scope', '$route', 'mapService', 'locationService', 'trafficService', 'geonameService', 'userService', 'globalData', mapCtrl ]);
 
 
-function mapCtrl($scope, mapService, locationService, trafficService, geonameService, userService, globalData) {
+function mapCtrl($scope, $route, mapService, locationService, trafficService, geonameService, userService, globalData) {
 	$scope.globalData = globalData;
 	$scope.trafficTimerIntervallMs = 5000;
 	$scope.selectedTraffic = {};
@@ -777,4 +777,7 @@ function mapCtrl($scope, mapService, locationService, trafficService, geonameSer
 
 	window.removeEventListener("resize", $scope.resizeMap);
 	window.addEventListener("resize", $scope.resizeMap);
+
+	if ($route.current.$$route.showtraffic && !$scope.globalData.showTraffic)
+		$scope.onTrafficClicked();
 }

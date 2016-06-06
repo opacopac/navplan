@@ -458,6 +458,9 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 
 	$scope.onCacheProgress = function(e)
 	{
+		if ($scope.globalData.offlineCache == false && $scope.globalData.cacheStatus == "off")
+			return;
+
 		if (!e.loaded || !e.total) // hack for firefox
 		{
 			e.loaded = $scope.globalData.cacheProgress.loaded + 1;
