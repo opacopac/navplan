@@ -3,10 +3,10 @@
  */
 
 navplanApp
-	.controller('mapCtrl', [ '$scope', '$route', 'mapService', 'locationService', 'trafficService', 'geonameService', 'userService', 'globalData', mapCtrl ]);
+	.controller('mapCtrl', [ '$scope', '$sce', '$route', 'mapService', 'locationService', 'trafficService', 'geonameService', 'userService', 'globalData', mapCtrl ]);
 
 
-function mapCtrl($scope, $route, mapService, locationService, trafficService, geonameService, userService, globalData) {
+function mapCtrl($scope, $sce, $route, mapService, locationService, trafficService, geonameService, userService, globalData) {
 	$scope.globalData = globalData;
 	$scope.trafficTimerIntervallMs = 5000;
 	$scope.selectedTraffic = {};
@@ -17,12 +17,6 @@ function mapCtrl($scope, $route, mapService, locationService, trafficService, ge
 	var trafficContainer = document.getElementById('traffic-popup');
 	var weatherContainer = document.getElementById('weather-popup');
 
-
-	$scope.focusSearchWpInput = function()
-	{
-		document.getElementById('searchWpInput').focus();
-	};
-	
 
 	$scope.searchGeonamesByValue = function(search)
 	{
@@ -73,17 +67,16 @@ function mapCtrl($scope, $route, mapService, locationService, trafficService, ge
 
 	$scope.onFeatureSelected = function(event, feature)
 	{
-		if (feature.geopoint)
+		if (feature.geopoint && !feature.airport && !feature.navaid && !feature.reportingpoint && !feature.userWaypoint)
 		{
 			$scope.globalData.selectedWp = {
 				type: feature.geopoint.type,
 				geopoint: feature.geopoint,
-				airport: feature.airport, // where available
 				id: feature.geopoint.id,
-				freq: feature.geopoint.frequency,
-				callsign: feature.geopoint.callsign,
+				freq: '',
+				callsign: '',
 				checkpoint: feature.geopoint.wpname,
-				airport_icao: feature.geopoint.airport_icao,
+				airport_icao: '',
 				latitude: feature.geopoint.latitude,
 				longitude: feature.geopoint.longitude,
 				mt: '',
@@ -94,15 +87,15 @@ function mapCtrl($scope, $route, mapService, locationService, trafficService, ge
 			};
 			$scope.$apply();
 
-			mapService.addOverlay(mapService.getMercatorCoordinates(feature.geopoint.latitude, feature.geopoint.longitude), featureContainer);
+			$scope.openFeatureOverlay(feature.geopoint.latitude, feature.geopoint.longitude);
 		}
 		else if (feature.airport)
 		{
 			$scope.globalData.selectedWp = {
 				type: 'airport',
 				airport: feature.airport,
-				freq: feature.airport.frequency,
-				callsign: feature.airport.callsign,
+				freq: getFrequency(feature.airport),
+				callsign: getCallsign(feature.airport),
 				checkpoint: feature.airport.icao,
 				airport_icao: feature.airport.icao,
 				latitude: feature.airport.latitude,
@@ -115,7 +108,7 @@ function mapCtrl($scope, $route, mapService, locationService, trafficService, ge
 			};
 			$scope.$apply();
 
-			mapService.addOverlay(feature.getGeometry().getCoordinates(), featureContainer);
+			$scope.openFeatureOverlay(feature.airport.latitude, feature.airport.longitude);
 		}
 		else if (feature.navaid)
 		{
@@ -135,27 +128,27 @@ function mapCtrl($scope, $route, mapService, locationService, trafficService, ge
 			};
 			$scope.$apply();
 
-			mapService.addOverlay(feature.getGeometry().getCoordinates(), featureContainer);
+			$scope.openFeatureOverlay(feature.navaid.latitude, feature.navaid.longitude);
 		}
-		else if (feature.globalWaypoint)
+		else if (feature.reportingpoint)
 		{
 			$scope.globalData.selectedWp = {
 				type: 'global',
-				globalWaypoint: feature.globalWaypoint,
+				reportingpoint: feature.reportingpoint,
 				freq: '',
 				callsign: '',
-				checkpoint: feature.globalWaypoint.name,
-				latitude: feature.globalWaypoint.latitude,
-				longitude: feature.globalWaypoint.longitude,
+				checkpoint: feature.reportingpoint.name,
+				latitude: feature.reportingpoint.latitude,
+				longitude: feature.reportingpoint.longitude,
 				mt: '',
 				dist: '',
 				alt: '',
-				remark: feature.globalWaypoint.remark,
+				remark: feature.reportingpoint.remark,
 				isNew: true
 			};
 			$scope.$apply();
 
-			mapService.addOverlay(feature.getGeometry().getCoordinates(), featureContainer);
+			$scope.openFeatureOverlay(feature.reportingpoint.latitude, feature.reportingpoint.longitude);
 		}
 		else if (feature.userWaypoint)
 		{
@@ -176,21 +169,30 @@ function mapCtrl($scope, $route, mapService, locationService, trafficService, ge
 			};
 			$scope.$apply();
 
-			mapService.addOverlay(feature.getGeometry().getCoordinates(), featureContainer);
+			$scope.openFeatureOverlay(feature.userWaypoint.latitude, feature.userWaypoint.longitude);
 		}
 		else if (feature.waypoint)
 		{
 			$scope.globalData.selectedWp = feature.waypoint;
 			$scope.$apply();
 
-			mapService.addOverlay(feature.getGeometry().getCoordinates(), featureContainer);
+			$scope.openFeatureOverlay(feature.waypoint.latitude, feature.waypoint.longitude);
 		}
 		else if (feature.acInfo)
 		{
+			$scope.selectedTraffic = {
+				position: mapService.getLatLonCoordinates(feature.getGeometry().getCoordinates()),
+				registration: "Unknown",
+				aircraftModelType: "N/A",
+				manufacturer: "N/A",
+				address: feature.acInfo.address,
+				addresstype: feature.acInfo.addresstype,
+				receiver: feature.acInfo.receiver
+			};
+
+
 			if (feature.acInfo.addresstype != "ICAO")
 			{
-				$scope.selectedTraffic = getUnknownTrafficInfo(feature.acInfo);
-				$scope.selectedTraffic.position = mapService.getLatLonCoordinates(feature.getGeometry().getCoordinates());
 				mapService.addOverlay(feature.getGeometry().getCoordinates(), trafficContainer);
 				$scope.$apply();
 			}
@@ -203,11 +205,13 @@ function mapCtrl($scope, $route, mapService, locationService, trafficService, ge
 							}
 							else {
 								if (response.data.aircrafts.length == 1)
-									$scope.selectedTraffic = response.data.aircrafts[0];
-								else
-									$scope.selectedTraffic = getUnknownTrafficInfo(feature.acInfo);
+								{
+									var acDetails = response.data.aircrafts[0];
+									$scope.selectedTraffic.registration = acDetails.registration;
+									$scope.selectedTraffic.aircraftModelType = acDetails.aircraftModelType;
+									$scope.selectedTraffic.manufacturer = acDetails.manufacturer;
+								}
 
-								$scope.selectedTraffic.position = mapService.getLatLonCoordinates(feature.getGeometry().getCoordinates());
 								mapService.addOverlay(feature.getGeometry().getCoordinates(), trafficContainer);
 							}
 						},
@@ -229,15 +233,41 @@ function mapCtrl($scope, $route, mapService, locationService, trafficService, ge
 		}
 
 
-		function getUnknownTrafficInfo(acInfo)
+		function getFrequency(airport)
 		{
-			return {
-				registration: "N/A",
-				aircraftModelType: "N/A",
-				manufacturer: "N/A",
-				address: acInfo.address,
-				addresstype: acInfo.addresstype
-			};
+			if (!airport || !airport.radios || airport.radios.length == 0)
+				return '';
+			else
+				return airport.radios[0].frequency;
+		}
+
+
+		function getCallsign(airport)
+		{
+			if (!airport || !airport.radios || airport.radios.length == 0)
+				return '';
+
+			var radio = airport.radios[0];
+
+			switch (radio.type)
+			{
+				case "TOWER" : return "TWR";
+				case "APPROACH" : return "APP";
+				case "ARRIVAL" : return "ARR";
+				case "DEPARTURE" : return "DEP";
+				case "GLIDING" : return "GLD";
+				case "GROUND" : return "GND";
+				case "CTAF" : return "AD";
+				case "AFIS" : return "AD"; // TODO: TEMP
+				case "OTHER" :
+				{
+					if (radio.description.toUpperCase().startsWith("AD"))
+						return "AD";
+					else
+						return radio.typespec;
+				}
+				default : return radio.type;
+			}
 		}
 	};
 	
@@ -338,6 +368,17 @@ function mapCtrl($scope, $route, mapService, locationService, trafficService, ge
 		$scope.selectedWeather.airport_icao = $scope.globalData.selectedWp.airport.icao;
 		var coords = mapService.getMercatorCoordinates($scope.globalData.selectedWp.airport.latitude, $scope.globalData.selectedWp.airport.longitude);
 		mapService.addOverlay(coords, weatherContainer);
+	};
+
+
+	$scope.openFeatureOverlay = function(latitude, longitude)
+	{
+		var coordinates = mapService.getMercatorCoordinates(latitude, longitude);
+
+		$('#ad_details').hide();
+		$('#ad_charts').hide();
+
+		mapService.addOverlay(coordinates, featureContainer);
 	};
 
 
@@ -743,6 +784,12 @@ function mapCtrl($scope, $route, mapService, locationService, trafficService, ge
 		$scope.followTrafficAddress = undefined;
 		$scope.followTrafficLastPosition = undefined;
 	};
+	
+	
+	$scope.onToggleElementClicked = function(element)
+	{
+		$(element).toggle();
+	};
 
 
 	$scope.getAgeString = function(datestring)
@@ -755,6 +802,71 @@ function mapCtrl($scope, $route, mapService, locationService, trafficService, ge
 			return h + "h " + m + "min";
 		else
 			return m + "min";
+	};
+
+
+	$scope.getAdTypeString = function(adtype)
+	{
+		switch (adtype)
+		{
+			case 'AD_CLOSED' : return "Aerodrome Closed";
+			case 'AD_MIL' : return "Military Aerodrome";
+			case 'AF_CIVIL' : return "Airfield Civil";
+			case 'AF_MIL_CIVIL' : return "Airfield (civil/military)";
+			case 'AF_WATER' : return "Water Airfield";
+			case 'APT' : return "Airport resp. Airfield IFR";
+			case 'GLIDING' : return "Glider Site";
+			case 'HELI_CIVIL' : return "Heliport Civil";
+			case 'HELI_MIL' : return "Heliport Military";
+			case 'INTL_APT' : return "International Airport";
+			case 'LIGHT_AIRCRAFT' : return "Ultra Light Flying Site";
+			default : return "Unknown";
+		}
+	};
+
+
+	$scope.getPositionString = function(latitude, longitude)
+	{
+		return getDmsString(latitude, longitude);
+	};
+
+
+	$scope.getElevationString = function(elevation_m)
+	{
+		return Math.round(m2ft(elevation_m)) + "ft";
+	};
+
+
+	$scope.getDimensionsString = function(runway)
+	{
+		return Math.round(runway.length) + " x " + Math.round(runway.width) + "m";
+	};
+
+
+	$scope.getMorseString = function(text)
+	{
+		if (!text)
+			return;
+
+		var dotHtml = " <b>&middot;</b> ";
+		var dashHtml = " <b>&#8211;</b> ";
+		var spacer = "&nbsp;&nbsp;&nbsp;";
+		var out = "";
+
+		for (var i = 0; i < text.length; i++)
+		{
+			var letter = text.substring(i, i + 1).toUpperCase();
+			var code = getMorseString(letter);
+			code = code.replace(/\./g, dotHtml);
+			code = code.replace(/\-/g, dashHtml);
+
+			if (i > 0)
+				out += spacer;
+
+			out += letter + " " + code;
+		}
+
+		return $sce.trustAsHtml(out);
 	};
 
 

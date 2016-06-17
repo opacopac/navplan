@@ -49,7 +49,7 @@
                 $aclist[$msg["id"]] = $ac;
             }
 
-            $position = array("time" => $msg["time"], "latitude" => $msg["latitude"], "longitude" => $msg["longitude"], "altitude" => round($msg["altitude"]));
+            $position = array("time" => $msg["time"], "latitude" => $msg["latitude"], "longitude" => $msg["longitude"], "altitude" => round($msg["altitude"]), "receiver" => $msg["receiver"]);
 
             $poscount = count($aclist[$msg["id"]]["positions"]);
             if ($poscount > 1)

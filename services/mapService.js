@@ -12,8 +12,11 @@ function mapService($http, trafficService, weatherService)
 	const MAX_ZOOMLEVEL = 17;
 
 	var map = {};
-	var mapLayer, wpTrackLayer, iconLayer, airspaceLayer, globalWpLayer, userWpLayer, flightTrackLayer, geopointLayer, trafficLayer, locationLayer, weatherLayer, webcamLayer;
+	var mapLayer, wpTrackLayer, closeIconLayer, airportLayer, navaidLayer, airspaceLayer, reportingpointLayer, userWpLayer, flightTrackLayer, geopointLayer, trafficLayer, locationLayer, weatherLayer, webcamLayer;
 	var airports = {};
+	var navaids = {};
+	var reportingPoints = {};
+	var userWaypoints = {};
 	var chartLayers = [];
 	var currentOverlay = undefined;
 	var isGeopointSelectionActive = false;
@@ -56,8 +59,10 @@ function mapService($http, trafficService, weatherService)
 		locationLayer = createEmptyVectorLayer();
 		trafficLayer = createEmptyVectorLayer();
 		wpTrackLayer = createEmptyVectorLayer();
-		iconLayer = createEmptyVectorLayer();
-		globalWpLayer = createEmptyVectorLayer();
+		closeIconLayer = createEmptyVectorLayer();
+		airportLayer = createEmptyVectorLayer();
+		navaidLayer = createEmptyVectorLayer();
+		reportingpointLayer = createEmptyVectorLayer();
 		userWpLayer = createEmptyVectorLayer();
 		airspaceLayer = createEmptyVectorLayer();
 		flightTrackLayer = createEmptyVectorLayer();
@@ -66,11 +71,11 @@ function mapService($http, trafficService, weatherService)
 		geopointLayer = createEmptyVectorLayer();
 
 		// populate layers
-		populateAirports(iconLayer);
-		populateNavaids(iconLayer);
+		populateAirports(airportLayer);
+		populateNavaids(navaidLayer);
 		populateAirspaces(airspaceLayer);
 		populateWebcams(webcamLayer);
-		populateGlobalWaypoints(globalWpLayer);
+		populateReportingpoints(reportingpointLayer);
 		updateUserWaypoints();
 
 
@@ -87,9 +92,11 @@ function mapService($http, trafficService, weatherService)
 			map.getLayers().insertAt(i + 1, chartLayers[i]);
 
 		minZoomLevel = [
-			{ layer: iconLayer, minZoom: 9 },
+			{ layer: closeIconLayer, minZoom: 9 },
+			{ layer: airportLayer, minZoom: 9 },
+			{ layer: navaidLayer, minZoom: 9 },
 			{ layer: airspaceLayer, minZoom:  9 },
-			{ layer: globalWpLayer, minZoom:  11 },
+			{ layer: reportingpointLayer, minZoom:  11 },
 			{ layer: userWpLayer, minZoom:  11 },
 			{ layer: webcamLayer, minZoom:  9 },
 			{ layer: weatherLayer, minZoom:  9 }];
@@ -113,8 +120,10 @@ function mapService($http, trafficService, weatherService)
 					mapLayer,
 					airspaceLayer,
 					webcamLayer,
-					iconLayer,
-					globalWpLayer,
+					closeIconLayer,
+					navaidLayer,
+					airportLayer,
+					reportingpointLayer,
 					userWpLayer,
 					weatherLayer,
 					wpTrackLayer,
@@ -141,14 +150,16 @@ function mapService($http, trafficService, weatherService)
 
 
 		// add airports to icon layer
-		function populateAirports(iconLayer)
+		function populateAirports(layer)
 		{
 			$http.get('php/airports.php')
 				.then(
 					function (response) { // success
 						if (response.data && response.data.airports) {
-							for (var i = 0; i < response.data.airports.length; i++) {
-								var ap = response.data.airports[i];
+							for (var key in response.data.airports) {
+								var ap = response.data.airports[key];
+
+								// cache for later use
 								airports[ap.icao] = ap;
 
 								// airport icon
@@ -165,7 +176,7 @@ function mapService($http, trafficService, weatherService)
 								else
 									continue;
 
-								iconLayer.getSource().addFeature(adFeature);
+								layer.getSource().addFeature(adFeature);
 
 
 								// rwy icon
@@ -173,14 +184,30 @@ function mapService($http, trafficService, weatherService)
 									geometry: new ol.geom.Point(ol.proj.fromLonLat([ap.longitude, ap.latitude]))
 								});
 
-								var rwyStyle = createRwyStyle(ap.type, ap.rwy_surface, ap.rwy_direction1);
+								var rwyStyle = createRwyStyle(ap.type, ap.runways.length > 0 ? ap.runways[0] : undefined);
 
 								if (rwyStyle)
 									rwyFeature.setStyle(rwyStyle);
 								else
 									continue;
 
-								iconLayer.getSource().addFeature(rwyFeature);
+								layer.getSource().addFeature(rwyFeature);
+
+
+								//  parachute feature
+								if (ap.mapfeatures && ap.mapfeatures.length > 0 && ap.mapfeatures[0].type == "PARACHUTE")
+								{
+									var parachuteFeature = new ol.Feature({
+										geometry: new ol.geom.Point(ol.proj.fromLonLat([ap.longitude, ap.latitude]))
+									});
+
+									parachuteFeature.airport = ap;
+
+									var parachuteStyle = createParachuteStyle();
+									parachuteFeature.setStyle(parachuteStyle);
+
+									layer.getSource().addFeature(parachuteFeature);
+								}
 							}
 						}
 						else {
@@ -190,16 +217,6 @@ function mapService($http, trafficService, weatherService)
 					function(response) // error
 					{
 						console.error("ERROR reading airports", response.status, response.data);
-					}
-				)
-				.then(
-					function() {
-						populateAdWebcams();
-					}
-				)
-				.then(
-					function() {
-						populateAdCharts();
 					}
 				)
 				.then(
@@ -220,9 +237,15 @@ function mapService($http, trafficService, weatherService)
 					src = 'icon/ad_civ_nofac.png';
 				else if (ad_type == "AF_MIL_CIVIL")
 					src = 'icon/ad_civmil.png';
+				else if (ad_type == "HELI_CIVIL")
+					src = 'icon/ad_heli.png';
 				else if (ad_type == "AD_MIL") {
 					src = 'icon/ad_mil.png';
 					textColor = "#AE1E22";
+				}
+				else if (ad_type == "AD_CLOSED") {
+					src = 'icon/ad_closed.png';
+					name = '';
 				}
 				else
 					return;
@@ -248,9 +271,15 @@ function mapService($http, trafficService, weatherService)
 			}
 
 
-			function createRwyStyle(ad_type, rwy_surface, rwy_direction)
+			function createRwyStyle(ad_type, rwy)
 			{
+				if (!rwy)
+					return;
+
 				var src;
+				var rwy_surface = rwy.surface ? rwy.surface : undefined;
+				var rwy_direction = rwy.direction1 ? rwy.direction1 : undefined;
+
 
 				if (ad_type == "AD_MIL")
 					src = 'icon/rwy_mil.png';
@@ -276,63 +305,19 @@ function mapService($http, trafficService, weatherService)
 			}
 
 
-			function populateAdWebcams()
+			function createParachuteStyle()
 			{
-				$http.get('php/webcams.php?action=readAdWebcams')
-					.then(
-						function (response) { // success
-							if (!response.data || !response.data.webcams) {
-								console.error("ERROR reading webcams");
-							}
-							else {
-								for (var i = 0; i < response.data.webcams.length; i++) {
-									var webcam = response.data.webcams[i];
-									var ap = airports[webcam.airport_icao];
-
-									if (!ap)
-										continue;
-
-									if (!ap.webcams)
-										ap.webcams = [];
-
-									ap.webcams.push(webcam);
-								}
-							}
-						},
-						function (response) { // error
-							console.error("ERROR reading webcams", response.status, response.data);
-						}
-					)
-			}
-
-
-			function populateAdCharts()
-			{
-				$http.get('php/ad_charts.php?all=1')
-					.then(
-						function (response) { // success
-							if (!response.data || !response.data.chartlist) {
-								console.error("ERROR reading charts");
-							}
-							else {
-								for (var i = 0; i < response.data.chartlist.length; i++) {
-									var chart = response.data.chartlist[i];
-									var ap = airports[chart.airport_icao];
-
-									if (!ap)
-										continue;
-
-									if (!ap.charts)
-										ap.charts = [];
-
-									ap.charts.push(chart);
-								}
-							}
-						},
-						function (response) { // error
-							console.error("ERROR reading charts", response.status, response.data);
-						}
-					)
+				return new ol.style.Style({
+					image: new ol.style.Icon(({
+						anchor: [45, 16],
+						anchorXUnits: 'pixels',
+						anchorYUnits: 'pixels',
+						scale: 1,
+						rotateWithView: false,
+						opacity: 0.8,
+						src: 'icon/feature_parachute.png'
+					}))
+				});
 			}
 
 
@@ -493,35 +478,43 @@ function mapService($http, trafficService, weatherService)
 
 
 		// add navaids to icon layer
-		function populateNavaids(iconLayer)
+		function populateNavaids(layer)
 		{
 			$http.get('php/navaids.php')
-				.success(function (data) {
-					if (data.navaids) {
-						for (var i = 0; i < data.navaids.length; i++) {
-							var navaidFeature = new ol.Feature({
-								geometry: new ol.geom.Point(ol.proj.fromLonLat([data.navaids[i].longitude, data.navaids[i].latitude]))
-							});
+				.then(
+					function (response) { // success
+						if (response.data && response.data.navaids) {
+							for (var i = 0; i < response.data.navaids.length; i++) {
+								var navaid = response.data.navaids[i];
 
-							navaidFeature.navaid = data.navaids[i];
+								// cache for later use
+								navaids[navaid.id] = navaid;
 
-							var navaidStyle = createNavaidStyle(data.navaids[i].type, data.navaids[i].kuerzel);
+								var navaidFeature = new ol.Feature({
+									geometry: new ol.geom.Point(ol.proj.fromLonLat([navaid.longitude, navaid.latitude]))
+								});
 
-							if (navaidStyle)
-								navaidFeature.setStyle(navaidStyle);
-							else
-								continue;
+								navaidFeature.navaid = navaid;
 
-							iconLayer.getSource().addFeature(navaidFeature);
+								var navaidStyle = createNavaidStyle(navaid.type, navaid.kuerzel);
+
+								if (navaidStyle)
+									navaidFeature.setStyle(navaidStyle);
+								else
+									continue;
+
+								layer.getSource().addFeature(navaidFeature);
+							}
 						}
+						else {
+							console.error("ERROR reading navaids", data);
+						}
+					},
+					function(response) // error
+					{
+						console.error("ERROR reading navaids", response.status, response.data);
 					}
-					else {
-						console.error("ERROR reading navaids", data);
-					}
-				})
-				.error(function (data, status) {
-					console.error("ERROR reading navaids", status, data);
-				});
+				);
 
 
 			function createNavaidStyle(navaid_type, name) {
@@ -543,7 +536,7 @@ function mapService($http, trafficService, weatherService)
 					return;
 
 				return new ol.style.Style({
-					image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
+					image: new ol.style.Icon(({
 						anchor: [0.5, 0.5],
 						anchorXUnits: 'fraction',
 						anchorYUnits: 'fraction',
@@ -566,39 +559,44 @@ function mapService($http, trafficService, weatherService)
 		}
 
 
-		// add global waypoints to icon layer
-		function populateGlobalWaypoints(globalWpLayer)
+		// add reporting points
+		function populateReportingpoints(reportingpointLayer)
 		{
 			$http.get('php/userWaypoint.php?action=readGlobalWaypoints')
 				.success(function (data) {
 					if (data.globalWaypoints) {
 						for (var i = 0; i < data.globalWaypoints.length; i++) {
-							var globalWpFeature = new ol.Feature({
-								geometry: new ol.geom.Point(ol.proj.fromLonLat([data.globalWaypoints[i].longitude, data.globalWaypoints[i].latitude]))
+							var rp = data.globalWaypoints[i];
+
+							// cache for later use
+							reportingPoints[rp.id] = rp;
+
+							var reportingpointFeature = new ol.Feature({
+								geometry: new ol.geom.Point(ol.proj.fromLonLat([rp.longitude, rp.latitude]))
 							});
 
-							globalWpFeature.globalWaypoint = data.globalWaypoints[i];
+							reportingpointFeature.reportingpoint = rp;
 
-							var globalWpStyle = createGlobalWpStyle(data.globalWaypoints[i].type, data.globalWaypoints[i].name);
+							var reportingpointStyle = createReportingpointStyle(rp.type, rp.name);
 
-							if (globalWpStyle)
-								globalWpFeature.setStyle(globalWpStyle);
+							if (reportingpointStyle)
+								reportingpointFeature.setStyle(reportingpointStyle);
 							else
 								continue;
 
-							globalWpLayer.getSource().addFeature(globalWpFeature);
+							reportingpointLayer.getSource().addFeature(reportingpointFeature);
 						}
 					}
 					else {
-						console.error("ERROR reading global waypoints", data);
+						console.error("ERROR reading reporting points", data);
 					}
 				})
 				.error(function (data, status) {
-					console.error("ERROR reading global waypoints", status, data);
+					console.error("ERROR reading reporting points", status, data);
 				});
 
 
-			function createGlobalWpStyle(wp_type, name) {
+			function createReportingpointStyle(wp_type, name) {
 				var src, offsetY;
 
 				if (wp_type == "report") {
@@ -680,11 +678,16 @@ function mapService($http, trafficService, weatherService)
 						})
 					});
 				}
-				else if (category == "CTR2") {
+				else if (category == "FIR") {
 					return new ol.style.Style({
+						fill: new ol.style.Fill({
+							color: 'rgba(152, 206, 235, 0.3)'
+						}),
 						stroke: new ol.style.Stroke({
-							color: 'rgba(152, 206, 235, 0.8)',
-							width: 10
+							color: 'rgba(23, 128, 194, 0.8)',
+							//color: 'rgba(0, 0, 0, 1.0)',
+							width: 3,
+							lineDash: [1, 7]
 						})
 					});
 				}
@@ -771,11 +774,19 @@ function mapService($http, trafficService, weatherService)
 						return;
 
 					// specific feature clicked
-					if (feature.geopoint || feature.airport || feature.navaid || feature.waypoint || feature.userWaypoint || feature.globalWaypoint || feature.webcam || feature.weatherInfo || feature.closeLayer)
+					if (feature.geopoint ||
+						feature.airport ||
+						feature.navaid ||
+						feature.waypoint ||
+						feature.userWaypoint ||
+						feature.reportingpoint ||
+						feature.webcam ||
+						feature.weatherInfo ||
+						feature.closeLayer)
 					{
 						if (feature.closeLayer) {
 							map.removeLayer(feature.closeLayer);
-							iconLayer.getSource().removeFeature(feature);
+							closeIconLayer.getSource().removeFeature(feature);
 						}
 						else
 							onFeatureSelectCallback(event, feature);
@@ -787,7 +798,15 @@ function mapService($http, trafficService, weatherService)
 				null,
 				function (layer) // layers to search for features
 				{
-					return layer === geopointLayer || layer === iconLayer || layer === globalWpLayer || layer === userWpLayer || layer === wpTrackLayer || layer === webcamLayer || layer === weatherLayer;
+					return (layer === geopointLayer ||
+						layer === closeIconLayer ||
+						layer === airportLayer ||
+						layer === navaidLayer ||
+						layer === reportingpointLayer ||
+						layer === userWpLayer ||
+						layer === wpTrackLayer ||
+						layer === webcamLayer ||
+						layer === weatherLayer);
 				}
 			);
 
@@ -842,14 +861,36 @@ function mapService($http, trafficService, weatherService)
 				},
 				null,
 				function (layer) {
-					return layer === geopointLayer || layer === iconLayer || layer === globalWpLayer || layer === userWpLayer || layer === wpTrackLayer || layer === trafficLayer || layer === webcamLayer || layer === weatherLayer;
+					return (layer === geopointLayer ||
+						layer === closeIconLayer ||
+						layer === airportLayer ||
+						layer === navaidLayer ||
+						layer === reportingpointLayer ||
+						layer === userWpLayer ||
+						layer === wpTrackLayer ||
+						layer === trafficLayer ||
+						layer === webcamLayer ||
+						layer === weatherLayer);
 				}
 			);
 
-			if (hitLayer === geopointLayer || hitLayer === iconLayer || hitLayer === globalWpLayer || hitLayer === userWpLayer || hitLayer === wpTrackLayer || hitLayer === trafficLayer || hitLayer === webcamLayer || hitLayer === weatherLayer)
+			if (hitLayer === geopointLayer ||
+					hitLayer === closeIconLayer ||
+					hitLayer === airportLayer ||
+					hitLayer === navaidLayer ||
+					hitLayer === reportingpointLayer ||
+					hitLayer === userWpLayer ||
+					hitLayer === wpTrackLayer ||
+					hitLayer === trafficLayer ||
+					hitLayer === webcamLayer ||
+					hitLayer === weatherLayer)
+			{
 				map.getTargetElement().style.cursor = 'pointer';
+			}
 			else
+			{
 				map.getTargetElement().style.cursor = '';
+			}
 		}
 
 
@@ -933,7 +974,7 @@ function mapService($http, trafficService, weatherService)
 		layerSource.clear();
 		
 		isGeopointSelectionActive = true;
-		
+
 		// add clickpoint (coordinates only)
 		if (geopoints.length < 8 && clickPixel)
 		{
@@ -1054,14 +1095,44 @@ function mapService($http, trafficService, weatherService)
 			layerSource.addFeature(line);
 
 
-			// add airport object
-			if (geopoints[i].airport_icao)
+			// add cached objects
+			if (geopoints[i].type == 'airport')
 			{
 				var ap = airports[geopoints[i].airport_icao];
 
 				if (ap) {
 					geoPoint.airport = ap;
 					labelPoint.airport = ap;
+				}
+			}
+			else if (geopoints[i].type == 'navaid')
+			{
+				var nav = navaids[geopoints[i].id];
+
+				if (nav)
+				{
+					geoPoint.navaid = nav;
+					labelPoint.navaid = nav;
+				}
+			}
+			else if (geopoints[i].type == 'global')
+			{
+				var rp = reportingPoints[geopoints[i].id];
+
+				if (rp)
+				{
+					geoPoint.reportingpoint = rp;
+					labelPoint.reportingpoint = rp;
+				}
+			}
+			else if (geopoints[i].type == 'user')
+			{
+				var uwp = userWaypoints[geopoints[i].id];
+
+				if (uwp)
+				{
+					geoPoint.userWaypoint = uwp;
+					labelPoint.userWaypoint = uwp;
 				}
 			}
 		}
@@ -1103,13 +1174,18 @@ function mapService($http, trafficService, weatherService)
 				{
 					for (var i = 0; i < data.userWaypoints.length; i++)
 					{
+						var uwp = data.userWaypoints[i];
+
+						// cache for later use
+						userWaypoints[uwp.id] = uwp;
+
 						var userWpFeature = new ol.Feature({
-							geometry: new ol.geom.Point(ol.proj.fromLonLat([data.userWaypoints[i].longitude, data.userWaypoints[i].latitude]))
+							geometry: new ol.geom.Point(ol.proj.fromLonLat([uwp.longitude, uwp.latitude]))
 						});
 						
-						userWpFeature.userWaypoint = data.userWaypoints[i];
+						userWpFeature.userWaypoint = uwp;
 
-						var userWpStyle = createUserWpStyle(data.userWaypoints[i].type, data.userWaypoints[i].name);
+						var userWpStyle = createUserWpStyle(uwp.type, uwp.name);
 						
 						if (userWpStyle)
 							userWpFeature.setStyle(userWpStyle);
@@ -1495,7 +1571,7 @@ function mapService($http, trafficService, weatherService)
 			closerFeature.setStyle(closerStyle);
 			closerFeature.closeLayer = chartLayer;
 
-			iconLayer.getSource().addFeature(closerFeature);
+			closeIconLayer.getSource().addFeature(closerFeature);
 		}
 	}
 
@@ -1506,13 +1582,13 @@ function mapService($http, trafficService, weatherService)
 			map.removeLayer(chartLayers[i]);
 
 
-		var iconFeatures = iconLayer.getSource().getFeatures();
+		var iconFeatures = closeIconLayer.getSource().getFeatures();
 
 
 		for (var j = 0; j < iconFeatures.length; j++)
 		{
 			if (iconFeatures[j].closeLayer)
-				iconLayer.getSource().removeFeature(iconFeatures[j]);
+				closeIconLayer.getSource().removeFeature(iconFeatures[j]);
 		}
 
 		chartLayers = [];
@@ -1544,7 +1620,8 @@ function mapService($http, trafficService, weatherService)
 					actype: acList[acAddress].actype,
 					address: acAddress,
 					addresstype: acList[acAddress].addresstype,
-					callsign: ''
+					callsign: '',
+					receiver: acList[acAddress].positions[acList[acAddress].positions.length - 1].receiver
 				};
 				
 				if (acList[acAddress].addresstype == "ICAO")
@@ -1640,6 +1717,7 @@ function mapService($http, trafficService, weatherService)
 			var icon = "icon/";
 			var color = "#FF0000";
 			var heighttext = "";
+			var typetext = "";
 
 			if (!acInfo.callsign)
 				acInfo.callsign = "";
@@ -1675,13 +1753,28 @@ function mapService($http, trafficService, weatherService)
 					rotation = 0;
 					break;
 				case "UKNOWN":
-				case "TOW_PLANE":
-				case "DROP_PLANE":
-				case "POWERED_AIRCRAFT":
-				case "JET_AIRCRAFT":
-				case "UFO":
-				case "UAV":
+					icon += "traffic_unknown" + iconSuffix + ".png";
+					rotation = 0;
+					break;
 				case "STATIC_OBJECT":
+					icon += "traffic_static" + iconSuffix + ".png";
+					rotation = 0;
+					break;
+				case "DROP_PLANE":
+					typetext = " - Drop Plane";
+					icon += "traffic_plane" + iconSuffix + ".png";
+					break;
+				case "UFO":
+					typetext = " - UFO";
+					icon += "traffic_plane" + iconSuffix + ".png";
+					break;
+				case "UAV":
+					typetext = " - UAV";
+					icon += "traffic_plane" + iconSuffix + ".png";
+					break;
+				case "POWERED_AIRCRAFT":
+				case "TOW_PLANE":
+				case "JET_AIRCRAFT":
 				default:
 					icon += "traffic_plane" + iconSuffix + ".png";
 					break;
@@ -1704,7 +1797,7 @@ function mapService($http, trafficService, weatherService)
 					}),
 					text: new ol.style.Text({
 						font: 'bold 14px Calibri,sans-serif',
-						text: heighttext,
+						text: heighttext + typetext,
 						fill: new ol.style.Fill({color: color}),
 						stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2}),
 						offsetX: 0,

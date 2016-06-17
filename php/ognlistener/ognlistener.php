@@ -142,7 +142,8 @@ while(!feof($fp))
                 "time" => date("H:i:s", $time_utc),
                 "latitude" => $lat,
                 "longitude" => $lon,
-                "altitude" => $alt_m
+                "altitude" => $alt_m,
+                "receiver" => $matches["receiver"]
             );
 
             fwrite($file, json_encode($ognmessage, JSON_NUMERIC_CHECK) . "\n");

@@ -25,6 +25,11 @@
 	{
 		while ($rs = $result->fetch_array(MYSQLI_ASSOC))
 		{
+		    $unit = "MHz";
+
+		    if ($rs["type"] == "NDB")
+		        $unit = "kHz";
+
 			$navaids[] = array(
 				id => $rs["id"],
 				type => $rs["type"],
@@ -32,10 +37,11 @@
 				kuerzel => $rs["kuerzel"],
 				latitude => $rs["latitude"],
 				longitude => $rs["longitude"],
-//				elevation => $rs["elevation"],
-				frequency => $rs["frequency"]
-//				declination => $rs["declination"],
-//				truenorth => $rs["truenorth"]
+				elevation => $rs["elevation"],
+				frequency => $rs["frequency"],
+				unit => $unit,
+				declination => $rs["declination"],
+				truenorth => $rs["truenorth"]
 			);
 		}
 		
