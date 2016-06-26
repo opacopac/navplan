@@ -25,6 +25,7 @@
 	<script src="js/bootstrap.min.js"></script>
 	<script src="js/ui-bootstrap-tpls-1.3.2.min.js"></script>
 	<script src="js/ol.js"></script>
+	<script src="js/turf.min.js"></script>
 	<script src="navplanHelper.js"></script>
 	<script src="navplanApp.js"></script>
 	<script src="navplanCtrl.js"></script>

@@ -193,7 +193,7 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 
 			if (feature.acInfo.addresstype != "ICAO")
 			{
-				mapService.addOverlay(feature.getGeometry().getCoordinates(), trafficContainer);
+				mapService.addOverlay(feature.getGeometry().getCoordinates(), trafficContainer, true);
 				$scope.$apply();
 			}
 			else {
@@ -212,7 +212,7 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 									$scope.selectedTraffic.manufacturer = acDetails.manufacturer;
 								}
 
-								mapService.addOverlay(feature.getGeometry().getCoordinates(), trafficContainer);
+								mapService.addOverlay(feature.getGeometry().getCoordinates(), trafficContainer, true);
 							}
 						},
 						function (response) {
@@ -228,7 +228,7 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 		else if (feature.weatherInfo)
 		{
 			$scope.selectedWeather = feature.weatherInfo;
-			mapService.addOverlay(feature.getGeometry().getCoordinates(), weatherContainer);
+			mapService.addOverlay(feature.getGeometry().getCoordinates(), weatherContainer, true);
 			$scope.$apply();
 		}
 
@@ -367,7 +367,7 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 		$scope.selectedWeather = $scope.globalData.selectedWp.airport.weatherInfo;
 		$scope.selectedWeather.airport_icao = $scope.globalData.selectedWp.airport.icao;
 		var coords = mapService.getMercatorCoordinates($scope.globalData.selectedWp.airport.latitude, $scope.globalData.selectedWp.airport.longitude);
-		mapService.addOverlay(coords, weatherContainer);
+		mapService.addOverlay(coords, weatherContainer, true);
 	};
 
 
@@ -378,7 +378,7 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 		$('#ad_details').hide();
 		$('#ad_charts').hide();
 
-		mapService.addOverlay(coordinates, featureContainer);
+		mapService.addOverlay(coordinates, featureContainer, true);
 	};
 
 

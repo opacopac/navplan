@@ -61,7 +61,14 @@
 			// add runways
 			foreach ($airport->RWY as $runway)
 			{
-				$query = "INSERT INTO openaip_runways (airport_id, operations, name, surface, length, width, direction1, direction2) VALUES (";
+			    $tora1 = ($runway->DIRECTION[0]->RUNS && $runway->DIRECTION[0]->RUNS->TORA) ? $runway->DIRECTION[0]->RUNS->TORA : "NULL";
+			    $tora2 = ($runway->DIRECTION[1]->RUNS && $runway->DIRECTION[1]->RUNS->TORA) ? $runway->DIRECTION[1]->RUNS->TORA : "NULL";
+			    $lda1 = ($runway->DIRECTION[0]->RUNS && $runway->DIRECTION[0]->RUNS->LDA) ? $runway->DIRECTION[0]->RUNS->LDA : "NULL";
+			    $lda2 = ($runway->DIRECTION[1]->RUNS && $runway->DIRECTION[1]->RUNS->LDA) ? $runway->DIRECTION[1]->RUNS->LDA : "NULL";
+			    $papi1 = ($runway->DIRECTION[0]->LANDINGAIDS && $runway->DIRECTION[0]->LANDINGAIDS->PAPI && $runway->DIRECTION[0]->LANDINGAIDS->PAPI == 'TRUE') ? '1' : "NULL";
+			    $papi2 = ($runway->DIRECTION[1]->LANDINGAIDS && $runway->DIRECTION[1]->LANDINGAIDS->PAPI && $runway->DIRECTION[1]->LANDINGAIDS->PAPI == 'TRUE') ? '1' : "NULL";
+
+				$query = "INSERT INTO openaip_runways (airport_id, operations, name, surface, length, width, direction1, direction2, tora1, tora2, lda1, lda2, papi1, papi2) VALUES (";
 				$query .= " '" . $airport_id . "',";
 				$query .= " '" . $runway['OPERATIONS'] . "',";
 				$query .= " '" . mysqli_real_escape_string($conn, $runway->NAME) . "',";
@@ -69,7 +76,13 @@
 				$query .= " '" . $runway->LENGTH . "',";
 				$query .= " '" . $runway->WIDTH . "',";
 				$query .= " '" . $runway->DIRECTION[0]['TC'] . "',";
-				$query .= " '" . $runway->DIRECTION[1]['TC'] . "'";
+				$query .= " '" . $runway->DIRECTION[1]['TC'] . "',";
+				$query .= " " . $tora1 . ",";
+				$query .= " " . $tora2 . ",";
+				$query .= " " . $lda1 . ",";
+				$query .= " " . $lda2 . ",";
+				$query .= " " . $papi1 . ",";
+				$query .= " " . $papi2 . "";
 				$query .= ")";
 				
 				$result = $conn->query($query);

@@ -8,24 +8,14 @@
 
     // load airports
 	$query  = "SELECT";
-	/*$query .= "  apt.id,";*/
 	$query .= "  apt.type,";
 	$query .= "  apt.name,";
 	$query .= "  apt.icao,";
 	$query .= "  apt.latitude,";
 	$query .= "  apt.longitude,";
 	$query .= "  apt.elevation";
-	/*$query .= "  rwy.surface,";
-	$query .= "  rwy.direction1,";
-	$query .= "  rad.frequency,";
-	$query .= "  (CASE WHEN rad.type = 'TOWER' THEN 'TWR' WHEN rad.frequency IS NOT NULL THEN 'AD' ELSE NULL END) AS callsign";*/
 	$query .= " FROM openaip_airports AS apt";
-	/*$query .= " INNER JOIN openaip_runways AS rwy ";
-	$query .= "   ON rwy.id = (SELECT rwy2.id FROM openaip_runways AS rwy2 WHERE rwy2.airport_id = apt.id ORDER BY rwy2.length DESC LIMIT 1)";
-	$query .= " LEFT JOIN openaip_radios AS rad ";
-	$query .= "   ON rad.id = (SELECT rad2.id FROM openaip_radios AS rad2 WHERE rad2.airport_id = apt.id AND rad2.category = 'COMMUNICATION' AND (rad2.type = 'TOWER' OR rad2.type = 'INFO' OR (rad2.type = 'OTHER' && rad2.typespec LIKE 'AD%')) ORDER BY rad2.type DESC LIMIT 1)";
-	$query .= " ORDER BY apt.id";*/
-		
+
 	$result = $conn->query($query);
 	
 	if ($result === FALSE)
@@ -47,10 +37,6 @@
 			webcams => [],
 			charts => [],
 			mapfeatures => []
-			/*rwy_surface => $rs["surface"],
-			rwy_direction1 => $rs["direction1"],
-			frequency => $rs["frequency"],
-			callsign => $rs["callsign"]*/
 		);
 	}
 
@@ -61,7 +47,14 @@
 	$query .= "  rwy.surface,";
 	$query .= "  rwy.length,";
 	$query .= "  rwy.width,";
-	$query .= "  rwy.direction1";
+	$query .= "  rwy.direction1,";
+	$query .= "  rwy.direction2,";
+	$query .= "  rwy.tora1,";
+	$query .= "  rwy.tora2,";
+	$query .= "  rwy.lda1,";
+	$query .= "  rwy.lda2,";
+	$query .= "  rwy.papi1,";
+	$query .= "  rwy.papi2";
 	$query .= " FROM openaip_runways AS rwy ";
 	$query .= " INNER JOIN openaip_airports AS apt ";
 	$query .= "   ON apt.id = rwy.airport_id";
@@ -80,7 +73,14 @@
 	        surface => $rs["surface"],
 	        length => $rs["length"],
 	        width => $rs["width"],
-	        direction1 => $rs["direction1"]
+	        direction1 => $rs["direction1"],
+	        direction2 => $rs["direction2"],
+	        tora1 => $rs["tora1"],
+	        tora2 => $rs["tora2"],
+	        lda1 => $rs["lda1"],
+	        lda2 => $rs["lda2"],
+	        papi1 => $rs["papi1"],
+	        papi2 => $rs["papi2"]
 	    );
 
 	    $airports[$rs["icao"]]["runways"][] = $runway;

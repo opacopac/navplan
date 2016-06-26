@@ -89,6 +89,7 @@
         echo "js/bootstrap.min.js\n";
         echo "js/ui-bootstrap-tpls-1.3.2.min.js\n";
         echo "js/ol.js\n";
+        echo "js/turf.min.js\n";
 		echo "navplanHelper.js\n";
 		echo "navplanApp.js\n";
 		echo "navplanCtrl.js\n";
