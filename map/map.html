@@ -150,6 +150,19 @@
 			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-danger btn-circle" ng-click="onRemoveSelectedWaypointClicked()"><i class="glyphicon glyphicon-remove"></i></button> Remove from Track</p>
 			<p ng-show="isLoggedIn()"><button type="button" class="btn btn-primary btn-circle" ng-click="onEditUserWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Save to my Waypoints</p>
 		</div>
+		<!-- waypoint without feature reference  -->
+		<div ng-show="globalData.selectedWp && !globalData.selectedWp.airport && !globalData.selectedWp.navaid && !globalData.selectedWp.reportingpoint && !globalData.selectedWp.userWaypoint && !globalData.selectedWp.geopoint">
+			<h4>{{ globalData.selectedWp.checkpoint }}</h4>
+			<p>{{ getPositionString(globalData.selectedWp.latitude, globalData.selectedWp.longitude) }}</p>
+			<p ng-show="globalData.selectedWp.alt">Altitude: {{ globalData.selectedWp.isminalt ? "min." : "" }} {{ globalData.selectedWp.ismaxalt ? "max." : "" }} {{ globalData.selectedWp.alt }}ft</p>
+			<p ng-show="globalData.selectedWp.callsign">Callsign: {{ globalData.selectedWp.callsign}}</p>
+			<p ng-show="globalData.selectedWp.freq">Frequency: {{ globalData.selectedWp.freq }}</p>
+			<p ng-show="globalData.selectedWp.remark">Remarks: {{ globalData.selectedWp.remark}}</p>
+			<hr />
+			<p><button type="button" class="btn btn-warning btn-circle" ng-click="onEditSelectedWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Edit Track Waypoint</p>
+			<p><button type="button" class="btn btn-danger btn-circle" ng-click="onRemoveSelectedWaypointClicked()"><i class="glyphicon glyphicon-remove"></i></button> Remove from Track</p>
+			<p ng-show="isLoggedIn()"><button type="button" class="btn btn-primary btn-circle" ng-click="onEditUserWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Save to my Waypoints</p>
+		</div>
 	</div>
 </div>
 <!-- traffic popup -->

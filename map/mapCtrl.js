@@ -174,6 +174,7 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 		else if (feature.waypoint)
 		{
 			$scope.globalData.selectedWp = feature.waypoint;
+			$scope.globalData.selectedWp.airport = feature.waypoint.airport; // if set, undefined otherwise
 			$scope.$apply();
 
 			$scope.openFeatureOverlay(feature.waypoint.latitude, feature.waypoint.longitude);
@@ -375,10 +376,10 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 	{
 		var coordinates = mapService.getMercatorCoordinates(latitude, longitude);
 
+		mapService.addOverlay(coordinates, featureContainer, true);
+
 		$('#ad_details').hide();
 		$('#ad_charts').hide();
-
-		mapService.addOverlay(coordinates, featureContainer, true);
 	};
 
 
@@ -809,15 +810,15 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 	{
 		switch (adtype)
 		{
-			case 'AD_CLOSED' : return "Aerodrome Closed";
+			case 'AD_CLOSED' : return "Closed Aerodrome";
 			case 'AD_MIL' : return "Military Aerodrome";
-			case 'AF_CIVIL' : return "Airfield Civil";
+			case 'AF_CIVIL' : return "Civil Airfield";
 			case 'AF_MIL_CIVIL' : return "Airfield (civil/military)";
 			case 'AF_WATER' : return "Water Airfield";
 			case 'APT' : return "Airport resp. Airfield IFR";
 			case 'GLIDING' : return "Glider Site";
-			case 'HELI_CIVIL' : return "Heliport Civil";
-			case 'HELI_MIL' : return "Heliport Military";
+			case 'HELI_CIVIL' : return "Civil Heliport";
+			case 'HELI_MIL' : return "Military Heliport";
 			case 'INTL_APT' : return "International Airport";
 			case 'LIGHT_AIRCRAFT' : return "Ultra Light Flying Site";
 			default : return "Unknown";

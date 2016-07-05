@@ -38,6 +38,9 @@
 		
 		foreach ($airport_file->WAYPOINTS->AIRPORT as $airport)
 		{
+		    if ($airport->COUNTRY != 'CH' && $airport->ICAO != 'LFSB')
+		        continue;
+
 			$query = "INSERT INTO openaip_airports (type, country, name, icao, latitude, longitude, elevation) VALUES (";
 			$query .= " '" . $airport['TYPE'] . "',";
 			$query .= " '" . $airport->COUNTRY . "',";

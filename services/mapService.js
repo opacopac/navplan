@@ -30,25 +30,26 @@ function mapService($http, trafficService, weatherService)
 	// return api reference
 	return {
 		MAX_ZOOMLEVEL: MAX_ZOOMLEVEL,
-		init: init,
-		getMapPosition: getMapPosition,
-		setMapPosition: setMapPosition,
-		updateSize: updateSize,
-		getViewExtent: getViewExtent,
-		updateWpTrack: updateWpTrack,
-		updateUserWaypoints: updateUserWaypoints,
-		updateFlightTrack: updateFlightTrack,
-		getMercatorCoordinates: getMercatorCoordinates,
-		getLatLonCoordinates: getLatLonCoordinates,
-		getDistance: getDistance,
-		getBearing: getBearing,
-		drawGeopointSelection: drawGeopointSelection,
 		addOverlay: addOverlay,
+		clearAllCharts: clearAllCharts,
 		closeOverlay: closeOverlay,
 		displayChart: displayChart,
-		clearAllCharts: clearAllCharts,
+		drawGeopointSelection: drawGeopointSelection,
+		getAirport: getAirport,
+		getBearing: getBearing,
+		getDistance: getDistance,
+		getLatLonCoordinates: getLatLonCoordinates,
+		getMapPosition: getMapPosition,
+		getMercatorCoordinates: getMercatorCoordinates,
+		getViewExtent: getViewExtent,
+		init: init,
+		setMapPosition: setMapPosition,
+		updateFlightTrack: updateFlightTrack,
 		updateLocation: updateLocation,
-		updateTraffic: updateTraffic
+		updateSize: updateSize,
+		updateTraffic: updateTraffic,
+		updateUserWaypoints: updateUserWaypoints,
+		updateWpTrack: updateWpTrack
 	};
 	
 	
@@ -641,9 +642,12 @@ function mapService($http, trafficService, weatherService)
 			$http.get('php/airspace.php')
 				.then(
 					function (response) { // success
-						if (response.data && response.data.airspace) {
-							for (var i = 0; i < response.data.airspace.length; i++) {
-								var airspace = response.data.airspace[i];
+						if (response.data && response.data.airspace)
+						{
+							for (var key in response.data.airspace)
+							{
+								var airspace = response.data.airspace[key];
+
 
 								// cache for later use
 								airspaces[airspace.id] = airspace;
@@ -732,6 +736,14 @@ function mapService($http, trafficService, weatherService)
 						})
 					});
 				}
+				else if (category == "A") {
+					return new ol.style.Style({
+						stroke: new ol.style.Stroke({
+							color: 'rgba(174, 30, 34, 0.8)',
+							width: 3
+						})
+					});
+				}
 				else if (category == "C" || category == "D") {
 					return new ol.style.Style({
 						stroke: new ol.style.Stroke({
@@ -740,7 +752,7 @@ function mapService($http, trafficService, weatherService)
 						})
 					});
 				}
-				else if (category == "E") {
+				else if (category == "E" || category == "TMZ") {
 					return new ol.style.Style({
 						stroke: new ol.style.Stroke({
 							color: 'rgba(23, 128, 194, 0.8)',
@@ -1019,22 +1031,22 @@ function mapService($http, trafficService, weatherService)
 		layerSource.clear();
 		isGeopointSelectionActive = true;
 
+		var clickLonLat;
+		if (clickPixel)
+			clickLonLat = ol.proj.toLonLat(map.getCoordinateFromPixel(clickPixel));
+		else
+			clickLonLat = ol.proj.fromLonLat([geopoints[0].longitude, geopoints[0].latitude]);
+
+		// limit to 6 points
 		var maxPoints = 6;
 		if (geopoints.length > maxPoints)
 			geopoints = geopoints.splice(0, maxPoints);
 
-		var airspaceSelection = [];
+		// add clickpoint if less than 6 points found
+		if (clickPixel && geopoints.length < maxPoints)
+			geopoints.push(getClickPoint(clickLonLat));
 
-		if (clickPixel)
-		{
-			var clickLonLat = ol.proj.toLonLat(map.getCoordinateFromPixel(clickPixel));
-
-			// add clickpoint (coordinates only)
-			if (geopoints.length < maxPoints)
-				geopoints.push(getClickPoint(clickLonLat));
-
-			airspaceSelection = checkAirspaces(clickLonLat);
-		}
+		var airspaceSelection = getAirspacesAtLatLon(clickLonLat);
 
 		var numPointsB = Math.floor(geopoints.length / 3);
 		var numPointsT = geopoints.length - numPointsB;
@@ -1043,19 +1055,19 @@ function mapService($http, trafficService, weatherService)
 
 		// create top/bottom partitions
 		var pointsT = geopoints.slice(0).sort(function(a, b) { return b.latitude - a.latitude });
-		var pointsB = pointsT.splice(numPointsT, numPointsB).sort(function(a, b) { return a.latitude - b.latitude });
+		var pointsB = pointsT.splice(numPointsT, numPointsB);
 
 		// create top left/right partitions
 		var pointsTL = pointsT.slice(0).sort(function(a, b) { return a.longitude - b.longitude });
 		var pointsTR = pointsTL.splice(numPointsTL, numPointsTR);
 
-		pointsTL.sort(function(a, b) { return a.latitude - b.latitude });
-		pointsTR.sort(function(a, b) { return b.latitude - a.latitude });
+		sortQuadrantClockwise(pointsTL, true, true);
+		sortQuadrantClockwise(pointsTR, true, false);
+		sortQuadrantClockwise(pointsB, false, true);
 
-
-		setLabelCoordinates(pointsTL, Math.PI * 1.5, clickPixel);
-		setLabelCoordinates(pointsTR, 0.0, clickPixel);
-		setLabelCoordinates(pointsB, Math.PI, clickPixel);
+		setLabelCoordinates(pointsTL, Math.PI * 1.5);
+		setLabelCoordinates(pointsTR, 0.0);
+		setLabelCoordinates(pointsB, Math.PI);
 
 
 		for (var i = 0; i < geopoints.length; i++)
@@ -1080,9 +1092,9 @@ function mapService($http, trafficService, weatherService)
 		//addAirspaceFeature(layerSource, airspaceSelection, geopoints);
 
 
-		function checkAirspaces(clickLonLat)
+		function getAirspacesAtLatLon(clickLonLat)
 		{
-			var airspaceSelection = [];
+			var asList = [];
 			var pt = turf.point(clickLonLat);
 
 			for (key in airspaces) {
@@ -1094,10 +1106,53 @@ function mapService($http, trafficService, weatherService)
 				var poly = turf.polygon([airspace.polygon]);
 
 				if (turf.inside(pt, poly))
-					airspaceSelection.push(airspace);
+					asList.push(airspace);
 			}
 
-			return airspaceSelection;
+			// reset previous exclusions
+			for (var i = 0; i < asList.length; i++)
+			{
+				asList[i].hide = undefined;
+				asList[i].alt.bottom_replace = undefined;
+			}
+
+			// check exclusions
+			for (i = 0; i < asList.length; i++)
+			{
+				if (asList[i].exclude_aip_id)
+				{
+					for (var j = 0; j < asList.length; j++)
+					{
+						if (asList[j].aip_id == asList[i].exclude_aip_id)
+						{
+							var as1b = getAirspaceHeight(asList[i].alt.bottom);
+							var as1t = getAirspaceHeight(asList[i].alt.top);
+							var as2b = getAirspaceHeight(asList[j].alt.bottom);
+							var as2t = getAirspaceHeight(asList[j].alt.top);
+
+							if (as1b <= as2b && as1t >= as2t) // as1 completely embraces as2
+								asList[j].hide = true;
+							else if (as1b <= as2b && as1t <= as2t && as1t > as2b) // as1 pushes from below into as2
+								asList[j].alt.bottom_replace = asList[i].alt.top;
+						}
+					}
+				}
+			}
+
+
+			// sort airspaces top to bottom
+			asList.sort(function(a, b) { return getAirspaceHeight(b.alt.bottom) - getAirspaceHeight(a.alt.bottom); });
+
+			return asList;
+		}
+
+
+		function getAirspaceHeight(height)
+		{
+			if (height.unit == 'FL')
+				return height.height * 100;
+			else
+				return height.height;
 		}
 
 
@@ -1116,7 +1171,34 @@ function mapService($http, trafficService, weatherService)
 		}
 
 
-		function setLabelCoordinates(geopoints, rotationRad, centerPixel)
+		function sortQuadrantClockwise(geopoints, isTopQuadrant, isLeftQuadrant)
+		{
+			if (!geopoints || geopoints.length <= 0)
+				return;
+
+			var center = { latitude: undefined, longitude: undefined };
+
+			geopoints.sort(function(a, b) { return a.latitude - b.latitude }); // bottom to top
+
+			if (isTopQuadrant)
+				center.latitude = geopoints[0].latitude - 0.1;
+			else
+				center.latitude = geopoints[geopoints.length - 1].latitude + 0.1;
+
+			geopoints.sort(function(a, b) { return a.longitude - b.longitude}); // left to right
+
+			if (isLeftQuadrant)
+				center.longitude = geopoints[geopoints.length - 1].longitude + 0.1;
+			else
+				center.longitude = geopoints[0].longitude - 0.1;
+
+			geopoints.sort(function(a, b) {
+				return Math.atan2(b.latitude - center.latitude, b.longitude - center.longitude) - Math.atan2(a.latitude - center.latitude, a.longitude - center.longitude)
+			});
+		}
+
+
+		function setLabelCoordinates(geopoints, rotationRad)
 		{
 			if (geopoints.length == 0)
 				return;
@@ -1240,28 +1322,16 @@ function mapService($http, trafficService, weatherService)
 			pixelTopLeft[1] += 10;
 
 
-			// sort airspaces top to bottom
-			airspaceSelection.sort(function(a, b) {
-				var heightA, heightB;
-
-				if (a.alt.bottom.unit == 'FL')
-					heightA = a.alt.bottom.height * 100;
-				else
-					heightA = a.alt.bottom.height;
-
-				if (b.alt.bottom.unit == 'FL')
-					heightB = b.alt.bottom.height * 100;
-				else
-					heightB = b.alt.bottom.height;
-
-				return heightB - heightA;
-			});
-
-			
 			var airspaceHtml = '<table style="border-spacing: 3px; border-collapse: separate;">';
 
-			for (var j = 0; j < airspaceSelection.length; j++) {
+			for (var j = 0; j < airspaceSelection.length; j++)
+			{
 				var airspace = airspaceSelection[j];
+
+				if (airspace.hide)
+					continue;
+
+				var bottom_height = airspace.alt.bottom_replace ? airspace.alt.bottom_replace : airspace.alt.bottom;
 
 				// box
 				airspaceHtml += '<tr><td><div style="position:relative"><table class="airspace-overlay ' + getBoxClass(airspace) + '">';
@@ -1270,7 +1340,7 @@ function mapService($http, trafficService, weatherService)
 				airspaceHtml += '<tr style="border-bottom: thin solid"><td>' + getHeightText(airspace.alt.top) + '</td></tr>';
 
 				// bottom height
-				airspaceHtml += '<tr><td>' + getHeightText(airspace.alt.bottom) + '</td></tr>';
+				airspaceHtml += '<tr><td>' + getHeightText(bottom_height) + '</td></tr>';
 
 				airspaceHtml += '</table>';
 
@@ -1342,6 +1412,10 @@ function mapService($http, trafficService, weatherService)
 						classStyle = "airspace-class-blue";
 						catText = "D";
 						break;
+					case 'TMZ':
+						classStyle = "airspace-class-blue";
+						catText = "E";
+						break;
 					default:
 						catText = undefined;
 				}
@@ -1357,6 +1431,7 @@ function mapService($http, trafficService, weatherService)
 			{
 				var classStyle;
 				var text = airspace.name;
+				//text += '(' + airspace.aip_id + ')';
 
 				switch (airspace.category)
 				{
@@ -2239,5 +2314,11 @@ function mapService($http, trafficService, weatherService)
 		var t = Math.atan2(y, x);
 
 		return ((t * toDeg + 360) % 360 - magvar);
+	}
+
+
+	function getAirport(icao)
+	{
+		return airports[icao];
 	}
 }

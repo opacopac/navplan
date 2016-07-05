@@ -5,9 +5,9 @@
 navplanApp
 	.controller('waypointCtrl', waypointCtrl);
 	
-waypointCtrl.$inject = ['$scope', '$http', 'geonameService', 'fuelService', 'userService', 'globalData'];
+waypointCtrl.$inject = ['$scope', '$http', 'geonameService', 'fuelService', 'userService', 'mapService', 'globalData'];
 
-function waypointCtrl($scope, $http, geonameService, fuelService, userService, globalData) {
+function waypointCtrl($scope, $http, geonameService, fuelService, userService, mapService, globalData) {
 	$scope.globalData = globalData;
 	$scope.newWp = undefined;
 
@@ -127,6 +127,11 @@ function waypointCtrl($scope, $http, geonameService, fuelService, userService, g
 	
 	$scope.getWaypointFromData = function (wp_data)
 	{
+		var ap = undefined;
+
+		if (wp_data.airport_icao)
+			ap = mapService.getAirport(wp_data.airport_icao);
+
 		return {
 			type: wp_data.type,
 			freq: wp_data.freq,
@@ -142,7 +147,8 @@ function waypointCtrl($scope, $http, geonameService, fuelService, userService, g
 			alt: wp_data.alt,
 			isminalt: wp_data.isminalt,
 			ismaxalt: wp_data.ismaxalt,
-			remark: wp_data.remark
+			remark: wp_data.remark,
+			airport: ap
 		};
 	};
 	
