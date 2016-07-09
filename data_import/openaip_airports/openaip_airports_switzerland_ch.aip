@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 
 <!--
-*  Exported on: 24.03.2016
+*  Exported on: 10.06.2016
 *  This data is owned by Butterfly Avionics GmbH and licensed under the CC BY-NC-SA,
 *  not to be used for commercial purposes. For more information on commercial licensing visit
 *  
@@ -24,7 +24,7 @@
 *  POSSIBILITY OF SUCH DAMAGES.
 -->
 
-<OPENAIP VERSION="1194729" DATAFORMAT="1.1">
+<OPENAIP VERSION="1263821" DATAFORMAT="1.1">
 <WAYPOINTS>
 <AIRPORT TYPE="AD_MIL">
   <COUNTRY>CH</COUNTRY>
@@ -460,11 +460,9 @@
     <LON>7.4914</LON>
     <ELEV UNIT="M">535.8384</ELEV>
   </GEOLOCATION>
-  <RADIO CATEGORY="INFORMATION">
+  <RADIO CATEGORY="COMMUNICATION">
     <FREQUENCY>118.175</FREQUENCY>
-    <TYPE>OTHER</TYPE>
-    <TYPESPEC>AFIS</TYPESPEC>
-    <DESCRIPTION>AFIS</DESCRIPTION>
+    <TYPE>GLIDING</TYPE>
   </RADIO>
   <RWY OPERATIONS="ACTIVE">
     <NAME>11/29</NAME>
@@ -2122,6 +2120,16 @@
     <DIRECTION TC="330">
     </DIRECTION>
   </RWY>
+</AIRPORT>
+<AIRPORT TYPE="HELI_CIVIL">
+  <COUNTRY>CH</COUNTRY>
+  <NAME>TROGEN</NAME>
+  <ICAO>LSXT</ICAO>
+  <GEOLOCATION>
+    <LAT>47.408888888889</LAT>
+    <LON>9.4730555555556</LON>
+    <ELEV UNIT="M">809</ELEV>
+  </GEOLOCATION>
 </AIRPORT>
 <AIRPORT TYPE="AD_CLOSED">
   <COUNTRY>CH</COUNTRY>

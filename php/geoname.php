@@ -34,7 +34,7 @@
 
 		// cols: type, id, name, wpname, frequency, callsign, airport_icao, latitude, longitude, elevation
 	
-		$query = "(SELECT 'airport' AS type, 0 AS id, CONCAT(icao, ' (', name ,')') AS name, icao AS wpname, NULL AS frequency, NULL AS callsign, icao AS airport_icao, latitude, longitude, elevation FROM openaip_airports WHERE";
+		$query = "(SELECT 'airport' AS type, id, CONCAT(icao, ' (', name ,')') AS name, icao AS wpname, NULL AS frequency, NULL AS callsign, icao AS airport_icao, latitude, longitude, elevation FROM openaip_airports WHERE";
 		$query .= " icao LIKE '" . $search . "%'";
 		$query .= " OR name LIKE '" . $search . "%'";
 		$query .= " ORDER BY icao ASC";
@@ -42,7 +42,7 @@
 
 		$query .= " UNION ";
 		
-		$query .= "(SELECT 'navaid' AS type, 0 AS id, CONCAT(name, ' (', type, ')') AS name, CONCAT(kuerzel, ' ', type) AS wpname, frequency, kuerzel AS callsign, NULL AS airport_icao, latitude, longitude, elevation FROM openaip_navaids WHERE";
+		$query .= "(SELECT 'navaid' AS type, id, CONCAT(name, ' (', type, ')') AS name, CONCAT(kuerzel, ' ', type) AS wpname, frequency, kuerzel AS callsign, NULL AS airport_icao, latitude, longitude, elevation FROM openaip_navaids WHERE";
 		$query .= " kuerzel LIKE '" . $search . "%'";
 		$query .= " OR name LIKE '" . $search . "%'";
 		$query .= " ORDER BY kuerzel ASC";
@@ -50,7 +50,7 @@
 
 		$query .= " UNION ";
 		
-		$query .= "(SELECT 'global' AS type, 0 AS id, name, name AS wpname, NULL AS frequency, NULL AS callsign, NULL AS airport_icao, latitude, longitude, NULL AS elevation FROM global_waypoints WHERE";
+		$query .= "(SELECT 'global' AS type, id, name, name AS wpname, NULL AS frequency, NULL AS callsign, NULL AS airport_icao, latitude, longitude, NULL AS elevation FROM global_waypoints WHERE";
 		$query .= " name LIKE '" . $search . "%'";
 		$query .= " ORDER BY name ASC";
 		$query .= " LIMIT 10)";
@@ -69,7 +69,7 @@
 
 		$query .= " UNION ";
 		
-		$query .= "(SELECT 'geoname' AS type, 0 AS id, name, name AS wpname, NULL AS frequency, NULL AS callsign, NULL AS airport_icao, latitude, longitude, elevation FROM geonames WHERE";
+		$query .= "(SELECT 'geoname' AS type, geonameid AS id, name, name AS wpname, NULL AS frequency, NULL AS callsign, NULL AS airport_icao, latitude, longitude, elevation FROM geonames WHERE";
 		$query .= " MATCH (name, alternatenames) AGAINST ('" . $search . "*' IN BOOLEAN MODE)";
 		$query .= " AND " . getGeonamesFilterQuery();
 		$query .= " ORDER BY population DESC";
@@ -94,7 +94,7 @@
 
 		// cols: sortorder, type, id, name, frequency, callsign, latitude, longitude, elevation
 
-		$query .= "SELECT 1 AS sortOrder, 'airport' AS type, 0 AS id, CONCAT(icao, ' (', name ,')') AS name, icao as wpname, NULL AS frequency, NULL AS callsign, icao AS airport_icao, latitude, longitude, elevation FROM openaip_airports WHERE";
+		$query .= "SELECT 1 AS sortOrder, 'airport' AS type, id, CONCAT(icao, ' (', name ,')') AS name, icao as wpname, NULL AS frequency, NULL AS callsign, icao AS airport_icao, latitude, longitude, elevation FROM openaip_airports WHERE";
 		$query .= " latitude > " . ($lat - $rad);
 		$query .= " AND latitude < " . ($lat + $rad);
 		$query .= " AND longitude > " . ($lon - $rad);
@@ -102,7 +102,7 @@
 
 		$query .= " UNION ";
 		
-		$query .= "SELECT 2 AS sortOrder, 'navaid' AS type, 0 AS id, CONCAT(name, ' (', type, ')') AS name, CONCAT(kuerzel, ' ', type) AS wpname, frequency, kuerzel AS callsign, NULL AS airport_icao, latitude, longitude, elevation FROM openaip_navaids WHERE";
+		$query .= "SELECT 2 AS sortOrder, 'navaid' AS type, id, CONCAT(name, ' (', type, ')') AS name, CONCAT(kuerzel, ' ', type) AS wpname, frequency, kuerzel AS callsign, NULL AS airport_icao, latitude, longitude, elevation FROM openaip_navaids WHERE";
 		$query .= " latitude > " . ($lat - $rad);
 		$query .= " AND latitude < " . ($lat + $rad);
 		$query .= " AND longitude > " . ($lon - $rad);
@@ -110,7 +110,7 @@
 		
 		$query .= " UNION ";
 		
-		$query .= "SELECT 3 AS sortOrder, 'global' AS type, 0 AS id, name, name AS wpname, NULL AS frequency, NULL AS callsign, NULL AS airport_icao, latitude, longitude, NULL AS elevation FROM global_waypoints WHERE";
+		$query .= "SELECT 3 AS sortOrder, 'global' AS type, id, name, name AS wpname, NULL AS frequency, NULL AS callsign, NULL AS airport_icao, latitude, longitude, NULL AS elevation FROM global_waypoints WHERE";
 		$query .= " latitude > " . ($lat - $rad);
 		$query .= " AND latitude < " . ($lat + $rad);
 		$query .= " AND longitude > " . ($lon - $rad);
@@ -131,7 +131,7 @@
 		
 		$query .= " UNION ";
 		
-		$query .= "SELECT 5 AS sortOrder, 'geoname' AS type, 0 AS id, name, name AS wpname, NULL AS frequency, NULL AS callsign, NULL AS airport_icao, latitude, longitude, elevation FROM geonames WHERE";
+		$query .= "SELECT 5 AS sortOrder, 'geoname' AS type, geonameid AS id, name, name AS wpname, NULL AS frequency, NULL AS callsign, NULL AS airport_icao, latitude, longitude, elevation FROM geonames WHERE";
 		$query .= " latitude > " . ($lat - $rad);
 		$query .= " AND latitude < " . ($lat + $rad);
 		$query .= " AND longitude > " . ($lon - $rad);

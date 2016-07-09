@@ -5,6 +5,16 @@
         header('HTTP/1.1 301 Moved Permanently');
         header('Location: ' . $redirect);
     }
+    else
+    {
+        header("Cache-Control: public, max-age=21600"); // max 6h
+
+        /*header("Cache-Control: no-store, no-cache, must-revalidate"); // HTTP/1.1
+        header("Cache-Control: post-check=0, pre-check=0", false);
+        header("Expires: Sat, 26 Jul 1997 05:02:00 GMT"); // Date in the past
+        header("Pragma: no-cache"); // HTTP/1.0
+        header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");*/
+    }
 ?><!DOCTYPE HTML>
 <html manifest='manifest.php' lang="de" data-ng-app="navplanApp" data-ng-controller="navplanCtrl">
 <head>
@@ -15,7 +25,7 @@
 	<link rel="stylesheet" href = "css/bootstrap.min.css">
 	<link rel="stylesheet" href = "css/ol.css">
 	<link rel="stylesheet" href = "css/arial-narrow.css" type="text/css" />
-	<link rel="stylesheet" href = "css/navplan.css">
+	<link rel="stylesheet" href = "css/navplan.css?v=1.1">
 	<script src="js/jquery-1.12.3.min.js"></script>
 	<script src="js/jquery-ui.min.js"></script>
 	<script src="js/jquery.ui.touch-punch.min.js"></script>
@@ -25,24 +35,25 @@
 	<script src="js/bootstrap.min.js"></script>
 	<script src="js/ui-bootstrap-tpls-1.3.2.min.js"></script>
 	<script src="js/ol.js"></script>
-	<script src="navplanHelper.js"></script>
-	<script src="navplanApp.js"></script>
-	<script src="navplanCtrl.js"></script>
-	<script src="map/mapCtrl.js"></script>
-	<script src="login/loginCtrl.js"></script>
-	<script src="forgotpw/forgotpwCtrl.js"></script>
-	<script src="edituser/edituserCtrl.js"></script>
-	<script src="waypoints/waypointCtrl.js"></script>
-	<script src="tracks/trackCtrl.js"></script>
-	<script src="settings/settingsCtrl.js"></script>
-	<script src="services/mapService.js"></script>
-	<script src="services/locationService.js"></script>
-	<script src="services/trafficService.js"></script>
-	<script src="services/geonameService.js"></script>
-	<script src="services/waypointService.js"></script>
-	<script src="services/fuelService.js"></script>
-	<script src="services/userService.js"></script>
-	<script src="services/weatherService.js"></script>
+	<script src="js/turf.min.js"></script>
+	<script src="navplanHelper.js?v=1.1"></script>
+	<script src="navplanApp.js?v=1.1"></script>
+	<script src="navplanCtrl.js?v=1.1"></script>
+	<script src="map/mapCtrl.js?v=1.1"></script>
+	<script src="login/loginCtrl.js?v=1.1"></script>
+	<script src="forgotpw/forgotpwCtrl.js?v=1.1"></script>
+	<script src="edituser/edituserCtrl.js?v=1.1"></script>
+	<script src="waypoints/waypointCtrl.js?v=1.1"></script>
+	<script src="tracks/trackCtrl.js?v=1.1"></script>
+	<script src="settings/settingsCtrl.js?v=1.1"></script>
+	<script src="services/mapService.js?v=1.1"></script>
+	<script src="services/locationService.js?v=1.1"></script>
+	<script src="services/trafficService.js?v=1.1"></script>
+	<script src="services/geonameService.js?v=1.1"></script>
+	<script src="services/waypointService.js?v=1.1"></script>
+	<script src="services/fuelService.js?v=1.1"></script>
+	<script src="services/userService.js?v=1.1"></script>
+	<script src="services/weatherService.js?v=1.1"></script>
 </head>
 <body>
 	<nav id="navbar" class="navbar navbar-default">

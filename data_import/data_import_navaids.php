@@ -28,10 +28,13 @@
 		if (is_dir($abs_filename))
 			continue;
 			
-		$airport_file = simplexml_load_file($abs_filename);
+		$navaid_file = simplexml_load_file($abs_filename);
 		
-		foreach ($airport_file->NAVAIDS->NAVAID as $navaid)
+		foreach ($navaid_file->NAVAIDS->NAVAID as $navaid)
 		{
+		    if ($navaid->COUNTRY != 'CH' && $navaid->ID != 'BLM' && $navaid->ID != 'BN' && $navaid->ID != 'BS')
+		        continue;
+
 			$query = "INSERT INTO openaip_navaids (type, country, name, kuerzel, latitude, longitude, elevation, frequency, declination, truenorth) VALUES (";
 			$query .= " '" . $navaid['TYPE'] . "',";
 			$query .= " '" . $navaid->COUNTRY . "',";
@@ -56,4 +59,4 @@
 	}
 	
 	print "done."
-?> 
+?>

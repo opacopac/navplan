@@ -121,12 +121,63 @@ function getYearMonthDayString(date)
 }
 
 
+function getDmsString(latitude, longitude)
+{
+	var latString = getCoordString(latitude);
+	if (latitude >= 0)
+		latString += " N";
+	else
+		latString += " S";
+
+	var lonString = getCoordString(longitude);
+	if (longitude >= 0)
+		lonString += " E";
+	else
+		lonString += " W";
+
+	return latString + " / " + lonString;
+
+	function getCoordString(coord)
+	{
+		var d = Math.floor(coord);
+		var m = Math.floor((coord - d) * 60);
+		var s = Math.floor((coord - d - m/60) * 3600);
+
+		return d + "° " + zeroPad(m) + "' " + zeroPad(s) + '"';
+	}
+}
+
+
 function zeroPad(number)
 {
 	if (number < 10)
 		return "0" + number;
 	else
 		return "" + number;
+}
+
+
+function getMorseString(text)
+{
+	var morse = {
+		"A": ".-", "B": "-...", "C": "-.-.", "D": "-..", "E": ".", "F": "..-.", "G": "--.", "H": "....", "I": "..", "J": ".---", "K": "-.-", "L": ".-..", "M": "--",
+		"N": "-.", "O": "---", "P": ".--.", "Q": "--.-", "R": ".-.", "S": "...", "T": "-", "U": "..-", "V": "...-", "W": ".--", "X": "-..-", "Y": "-.--", "Z": "--..",
+		"1": ".----", "2": "..---", "3": "...--", "4": "....-", "5": ".....", "6": "-....", "7": "--...", "8": "---..", "9": "----.", "0": "-----" };
+
+	var out = "";
+
+	for (var i = 0; i < text.length; i++)
+	{
+		if (i > 0)
+			out += " ";
+
+		var code = morse[text.substring(i, i + 1).toUpperCase()];
+
+		if (code && code.length > 0)
+			out += code;
+	}
+
+	return out;
 }
 
 
@@ -165,6 +216,18 @@ function unshrinkPositions(positions)
 function roundToDigits(num, digits)
 {
 	return Math.round(num * Math.pow(10, digits)) / Math.pow(10, digits);
+}
+
+
+function m2ft(height_m)
+{
+	return height_m * 3.2808;
+}
+
+
+function ft2m(height_ft)
+{
+	return height_ft / 3.2808;
 }
 
 

@@ -1,9 +1,11 @@
 #!/usr/bin/env php
 <?php
 
+$lockfile = './ognlistener.lock';
 $dumpfiles[0] = './ogndump0.txt';
 $dumpfiles[1] = './ogndump1.txt';
-$lockfile = './ognlistener.lock';
+$comlogfiles[0] = './comlog0.' . getmypid() . '.txt';
+$comlogfiles[1] = './comlog1.' . getmypid() . '.txt';
 
 $ogn_host = 'aprs.glidernet.org';
 $ogn_port = 14580;
@@ -84,6 +86,7 @@ $lastPing = (new DateTime())->getTimestamp();
 $logrotatesec = 120;
 $lastswitch = 0;
 $dumpindex = 1;
+$comlogindex = 1;
 
 
 // start
@@ -107,6 +110,7 @@ while(!feof($fp))
     if ($time - $lastswitch > $logrotatesec)
     {
         $file = switchfile($file);
+        $comlog = switchcomlogfile($comlog);
         $lastswitch = $time;
     }
 
@@ -114,13 +118,16 @@ while(!feof($fp))
     // send keep alive ping
     if ($time - $lastPing > $pingSeconds)
     {
-        fputs($fp, "# keepalive ping\r\n");
+        $pingstr = "# keepalive ping\r\n";
+        fputs($fp, $pingstr);
+        fputs($comlog, $pingstr);
         $lastPing = $time;
     }
 
 
     // read messages
     $line = fgets($fp);
+    fputs($comlog, $line);
     $ognmessage = false;
 
     if (substr($line, 0, 1) != "#")
@@ -142,7 +149,8 @@ while(!feof($fp))
                 "time" => date("H:i:s", $time_utc),
                 "latitude" => $lat,
                 "longitude" => $lon,
-                "altitude" => $alt_m
+                "altitude" => $alt_m,
+                "receiver" => $matches["receiver"]
             );
 
             fwrite($file, json_encode($ognmessage, JSON_NUMERIC_CHECK) . "\n");
@@ -194,6 +202,21 @@ function switchfile($file)
     $dumpindex = ($dumpindex + 1) % count($dumpfiles);
 
     $file = fopen($dumpfiles[$dumpindex], "w");
+
+    return $file;
+}
+
+
+function switchcomlogfile($file)
+{
+    global $comlogfiles, $comlogindex;
+
+    if ($file)
+        fclose($file);
+
+    $comlogindex = ($comlogindex + 1) % count($comlogfiles);
+
+    $file = fopen($comlogfiles[$comlogindex], "w");
 
     return $file;
 }

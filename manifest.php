@@ -44,7 +44,7 @@
 		echo "php/webcams.php\n";
 		
 		// css
-		echo "css/navplan.css\n";
+		echo "css/navplan.css?v=1.1\n";
 		echo "css/bootstrap.min.css\n";
 		echo "css/ol.css\n";
 		echo "css/arial-narrow.css\n";
@@ -89,23 +89,25 @@
         echo "js/bootstrap.min.js\n";
         echo "js/ui-bootstrap-tpls-1.3.2.min.js\n";
         echo "js/ol.js\n";
-		echo "navplanHelper.js\n";
-		echo "navplanApp.js\n";
-		echo "navplanCtrl.js\n";
-		echo "map/mapCtrl.js\n";
-		echo "login/loginCtrl.js\n";
-		echo "forgotpw/forgotpwCtrl.js\n";
-		echo "edituser/edituserCtrl.js\n";
-		echo "waypoints/waypointCtrl.js\n";
-		echo "tracks/trackCtrl.js\n";
-		echo "settings/settingsCtrl.js\n";
-		echo "services/mapService.js\n";
-		echo "services/locationService.js\n";
-		echo "services/trafficService.js\n";
-		echo "services/geonameService.js\n";
-		echo "services/waypointService.js\n";
-		echo "services/fuelService.js\n";
-		echo "services/userService.js\n";
+        echo "js/turf.min.js\n";
+		echo "navplanHelper.js?v=1.1\n";
+		echo "navplanApp.js?v=1.1\n";
+		echo "navplanCtrl.js?v=1.1\n";
+		echo "map/mapCtrl.js?v=1.1\n";
+		echo "login/loginCtrl.js?v=1.1\n";
+		echo "forgotpw/forgotpwCtrl.js?v=1.1\n";
+		echo "edituser/edituserCtrl.js?v=1.1\n";
+		echo "waypoints/waypointCtrl.js?v=1.1\n";
+		echo "tracks/trackCtrl.js?v=1.1\n";
+		echo "settings/settingsCtrl.js?v=1.1\n";
+		echo "services/mapService.js?v=1.1\n";
+		echo "services/locationService.js?v=1.1\n";
+		echo "services/trafficService.js?v=1.1\n";
+		echo "services/geonameService.js?v=1.1\n";
+		echo "services/waypointService.js?v=1.1\n";
+		echo "services/fuelService.js?v=1.1\n";
+		echo "services/userService.js?v=1.1\n";
+		echo "services/weatherService.js?v=1.1\n";
 		echo "\n";
 
 		

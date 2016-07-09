@@ -23,7 +23,7 @@ function geonameService($http)
 	// search by name
 	function searchGeonamesByValue(search)
 	{
-		var gradMinSecPattern = /^(\d+)\D+(\d+)\D+(\d+)(\D+)(\d+)\D+(\d+)\D+(\d+)(\D*)$/i;
+		var gradMinSecPattern = /^(\d+)\D+(\d+)\D+([\d\.]+)(\D+)(\d+)\D+(\d+)\D+([\d\.]+)(\D*)$/i;
 		var decGradPattern = /^([+-]?\d+\.\d+)[^\d\.+-]+([+-]?\d+\.\d+)$/i;
 		var matchGradMinSec = gradMinSecPattern.exec(search);
 		var matchDecGrad = decGradPattern.exec(search);
@@ -80,7 +80,7 @@ function geonameService($http)
 	{
 		var latG = parseInt(matchGradMinSec[1]);
 		var latM = parseInt(matchGradMinSec[2]);
-		var latS = parseInt(matchGradMinSec[3]);
+		var latS = parseFloat(matchGradMinSec[3]);
 		var latDir = matchGradMinSec[4];
 		var lat = latG + latM / 60 + latS / 3600;
 		if (latDir.toUpperCase().indexOf("S") >= 0)
@@ -88,7 +88,7 @@ function geonameService($http)
 		
 		var lonG = parseInt(matchGradMinSec[5]);
 		var lonM = parseInt(matchGradMinSec[6]);
-		var lonS = parseInt(matchGradMinSec[7]);
+		var lonS = parseFloat(matchGradMinSec[7]);
 		var lonDir = matchGradMinSec[8];
 		var lon = lonG + lonM / 60 + lonS / 3600;
 		if (lonDir.toUpperCase().indexOf("W") >= 0)

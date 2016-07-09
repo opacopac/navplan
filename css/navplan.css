@@ -92,22 +92,22 @@ html, body {
 }
 
 .map-currenttime {
-  font-size: 18px;
+  font-size: x-large; /* 18px;*/
   font-weight: bold;
   text-shadow: -1px 0px #FFFFFF, 1px 0px #FFFFFF, 0px -1px #FFFFFF, 0px 1px #FFFFFF;
   color: #000000;
 }
 
 .map-stoptime {
-  font-size: large;
+  font-size: x-large;
   font-style: italic;
   font-weight: bold;
   text-shadow: -1px 0px #FFFFFF, 1px 0px #FFFFFF, 0px -1px #FFFFFF, 0px 1px #FFFFFF;
-  color: #666666;
+  color: #555555;
 }
 
 .map-timer {
-  font-size: large;
+  font-size: x-large;
   font-style: italic;
   font-weight: bold;
   text-shadow: -1px 0px #FFFFFF, 1px 0px #FFFFFF, 0px -1px #FFFFFF, 0px 1px #FFFFFF;
@@ -242,4 +242,79 @@ html, body {
 
 .ol-attribution li {
   display: block;
+}
+
+.airspace-container {
+  position: absolute;
+}
+
+.airspace-overlay {
+  height: 50px;
+  width: 75px;
+  border-style: solid;
+  text-align: center;
+  font-weight: bold;
+}
+
+.airspace-overlay-blue {
+  background-color: rgba(255, 255, 255, 0.8);
+  border-color: rgba(23, 128, 194, 0.9);
+  color: rgba(23, 128, 194, 1.0);
+}
+
+.airspace-overlay-red {
+  background-color: rgba(255, 255, 255, 0.8);
+  border-color: rgba(174, 30, 34, 0.9);
+  color: rgba(174, 30, 34, 1.0);
+}
+
+.airspace-overlay-heighttext-normal {
+  font-style: normal;
+}
+
+.airspace-overlay-heighttext-agl {
+  font-style: italic;
+}
+
+.airspace-class {
+  position: absolute;
+  left: -10px;
+  top: 13px;
+  text-align: center;
+  font-weight: bold;
+  font-size: larger;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.airspace-class-red {
+  color: rgba(255, 255, 255, 1.0);
+  background-color: rgba(174, 30, 34, 1.0);
+}
+
+.airspace-class-blue {
+  color: rgba(255, 255, 255, 1.0);
+  background-color: rgba(23, 128, 194, 1.0);
+}
+
+.airspace-name {
+  position: absolute;
+  left: 80px;
+  top: 13px;
+  white-space: nowrap;
+  text-align: left;
+  font-weight: bold;
+  font-size: larger;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.airspace-name-red {
+  color: rgba(174, 30, 34, 1.0);
+  background-color: rgba(255, 255, 255, 0.8);
+}
+
+.airspace-name-blue {
+  color: rgba(23, 128, 194, 1.0);
+  background-color: rgba(255, 255, 255, 0.8);
 }

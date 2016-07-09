@@ -7,9 +7,6 @@
 		case "readNonAdWebcams":
 			readNonAdWebcams();
 			break;
-		case "readAdWebcams":
-			readAdWebcams();
-			break;
 		default:
 			die("no or unknown action!");
 	}
@@ -43,41 +40,6 @@
                 url => $rs["url"],
                 latitude => $rs["latitude"],
                 longitude => $rs["longitude"]
-            );
-        }
-
-        echo json_encode(array("webcams" => $webcams), JSON_NUMERIC_CHECK);
-
-        $conn->close();
-    }
-
-
-	function readAdWebcams()
-	{
-		// open db
-		$conn = openDb();
-
-        $query  = "SELECT";
-        $query .= "  id,";
-        $query .= "  name,";
-        $query .= "  url,";
-        $query .= "  airport_icao";
-        $query .= " FROM webcams";
-        $query .= " WHERE airport_icao IS NOT NULL";
-
-        $result = $conn->query($query);
-
-        if ($result === FALSE)
-            die("error reading webcams: " . $conn->error . " query:" . $query);
-
-
-        while ($rs = $result->fetch_array(MYSQLI_ASSOC))
-        {
-            $webcams[] = array(
-                id => $rs["id"],
-                name => $rs["name"],
-                url => $rs["url"],
-                airport_icao => $rs["airport_icao"]
             );
         }
 
