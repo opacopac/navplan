@@ -21,6 +21,7 @@
 		$query = "SELECT ";
 		$query .= "  id, ";
 		$query .= "  airport_icao, ";
+		$query .= "  source, ";
 		$query .= "  type, ";
 		$query .= "  filename, ";
 		$query .= "  mercator_n, ";
@@ -44,6 +45,7 @@
             $chart = array(
                 id => $rs["id"],
                 airport_icao => $rs["airport_icao"],
+                source => $rs["source"],
                 type => $rs["type"],
                 filename => $rs["filename"],
                 mercator_n => $rs["mercator_n"],

@@ -180,7 +180,7 @@
 
 		
 		// delete existing chart
-		$query = "DELETE FROM ad_charts WHERE airport_icao = '" . $icao . "' AND type = '" . $chartname . "'";
+		$query = "DELETE FROM ad_charts WHERE airport_icao = '" . $icao . "' AND source = 'VFRM' AND type = '" . $chartname . "'";
 
 		$result = $conn->query($query);
 		
@@ -189,8 +189,9 @@
 			
 
 		// insert new chart
-		$query = "INSERT INTO ad_charts (airport_icao, type, filename, mercator_e, mercator_w, mercator_n, mercator_s) VALUES (";
+		$query = "INSERT INTO ad_charts (airport_icao, source, type, filename, mercator_e, mercator_w, mercator_n, mercator_s) VALUES (";
 		$query .= " '" . $icao . "', ";
+		$query .= " 'VFRM', ";
 		$query .= " '" . $chartname . "', ";
 		$query .= " '" . $output_filename . "', ";
 		$query .= " '" . $mer_maxeast . "', ";

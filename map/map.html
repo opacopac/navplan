@@ -94,7 +94,10 @@
 			</div>
 			<p ng-show="globalData.selectedWp.airport.charts && globalData.selectedWp.airport.charts.length > 0"><button class="btn btn-link" ng-click="onToggleElementClicked('#ad_charts')">Charts &raquo;</button></p>
 			<div id="ad_charts" class="collapse">
-				<p ng-repeat="chart in globalData.selectedWp.airport.charts"><button type="button" class="btn btn-info btn-circle" ng-click="onDisplayChartClicked(chart.id)"><i class="glyphicon glyphicon-file"></i></button> {{ chart.type }}</p>
+				<p ng-repeat="chart in globalData.selectedWp.airport.charts" ng-hide="chart.source == 'VFRMxxx'">
+					<button type="button" class="btn btn-info btn-circle" ng-click="onDisplayChartClicked(chart.id)"><i class="glyphicon glyphicon-file"></i></button>
+					{{ chart.type }} <span ng-show="chart.source == 'AVARE'"><i>&copy; by <a href="http://www.avare.ch/" target="_blank">Avare.ch</a></i></span>
+				</p>
 			</div>
 			<p ng-repeat="webcam in globalData.selectedWp.airport.webcams"><a href="{{ webcam.url }}" target="_blank" class="btn btn-success btn-circle"><i class="glyphicon glyphicon-facetime-video"></i></a> {{ webcam.name }}</p>
 			<p ng-show="globalData.selectedWp.airport.weatherInfo"><a href="#" ng-click="$event.preventDefault(); onShowWeatherInfo();" class="btn btn-success btn-circle"><i class="glyphicon glyphicon-file"></i></a> METAR / TAF</p>

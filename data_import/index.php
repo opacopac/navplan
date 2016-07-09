@@ -12,7 +12,8 @@
 	<p><a href="data_import_geonames.php">import geonames</a></p>
 
 	<h4>charts</h4>
-	<p><a href="data_import_vfrm_charts.php">list charts</a></p>
+	<p><a href="data_import_vfrm_charts.php">vfrm charts</a></p>
+	<p><a href="data_import_avare_charts.php">avare charts</a></p>
 
 	<h4>luftfahrtregister ch</h4>
 	<p><a href="data_import_lfr.php">import lfr data</a></p>

@@ -1911,7 +1911,8 @@ function mapService($http, trafficService, weatherService)
 								projection: projection,
 								imageExtent: extent
 							}),
-							opacity: 0.8
+							extent: extent,
+							opacity: 0.9
 						});
 
 						chartLayers.push(chartLayer);
