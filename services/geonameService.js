@@ -42,13 +42,23 @@ function geonameService($http)
 		}
 		
 		return $http.get(base_url + "?action=searchByName&search=" + search)
-			.then(function(response)
-			{
-				return response.data.geonames.map(function(item)
+			.then(
+				function(response) // success
 				{
-					return item;
-				});
-			});
+					if (response.data && response.data.geonames) {
+						return response.data.geonames.map(function (item) {
+							return item;
+						});
+					}
+					else {
+						console.error("ERROR searchung geopoints", response);
+					}
+				},
+				function(response) // error
+				{
+					console.error("ERROR searchung geopoints", response.status, response.data);
+				}
+			);
 	}
 	
 

@@ -122,9 +122,20 @@
 		</div>
 		<!-- reporting point -->
 		<div ng-show="globalData.selectedWp.reportingpoint">
-			<h4>{{ globalData.selectedWp.reportingpoint.name }}</h4>
-			<p>Reporting Point</p>
-			<p>{{ getPositionString(globalData.selectedWp.reportingpoint.latitude, globalData.selectedWp.reportingpoint.longitude) }}</p>
+			<h4>{{ globalData.selectedWp.reportingpoint.name }} ({{ globalData.selectedWp.reportingpoint.airport_icao }})</h4>
+			<p ng-show="globalData.selectedWp.reportingpoint.type == 'POINT'">Reporting Point</p>
+			<p ng-show="globalData.selectedWp.reportingpoint.type == 'SECTOR'">Reporting Sector</p>
+			<p ng-hide="globalData.selectedWp.reportingpoint.type == 'SECTOR'">{{ getPositionString(globalData.selectedWp.reportingpoint.latitude, globalData.selectedWp.reportingpoint.longitude) }}</p>
+			<p ng-show="globalData.selectedWp.reportingpoint.min_ft || globalData.selectedWp.reportingpoint.max_ft ">Altitude:
+				{{ globalData.selectedWp.reportingpoint.min_ft ? "min. " + globalData.selectedWp.reportingpoint.min_ft + "ft" : "" }}
+				<span ng-show="globalData.selectedWp.reportingpoint.min_ft && globalData.selectedWp.reportingpoint.max_ft">/</span>
+				{{ globalData.selectedWp.reportingpoint.max_ft ? "max. " + globalData.selectedWp.reportingpoint.max_ft + "ft" : "" }}
+			</p>
+			<p ng-show="globalData.selectedWp.reportingpoint.inbd_comp || globalData.selectedWp.reportingpoint.outbd_comp ">Compulsory:
+				{{ globalData.selectedWp.reportingpoint.inbd_comp ? "INBD" : "" }}
+				<span ng-show="globalData.selectedWp.reportingpoint.inbd_comp && globalData.selectedWp.reportingpoint.outbd_comp">&amp;</span>
+				{{ globalData.selectedWp.reportingpoint.outbd_comp ? "OUTBD" : "" }}
+			</p>
 			<hr />
 			<p ng-show="globalData.selectedWp.isNew"><button type="button" class="btn btn-success btn-circle" ng-click="onAddSelectedWaypointClicked()"><i class="glyphicon glyphicon-plus"></i></button> Add to Track</p>
 			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-warning btn-circle" ng-click="onEditSelectedWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Edit Track Waypoint</p>

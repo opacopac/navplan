@@ -49,6 +49,8 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 	
 	$scope.onMapClicked = function(event, clickCoordinates, maxRadius)
 	{
+		$scope.globalData.clickHistory.push(clickCoordinates); // used internally only
+
 		geonameService.searchGeonamesByPosition(clickCoordinates[1], clickCoordinates[0], maxRadius)
 			.success(function(data) {
 				if (data.geonames)
@@ -130,25 +132,38 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 
 			$scope.openFeatureOverlay(feature.navaid.latitude, feature.navaid.longitude);
 		}
-		else if (feature.reportingpoint)
-		{
+		else if (feature.reportingpoint) {
+			var lat, lon;
+
+			if (feature.reportingpoint.type == 'SECTOR')
+			{
+				var latLon = mapService.getLatLonFromPixel(event.pixel[0], event.pixel[1]);
+				lat = latLon.latitude;
+				lon = latLon.longitude;
+			}
+			else
+			{
+				lat = feature.reportingpoint.latitude;
+				lon = feature.reportingpoint.longitude;
+			}
+
 			$scope.globalData.selectedWp = {
-				type: 'global',
+				type: 'report',
 				reportingpoint: feature.reportingpoint,
 				freq: '',
 				callsign: '',
 				checkpoint: feature.reportingpoint.name,
-				latitude: feature.reportingpoint.latitude,
-				longitude: feature.reportingpoint.longitude,
+				latitude: lat,
+				longitude: lon,
 				mt: '',
 				dist: '',
-				alt: '',
+				alt: feature.reportingpoint.min_ft ? feature.reportingpoint.min_ft : feature.reportingpoint.max_ft ? feature.reportingpoint.max_ft : '',
 				remark: feature.reportingpoint.remark,
 				isNew: true
 			};
 			$scope.$apply();
 
-			$scope.openFeatureOverlay(feature.reportingpoint.latitude, feature.reportingpoint.longitude);
+			$scope.openFeatureOverlay(lat, lon);
 		}
 		else if (feature.userWaypoint)
 		{

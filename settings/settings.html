@@ -7,4 +7,8 @@
 			</div>
 		</div>
 	</div>
+	<div ng-show="globalData.user.email == 'armand@tschanz.com'"><!-- internal use only -->
+		Click History (internal use only):<br />
+		<textarea class="form-control">{{ getClickHistoryString() }}</textarea>
+	</div>
 </div>

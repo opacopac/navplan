@@ -42,6 +42,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 			$scope.globalData.trafficStatus = data.trafficStatus;
 			$scope.globalData.cacheStatus = data.cacheStatus;
 			$scope.globalData.cacheProgress = data.cacheProgress;
+			$scope.globalData.clickHistory = []; // internally used only
 		}
 		else // load default values
 		{
@@ -102,6 +103,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 			$scope.globalData.trafficStatus = "off"; // "off", "waiting", "current", "error"
 			$scope.globalData.cacheStatus = "off"; // "off", "updating", "updated", "error"
 			$scope.globalData.cacheProgress =  { loaded: 0, total: 100, percent: 0 };
+			$scope.globalData.clickHistory = []; // internally used only
 		}
 	};
 	
@@ -362,6 +364,8 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 		{
 			positions: []
 		};
+
+		$scope.globalData.clickHistory = [];
 	
 		$scope.updateWaypoints();
 		$scope.updateFlightTrack();

@@ -39,6 +39,7 @@ function mapService($http, trafficService, weatherService)
 		getBearing: getBearing,
 		getDistance: getDistance,
 		getLatLonCoordinates: getLatLonCoordinates,
+		getLatLonFromPixel: getLatLonFromPixel,
 		getMapPosition: getMapPosition,
 		getMercatorCoordinates: getMercatorCoordinates,
 		getViewExtent: getViewExtent,
@@ -123,10 +124,10 @@ function mapService($http, trafficService, weatherService)
 					airspaceLayer,
 					webcamLayer,
 					closeIconLayer,
-					navaidLayer,
-					airportLayer,
 					reportingpointLayer,
 					userWpLayer,
+					navaidLayer,
+					airportLayer,
 					weatherLayer,
 					wpTrackLayer,
 					flightTrackLayer,
@@ -566,30 +567,28 @@ function mapService($http, trafficService, weatherService)
 		// add reporting points
 		function populateReportingpoints(reportingpointLayer)
 		{
-			$http.get('php/userWaypoint.php?action=readGlobalWaypoints')
+			$http.get('php/reportingPoints.php')
 				.then(
 					function (response) { // success
-						if (response.data && response.data.globalWaypoints) {
-							for (var i = 0; i < response.data.globalWaypoints.length; i++) {
-								var rp = response.data.globalWaypoints[i];
+						if (response.data && response.data.reportingpoints) {
+							for (var i = 0; i < response.data.reportingpoints.length; i++) {
+								var rp = response.data.reportingpoints[i];
 
 								// cache for later use
 								reportingPoints[rp.id] = rp;
 
-								var reportingpointFeature = new ol.Feature({
-									geometry: new ol.geom.Point(ol.proj.fromLonLat([rp.longitude, rp.latitude]))
-								});
+								var feature;
 
-								reportingpointFeature.reportingpoint = rp;
-
-								var reportingpointStyle = createReportingpointStyle(rp.type, rp.name);
-
-								if (reportingpointStyle)
-									reportingpointFeature.setStyle(reportingpointStyle);
+								if (rp.type == "POINT")
+									feature = createReportingPointFeature(rp);
+								else if (rp.type == "SECTOR")
+									feature = createReportingSectorFeature(rp);
 								else
 									continue;
 
-								reportingpointLayer.getSource().addFeature(reportingpointFeature);
+								feature.reportingpoint = rp;
+
+								reportingpointLayer.getSource().addFeature(feature);
 							}
 						}
 						else {
@@ -603,19 +602,19 @@ function mapService($http, trafficService, weatherService)
 				);
 
 
-			function createReportingpointStyle(wp_type, name) {
-				var src, offsetY;
+			function createReportingPointFeature(rp)
+			{
+				var src = "icon/";
 
-				if (wp_type == "report") {
-					src = 'icon/wp_report.png';
-					offsetY = 20;
-				}
-				else {
-					src = 'icon/wp_user.png';
-					offsetY = 20;
-				}
+				if ((rp.inbd_comp && rp.outbd_comp) || (rp.inbd_comp == null && rp.outbd_comp == null))
+					src += "rp_comp.png";
+				else if (rp.inbd_comp || rp.outbd_comp)
+					src += "rp_inbd.png";
+				else
+					src += "rp.png";
 
-				return new ol.style.Style({
+
+				var style = new ol.style.Style({
 					image: new ol.style.Icon(({
 						anchor: [0.5, 0.5],
 						anchorXUnits: 'fraction',
@@ -626,13 +625,58 @@ function mapService($http, trafficService, weatherService)
 					})),
 					text: new ol.style.Text({
 						font: 'bold 14px Calibri,sans-serif',
-						text: name,
+						text: rp.name,
 						fill: new ol.style.Fill({color: '#0077FF'}),
 						stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2}),
 						offsetX: 0,
-						offsetY: offsetY
+						offsetY: 20
 					})
 				});
+
+
+				var feature = new ol.Feature({
+					geometry: new ol.geom.Point(ol.proj.fromLonLat([rp.longitude, rp.latitude]))
+				});
+
+				feature.setStyle(style);
+
+				return feature;
+			}
+
+
+			function createReportingSectorFeature(rp)
+			{
+				var merCoords, lonLat;
+				var merPoly = [];
+
+				// convert to mercator
+				for (var i = 0; i < rp.polygon.length; i++) {
+					lonLat = rp.polygon[i];
+					merCoords = ol.proj.fromLonLat(lonLat);
+					merPoly.push(merCoords);
+				}
+
+				var style = new ol.style.Style({
+						fill: new ol.style.Fill({
+							color: 'rgba(124, 47, 215, 0.3)'}),
+						stroke: new ol.style.Stroke({
+							color: 'rgba(124, 47, 215, 0.5)',
+							width: 2}),
+						text: new ol.style.Text({
+							font: 'bold 14px Calibri,sans-serif',
+							text: rp.name,
+							fill: new ol.style.Fill({color: '#7C4AD7'}),
+							stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2}),
+						})
+				});
+
+				var feature = new ol.Feature({
+					geometry: new ol.geom.Polygon([merPoly])
+				});
+
+				feature.setStyle(style);
+
+				return feature;
 			}
 		}
 
@@ -1508,7 +1552,7 @@ function mapService($http, trafficService, weatherService)
 					}
 					break;
 				}
-				case 'global':
+				case 'report':
 				{
 					var rp = reportingPoints[geopoint.id];
 
@@ -1561,7 +1605,7 @@ function mapService($http, trafficService, weatherService)
 						
 						userWpFeature.userWaypoint = uwp;
 
-						var userWpStyle = createUserWpStyle(uwp.type, uwp.name);
+						var userWpStyle = createUserWpStyle(uwp.name);
 						
 						if (userWpStyle)
 							userWpFeature.setStyle(userWpStyle);
@@ -1581,18 +1625,7 @@ function mapService($http, trafficService, weatherService)
 			});
 
 
-		function createUserWpStyle(wp_type, name) {
-			var src, offsetY;
-
-			if (wp_type == "report") {
-				src = 'icon/wp_report.png';
-				offsetY = 20;
-			}
-			else {
-				src = 'icon/wp_user.png';
-				offsetY = 20;
-			}
-
+		function createUserWpStyle(name) {
 			return new ol.style.Style({
 				image: new ol.style.Icon(({
 					anchor: [0.5, 0.5],
@@ -1600,7 +1633,7 @@ function mapService($http, trafficService, weatherService)
 					anchorYUnits: 'fraction',
 					scale: 1,
 					opacity: 0.75,
-					src: src
+					src: 'icon/wp_user.png'
 				})),
 				text: new ol.style.Text({
 					font: 'bold 14px Calibri,sans-serif',
@@ -1608,7 +1641,7 @@ function mapService($http, trafficService, weatherService)
 					fill: new ol.style.Fill({color: '#0077FF'}),
 					stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2}),
 					offsetX: 0,
-					offsetY: offsetY
+					offsetY: 20
 				})
 			});
 		}
@@ -2294,6 +2327,12 @@ function mapService($http, trafficService, weatherService)
 	{
 		var latLon = ol.proj.toLonLat(mercatorPosition);
 		return { latitude: latLon[1], longitude: latLon[0] };
+	}
+
+
+	function getLatLonFromPixel(x, y)
+	{
+		return getLatLonCoordinates((map.getCoordinateFromPixel([x, y])));
 	}
 
 

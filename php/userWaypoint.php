@@ -7,17 +7,10 @@
     switch ($_SERVER['REQUEST_METHOD'])
     {
         case 'GET':
-            if ($_GET["action"] == "readGlobalWaypoints") // TODO: use new php for reportingpoints
-            {
-                readGlobalWaypointList();
-            }
-            else
-            {
-                readUserWaypointList(
-                    $_COOKIE["email"] ? checkEscapeEmail($conn, $_COOKIE["email"]) : NULL,
-                    $_COOKIE["token"] ? checkEscapeToken($conn, $_COOKIE["token"]) : NULL
-                );
-            }
+            readUserWaypointList(
+                $_COOKIE["email"] ? checkEscapeEmail($conn, $_COOKIE["email"]) : NULL,
+                $_COOKIE["token"] ? checkEscapeToken($conn, $_COOKIE["token"]) : NULL
+            );
             break;
         case 'POST':
             $input = json_decode(file_get_contents('php://input'), true);
@@ -56,29 +49,6 @@
 	$conn->close();
 
 
-	function readGlobalWaypointList()
-	{
-		global $conn;
-
-		$query = "SELECT * FROM global_waypoints";
-		$result = $conn->query($query);
-
-		while ($rs = $result->fetch_array(MYSQLI_ASSOC))
-		{
-			$globalWps[] = array(
-				id => $rs["id"],
-				type => $rs["type"],
-				name => $rs["name"],
-				latitude => $rs["latitude"],
-				longitude => $rs["longitude"],
-				remark => $rs["remark"]
-			);
-		}
-
-		echo json_encode(array("globalWaypoints" => $globalWps), JSON_NUMERIC_CHECK);
-	}
-		
-		
 	function readUserWaypointList($email, $token)
 	{
 		global $conn;

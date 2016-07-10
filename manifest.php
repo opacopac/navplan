@@ -37,12 +37,13 @@
 		echo "waypoints/waypoints.html\n";
 		echo "tracks/tracks.html\n";
 
-		// php TODO: post => get
+		// php
 		echo "php/airports.php\n";
 		echo "php/airspace.php\n";
 		echo "php/navaids.php\n";
 		echo "php/webcams.php\n";
-		
+		echo "php/reportingPoints.php\n";
+
 		// css
 		echo "css/navplan.css?v=1.1\n";
 		echo "css/bootstrap.min.css\n";
@@ -76,7 +77,9 @@
 		echo "icon/traffic_parachute.png\n";
 		echo "icon/traffic_plane.png\n";
 		echo "icon/webcam.png\n";
-		echo "icon/wp_report.png\n";
+		echo "icon/rp.png\n";
+		echo "icon/rp_inbd.png\n";
+		echo "icon/rp_comp.png\n";
 		echo "icon/wp_user.png\n";
 
 		// js
