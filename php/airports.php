@@ -96,7 +96,7 @@
 	$query .= "  rad.typespec,";
 	$query .= "  rad.description,";
 	$query .= "  (CASE WHEN rad.category = 'COMMUNICATION' THEN 1 WHEN rad.category = 'OTHER' THEN 2 ELSE 3 END) AS sortorder1,";
-	$query .= "  (CASE WHEN rad.type = 'TOWER' THEN 1 ELSE 2 END) AS sortorder2";
+	$query .= "  (CASE WHEN rad.type = 'TOWER' THEN 1 WHEN rad.type = 'CTAF' THEN 2 WHEN rad.type = 'OTHER' THEN 3 ELSE 4 END) AS sortorder2";
 	$query .= " FROM openaip_radios AS rad ";
 	$query .= " INNER JOIN openaip_airports AS apt ";
 	$query .= "   ON apt.id = rad.airport_id";

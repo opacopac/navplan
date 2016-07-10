@@ -71,7 +71,7 @@
 				<ul class="nav navbar-nav">
 					<li><a href="#/map" title="Show Map" data-toggle="collapse" data-target="#navbarcontent">Map</a></li>
 					<li><a href="#/waypoints" title="Waypoint List" data-toggle="collapse" data-target="#navbarcontent">Waypoints</a></li>
-					<li ng-show="isLoggedIn() || hasLastTrack()"><a href="#/tracks" title="Recorded Tracks" data-toggle="collapse" data-target="#navbarcontent">Tracks</a></li>
+					<li ng-show="isLoggedIn() || hasLastTrack()"><a href="#/tracks" title="Recorded Tracks" data-toggle="collapse" data-target="#navbarcontent">Recorded Tracks</a></li>
 					<li><a href="#/map" title="Clear Waypoints and Track" data-toggle="collapse" data-target="#navbarcontent" ng-click="onTrashClicked()"><i class="glyphicon glyphicon-trash"></i></a></li>
 				</ul>
 				<ul class="nav navbar-nav navbar-right">

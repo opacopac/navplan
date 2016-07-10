@@ -132,9 +132,9 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 
 			$scope.openFeatureOverlay(feature.navaid.latitude, feature.navaid.longitude);
 		}
-		else if (feature.reportingpoint) {
+		else if (feature.reportingpoint)
+		{
 			var lat, lon;
-
 			if (feature.reportingpoint.type == 'SECTOR')
 			{
 				var latLon = mapService.getLatLonFromPixel(event.pixel[0], event.pixel[1]);
@@ -147,6 +147,18 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 				lon = feature.reportingpoint.longitude;
 			}
 
+			var alt, ismaxalt, isminalt;
+			if (feature.reportingpoint.max_ft)
+			{
+				alt = feature.reportingpoint.max_ft;
+				ismaxalt = true;
+			}
+			else if (feature.reportingpoint.min_ft)
+			{
+				alt = feature.reportingpoint.min_ft;
+				isminalt = true;
+			}
+
 			$scope.globalData.selectedWp = {
 				type: 'report',
 				reportingpoint: feature.reportingpoint,
@@ -157,7 +169,9 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 				longitude: lon,
 				mt: '',
 				dist: '',
-				alt: feature.reportingpoint.min_ft ? feature.reportingpoint.min_ft : feature.reportingpoint.max_ft ? feature.reportingpoint.max_ft : '',
+				alt: alt ? alt : '',
+				ismaxalt : ismaxalt,
+				isminalt : isminalt,
 				remark: feature.reportingpoint.remark,
 				isNew: true
 			};
