@@ -26,6 +26,13 @@ function mapService($http, trafficService, weatherService)
 	var maxAgeSecTrackDots = 120; 
 	var maxAgeSecInactive = 30;
 	var maxTrafficForDots = 30;
+	var airportBaseUrl = 'php/airports.php?v=' + navplanVersion;
+	var navaidBaseUrl = 'php/navaids.php?v=' + navplanVersion;
+	var reportingpointBaseUrl = 'php/reportingPoints.php?v=' + navplanVersion;
+	var airspaceBaseUrl = 'php/airspace.php?v=' + navplanVersion;
+	var nonAdWebcamBaseUrl = 'php/webcams.php?v=' + navplanVersion + '&action=readNonAdWebcams';
+	var userWpBaseUrl = 'php/userWaypoint.php?v=' + navplanVersion;
+	var adChartBaseUrl = 'php/ad_charts.php?v=' + navplanVersion;
 
 	// return api reference
 	return {
@@ -155,7 +162,7 @@ function mapService($http, trafficService, weatherService)
 		// add airports to icon layer
 		function populateAirports(layer)
 		{
-			$http.get('php/airports.php')
+			$http.get(airportBaseUrl)
 				.then(
 					function (response) { // success
 						if (response.data && response.data.airports) {
@@ -485,7 +492,7 @@ function mapService($http, trafficService, weatherService)
 		// add navaids to icon layer
 		function populateNavaids(layer)
 		{
-			$http.get('php/navaids.php')
+			$http.get(navaidBaseUrl)
 				.then(
 					function (response) { // success
 						if (response.data && response.data.navaids) {
@@ -567,7 +574,7 @@ function mapService($http, trafficService, weatherService)
 		// add reporting points
 		function populateReportingpoints(reportingpointLayer)
 		{
-			$http.get('php/reportingPoints.php')
+			$http.get(reportingpointBaseUrl)
 				.then(
 					function (response) { // success
 						if (response.data && response.data.reportingpoints) {
@@ -683,7 +690,7 @@ function mapService($http, trafficService, weatherService)
 
 		// add airspaces to airspace layer
 		function populateAirspaces(airspaceLayer) {
-			$http.get('php/airspace.php')
+			$http.get(airspaceBaseUrl)
 				.then(
 					function (response) { // success
 						if (response.data && response.data.airspace)
@@ -818,7 +825,7 @@ function mapService($http, trafficService, weatherService)
 
 		// add webcams to webcam layer
 		function populateWebcams(webcamLayer) {
-			$http.get('php/webcams.php?action=readNonAdWebcams')
+			$http.get(nonAdWebcamBaseUrl)
 				.then(
 					function (response) { // success
 						if (!response.data || !response.data.webcams) {
@@ -1588,7 +1595,7 @@ function mapService($http, trafficService, weatherService)
 		layerSource.clear();
 			
 			
-		$http.get('php/userWaypoint.php')
+		$http.get(userWpBaseUrl)
 			.success(function(data) {
 				if (data.userWaypoints)
 				{
@@ -1922,7 +1929,7 @@ function mapService($http, trafficService, weatherService)
 	function displayChart(chartId)
 	{
 		// load chart data
-		$http.get('php/ad_charts.php?id=' + chartId)
+		$http.get(adChartBaseUrl + '&id=' + chartId)
 			.then(
 				function(response) { // success
 

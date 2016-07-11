@@ -137,7 +137,11 @@
     $query .= "  mercator_w,";
 	$query .= "  (CASE WHEN type LIKE 'AREA%' THEN 1 WHEN type LIKE 'VAC%' THEN 2 WHEN type LIKE 'AD INFO%' THEN 3 ELSE 4 END) AS sortorder1";
     $query .= " FROM ad_charts ";
-    //$query .= " WHERE source != 'VFRM' ";
+
+    // hack: show VFRM charts only in branch
+    if (strpos($_SERVER['REQUEST_URI'], "branch") === false)
+        $query .= " WHERE source != 'VFRM' ";
+
 	$query .= " ORDER BY";
 	$query .= "   source ASC,";
 	$query .= "   sortorder1 ASC,";

@@ -1,4 +1,6 @@
 <?php
+	include "version.php";
+
     if(empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == "off")
     {
         $redirect = 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
@@ -16,7 +18,7 @@
         header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");*/
     }
 ?><!DOCTYPE HTML>
-<html manifest='manifest.php' lang="de" data-ng-app="navplanApp" data-ng-controller="navplanCtrl">
+<html manifest="manifest.php?v=<?php echo $ver ?>" lang="de" data-ng-app="navplanApp" data-ng-controller="navplanCtrl">
 <head>
 	<title>NAV-Flightplan</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1">
@@ -25,7 +27,7 @@
 	<link rel="stylesheet" href = "css/bootstrap.min.css">
 	<link rel="stylesheet" href = "css/ol.css">
 	<link rel="stylesheet" href = "css/arial-narrow.css" type="text/css" />
-	<link rel="stylesheet" href = "css/navplan.css?v=1.1">
+	<link rel="stylesheet" href = "css/navplan.css?v=<?php echo $ver ?>">
 	<script src="js/jquery-1.12.3.min.js"></script>
 	<script src="js/jquery-ui.min.js"></script>
 	<script src="js/jquery.ui.touch-punch.min.js"></script>
@@ -36,24 +38,24 @@
 	<script src="js/ui-bootstrap-tpls-1.3.2.min.js"></script>
 	<script src="js/ol.js"></script>
 	<script src="js/turf.min.js"></script>
-	<script src="navplanHelper.js?v=1.1"></script>
-	<script src="navplanApp.js?v=1.1"></script>
-	<script src="navplanCtrl.js?v=1.1"></script>
-	<script src="map/mapCtrl.js?v=1.1"></script>
-	<script src="login/loginCtrl.js?v=1.1"></script>
-	<script src="forgotpw/forgotpwCtrl.js?v=1.1"></script>
-	<script src="edituser/edituserCtrl.js?v=1.1"></script>
-	<script src="waypoints/waypointCtrl.js?v=1.1"></script>
-	<script src="tracks/trackCtrl.js?v=1.1"></script>
-	<script src="settings/settingsCtrl.js?v=1.1"></script>
-	<script src="services/mapService.js?v=1.1"></script>
-	<script src="services/locationService.js?v=1.1"></script>
-	<script src="services/trafficService.js?v=1.1"></script>
-	<script src="services/geonameService.js?v=1.1"></script>
-	<script src="services/waypointService.js?v=1.1"></script>
-	<script src="services/fuelService.js?v=1.1"></script>
-	<script src="services/userService.js?v=1.1"></script>
-	<script src="services/weatherService.js?v=1.1"></script>
+	<script src="navplanHelper.js?v=<?php echo $ver ?>"></script>
+	<script src="navplanApp.js?v=<?php echo $ver ?>"></script>
+	<script src="navplanCtrl.js?v=<?php echo $ver ?>"></script>
+	<script src="map/mapCtrl.js?v=<?php echo $ver ?>"></script>
+	<script src="login/loginCtrl.js?v=<?php echo $ver ?>"></script>
+	<script src="forgotpw/forgotpwCtrl.js?v=<?php echo $ver ?>"></script>
+	<script src="edituser/edituserCtrl.js?v=<?php echo $ver ?>"></script>
+	<script src="waypoints/waypointCtrl.js?v=<?php echo $ver ?>"></script>
+	<script src="tracks/trackCtrl.js?v=<?php echo $ver ?>"></script>
+	<script src="settings/settingsCtrl.js?v=<?php echo $ver ?>"></script>
+	<script src="services/mapService.js?v=<?php echo $ver ?>"></script>
+	<script src="services/locationService.js?v=<?php echo $ver ?>"></script>
+	<script src="services/trafficService.js?v=<?php echo $ver ?>"></script>
+	<script src="services/geonameService.js?v=<?php echo $ver ?>"></script>
+	<script src="services/waypointService.js?v=<?php echo $ver ?>"></script>
+	<script src="services/fuelService.js?v=<?php echo $ver ?>"></script>
+	<script src="services/userService.js?v=<?php echo $ver ?>"></script>
+	<script src="services/weatherService.js?v=<?php echo $ver ?>"></script>
 </head>
 <body>
 	<nav id="navbar" class="navbar navbar-default">
@@ -71,7 +73,7 @@
 				<ul class="nav navbar-nav">
 					<li><a href="#/map" title="Show Map" data-toggle="collapse" data-target="#navbarcontent">Map</a></li>
 					<li><a href="#/waypoints" title="Waypoint List" data-toggle="collapse" data-target="#navbarcontent">Waypoints</a></li>
-					<li ng-show="isLoggedIn() || hasLastTrack()"><a href="#/tracks" title="Recorded Tracks" data-toggle="collapse" data-target="#navbarcontent">Recorded Tracks</a></li>
+					<li ng-show="isLoggedIn() || hasLastTrack()"><a href="#/tracks" title="Recorded Tracks" data-toggle="collapse" data-target="#navbarcontent">Tracks</a></li>
 					<li><a href="#/map" title="Clear Waypoints and Track" data-toggle="collapse" data-target="#navbarcontent" ng-click="onTrashClicked()"><i class="glyphicon glyphicon-trash"></i></a></li>
 				</ul>
 				<ul class="nav navbar-nav navbar-right">

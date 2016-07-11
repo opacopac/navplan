@@ -10,6 +10,8 @@ trafficService.$inject = ['$http'];
 function trafficService($http)
 {
 	var callsignCache = {};
+	var acInfoBaseUrl = 'php/acinfo.php?v=' + navplanVersion;
+	var trafficBaseUrl = window.location.pathname.includes("branch") ? 'php/ogntraffic.php?v=' + navplanVersion  : 'branch/php/ogntraffic.php?v=' + navplanVersion; // hack: only point to one trafficlistener
 
 	// return api reference
 	return {
@@ -22,13 +24,13 @@ function trafficService($http)
 
 	function readTraffic(extent, maxagesec)
 	{
-		return $http.get('php/ogntraffic.php?minlon=' + extent[0] + '&minlat=' + extent[1] + '&maxlon=' + extent[2] + '&maxlat=' + extent[3] + '&maxagesec=' + maxagesec);
+		return $http.get(trafficBaseUrl + '&minlon=' + extent[0] + '&minlat=' + extent[1] + '&maxlon=' + extent[2] + '&maxlat=' + extent[3] + '&maxagesec=' + maxagesec);
 	}
 	
 	
 	function readAcDetails(icaoCode)
 	{
-		return $http.get('php/acinfo.php?icaohex=' + icaoCode);
+		return $http.get(acInfoBaseUrl + '&icaohex=' + icaoCode);
 	}
 
 
@@ -38,7 +40,7 @@ function trafficService($http)
 			return callsignCache[icaoCode];
 
 		// add to cache asynchronously (for next try)
-		$http.get('php/acinfo.php?icaohex=' + icaoCode)
+		$http.get(acInfoBaseUrl + '&icaohex=' + icaoCode)
 			.then(
 				function(response)
 				{

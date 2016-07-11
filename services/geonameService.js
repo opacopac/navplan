@@ -9,10 +9,8 @@ geonameService.$inject = ['$http'];
 
 function geonameService($http)
 {
-	// init
-	var base_url = 'php/geoname.php';
+	var baseUrl = 'php/geoname.php?v=' + navplanVersion + '&';
 
-	
 	// return api reference
 	return {
 		searchGeonamesByValue: searchGeonamesByValue,
@@ -41,7 +39,7 @@ function geonameService($http)
 			return getCoordinateGeoPoint(lonLat, search);
 		}
 		
-		return $http.get(base_url + "?action=searchByName&search=" + search)
+		return $http.get(baseUrl + "action=searchByName&search=" + search)
 			.then(
 				function(response) // success
 				{
@@ -65,7 +63,7 @@ function geonameService($http)
 	// search by pos
 	function searchGeonamesByPosition(lat, lon, rad)
 	{
-		return $http.get(base_url + "?action=searchByPosition&lat=" + lat + "&lon=" + lon + "&rad=" + rad);
+		return $http.get(baseUrl + "action=searchByPosition&lat=" + lat + "&lon=" + lon + "&rad=" + rad);
 	}
 	
 	

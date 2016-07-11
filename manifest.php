@@ -1,4 +1,6 @@
 <?php
+	include "version.php";
+
     // content type
     header('Content-Type: text/cache-manifest');
 
@@ -25,27 +27,29 @@
 
 	function addStaticUrls()
 	{
+	    global $ver;
+
 		// default entries
 		echo "# default files\n";
 		echo "CACHE:\n";
 
 		// html
 		echo "index.php\n";
-		echo "about/about.html\n";
-		echo "map/map.html\n";
-		echo "settings/settings.html\n";
-		echo "waypoints/waypoints.html\n";
-		echo "tracks/tracks.html\n";
+		echo "about/about.html?v=" . $ver . "\n";
+		echo "map/map.html?v=" . $ver . "\n";
+		echo "settings/settings.html?v=" . $ver . "\n";
+		echo "waypoints/waypoints.html?v=" . $ver . "\n";
+		echo "tracks/tracks.html?v=" . $ver . "\n";
 
 		// php
-		echo "php/airports.php\n";
-		echo "php/airspace.php\n";
-		echo "php/navaids.php\n";
-		echo "php/webcams.php\n";
-		echo "php/reportingPoints.php\n";
+		echo "php/airports.php?v=" . $ver . "\n";
+		echo "php/airspace.php?v=" . $ver . "\n";
+		echo "php/navaids.php?v=" . $ver . "\n";
+		echo "php/webcams.php?v=" . $ver . "\n";
+		echo "php/reportingPoints.php?v=" . $ver . "\n";
 
 		// css
-		echo "css/navplan.css?v=1.1\n";
+		echo "css/navplan.css?v=" . $ver . "\n";
 		echo "css/bootstrap.min.css\n";
 		echo "css/ol.css\n";
 		echo "css/arial-narrow.css\n";
@@ -93,24 +97,24 @@
         echo "js/ui-bootstrap-tpls-1.3.2.min.js\n";
         echo "js/ol.js\n";
         echo "js/turf.min.js\n";
-		echo "navplanHelper.js?v=1.1\n";
-		echo "navplanApp.js?v=1.1\n";
-		echo "navplanCtrl.js?v=1.1\n";
-		echo "map/mapCtrl.js?v=1.1\n";
-		echo "login/loginCtrl.js?v=1.1\n";
-		echo "forgotpw/forgotpwCtrl.js?v=1.1\n";
-		echo "edituser/edituserCtrl.js?v=1.1\n";
-		echo "waypoints/waypointCtrl.js?v=1.1\n";
-		echo "tracks/trackCtrl.js?v=1.1\n";
-		echo "settings/settingsCtrl.js?v=1.1\n";
-		echo "services/mapService.js?v=1.1\n";
-		echo "services/locationService.js?v=1.1\n";
-		echo "services/trafficService.js?v=1.1\n";
-		echo "services/geonameService.js?v=1.1\n";
-		echo "services/waypointService.js?v=1.1\n";
-		echo "services/fuelService.js?v=1.1\n";
-		echo "services/userService.js?v=1.1\n";
-		echo "services/weatherService.js?v=1.1\n";
+		echo "navplanHelper.js?v=" . $ver . "\n";
+		echo "navplanApp.js?v=" . $ver . "\n";
+		echo "navplanCtrl.js?v=" . $ver . "\n";
+		echo "map/mapCtrl.js?v=" . $ver . "\n";
+		echo "login/loginCtrl.js?v=" . $ver . "\n";
+		echo "forgotpw/forgotpwCtrl.js?v=" . $ver . "\n";
+		echo "edituser/edituserCtrl.js?v=" . $ver . "\n";
+		echo "waypoints/waypointCtrl.js?v=" . $ver . "\n";
+		echo "tracks/trackCtrl.js?v=" . $ver . "\n";
+		echo "settings/settingsCtrl.js?v=" . $ver . "\n";
+		echo "services/mapService.js?v=" . $ver . "\n";
+		echo "services/locationService.js?v=" . $ver . "\n";
+		echo "services/trafficService.js?v=" . $ver . "\n";
+		echo "services/geonameService.js?v=" . $ver . "\n";
+		echo "services/waypointService.js?v=" . $ver . "\n";
+		echo "services/fuelService.js?v=" . $ver . "\n";
+		echo "services/userService.js?v=" . $ver . "\n";
+		echo "services/weatherService.js?v=" . $ver . "\n";
 		echo "\n";
 
 		
@@ -120,9 +124,9 @@
 
 		
 		echo "FALLBACK:\n";
-		echo "edituser/edituser.html offline.html\n";
-		echo "forgotpw/forgotpw.html offline.html\n";
-		echo "login/login.html offline.html\n";
+		echo "edituser/edituser.html?v=" . $ver . " offline.html?v=" . $ver . "\n";
+		echo "forgotpw/forgotpw.html?v=" . $ver . " offline.html?v=" . $ver . "\n";
+		echo "login/login.html?v=" . $ver . " offline.html?v=" . $ver . "\n";
 		echo "\n";
 	}
 

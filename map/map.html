@@ -124,7 +124,7 @@
 		<div ng-show="globalData.selectedWp.reportingpoint">
 			<h4>{{ globalData.selectedWp.reportingpoint.name }} ({{ globalData.selectedWp.reportingpoint.airport_icao }})</h4>
 			<p ng-show="globalData.selectedWp.reportingpoint.type == 'POINT'">Reporting Point</p>
-			<p ng-show="globalData.selectedWp.reportingpoint.type == 'SECTOR'">Reporting Sector</p>
+			<p ng-show="globalData.selectedWp.reportingpoint.type == 'SECTOR'">ARR Sector</p>
 			<p ng-hide="globalData.selectedWp.reportingpoint.type == 'SECTOR'">{{ getPositionString(globalData.selectedWp.reportingpoint.latitude, globalData.selectedWp.reportingpoint.longitude) }}</p>
 			<p ng-show="globalData.selectedWp.reportingpoint.min_ft || globalData.selectedWp.reportingpoint.max_ft ">Altitude:
 				{{ globalData.selectedWp.reportingpoint.min_ft ? "min. " + globalData.selectedWp.reportingpoint.min_ft + "ft" : "" }}

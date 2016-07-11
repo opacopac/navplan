@@ -28,7 +28,7 @@
             updateUserWaypoint(
                 checkEscapeEmail($conn, $_COOKIE["email"]),
                 checkEscapeToken($conn, $_COOKIE["token"]),
-		        checkId($input["wp"]["id"]),
+		        checkId($input["id"]),
                 checkEscapeString($conn, $input["wp"]["checkpoint"], 1, 100),
 		        checkNumeric($input["wp"]["latitude"]),
 		        checkNumeric($input["wp"]["longitude"]),
