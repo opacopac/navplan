@@ -1,7 +1,8 @@
 <?php
 	include "version.php";
 
-    // content type
+    // headers
+    header("Cache-Control: private, must-revalidate");
     header('Content-Type: text/cache-manifest');
 
     // manifest header
@@ -17,7 +18,7 @@
 	}
 	else // don't cache anything
 	{
-        echo "# " . time() . "\n"; // change manifest constantly
+        echo "# " . floor(time() / 60) . "\n"; // change manifest every minute
     	echo "\n";
 		echo "NETWORK:\n";
 		echo "*\n";

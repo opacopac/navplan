@@ -1,3 +1,3 @@
 <?php
-    $ver = "1.2";
+    $ver = file_get_contents("version.txt");
 ?>

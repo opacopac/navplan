@@ -1,9 +1,19 @@
-/**
- * Navplan App
- */
+// version check
+var navplanVersion = "1.2b";
 
-var navplanVersion = "1.2";
- 
+/*$.get("version.txt?q=" + Math.random(),
+	function(serverVersion)
+	{
+		if (typeof indexVersion === 'undefined' || indexVersion != serverVersion)
+		{
+			//alert("index: " + navplanVersion + " php: " + serverVersion);
+			//window.location.reload(true);
+		}
+	}
+);*/
+
+
+// init app
 var navplanApp = angular.module('navplanApp', [ 'ngRoute', 'ngResource', 'ui.bootstrap' ])
 	.config(routeprovider);
 
@@ -22,10 +32,8 @@ function routeprovider($routeProvider)
 		.when("/about",  { templateUrl: 'about/about.html?v=' + navplanVersion });
 }
 
-/**
- * Global Data
- */
 
+// global data object
  navplanApp
 	.factory('globalData', globalData);
 

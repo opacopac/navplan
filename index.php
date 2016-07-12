@@ -9,8 +9,9 @@
     }
     else
     {
-        header("Cache-Control: public, max-age=21600"); // max 6h
+        header("Cache-Control: public, max-age=60"); // max 1 min
 
+        // cannot use due to app cache
         /*header("Cache-Control: no-store, no-cache, must-revalidate"); // HTTP/1.1
         header("Cache-Control: post-check=0, pre-check=0", false);
         header("Expires: Sat, 26 Jul 1997 05:02:00 GMT"); // Date in the past
@@ -18,9 +19,9 @@
         header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");*/
     }
 ?><!DOCTYPE HTML>
-<html manifest="manifest.php?v=<?php echo $ver ?>" lang="de" data-ng-app="navplanApp" data-ng-controller="navplanCtrl">
+<html manifest="manifest.php" lang="de" data-ng-app="navplanApp" data-ng-controller="navplanCtrl">
 <head>
-	<title>NAV-Flightplan</title>
+	<title>NAV-Flightplan3</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1">
 	<meta charset="utf-8">
 	<link rel="icon" type="image/png" href="icon/favicon.png" />
@@ -28,6 +29,7 @@
 	<link rel="stylesheet" href = "css/ol.css">
 	<link rel="stylesheet" href = "css/arial-narrow.css" type="text/css" />
 	<link rel="stylesheet" href = "css/navplan.css?v=<?php echo $ver ?>">
+	<script>var indexVersion = "<?php echo $ver ?>";</script>
 	<script src="js/jquery-1.12.3.min.js"></script>
 	<script src="js/jquery-ui.min.js"></script>
 	<script src="js/jquery.ui.touch-punch.min.js"></script>
