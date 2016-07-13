@@ -2,6 +2,7 @@
  * helper functions
  */
 
+
 function setCookie(cname, cvalue, exdays)
 {
 	if (exdays > 0)

@@ -1,27 +1,22 @@
 <?php
 	include "version.php";
 
-    if(empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == "off")
+	$host = "www.navplan.ch";
+
+    if(empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == "off" || $_SERVER['HTTP_HOST'] != $host)
     {
-        $redirect = 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+        $redirect = 'https://' . $host . $_SERVER['REQUEST_URI'];
         header('HTTP/1.1 301 Moved Permanently');
         header('Location: ' . $redirect);
     }
     else
     {
-        header("Cache-Control: public, max-age=60"); // max 1 min
-
-        // cannot use due to app cache
-        /*header("Cache-Control: no-store, no-cache, must-revalidate"); // HTTP/1.1
-        header("Cache-Control: post-check=0, pre-check=0", false);
-        header("Expires: Sat, 26 Jul 1997 05:02:00 GMT"); // Date in the past
-        header("Pragma: no-cache"); // HTTP/1.0
-        header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");*/
+        header("Cache-Control: public, max-age=60"); // max 1 min (must be public for appcache to work)
     }
 ?><!DOCTYPE HTML>
 <html manifest="manifest.php" lang="de" data-ng-app="navplanApp" data-ng-controller="navplanCtrl">
 <head>
-	<title>NAV-Flightplan3</title>
+	<title>NAV-Flightplan</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1">
 	<meta charset="utf-8">
 	<link rel="icon" type="image/png" href="icon/favicon.png" />

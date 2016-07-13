@@ -1,16 +1,19 @@
-// version check
-var navplanVersion = "1.2b";
+var navplanVersion = "1.2f"; // should be the same as in version.txt
 
-/*$.get("version.txt?q=" + Math.random(),
+// ensure current version
+$.get("version.txt?q=" + Math.random(),
 	function(serverVersion)
 	{
 		if (typeof indexVersion === 'undefined' || indexVersion != serverVersion)
 		{
-			//alert("index: " + navplanVersion + " php: " + serverVersion);
-			//window.location.reload(true);
+			if (location.search.indexOf("v=" + serverVersion) == -1)
+			{
+				var search = location.search.length == 0 ? "?v=" + serverVersion : location.search + "&v=" + serverVersion;
+				location.replace(location.pathname + search + location.hash);
+			}
 		}
 	}
-);*/
+);
 
 
 // init app
