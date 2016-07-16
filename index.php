@@ -14,7 +14,7 @@
         header("Cache-Control: public, max-age=60"); // max 1 min (must be public for appcache to work)
     }
 ?><!DOCTYPE HTML>
-<html manifest="manifest.php" lang="de" data-ng-app="navplanApp" data-ng-controller="navplanCtrl">
+<html lang="de" data-ng-app="navplanApp" data-ng-controller="navplanCtrl">
 <head>
 	<title>NAV-Flightplan</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1">
@@ -165,5 +165,6 @@
 			</div>
 		</div>
 	</div>
+    <iframe id='manifest_iframe_hack' style='display: none;' src='manifest_iframe.html'></iframe>
 </body>
 </html>

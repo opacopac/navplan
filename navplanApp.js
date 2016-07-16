@@ -1,4 +1,4 @@
-var navplanVersion = "1.2f"; // should be the same as in version.txt
+var navplanVersion = "1.2j"; // should be the same as in version.txt
 
 // ensure current version
 $.get("version.txt?q=" + Math.random(),
@@ -7,10 +7,7 @@ $.get("version.txt?q=" + Math.random(),
 		if (typeof indexVersion === 'undefined' || indexVersion != serverVersion)
 		{
 			if (location.search.indexOf("v=" + serverVersion) == -1)
-			{
-				var search = location.search.length == 0 ? "?v=" + serverVersion : location.search + "&v=" + serverVersion;
-				location.replace(location.pathname + search + location.hash);
-			}
+				location.replace(location.pathname + "?v=" + serverVersion + location.hash);
 		}
 	}
 );

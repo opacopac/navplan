@@ -548,14 +548,14 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 		switch ($scope.globalData.cacheStatus)
 		{
 			case "off" :
-				$scope.globalData.offlineCache = true;
+				$scope.globalData.cacheIsActive = true;
 				break;
 			default :
-				$scope.globalData.offlineCache = false;
+				$scope.globalData.cacheIsActive = false;
 		}
 
 		
-		if ($scope.globalData.offlineCache)
+		if ($scope.globalData.cacheIsActive)
 		{
 			setWaypointCacheCookie();
 			setChartCacheCookie();
@@ -660,7 +660,7 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 
 			function getRestUrl(chartId)
 			{
-				return 'php/ad_charts.php?id=' + chartId;
+				return 'php/ad_charts.php?v=' + navplanVersion + '&id=' + chartId;
 			}
 
 
@@ -673,14 +673,23 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 
 		function updateAppCache()
 		{
-			if (window.applicationCache.status === window.applicationCache.DOWNLOADING) {
-				window.applicationCache.abort();
+			if (!$scope.appCache || $scope.appCache.status == $scope.appCache.UNCACHED)
+			{
+				$scope.showErrorMessage("Application Cache not available!");
+				$scope.globalData.cacheStatus = "error";
+				return;
 			}
-			else {
+
+			if ($scope.appCache.status == $scope.appCache.DOWNLOADING)
+			{
+				$scope.appCache.abort();
+			}
+			else
+			{
 				$scope.globalData.cacheStatus = "updating";
 				$scope.globalData.cacheProgress = {loaded: 0, total: 100, percent: 0};
 
-				window.applicationCache.update(); // TODO: catch error
+				$scope.appCache.update();
 			}
 		}		
 	};

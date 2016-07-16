@@ -11,7 +11,7 @@ function trafficService($http)
 {
 	var callsignCache = {};
 	var acInfoBaseUrl = 'php/acinfo.php?v=' + navplanVersion;
-	var trafficBaseUrl = window.location.pathname.includes("branch") ? 'php/ogntraffic.php?v=' + navplanVersion  : 'branch/php/ogntraffic.php?v=' + navplanVersion; // hack: only point to one trafficlistener
+	var trafficBaseUrl = window.location.pathname.indexOf("branch") != -1 ? 'php/ogntraffic.php?v=' + navplanVersion  : 'branch/php/ogntraffic.php?v=' + navplanVersion; // hack: only point to one trafficlistener
 
 	// return api reference
 	return {

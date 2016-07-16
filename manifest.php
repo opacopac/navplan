@@ -2,7 +2,8 @@
 	include "version.php";
 
     // headers
-    header("Cache-Control: private, must-revalidate");
+    header('Cache-Control: must-revalidate');
+    header('Expires: 0');
     header('Content-Type: text/cache-manifest');
 
     // manifest header
@@ -35,7 +36,7 @@
 		echo "CACHE:\n";
 
 		// html
-		echo "index.php\n";
+		echo "./?v=" . $ver . "\n";
 		echo "about/about.html?v=" . $ver . "\n";
 		echo "map/map.html?v=" . $ver . "\n";
 		echo "settings/settings.html?v=" . $ver . "\n";
