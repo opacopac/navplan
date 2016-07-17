@@ -1,4 +1,4 @@
-var navplanVersion = "1.2j"; // should be the same as in version.txt
+var navplanVersion = "1.2k"; // should be the same as in version.txt
 
 // ensure current version
 $.get("version.txt?q=" + Math.random(),

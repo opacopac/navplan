@@ -69,136 +69,13 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 
 	$scope.onFeatureSelected = function(event, feature)
 	{
-		if (feature.geopoint && !feature.airport && !feature.navaid && !feature.reportingpoint && !feature.userWaypoint)
+		if (feature.geopoint || feature.airport || feature.navaid || feature.reportingpoint || feature.userWaypoint)
 		{
-			$scope.globalData.selectedWp = {
-				type: feature.geopoint.type,
-				geopoint: feature.geopoint,
-				id: feature.geopoint.id,
-				freq: '',
-				callsign: '',
-				checkpoint: feature.geopoint.wpname,
-				airport_icao: '',
-				latitude: feature.geopoint.latitude,
-				longitude: feature.geopoint.longitude,
-				mt: '',
-				dist: '',
-				alt: '',
-				remark: '',
-				isNew: true
-			};
+			$scope.globalData.selectedWp = $scope.getWpFromFeature(feature, mapService.getLatLonFromPixel(event.pixel[0], event.pixel[1]));
+			$scope.globalData.selectedWp.isNew = true;
+
 			$scope.$apply();
-
-			$scope.openFeatureOverlay(feature.geopoint.latitude, feature.geopoint.longitude);
-		}
-		else if (feature.airport)
-		{
-			$scope.globalData.selectedWp = {
-				type: 'airport',
-				airport: feature.airport,
-				freq: getFrequency(feature.airport),
-				callsign: getCallsign(feature.airport),
-				checkpoint: feature.airport.icao,
-				airport_icao: feature.airport.icao,
-				latitude: feature.airport.latitude,
-				longitude: feature.airport.longitude,
-				mt: '',
-				dist: '',
-				alt: '',
-				remark: '',
-				isNew: true
-			};
-			$scope.$apply();
-
-			$scope.openFeatureOverlay(feature.airport.latitude, feature.airport.longitude);
-		}
-		else if (feature.navaid)
-		{
-			$scope.globalData.selectedWp = {
-				type: 'navaid',
-				navaid: feature.navaid,
-				freq: feature.navaid.frequency,
-				callsign: feature.navaid.kuerzel,
-				checkpoint: feature.navaid.kuerzel + ' ' + feature.navaid.type,
-				latitude: feature.navaid.latitude,
-				longitude: feature.navaid.longitude,
-				mt: '',
-				dist: '',
-				alt: '',
-				remark: '',
-				isNew: true
-			};
-			$scope.$apply();
-
-			$scope.openFeatureOverlay(feature.navaid.latitude, feature.navaid.longitude);
-		}
-		else if (feature.reportingpoint)
-		{
-			var lat, lon;
-			if (feature.reportingpoint.type == 'SECTOR')
-			{
-				var latLon = mapService.getLatLonFromPixel(event.pixel[0], event.pixel[1]);
-				lat = latLon.latitude;
-				lon = latLon.longitude;
-			}
-			else
-			{
-				lat = feature.reportingpoint.latitude;
-				lon = feature.reportingpoint.longitude;
-			}
-
-			var alt, ismaxalt, isminalt;
-			if (feature.reportingpoint.max_ft)
-			{
-				alt = feature.reportingpoint.max_ft;
-				ismaxalt = true;
-			}
-			else if (feature.reportingpoint.min_ft)
-			{
-				alt = feature.reportingpoint.min_ft;
-				isminalt = true;
-			}
-
-			$scope.globalData.selectedWp = {
-				type: 'report',
-				reportingpoint: feature.reportingpoint,
-				freq: '',
-				callsign: '',
-				checkpoint: feature.reportingpoint.name,
-				latitude: lat,
-				longitude: lon,
-				mt: '',
-				dist: '',
-				alt: alt ? alt : '',
-				ismaxalt : ismaxalt,
-				isminalt : isminalt,
-				remark: feature.reportingpoint.remark,
-				isNew: true
-			};
-			$scope.$apply();
-
-			$scope.openFeatureOverlay(lat, lon);
-		}
-		else if (feature.userWaypoint)
-		{
-			$scope.globalData.selectedWp = {
-				type: 'user',
-				userWaypoint: feature.userWaypoint,
-				id: feature.userWaypoint.id,
-				freq: '',
-				callsign: '',
-				checkpoint: feature.userWaypoint.name,
-				latitude: feature.userWaypoint.latitude,
-				longitude: feature.userWaypoint.longitude,
-				mt: '',
-				dist: '',
-				alt: '',
-				remark: feature.userWaypoint.remark,
-				isNew: true
-			};
-			$scope.$apply();
-
-			$scope.openFeatureOverlay(feature.userWaypoint.latitude, feature.userWaypoint.longitude);
+			$scope.openFeatureOverlay($scope.globalData.selectedWp.latitude, $scope.globalData.selectedWp.longitude);
 		}
 		else if (feature.waypoint)
 		{
@@ -261,6 +138,114 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 			mapService.addOverlay(feature.getGeometry().getCoordinates(), weatherContainer, true);
 			$scope.$apply();
 		}
+	};
+
+
+	$scope.getWpFromFeature = function(feature, latLon)
+	{
+		if (feature.geopoint && !feature.airport && !feature.navaid && !feature.reportingpoint && !feature.userWaypoint) {
+			return {
+				type: feature.geopoint.type,
+				geopoint: feature.geopoint,
+				id: feature.geopoint.id,
+				freq: '',
+				callsign: '',
+				checkpoint: feature.geopoint.wpname,
+				airport_icao: '',
+				latitude: feature.geopoint.latitude,
+				longitude: feature.geopoint.longitude,
+				mt: '',
+				dist: '',
+				alt: '',
+				remark: ''
+			};
+		}
+		else if (feature.airport) {
+			return {
+				type: 'airport',
+				airport: feature.airport,
+				freq: getFrequency(feature.airport),
+				callsign: getCallsign(feature.airport),
+				checkpoint: feature.airport.icao,
+				airport_icao: feature.airport.icao,
+				latitude: feature.airport.latitude,
+				longitude: feature.airport.longitude,
+				mt: '',
+				dist: '',
+				alt: '',
+				remark: ''
+			};
+		}
+		else if (feature.navaid) {
+			return {
+				type: 'navaid',
+				navaid: feature.navaid,
+				freq: feature.navaid.frequency,
+				callsign: feature.navaid.kuerzel,
+				checkpoint: feature.navaid.kuerzel + ' ' + feature.navaid.type,
+				latitude: feature.navaid.latitude,
+				longitude: feature.navaid.longitude,
+				mt: '',
+				dist: '',
+				alt: '',
+				remark: ''
+			};
+		}
+		else if (feature.reportingpoint) {
+			var lat, lon;
+			if (feature.reportingpoint.type == 'SECTOR') {
+				lat = latLon.latitude;
+				lon = latLon.longitude;
+			}
+			else {
+				lat = feature.reportingpoint.latitude;
+				lon = feature.reportingpoint.longitude;
+			}
+
+			var alt, ismaxalt, isminalt;
+			if (feature.reportingpoint.max_ft) {
+				alt = feature.reportingpoint.max_ft;
+				ismaxalt = true;
+			}
+			else if (feature.reportingpoint.min_ft) {
+				alt = feature.reportingpoint.min_ft;
+				isminalt = true;
+			}
+
+			return {
+				type: 'report',
+				reportingpoint: feature.reportingpoint,
+				freq: '',
+				callsign: '',
+				checkpoint: feature.reportingpoint.name,
+				latitude: lat,
+				longitude: lon,
+				mt: '',
+				dist: '',
+				alt: alt ? alt : '',
+				ismaxalt: ismaxalt,
+				isminalt: isminalt,
+				remark: feature.reportingpoint.remark
+			};
+		}
+		else if (feature.userWaypoint) {
+			return {
+				type: 'user',
+				userWaypoint: feature.userWaypoint,
+				id: feature.userWaypoint.id,
+				freq: '',
+				callsign: '',
+				checkpoint: feature.userWaypoint.name,
+				latitude: feature.userWaypoint.latitude,
+				longitude: feature.userWaypoint.longitude,
+				mt: '',
+				dist: '',
+				alt: '',
+				remark: feature.userWaypoint.remark
+			};
+		}
+		else
+			return undefined;
 
 
 		function getFrequency(airport)
@@ -300,8 +285,8 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 			}
 		}
 	};
-	
-	
+
+
 	$scope.onMapMoveEnd = function(event)
 	{
 		var view = event.map.getView();
@@ -311,8 +296,21 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 			zoom: view.getZoom()
 		};
 	};
-	
-	
+
+
+	$scope.onTrackModifyEnd = function(feature, latLon, wp)
+	{
+		var idx = $scope.globalData.navplan.waypoints.indexOf(wp);
+
+		var newWp = $scope.getWpFromFeature(feature, latLon);
+
+		if (newWp)
+			$scope.globalData.navplan.waypoints.splice(idx, 0, newWp);
+
+		$scope.updateWaypoints();
+	};
+
+
 	$scope.onAddSelectedWaypointClicked = function()
 	{
 		$scope.globalData.selectedWp.isNew = false;
@@ -920,6 +918,7 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 		$scope.onMapClicked,
 		$scope.onFeatureSelected,
 		$scope.onMapMoveEnd,
+		$scope.onTrackModifyEnd,
 		$scope.globalData.currentMapPos);
 
 	$scope.updateWaypoints();

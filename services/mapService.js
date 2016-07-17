@@ -20,6 +20,8 @@ function mapService($http, trafficService, weatherService)
 	var chartLayers = [];
 	var airspaces = [];
 	var currentOverlay = undefined;
+	var modifySnapInteractions = [];
+	var onTrackModifyEndCallback = undefined;
 	var isGeopointSelectionActive = false;
 	var wgs84Sphere = new ol.Sphere(6378137);
 	var minZoomLevel = [];
@@ -62,7 +64,7 @@ function mapService($http, trafficService, weatherService)
 	
 	
 	// init map
-	function init(onMapClickCallback, onFeatureSelectCallback, onMoveEndCallback, mapPos)
+	function init(onMapClickCallback, onFeatureSelectCallback, onMoveEndCallback, onTrackModEndCallback, mapPos)
 	{
 		// init layers
 		mapLayer = createMapLayer();
@@ -97,6 +99,10 @@ function mapService($http, trafficService, weatherService)
 		map.on('pointermove', onPointerMove);
 		map.on('moveend', onMoveEnd);
 
+		onTrackModifyEndCallback = onTrackModEndCallback;
+
+
+
 		// restore chart layers
 		for (var i = 0; i < chartLayers.length; i++)
 			map.getLayers().insertAt(i + 1, chartLayers[i]);
@@ -120,8 +126,7 @@ function mapService($http, trafficService, weatherService)
 		{
 			return new ol.Map({
 				target: 'map',
-				//interactions: ol.interaction.defaults().extend([new dragInteraction()]),
-				controls: //ol.control.defaults().extend(
+				controls:
 					[
 						new ol.control.ScaleLine({ units: 'nautical' }),
 						new ol.control.Attribution()
@@ -572,7 +577,7 @@ function mapService($http, trafficService, weatherService)
 
 
 		// add reporting points
-		function populateReportingpoints(reportingpointLayer)
+		function populateReportingpoints(layer)
 		{
 			$http.get(reportingpointBaseUrl)
 				.then(
@@ -595,7 +600,7 @@ function mapService($http, trafficService, weatherService)
 
 								feature.reportingpoint = rp;
 
-								reportingpointLayer.getSource().addFeature(feature);
+								layer.getSource().addFeature(feature);
 							}
 						}
 						else {
@@ -1095,7 +1100,7 @@ function mapService($http, trafficService, weatherService)
 
 		// add clickpoint if less than 6 points found
 		if (clickPixel && geopoints.length < maxPoints)
-			geopoints.push(getClickPoint(clickLonLat));
+			geopoints.push(getCoordinateGeopoint(clickLonLat));
 
 		var airspaceSelection = getAirspacesAtLatLon(clickLonLat);
 
@@ -1204,21 +1209,6 @@ function mapService($http, trafficService, weatherService)
 				return height.height * 100;
 			else
 				return height.height;
-		}
-
-
-		function getClickPoint(clickLonLat)
-		{
-			var clickPoint = {
-				type: 'user',
-				longitude: clickLonLat[0],
-				latitude: clickLonLat[1],
-				name: Math.round(clickLonLat[1] * 10000) / 10000 + " " + Math.round(clickLonLat[0] * 10000) / 10000,
-				wpname: ol.coordinate.toStringHDMS(clickLonLat)
-			};
-
-
-			return clickPoint;
 		}
 
 
@@ -1593,8 +1583,7 @@ function mapService($http, trafficService, weatherService)
 			
 		var layerSource = userWpLayer.getSource();
 		layerSource.clear();
-			
-			
+
 		$http.get(userWpBaseUrl)
 			.success(function(data) {
 				if (data.userWaypoints)
@@ -1659,9 +1648,16 @@ function mapService($http, trafficService, weatherService)
 	{
 		if (typeof wpTrackLayer === "undefined")
 			return;
-	
+
+		// remove features
 		var trackSource = wpTrackLayer.getSource();
 		trackSource.clear();
+
+		// remove interactions
+		for (var j = 0; j < modifySnapInteractions.length; j++)
+			 map.removeInteraction(modifySnapInteractions[j]);
+
+		modifySnapInteractions = [];
 		
 		var trackStyle = new ol.style.Style({
 			stroke : new ol.style.Stroke({
@@ -1682,21 +1678,21 @@ function mapService($http, trafficService, weatherService)
 		// waypoints
 		var prevWp, nextWp;
 
-		for (var i = 0; i < wps.length; i++)
+		for (var key = 0; key < wps.length; key++)
 		{
-			if (i > 0)
-				prevWp = wps[i - 1];
+			if (key > 0)
+				prevWp = wps[key - 1];
 			else
 				prevWp = undefined;	
 				
-			if (i < wps.length - 1)
-				nextWp = wps[i + 1];
+			if (key < wps.length - 1)
+				nextWp = wps[key + 1];
 			else if (alternate)
 				nextWp = alternate;
 			else
 				nextWp = undefined;
 				
-			updateWpTrackSegment(trackSource, wps[i], prevWp, nextWp, trackStyle, settings);
+			updateWpTrackSegment(trackSource, wps[key], prevWp, nextWp, trackStyle, settings);
 		}
 		
 		
@@ -1710,6 +1706,13 @@ function mapService($http, trafficService, weatherService)
 				
 			updateWpTrackSegment(trackSource, alternate, prevWp, undefined, trackAlternateStyle, settings);
 		}
+
+
+		// add snap interactions
+		addSnapInteraction(airportLayer);
+		addSnapInteraction(navaidLayer);
+		addSnapInteraction(reportingpointLayer);
+		addSnapInteraction(userWpLayer);
 
 
 		function updateWpTrackSegment(trackSource, wp, prevWp, nextWp, trackStyle, settings)
@@ -1727,10 +1730,14 @@ function mapService($http, trafficService, weatherService)
 					geometry: new ol.geom.LineString([ mapCoord0, mapCoord ])
 				});
 
+				trackFeature.wp = wp;
+				trackFeature.mapCoord0 = mapCoord0;
+				trackFeature.mapCoord = mapCoord;
 				trackFeature.setStyle(trackStyle);
 				trackSource.addFeature(trackFeature);
-			}
 
+				addModifyInteraction(trackFeature);
+			}
 
 			// add waypoint + label
 			var wpFeature  = new ol.Feature({
@@ -1751,6 +1758,74 @@ function mapService($http, trafficService, weatherService)
 			var dbStyle = createDirBearStyle(nextWp, settings);
 			dbFeature.setStyle(dbStyle);
 			trackSource.addFeature(dbFeature);
+		}
+
+
+		function addModifyInteraction(trackFeature)
+		{
+			var modInteraction = new ol.interaction.Modify({
+				features: new ol.Collection([trackFeature])
+			});
+
+			modInteraction.on('modifyend', onTrackModifyEnd);
+			modifySnapInteractions.push(modInteraction);
+
+			map.addInteraction(modInteraction);
+		}
+
+
+		function addSnapInteraction(layer)
+		{
+			var snapInteraction = new ol.interaction.Snap({
+				source: layer.getSource(),
+				edge: false
+			});
+
+			modifySnapInteractions.push(snapInteraction);
+
+			map.addInteraction(snapInteraction);
+		}
+
+
+		function onTrackModifyEnd(event)
+		{
+			var lineFeature = event.features.getArray()[0];
+			var newPoints = lineFeature.getGeometry().getCoordinates();
+
+			for (var i = 0; i < newPoints.length; i++)
+			{
+				if ((newPoints[i][0] == lineFeature.mapCoord0[0] && newPoints[i][1] == lineFeature.mapCoord0[1]) || (newPoints[i][0] == lineFeature.mapCoord[0] && newPoints[i][1] == lineFeature.mapCoord[1]))
+					continue;
+
+				var latLon = getLatLonCoordinates(newPoints[i]);
+				var feature = findSnapFeature(newPoints[i]);
+
+				onTrackModifyEndCallback(feature, latLon, lineFeature.wp);
+				break;
+			}
+		}
+
+
+		function findSnapFeature(mapCoord)
+		{
+			var snapLayers = [ airportLayer, navaidLayer, reportingpointLayer, userWpLayer ];
+
+			for (var i = 0; i < snapLayers.length; i++)
+			{
+				var features = snapLayers[i].getSource().getFeaturesInExtent([mapCoord[0], mapCoord[1], mapCoord[0], mapCoord[1]]);
+				if (features.length > 0)
+					return features[0];
+			}
+
+			// use geopoint as default feature
+			var latLon = getLatLonCoordinates(mapCoord);
+			var geoPointFeature = new ol.Feature({
+				geometry: new ol.geom.Point(mapCoord)
+			});
+
+			geoPointFeature.geopoint = getCoordinateGeopoint([latLon.longitude, latLon.latitude]);
+
+			return geoPointFeature;
 		}
 
 
@@ -2368,5 +2443,21 @@ function mapService($http, trafficService, weatherService)
 	function getAirport(icao)
 	{
 		return airports[icao];
+	}
+
+
+	function getCoordinateGeopoint(lonLat)
+	{
+		var clickPoint = {
+			type: 'user',
+			longitude: lonLat[0],
+			latitude: lonLat[1],
+			name: Math.round(lonLat[1] * 10000) / 10000 + " " + Math.round(lonLat[0] * 10000) / 10000,
+			//wpname: ol.coordinate.toStringHDMS(lonLat)
+			wpname: Math.round(lonLat[1] * 10000) / 10000 + " " + Math.round(lonLat[0] * 10000) / 10000
+		};
+
+
+		return clickPoint;
 	}
 }
