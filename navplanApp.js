@@ -1,5 +1,5 @@
 // js error handler
-var errMsgShown = false;
+/*var errMsgShown = false;
 window.onerror = function()
 {
 	if (!errMsgShown)
@@ -8,7 +8,7 @@ window.onerror = function()
 		var errMsg = "Oops, something went wrong. Please close this dialog and try to reload (CTRL+F5) the page.";
 		alert(errMsg);
 	}
-};
+};*/
 
 
 // version check

@@ -298,14 +298,17 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 	};
 
 
-	$scope.onTrackModifyEnd = function(feature, latLon, wp)
+	$scope.onTrackModifyEnd = function(feature, latLon, idx, isInsert)
 	{
-		var idx = $scope.globalData.navplan.waypoints.indexOf(wp);
-
 		var newWp = $scope.getWpFromFeature(feature, latLon);
 
 		if (newWp)
-			$scope.globalData.navplan.waypoints.splice(idx, 0, newWp);
+		{
+			if (isInsert)
+				$scope.globalData.navplan.waypoints.splice(idx, 0, newWp);
+			else
+				$scope.globalData.navplan.waypoints.splice(idx, 1, newWp);
+		}
 
 		$scope.updateWaypoints();
 	};

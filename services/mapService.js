@@ -1644,7 +1644,7 @@ function mapService($http, trafficService, weatherService)
 	}
 	
 	
-	function updateWpTrack(wps, alternate, settings)
+	function updateWpTrack(wps, alternate, variation)
 	{
 		if (typeof wpTrackLayer === "undefined")
 			return;
@@ -1656,55 +1656,48 @@ function mapService($http, trafficService, weatherService)
 		// remove interactions
 		for (var j = 0; j < modifySnapInteractions.length; j++)
 			 map.removeInteraction(modifySnapInteractions[j]);
-
 		modifySnapInteractions = [];
-		
-		var trackStyle = new ol.style.Style({
-			stroke : new ol.style.Stroke({
-				color: '#FF00FF',
-				width: 5
-			})
-		});
-		
-		var trackAlternateStyle = new ol.style.Style({
-			stroke : new ol.style.Stroke({
-				color: '#FF00FF',
-				width: 4,
-				lineDash: [10, 10]
-			})
-		});
-		
-		
+
+
 		// waypoints
 		var prevWp, nextWp;
 
-		for (var key = 0; key < wps.length; key++)
+		for (var i = 0; i < wps.length; i++)
 		{
-			if (key > 0)
-				prevWp = wps[key - 1];
-			else
-				prevWp = undefined;	
-				
-			if (key < wps.length - 1)
-				nextWp = wps[key + 1];
+			if (i < wps.length - 1)
+				nextWp = wps[i + 1];
 			else if (alternate)
 				nextWp = alternate;
 			else
 				nextWp = undefined;
 				
-			updateWpTrackSegment(trackSource, wps[key], prevWp, nextWp, trackStyle, settings);
+			addTrackPoints(trackSource, wps[i], nextWp, variation);
 		}
-		
-		
+
+		addTrackLine(wps, trackSource, false);
+
+
 		// alternate
 		if (alternate)
 		{
 			if (wps.length > 0)
+			{
 				prevWp = wps[wps.length - 1];
+				nextWp = alternate;
+			}
 			else
-				prevWp = undefined;
+			{
+				prevWp = alternate;
+				nextWp = undefined;
+			}
 				
-			updateWpTrackSegment(trackSource, alternate, prevWp, undefined, trackAlternateStyle, settings);
+			addTrackPoints(trackSource, prevWp, nextWp, variation);
+
+			if (nextWp)
+			{
+				addTrackPoints(trackSource, nextWp, undefined, variation);
+				addTrackLine([prevWp, nextWp], trackSource, true);
+			}
 		}
 
 
@@ -1715,29 +1708,10 @@ function mapService($http, trafficService, weatherService)
 		addSnapInteraction(userWpLayer);
 
 
-		function updateWpTrackSegment(trackSource, wp, prevWp, nextWp, trackStyle, settings)
+		function addTrackPoints(trackSource, wp, nextWp, variation)
 		{
 			// get wp coordinates
 			var mapCoord = ol.proj.fromLonLat([wp.longitude, wp.latitude]);
-
-
-			// add track line segment
-			if (prevWp)
-			{
-				var mapCoord0 = ol.proj.fromLonLat([prevWp.longitude, prevWp.latitude]);
-
-				var trackFeature = new ol.Feature({
-					geometry: new ol.geom.LineString([ mapCoord0, mapCoord ])
-				});
-
-				trackFeature.wp = wp;
-				trackFeature.mapCoord0 = mapCoord0;
-				trackFeature.mapCoord = mapCoord;
-				trackFeature.setStyle(trackStyle);
-				trackSource.addFeature(trackFeature);
-
-				addModifyInteraction(trackFeature);
-			}
 
 			// add waypoint + label
 			var wpFeature  = new ol.Feature({
@@ -1749,15 +1723,62 @@ function mapService($http, trafficService, weatherService)
 			wpFeature.waypoint = wp;
 			trackSource.addFeature(wpFeature);
 
+			if (!nextWp)
+				return;
 
 			// add direction & bearing label
 			var dbFeature  = new ol.Feature({
 				geometry: new ol.geom.Point(mapCoord)
 			});
 
-			var dbStyle = createDirBearStyle(nextWp, settings);
+			var dbStyle = createDirBearStyle(nextWp, variation);
 			dbFeature.setStyle(dbStyle);
 			trackSource.addFeature(dbFeature);
+		}
+
+
+		function addTrackLine(wps, trackSource, isAlternate)
+		{
+			if (!wps || wps.length < 2)
+				return;
+
+			// define styles
+			var trackStyle;
+
+			if (!isAlternate)
+				trackStyle = new ol.style.Style({
+					stroke : new ol.style.Stroke({
+						color: '#FF00FF',
+						width: 5
+					})
+				});
+			else
+				trackStyle = new ol.style.Style({
+					stroke : new ol.style.Stroke({
+						color: '#FF00FF',
+						width: 4,
+						lineDash: [10, 10]
+					})
+				});
+
+			// get coordinate list
+			var mapCoordList = [];
+			for (var i = 0; i < wps.length; i++)
+				mapCoordList.push(ol.proj.fromLonLat([wps[i].longitude, wps[i].latitude]));
+
+			// add track line segment
+			var trackFeature = new ol.Feature({
+				geometry: new ol.geom.LineString(mapCoordList)
+			});
+
+			trackFeature.wps = wps;
+			trackFeature.originalCoordList = mapCoordList;
+
+			trackFeature.setStyle(trackStyle);
+			trackSource.addFeature(trackFeature);
+
+			if (!isAlternate)
+				addModifyInteraction(trackFeature);
 		}
 
 
@@ -1790,17 +1811,19 @@ function mapService($http, trafficService, weatherService)
 		function onTrackModifyEnd(event)
 		{
 			var lineFeature = event.features.getArray()[0];
+			var oldPoints = lineFeature.originalCoordList;
 			var newPoints = lineFeature.getGeometry().getCoordinates();
 
 			for (var i = 0; i < newPoints.length; i++)
 			{
-				if ((newPoints[i][0] == lineFeature.mapCoord0[0] && newPoints[i][1] == lineFeature.mapCoord0[1]) || (newPoints[i][0] == lineFeature.mapCoord[0] && newPoints[i][1] == lineFeature.mapCoord[1]))
+				if ((newPoints[i][0] == oldPoints[i][0] && newPoints[i][1] == oldPoints[i][1]) || (newPoints[i][0] == oldPoints[i][0] && newPoints[i][1] == oldPoints[i][1]))
 					continue;
 
 				var latLon = getLatLonCoordinates(newPoints[i]);
 				var feature = findSnapFeature(newPoints[i]);
+				var isInsert = !(oldPoints.length == newPoints.length);
 
-				onTrackModifyEndCallback(feature, latLon, lineFeature.wp);
+				onTrackModifyEndCallback(feature, latLon, i, isInsert);
 				break;
 			}
 		}
@@ -1861,6 +1884,13 @@ function mapService($http, trafficService, weatherService)
 				align = "end";
 
 			return  new ol.style.Style({
+				image: new ol.style.Circle({
+					radius: 6,
+					fill: new ol.style.Fill({
+						color: '#FF00FF',
+						rotateWithView: true
+					})
+				}),
 				text: new ol.style.Text({
 					font: 'bold 16px Calibri,sans-serif',
 					text: wp1.checkpoint,
@@ -1874,9 +1904,9 @@ function mapService($http, trafficService, weatherService)
 		}
 
 
-		function createDirBearStyle(wp, settings)
+		function createDirBearStyle(wp, variation)
 		{
-			var varRad = Number(settings.variation) ? deg2rad(Number(settings.variation)) : 0;
+			var varRad = Number(variation) ? deg2rad(Number(variation)) : 0;
 			var rotRad, align, text, offX, offY;
 
 			if (!wp)
@@ -1905,13 +1935,6 @@ function mapService($http, trafficService, weatherService)
 			}
 
 			return  new ol.style.Style({
-				image: new ol.style.Circle({
-					radius: 6,
-					fill: new ol.style.Fill({
-						color: '#FF00FF',
-						rotateWithView: true
-					})
-				}),
 				text: new ol.style.Text({
 					font: '14px Calibri,sans-serif',
 					text: text,
