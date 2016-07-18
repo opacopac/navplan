@@ -1,3 +1,17 @@
+// js error handler
+var errMsgShown = false;
+window.onerror = function()
+{
+	if (!errMsgShown)
+	{
+		errMsgShown = true;
+		var errMsg = "Oops, something went wrong. Please close this dialog and try to reload (CTRL+F5) the page.";
+		alert(errMsg);
+	}
+};
+
+
+// version check
 var navplanVersion = "1.2k"; // should be the same as in version.txt
 
 // ensure current version
