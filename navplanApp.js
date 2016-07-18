@@ -1,18 +1,27 @@
-// js error handler
-/*var errMsgShown = false;
-window.onerror = function()
+// version
+var navplanVersion = "1.2l"; // should be the same as in version.txt
+
+
+// js error logger
+var errLogSent = false;
+window.onerror = function(message, url, linenumber)
 {
-	if (!errMsgShown)
+	if (!errLogSent)
 	{
-		errMsgShown = true;
-		var errMsg = "Oops, something went wrong. Please close this dialog and try to reload (CTRL+F5) the page.";
-		alert(errMsg);
+		errLogSent = true;
+
+		var errLog = {
+			verJs: navplanVersion,
+			verIdx: indexVersion,
+			errMsg: message,
+			errUrl: url,
+			errLine: linenumber
+		};
+
+		$.post("php/errorlog.php", obj2json(errLog));
 	}
-};*/
+};
 
-
-// version check
-var navplanVersion = "1.2k"; // should be the same as in version.txt
 
 // ensure current version
 $.get("version.txt?q=" + Math.random(),
