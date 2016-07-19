@@ -1,16 +1,16 @@
 // version
-var navplanVersion = "1.2l"; // should be the same as in version.txt
+var navplanVersion = "1.2m"; // should be the same as in version.txt
 
 
-// js error logger
+// js error handler
 var errLogSent = false;
 window.onerror = function(message, url, linenumber)
 {
 	if (!errLogSent)
 	{
 		errLogSent = true;
-
 		var errLog = {
+			handler: 'windown.onerror',
 			verJs: navplanVersion,
 			verIdx: indexVersion,
 			errMsg: message,
@@ -18,8 +18,10 @@ window.onerror = function(message, url, linenumber)
 			errLine: linenumber
 		};
 
-		$.post("php/errorlog.php", obj2json(errLog));
+		writeServerErrLog(errLog);
 	}
+	
+	displayGenericError();
 };
 
 
@@ -55,9 +57,28 @@ function routeprovider($routeProvider)
 		.when("/about",  { templateUrl: 'about/about.html?v=' + navplanVersion });
 }
 
+// add logging to angular exception handler
+navplanApp.config(function($provide) {
+	$provide.decorator("$exceptionHandler", ['$delegate', function($delegate) {
+		return function(exception, cause) {
+			$delegate(exception, cause);
+
+			var errLog = {
+				handler: 'angular',
+				verJs: navplanVersion,
+				verIdx: indexVersion,
+				errMsg: exception.message,
+				errCause: cause
+			};
+
+			writeServerErrLog(errLog);
+		};
+	}]);
+});
+
 
 // global data object
- navplanApp
+navplanApp
 	.factory('globalData', globalData);
 
 function globalData()

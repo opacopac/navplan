@@ -917,16 +917,32 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 		mapService.updateSize();
 	};
 
-	mapService.init(
-		$scope.onMapClicked,
-		$scope.onFeatureSelected,
-		$scope.onMapMoveEnd,
-		$scope.onTrackModifyEnd,
-		$scope.globalData.currentMapPos);
+	try
+	{
+		mapService.init(
+			$scope.onMapClicked,
+			$scope.onFeatureSelected,
+			$scope.onMapMoveEnd,
+			$scope.onTrackModifyEnd,
+			$scope.globalData.currentMapPos);
 
-	$scope.updateWaypoints();
-	$scope.updateFlightTrack();
-	$scope.resizeMap();
+		$scope.updateWaypoints();
+		$scope.updateFlightTrack();
+		$scope.resizeMap();
+	}
+	catch(err)
+	{
+		$scope.$parent.error_alert_message = "Sorry, an error occured while loading the map! Try to reload the page (CTRL+F5), or clear the browser cache, or use a newer browser (e.g Chrome 24+, Safari 6.2+, Firefox 23+, IE 10+)";
+
+		var errLog = {
+			handler: 'mapinit',
+			verJs: navplanVersion,
+			verIdx: indexVersion,
+			errMsg: err.message
+		};
+
+		writeServerErrLog(errLog);
+	}
 
 	window.removeEventListener("resize", $scope.resizeMap);
 	window.addEventListener("resize", $scope.resizeMap);

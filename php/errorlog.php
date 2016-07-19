@@ -1,5 +1,5 @@
 <?php
-    $logfile = './errorlog/error.log';
+    $logfile = './logs/error-' . date("Y-m-d") . '.log';
 
 	//$input = json_decode(file_get_contents('php://input'), true);
 	$errorMsg = date("Y-m-d H:i:s") . " - " . $_SERVER['REMOTE_ADDR'] . " - " . $_SERVER['HTTP_USER_AGENT'] . "\n";

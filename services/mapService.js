@@ -9,7 +9,7 @@ mapService.$inject = ['$http', 'trafficService', 'weatherService'];
 
 function mapService($http, trafficService, weatherService)
 {
-	const MAX_ZOOMLEVEL = 17;
+	var MAX_ZOOMLEVEL = 17;
 
 	var map = {};
 	var mapLayer, wpTrackLayer, closeIconLayer, airportLayer, navaidLayer, airspaceLayer, reportingpointLayer, userWpLayer, flightTrackLayer, geopointLayer, trafficLayer, locationLayer, weatherLayer, webcamLayer;
@@ -128,8 +128,8 @@ function mapService($http, trafficService, weatherService)
 				target: 'map',
 				controls:
 					[
-						new ol.control.ScaleLine({ units: 'nautical' }),
-						new ol.control.Attribution()
+						new ol.control.ScaleLine({ units: 'nautical' })
+						//new ol.control.Attribution()
 					],
 				layers: [
 					mapLayer,

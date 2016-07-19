@@ -84,11 +84,11 @@
 	</nav>
 	<!-- success messages -->
 	<div class="container messages">
-		<div id="success_alert_box" class="alert alert-success" role="alert" ng-show="success_alert_message">{{ success_alert_message }}</div>
+		<div id="success_alert_box" class="alert alert-success ng-cloak" role="alert" ng-show="success_alert_message">{{ success_alert_message }}</div>
 	</div>
 	<!-- error messages -->
 	<div class="container messages">
-		<div id="error_alert_box" class="alert alert-danger" role="alert" ng-show="error_alert_message">{{ error_alert_message }}</div>
+		<div id="error_alert_box" class="alert alert-danger ng-cloak" role="alert" ng-show="error_alert_message">{{ error_alert_message }}</div>
 	</div>
 	<!-- content -->
 	<div ng-view style="position: relative" width="100%" height="100%"></div>

@@ -12,7 +12,7 @@ function weatherService($http)
 	var weatherBaseUrl = 'php/weather.php?v=' + navplanVersion;
 	var weatherinfolist = [];
 	var lastUpdated = 0;
-	const MAXAGE = 5 * 60 * 1000; // 5 min
+	var MAXAGE = 5 * 60 * 1000; // 5 min
 
 	updateWeatherInfos();
 
