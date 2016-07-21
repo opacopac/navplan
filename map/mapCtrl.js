@@ -3,10 +3,10 @@
  */
 
 navplanApp
-	.controller('mapCtrl', [ '$scope', '$sce', '$route', 'mapService', 'locationService', 'trafficService', 'geonameService', 'userService', 'globalData', mapCtrl ]);
+	.controller('mapCtrl', [ '$scope', '$sce', '$route', 'mapService', 'locationService', 'trafficService', 'geonameService', 'globalData', mapCtrl ]);
 
 
-function mapCtrl($scope, $sce, $route, mapService, locationService, trafficService, geonameService, userService, globalData) {
+function mapCtrl($scope, $sce, $route, mapService, locationService, trafficService, geonameService, globalData) {
 	$scope.globalData = globalData;
 	$scope.trafficTimerIntervallMs = 5000;
 	$scope.selectedTraffic = {};
@@ -276,7 +276,7 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 				case "AFIS" : return "AD"; // TODO: TEMP
 				case "OTHER" :
 				{
-					if (radio.description.toUpperCase().startsWith("AD"))
+					if (radio.description.toUpperCase().indexOf("AD") == 0) // starts with AD...
 						return "AD";
 					else
 						return radio.typespec;

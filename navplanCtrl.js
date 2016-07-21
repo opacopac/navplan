@@ -544,11 +544,15 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 	window.frames[0].onload = function()
 	{
 		$scope.appCache = window.frames[0].applicationCache;
-		$scope.appCache.addEventListener('progress', $scope.onCacheProgress, false);
-		$scope.appCache.addEventListener('noupdate', $scope.onCacheReady, false);
-		$scope.appCache.addEventListener('cached', $scope.onCacheReady, false);
-		$scope.appCache.addEventListener('updateready', $scope.onCacheReady, false);
-		$scope.appCache.addEventListener('obsolete', $scope.onCacheReady, false);
-		$scope.appCache.addEventListener('error', $scope.onCacheError, false);
+
+		if ($scope.appCache && $scope.appCache.addEventListener)
+		{
+			$scope.appCache.addEventListener('progress', $scope.onCacheProgress, false);
+			$scope.appCache.addEventListener('noupdate', $scope.onCacheReady, false);
+			$scope.appCache.addEventListener('cached', $scope.onCacheReady, false);
+			$scope.appCache.addEventListener('updateready', $scope.onCacheReady, false);
+			$scope.appCache.addEventListener('obsolete', $scope.onCacheReady, false);
+			$scope.appCache.addEventListener('error', $scope.onCacheError, false);
+		}
 	};
 }
