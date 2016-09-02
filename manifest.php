@@ -208,10 +208,16 @@
 	function getTileUrl($lat, $lon, $zoom)
 	{
 	    $localBaseUrl = "maptiles/";
-		$otmBaseUrl = array(
+		/*$otmBaseUrl = array(
 			"//a.tile.opentopomap.org/",
 			"//b.tile.opentopomap.org/",
 			"//c.tile.opentopomap.org/"
+		);*/
+
+		$otmBaseUrl = array(
+			"//opentopomap.org/",
+			"//opentopomap.org/",
+			"//opentopomap.org/"
 		);
 
 		$ytile = floor((($lon + 180) / 360) * pow(2, $zoom));

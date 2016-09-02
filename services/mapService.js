@@ -2383,7 +2383,8 @@ function mapService($http, trafficService, weatherService)
 
 		function getTileUrl(coordinate)
 		{
-			var otmBaseUrls = [ "//a.tile.opentopomap.org/", "//b.tile.opentopomap.org/", "//c.tile.opentopomap.org/" ];
+			//var otmBaseUrls = [ "//a.tile.opentopomap.org/", "//b.tile.opentopomap.org/", "//c.tile.opentopomap.org/" ];
+			var otmBaseUrls = [ "//opentopomap.org/", "//opentopomap.org/", "//opentopomap.org/" ];
 			var localBaseUrl = "maptiles/";
 			var z = coordinate[0];
 			var y = coordinate[1];

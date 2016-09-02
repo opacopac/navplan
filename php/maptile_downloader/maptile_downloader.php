@@ -1,6 +1,7 @@
 #!/usr/bin/env php
 <?php
-    $tile_base_urls = [ "https://a.tile.opentopomap.org/", "https://b.tile.opentopomap.org/", "https://c.tile.opentopomap.org/" ];
+    //$tile_base_urls = [ "https://a.tile.opentopomap.org/", "https://b.tile.opentopomap.org/", "https://c.tile.opentopomap.org/" ];
+    $tile_base_urls = [ "https://opentopomap.org/", "https://opentopomap.org/", "https://opentopomap.org/" ];
     $tile_dir = "../../maptiles/";
     $minwaitsec = 1;
     /*$zoom = 6;
