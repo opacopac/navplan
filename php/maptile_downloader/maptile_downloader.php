@@ -1,9 +1,10 @@
 #!/usr/bin/env php
 <?php
     //$tile_base_urls = [ "https://a.tile.opentopomap.org/", "https://b.tile.opentopomap.org/", "https://c.tile.opentopomap.org/" ];
-    $tile_base_urls = [ "https://opentopomap.org/", "https://opentopomap.org/", "https://opentopomap.org/" ];
-    $tile_dir = "../../maptiles/";
-    $minwaitsec = 1;
+    //$tile_base_urls = [ "https://opentopomap.org/", "https://opentopomap.org/", "https://opentopomap.org/" ];
+    $tile_base_urls = [ "http://opentopomap.org/", "http://opentopomap.org/", "http://opentopomap.org/" ];
+    $tile_dir = "../../maptiles_dl/";
+    $minwaitsec = 0;
     /*$zoom = 6;
     $yrange = [33, 33];
     $xrange = [22, 22];*/
@@ -14,7 +15,8 @@
     $yrange = [132, 135];
     $xrange = [88, 91];*/
 
-    $zrange = [13, 13];
+    $zrange = [14, 14];
+    //$zrange = [4, 6];
 
     writelog("INFO", "starting download...");
 
@@ -23,9 +25,16 @@
 
     for ($z = $zrange[0]; $z <= $zrange[1]; $z++)
     {
+        // swiss only
         $zoomfact = pow(2, ($z - 6));
         $yrange = [33 * $zoomfact, 33 * $zoomfact + $zoomfact - 1 ];
         $xrange = [22 * $zoomfact, 22 * $zoomfact + $zoomfact - 1 ];
+
+        // full world
+        /*$zoomfact = pow(2, $z);
+        $xrange = [0, $zoomfact - 1];
+        $yrange = [0, $zoomfact - 1];*/
+
 
         writelog("INFO", "z:" . $z);
         writelog("INFO", "y:" . $yrange[0] . "-" . $yrange[1]);

@@ -19,6 +19,7 @@ function mapService($http, trafficService, weatherService)
 	var userWaypoints = {};
 	var chartLayers = [];
 	var airspaces = [];
+	var wpTrackCache = { wps: undefined, alternate: undefined, variation: undefined};
 	var currentOverlay = undefined;
 	var modifySnapInteractions = [];
 	var onTrackModifyEndCallback = undefined;
@@ -98,9 +99,10 @@ function mapService($http, trafficService, weatherService)
 		map.on('singleclick', onSingleClick);
 		map.on('pointermove', onPointerMove);
 		map.on('moveend', onMoveEnd);
+		map.getView().on('change:rotation', onViewRotation);
+
 
 		onTrackModifyEndCallback = onTrackModEndCallback;
-
 
 
 		// restore chart layers
@@ -195,18 +197,20 @@ function mapService($http, trafficService, weatherService)
 
 
 								// rwy icon
-								var rwyFeature = new ol.Feature({
-									geometry: new ol.geom.Point(ol.proj.fromLonLat([ap.longitude, ap.latitude]))
-								});
+								if (ap.runways && ap.runways.length > 0)
+								{
+									var rwyFeature = new ol.Feature({
+										geometry: new ol.geom.Point(ol.proj.fromLonLat([ap.longitude, ap.latitude]))
+									});
 
-								var rwyStyle = createRwyStyle(ap.type, ap.runways.length > 0 ? ap.runways[0] : undefined);
+									var rwyStyle = createRwyStyle(ap.type, ap.runways[0]);
 
-								if (rwyStyle)
-									rwyFeature.setStyle(rwyStyle);
-								else
-									continue;
-
-								layer.getSource().addFeature(rwyFeature);
+									if (rwyStyle)
+									{
+										rwyFeature.setStyle(rwyStyle);
+										layer.getSource().addFeature(rwyFeature);
+									}
+								}
 
 
 								//  parachute feature
@@ -451,7 +455,7 @@ function mapService($http, trafficService, weatherService)
 						return;
 
 					var src;
-					var rot = metar.wind_dir_degrees ? deg2rad(metar.wind_dir_degrees - 90) : undefined;
+					var rot = metar.wind_dir_degrees ? deg2rad(metar.wind_dir_degrees - 90) + map.getView().getRotation() : undefined;
 					var windrange = [[0, "0"], [2, "1-2"], [7, "5"], [12, "10"], [17, "15"], [22, "20"], [27, "25"], [32, "30"], [37, "35"], [42, "40"], [47, "45"], [55, "50"], [65, "60"], [75, "70"], [85, "80"], [95, "90"], [105, "100"]];
 
 					for (var i = 0; i < windrange.length; i++)
@@ -1012,6 +1016,17 @@ function mapService($http, trafficService, weatherService)
 			setLayerVisibility();
 
 			onMoveEndCallback(event);
+		}
+
+
+		// rotate event
+		function onViewRotation(event)
+		{
+			if (wpTrackCache && wpTrackCache.wps)
+			{
+				updateWpTrack(wpTrackCache.wps, wpTrackCache.alternate, wpTrackCache.variation);
+				wpTrackLayer.getSource().changed();
+			}
 		}
 
 
@@ -1649,6 +1664,9 @@ function mapService($http, trafficService, weatherService)
 		if (typeof wpTrackLayer === "undefined")
 			return;
 
+		// cache parameters for updates after view rotation
+		wpTrackCache = { wps: wps, alternate: alternate, variation: variation};
+
 		// remove features
 		var trackSource = wpTrackLayer.getSource();
 		trackSource.clear();
@@ -1854,34 +1872,43 @@ function mapService($http, trafficService, weatherService)
 
 		function createWaypointStyle(wp1, wp2)
 		{
-			var rot, align;
+			var rotDeg, rotRad, align;
+			var maprotRad = map.getView().getRotation();
+			var maprotDeg = rad2deg(maprotRad);
+			var rotateWithView = true;
 
 			if (wp1.mt && wp2) // en route point
 			{
 				if (wp2.mt > wp1.mt)
-					rot = deg2rad((wp1.mt + 270 + (wp2.mt - wp1.mt) / 2) % 360);
+					rotDeg = (wp1.mt + 270 + (wp2.mt - wp1.mt) / 2) % 360;
 				else
-					rot = deg2rad((wp1.mt + 270 + (wp2.mt + 360 - wp1.mt) / 2) % 360);
+					rotDeg = (wp1.mt + 270 + (wp2.mt + 360 - wp1.mt) / 2) % 360;
 			}
 			else if (!wp1.mt && wp2) // start point
 			{
-				rot = deg2rad((wp2.mt + 180) % 360);
+				rotDeg = (wp2.mt + 180) % 360;
 			}
 			else if (wp1.mt && !wp2) // end point
 			{
-				rot = deg2rad(wp1.mt);
+				rotDeg = wp1.mt;
 			}
 			else if (!wp1.mt && !wp2) // single point
 			{
-				rot = deg2rad(45); // 45°
+				rotDeg = 45; // 45°
+				rotateWithView = false;
 			}
 			else
 				throw "invalid waypoints";
 
-			if (rot < Math.PI)
+			if (!rotateWithView || (rotDeg + maprotDeg) % 360 < 180)
 				align = "start";
 			else
 				align = "end";
+
+			if (rotateWithView)
+				rotRad = deg2rad(rotDeg + maprotDeg);
+			else
+				rotRad = deg2rad(rotDeg);
 
 			return  new ol.style.Style({
 				image: new ol.style.Circle({
@@ -1897,8 +1924,8 @@ function mapService($http, trafficService, weatherService)
 					fill: new ol.style.Fill( { color: '#660066' } ),
 					stroke: new ol.style.Stroke( {color: '#FFFFFF', width: 10 } ),
 					textAlign: align,
-					offsetX: 15 * Math.sin(rot),
-					offsetY: -15 * Math.cos(rot)
+					offsetX: 15 * Math.sin(rotRad),
+					offsetY: -15 * Math.cos(rotRad)
 				})
 			});
 		}
@@ -1907,31 +1934,27 @@ function mapService($http, trafficService, weatherService)
 		function createDirBearStyle(wp, variation)
 		{
 			var varRad = Number(variation) ? deg2rad(Number(variation)) : 0;
-			var rotRad, align, text, offX, offY;
+			var maprotRad = map.getView().getRotation();
+			var maprotDeg = rad2deg(maprotRad);
+			var rotRad, align, text;
 
 			if (!wp)
 			{
 				rotRad = 0;
 				align = "start";
 				text = '';
-				offX = 0;
-				offY = 0;
 			}
-			else if (wp.mt  < 180)
+			else if ((wp.mt + maprotDeg) % 360 < 180)
 			{
 				rotRad = deg2rad(wp.mt - 90);
 				align = "start";
-				text = wp.mt + '° ' + wp.dist + 'NM >';
-				offX = 10 * Math.sin(rotRad + Math.PI / 2);
-				offY = -10 * Math.cos(rotRad + Math.PI / 2);
+				text = '   ' + wp.mt + '° ' + wp.dist + 'NM >';
 			}
 			else
 			{
 				rotRad = deg2rad(wp.mt - 270);
 				align = "end";
-				text = '< ' + wp.mt + '° ' + wp.dist + 'NM';
-				offX = 10 * Math.sin(rotRad + Math.PI * 3 / 2);
-				offY = -10 * Math.cos(rotRad + Math.PI * 3 / 2);
+				text = '< ' + wp.mt + '° ' + wp.dist + 'NM   ';
 			}
 
 			return  new ol.style.Style({
@@ -1940,10 +1963,8 @@ function mapService($http, trafficService, weatherService)
 					text: text,
 					fill: new ol.style.Fill( { color: '#000000' } ),
 					stroke: new ol.style.Stroke( {color: '#FFFFFF', width: 10 } ),
-					rotation: rotRad + varRad,
-					textAlign: align,
-					offsetX: offX,
-					offsetY: offY
+					rotation: rotRad + varRad + maprotRad,
+					textAlign: align
 				})
 			});
 		}
@@ -2244,6 +2265,8 @@ function mapService($http, trafficService, weatherService)
 			if (position.timestamp && (Date.now() - position.timestamp > maxAgeSecInactive * 1000))
 				iconSuffix = "_inactive";
 
+			var rotWithView = true;
+
 			switch (acInfo.actype)
 			{
 				case "OWN":
@@ -2261,19 +2284,23 @@ function mapService($http, trafficService, weatherService)
 				case "PARA_GLIDER":
 					icon += "traffic_parachute" + iconSuffix + ".png";
 					rotation = 0;
+					rotWithView = false;
 					break;
 				case "BALLOON":
 				case "AIRSHIP":
 					icon += "traffic_balloon" + iconSuffix + ".png";
 					rotation = 0;
+					rotWithView = false;
 					break;
 				case "UKNOWN":
 					icon += "traffic_unknown" + iconSuffix + ".png";
 					rotation = 0;
+					rotWithView = false;
 					break;
 				case "STATIC_OBJECT":
 					icon += "traffic_static" + iconSuffix + ".png";
 					rotation = 0;
+					rotWithView = false;
 					break;
 				case "DROP_PLANE":
 					typetext = " - Drop Plane";
@@ -2307,7 +2334,8 @@ function mapService($http, trafficService, weatherService)
 						anchorYUnits: 'fraction',
 						scale: 1,
 						opacity: 1.00,
-						rotation: rotation / 180 * Math.PI,
+						rotation: deg2rad(rotation),
+						rotateWithView: rotWithView,
 						src: icon
 					}),
 					text: new ol.style.Text({
@@ -2404,7 +2432,10 @@ function mapService($http, trafficService, weatherService)
 
 		function isLocalTile(z, y, x)
 		{
-			var zrange = [ 6, 13 ];
+			if (z <= 6)
+				return true;
+
+			var zrange = [7, 14];
 			var zoomfact = Math.pow(2, (z - 6));
 			var yrange = [33 * zoomfact, 33 * zoomfact + zoomfact - 1 ];
 			var xrange = [22 * zoomfact, 22 * zoomfact + zoomfact - 1 ];

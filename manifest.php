@@ -237,7 +237,10 @@
 
 	function isLocalTile($z, $y, $x)
 	{
-	    $zrange = [6, 13];
+	    if ($z <= 6)
+	        return true;
+
+	    $zrange = [7, 14];
 
         if ($z < $zrange[0] || $z > $zrange[1])
             return false;
