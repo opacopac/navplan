@@ -2152,35 +2152,27 @@ function mapService($http, trafficService, weatherService)
 
 			for (var acAddress in acList)
 			{
-				var acInfo = {
-					actype: acList[acAddress].actype,
-					address: acAddress,
-					addresstype: acList[acAddress].addresstype,
-					callsign: '',
-					receiver: acList[acAddress].positions[acList[acAddress].positions.length - 1].receiver
-				};
-				
-				if (acList[acAddress].addresstype == "ICAO")
-					acInfo.callsign = trafficService.tryReadAcCallsign(acAddress);
-				
-				drawTrafficTrack(acList[acAddress].positions, layerSource, acInfo, acCount > maxTrafficForDots);
+				var ac = acList[acAddress];
+				ac.receiver = ac.positions[ac.positions.length - 1].receiver;
+
+				drawTrafficTrack(ac, layerSource, acCount > maxTrafficForDots);
 			}
 		}
 	}
 
 
-	function drawTrafficTrack(lastPositions, layerSource, acInfo, skipDots)
+	function drawTrafficTrack(ac, layerSource, skipDots)
 	{
-		if (!lastPositions)
+		if (!ac || !ac.positions)
 			return;
 
-		var maxIdx = lastPositions.length - 1;
+		var maxIdx = ac.positions.length - 1;
 
 		// draw track dots
 		if (!skipDots) {
 			for (var i = maxIdx; i >= 0; i--) {
-				if (Date.now() - lastPositions[i].timestamp < maxAgeSecTrackDots * 1000) {
-					var trackDotFeature = createTrackDotFeature(lastPositions[i], acInfo.actype);
+				if (Date.now() - ac.positions[i].timestamp < maxAgeSecTrackDots * 1000) {
+					var trackDotFeature = createTrackDotFeature(ac.positions[i], ac.actype);
 					layerSource.addFeature(trackDotFeature);
 				}
 				else
@@ -2194,25 +2186,25 @@ function mapService($http, trafficService, weatherService)
 
 			if (maxIdx > 0) {
 				rotation = getBearing(
-					lastPositions[maxIdx - 1].latitude,
-					lastPositions[maxIdx - 1].longitude,
-					lastPositions[maxIdx].latitude,
-					lastPositions[maxIdx].longitude,
+                    ac.positions[maxIdx - 1].latitude,
+                    ac.positions[maxIdx - 1].longitude,
+                    ac.positions[maxIdx].latitude,
+                    ac.positions[maxIdx].longitude,
 					0);
 			}
 
 			var planeFeature = createTrafficFeature(
-				lastPositions[maxIdx],
+                ac.positions[maxIdx],
 				rotation,
-				acInfo);
+				ac);
 
 			layerSource.addFeature(planeFeature);
 
-			if (acInfo.callsign)
+			if (ac.registration)
 			{
 				var csFeature = createCallsignFeature(
-					lastPositions[maxIdx],
-					acInfo.callsign);
+                    ac.positions[maxIdx],
+					ac.registration);
 
 				layerSource.addFeature(csFeature);
 			}
@@ -2248,15 +2240,15 @@ function mapService($http, trafficService, weatherService)
 		}
 
 
-		function createTrafficFeature(position, rotation, acInfo)
+		function createTrafficFeature(position, rotation, ac)
 		{
 			var icon = "icon/";
 			var color = "#FF0000";
 			var heighttext = "";
 			var typetext = "";
 
-			if (!acInfo.callsign)
-				acInfo.callsign = "";
+			if (!ac.registration)
+				ac.registration = "";
 
 			if (position.altitude > 0)
 				heighttext = Math.round(position.altitude * 3.28084).toString() + " ft"; // TODO: einstellbar
@@ -2267,7 +2259,7 @@ function mapService($http, trafficService, weatherService)
 
 			var rotWithView = true;
 
-			switch (acInfo.actype)
+			switch (ac.actype)
 			{
 				case "OWN":
 					icon += "own_plane.png";
@@ -2314,9 +2306,11 @@ function mapService($http, trafficService, weatherService)
 					typetext = " - UAV";
 					icon += "traffic_plane" + iconSuffix + ".png";
 					break;
+                case "JET_AIRCRAFT":
+                    icon += "traffic_jetplane" + iconSuffix + ".png";
+                    break;
 				case "POWERED_AIRCRAFT":
 				case "TOW_PLANE":
-				case "JET_AIRCRAFT":
 				default:
 					icon += "traffic_plane" + iconSuffix + ".png";
 					break;
@@ -2349,7 +2343,7 @@ function mapService($http, trafficService, weatherService)
 				})
 			);
 
-			planeFeature.acInfo = acInfo;
+			planeFeature.acInfo = ac;
 
 			return planeFeature;
 		}

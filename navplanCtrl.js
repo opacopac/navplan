@@ -375,6 +375,32 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 	};
 
 
+	$scope.onShareClicked = function(shareType)
+	{
+		var sharerUrl;
+		var tinyUrl = "https://www.navplan.ch/branch/";
+		var np_title = ($scope.globalData.navplan.name && $scope.globalData.navplan.name.length > 0) ? " " + $scope.globalData.navplan.name : "";
+		var text = "Check out my VFR Navigation Log" + np_title + ":";
+		var hashtags = "navplan,vfr,flightplan";
+
+		switch (shareType)
+		{
+			case "facebook":
+				var sharerUrl = "http://www.facebook.com/sharer.php?u=" + encodeURI(tinyUrl);
+                createAndClickLink(sharerUrl, "_blank");
+				break;
+            case "twitter":
+                var sharerUrl = "https://twitter.com/share?url=" + encodeURI(tinyUrl) + "&text=" + encodeURI(text) + "&hashtags=" + encodeURI(hashtags);
+                createAndClickLink(sharerUrl, "_blank");
+                break;
+            case "google":
+                var sharerUrl = "https://plus.google.com/share?url=" + encodeURI(tinyUrl);
+                createAndClickLink(sharerUrl, "_blank");
+                break;
+		}
+	};
+
+
 	$scope.exportKml = function()
 	{
 		var waypoints = [];

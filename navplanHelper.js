@@ -78,6 +78,22 @@ function sendPostForm(action, target, varName, varData)
 }
 
 
+function createAndClickLink(href, target)
+{
+	var a = document.createElement("a");
+	a.href = href;
+	a.target = target;
+	a.style = "display: none";
+
+	document.body.appendChild(a);
+
+	a.click();
+
+    // doesn't work with firefox
+    //document.body.removeChild(a);
+}
+
+
 function undef2null(key, val)
 {
 	if (val === undefined)

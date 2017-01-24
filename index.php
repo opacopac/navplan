@@ -16,15 +16,32 @@
 ?><!DOCTYPE HTML>
 <html lang="de" data-ng-app="navplanApp" data-ng-controller="navplanCtrl">
 <head>
-	<title>NAV-Flightplan</title>
-	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1">
+	<title>navplan.ch</title>
 	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1">
+    <meta name="description" content="VFR Flight Planning in Switzerland" />
+    <!-- twitter -->
+    <meta name="twitter:card" value="VFR Flight Planning in Switzerland">
+    <meta name="twitter:title" content="NAVPLAN.CH" />
+    <meta name="twitter:description" content="VFR Flight Planning in Switzerland" />
+    <meta name="twitter:image" content="http://www.navplan.ch/branch/about/navplan_example.png" />
+    <!-- facebook -->
+    <meta property="og:title" content="NAVPLAN.CH" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://www.navplan.ch/branch/" />
+    <meta property="og:image" content="http://www.navplan.ch/branch/about/navplan_example.png" />
+    <meta property="og:description" content="VFR Flight Planning in Switzerland" />
+    <!-- favicon -->
 	<link rel="icon" type="image/png" href="icon/favicon.png" />
-	<link rel="stylesheet" href = "css/bootstrap.min.css">
-	<link rel="stylesheet" href = "css/ol.css">
-	<link rel="stylesheet" href = "css/arial-narrow.css" type="text/css" />
-	<link rel="stylesheet" href = "css/navplan.css?v=<?php echo $ver ?>">
+	<!-- css -->
+	<link rel="stylesheet" href="css/bootstrap.min.css">
+	<link rel="stylesheet" href="css/ol.css">
+	<link rel="stylesheet" href="css/arial-narrow.css" type="text/css" />
+    <link rel="stylesheet" href="font-awesome/css/font-awesome.min.css">
+	<link rel="stylesheet" href="css/navplan.css?v=<?php echo $ver ?>">
+	<!-- version -->
 	<script>var indexVersion = "<?php echo $ver ?>";</script>
+	<!-- js -->
 	<script src="js/jquery-1.12.3.min.js"></script>
 	<script src="js/jquery-ui.min.js"></script>
 	<script src="js/jquery.ui.touch-punch.min.js"></script>
@@ -33,6 +50,7 @@
 	<script src="js/angular-resource.min.js"></script>
 	<script src="js/bootstrap.min.js"></script>
 	<script src="js/ui-bootstrap-tpls-1.3.2.min.js"></script>
+
 	<script src="js/ol.js"></script>
 	<script src="js/turf.min.js"></script>
 	<script src="navplanHelper.js?v=<?php echo $ver ?>"></script>
@@ -64,7 +82,7 @@
 					<span class="icon-bar"></span>
 					<span class="icon-bar"></span>
 				</button>
-				<a class="navbar-brand" href="#/">NAV-FLIGHTPLAN</a>
+				<a class="navbar-brand" href="#/">NAVPLAN.CH</a>
 			</div>
 			<div id="navbarcontent" class="collapse navbar-collapse">
 				<ul class="nav navbar-nav">
@@ -72,6 +90,17 @@
 					<li><a href="#/waypoints" title="Waypoint List" data-toggle="collapse" data-target="#navbarcontent">Waypoints</a></li>
 					<li ng-show="isLoggedIn() || hasLastTrack()"><a href="#/tracks" title="Recorded Tracks" data-toggle="collapse" data-target="#navbarcontent">Tracks</a></li>
 					<li><a href="#/map" title="Clear Waypoints and Track" data-toggle="collapse" data-target="#navbarcontent" ng-click="onTrashClicked()"><i class="glyphicon glyphicon-trash"></i></a></li>
+					<li class="dropdown" ng-show="false"><!-- TODO: sharing buttons, unfinished yet -->
+					    <a href="#" onclick="return false;" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><i class="fa fa-share-alt fa-lg"></i></a>
+						<ul class="dropdown-menu">
+							<li><a>Share current Navplan on...</a></li>
+							<li><a href="#" onclick="return false;" ng-click="onShareClicked('facebook')"><i class="fa fa-facebook fa-fw"></i>&nbsp;  Facebook</a></li>
+							<li><a href="#" onclick="return false;" ng-click="onShareClicked('twitter')"><i class="fa fa-twitter fa-fw"></i>&nbsp;  Twitter</a></li>
+							<li><a href="#" onclick="return false;" ng-click="onShareClicked('google')"><i class="fa fa-google-plus fa-fw"></i>&nbsp;  Google+</a></li>
+							<li><a href="#" onclick="return false;" ng-click="onShareClicked('mail')"><i class="fa fa-envelope fa-fw"></i>&nbsp;  E-Mail</a></li>
+							<li><a href="#" onclick="return false;" ng-click="onShareClicked('url')"><i class="fa fa-link fa-fw"></i>&nbsp;  URL</a></li>
+						</ul>
+					</li>
 				</ul>
 				<ul class="nav navbar-nav navbar-right">
 					<li ng-hide="isLoggedIn()"><a href="#/login" title="Login or Register" data-toggle="collapse" data-target="#navbarcontent">Login</a></li>

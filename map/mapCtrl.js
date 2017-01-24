@@ -89,44 +89,16 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 		{
 			$scope.selectedTraffic = {
 				position: mapService.getLatLonCoordinates(feature.getGeometry().getCoordinates()),
-				registration: "Unknown",
-				aircraftModelType: "N/A",
-				manufacturer: "N/A",
-				address: feature.acInfo.address,
+				registration: feature.acInfo.registration ? feature.acInfo.registration : "Unknown",
+				aircraftModelType: feature.acInfo.aircraftModelType ? feature.acInfo.aircraftModelType : "N/A",
+				manufacturer: feature.acInfo.manufacturer ? feature.acInfo.manufacturer : "N/A",
+				acaddress: feature.acInfo.acaddress,
 				addresstype: feature.acInfo.addresstype,
 				receiver: feature.acInfo.receiver
 			};
 
-
-			if (feature.acInfo.addresstype != "ICAO")
-			{
-				mapService.addOverlay(feature.getGeometry().getCoordinates(), trafficContainer, true);
-				$scope.$apply();
-			}
-			else {
-				trafficService.readAcDetails(feature.acInfo.address)
-					.then(
-						function (response) {
-							if (!response.data || !response.data.aircrafts || response.data.aircrafts.length > 1) {
-								console.error("ERROR reading callsign");
-							}
-							else {
-								if (response.data.aircrafts.length == 1)
-								{
-									var acDetails = response.data.aircrafts[0];
-									$scope.selectedTraffic.registration = acDetails.registration;
-									$scope.selectedTraffic.aircraftModelType = acDetails.aircraftModelType;
-									$scope.selectedTraffic.manufacturer = acDetails.manufacturer;
-								}
-
-								mapService.addOverlay(feature.getGeometry().getCoordinates(), trafficContainer, true);
-							}
-						},
-						function (response) {
-							console.error("ERROR reading ac details", response.status, response.data);
-						}
-					)
-			}
+			mapService.addOverlay(feature.getGeometry().getCoordinates(), trafficContainer, true);
+			$scope.$apply();
 		}
 		else if (feature.webcam)
 		{
@@ -752,8 +724,15 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 		
 		var extent = mapService.getViewExtent();
 
-		trafficService.readTraffic(extent, 120)
-			.then(
+		trafficService.requestTraffic(extent, 120, trafficCallback);
+
+		function trafficCallback(acList)
+        {
+            mapService.updateTraffic(acList);
+            $scope.globalData.trafficStatus = "current";
+        }
+
+/*			.then(
 				function(response)
 				{
 					if (response.data.aclist)
@@ -776,7 +755,7 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 					$scope.globalData.trafficStatus = "error";
 					console.error("ERROR", response.status, response.data);
 				}
-			);
+			);*/
 	};
 
 

@@ -109,8 +109,8 @@ while(!feof($fp))
     // file rotation
     if ($time - $lastswitch > $logrotatesec)
     {
-        $file = switchfile($file);
-        $comlog = switchcomlogfile($comlog);
+        $file = switchDumpFile($file);
+        $comlog = switchcommlogfile($comlog);
         $lastswitch = $time;
     }
 
@@ -209,14 +209,14 @@ function switchfile($file)
 
 function switchcomlogfile($file)
 {
-    global $comlogfiles, $comlogindex;
+    global $commlogfiles, $commlogindex;
 
     if ($file)
         fclose($file);
 
-    $comlogindex = ($comlogindex + 1) % count($comlogfiles);
+    $commlogindex = ($commlogindex + 1) % count($commlogfiles);
 
-    $file = fopen($comlogfiles[$comlogindex], "w");
+    $file = fopen($commlogfiles[$commlogindex], "w");
 
     return $file;
 }
@@ -224,7 +224,7 @@ function switchcomlogfile($file)
 
 function connect()
 {
-    global $ogn_host, $ogn_port, $ogn_user, $ogn_software, $ogn_software_version, $ogn_filter, $lockfile;
+    global $ogn_host, $ogn_port, $ogn_user_prefix, $ogn_software, $ogn_software_version, $ogn_filter, $lockfile;
 
     $fp = fsockopen($ogn_host, $ogn_port, $errno, $errstr, 30);
 
@@ -236,7 +236,7 @@ function connect()
 	}
 
     // login
-    $loginStr = "user " . $ogn_user;
+    $loginStr = "user " . $ogn_user_prefix;
     $loginStr .= " pass -1";
     $loginStr .= " vers " . $ogn_software . " " . $ogn_software_version;
     $loginStr .= " filter " . $ogn_filter . "\r\n";
