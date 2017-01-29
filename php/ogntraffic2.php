@@ -2,58 +2,46 @@
     include "config.php";
 	include "helper.php";
 
-    $dumpfiles[0] = './ognlistener/ogndump20.txt';
-    $dumpfiles[1] = './ognlistener/ogndump21.txt';
-    $lockfile = './ognlistener/ognlistener2.lock';
-    $areafiltersfile = './ognlistener/areafilters.txt';
+    $minLat = checkNumeric($_GET["minlat"]);
+    $maxLat = checkNumeric($_GET["maxlat"]);
+    $minLon = checkNumeric($_GET["minlon"]);
+    $maxLon = checkNumeric($_GET["maxlon"]);
+    $maxAgeSec = checkNumeric($_GET["maxagesec"]);
+    $sessionId = checkNumeric($_GET["sessionid"]);
 
-    $dumpfileMaxAgeSec = 5 * 60;
+    $dumpFiles[0] = './ognlistener/ognlistener_' . $sessionId . '.dump0';
+    $dumpFiles[1] = './ognlistener/ognlistener_' . $sessionId . '.dump1';
+    $lockFile = './ognlistener/ognlistener_' . $sessionId . '.lock';
+    $filterFile = './ognlistener/ognlistener_' . $sessionId . '.filter';
 
-    $minlat = checkNumeric($_GET["minlat"]);
-    $maxlat = checkNumeric($_GET["maxlat"]);
-    $minlon = checkNumeric($_GET["minlon"]);
-    $maxlon = checkNumeric($_GET["maxlon"]);
-    $maxagesec = checkNumeric($_GET["maxagesec"]);
-
-    // write area filter
-    // TODO: temp
-    $clientId = md5($minlat . "_" . $maxlat . "_" . $minlon . "_" . $maxlon);
-    $filterstring = (new DateTime())->getTimestamp() . "," . $clientId . "," . $maxlat . "," . $minlon . "," . $minlat . "," . $maxlon . "\r\n";
-    file_put_contents($areafiltersfile, $filterstring, FILE_APPEND | LOCK_EX);
+    $dumpFileMaxAgeSec = 5 * 60;
 
 
-    // check if ognlistener is running
-    if (!file_exists($lockfile))
+    // write filter
+    $filter = "a/" . $maxLat . "/" . $minLon . "/" . $minLat . "/" . $maxLon;
+    file_put_contents($filterFile, $filter, LOCK_EX);
+
+
+    // start listener if lockfile not found
+    if (!file_exists($lockFile))
     {
-        tryRestartListener();
+        startListener($sessionId);
         die("ERROR: lock file not found, trying to restart ogn listener");
     }
 
 
-    $aclist = array();
-
     // open db connection
     $conn = openDb();
 
-    // iterate over all dumpfiles
-    foreach ($dumpfiles as $dumpfile)
-    {
-        // try to restart listener if no dumpfile found
-        if(!file_exists($dumpfile))
-        {
-            tryRestartListener();
-            die("ERROR: dump file not found, trying to restart ogn listener");
-        }
+    $aclist = array();
 
-        // try to restart listener if dumpfile is too old
-        if (time() > filemtime($dumpfile) + $dumpfileMaxAgeSec)
-        {
-            tryRestartListener();
-            die("ERROR: dumpfile too old, trying to restarting ogn listener");
-        }
+    foreach ($dumpFiles as $dumpFile)
+    {
+        if (!file_exists($dumpFile))
+            continue;
 
         // open dumpfile
-        $file = fopen($dumpfile, "r");
+        $file = fopen($dumpFile, "r");
 
         // iterate trough all entries in dumpfile
         while (!feof($file))
@@ -63,18 +51,17 @@
             $msg = json_decode($line, true);
 
             // skip line if out of lat/lon/time
-            if ($msg["latitude"] > $maxlat || $msg["latitude"] < $minlat)
+            if ($msg["latitude"] > $maxLat || $msg["latitude"] < $minLat)
                 continue;
 
-            if ($msg["longitude"] > $maxlon || $msg["longitude"] < $minlon)
+            if ($msg["longitude"] > $maxLon || $msg["longitude"] < $minLon)
                 continue;
 
-            if (gmmktime() - strtotime($msg["time"] . " UTC") > $maxagesec)
+            if (gmmktime() - strtotime($msg["time"] . " UTC") > $maxAgeSec)
                 continue;
 
             // add new aircrafts to list
-            if (!$aclist[$msg["id"]])
-            {
+            if (!$aclist[$msg["id"]]) {
                 $ac = array("id" => $msg["id"], "addresstype" => $msg["addresstype"], "actype" => $msg["actype"], "positions" => array());
                 $aclist[$msg["id"]] = $ac;
             }
@@ -84,8 +71,7 @@
 
             // filter identical positions/times
             $poscount = count($aclist[$msg["id"]]["positions"]);
-            if ($poscount > 1)
-            {
+            if ($poscount > 1) {
                 $lastpos = $aclist[$msg["id"]]["positions"][$poscount - 1];
 
                 // skip identical times
@@ -101,6 +87,7 @@
         }
     }
 
+
     // iterate trough aircraft list
     foreach ($aclist as $ac)
     {
@@ -109,7 +96,7 @@
     }
 
     // load additional aircraft info (HB only)
-    getAircraftDetails($aclist);
+    $aclist = getAircraftDetails($aclist);
 
     // create json response
     echo json_encode(array("aclist" => $aclist), JSON_NUMERIC_CHECK);
@@ -117,16 +104,18 @@
     // close db
     $conn->close();
 
+    // end main
+
+
+    function startListener($sessionId)
+    {
+        shell_exec("cd ./ognlistener; ./start_listener2 " . $sessionId);
+    }
+
 
     function timecompare($posa, $posb)
 	{
 	    return strcmp($posa["time"], $posb["time"]);
-	}
-
-
-	function tryRestartListener()
-	{
-	    shell_exec("cd ./ognlistener; ./start_listener2");
 	}
 
 
@@ -144,21 +133,25 @@
         }
 
         // exec query
-        $query = "SELECT * FROM lfr_ch WHERE icaohex IN ('" . join("','", $icaolist) . "')";  // 4B28FA
+        $query = "SELECT * FROM lfr_ch WHERE icaohex IN ('" . join("','", $icaolist) . "')";  // 4B28FA 4B43C1
+        //$query = "SELECT * FROM lfr_ch WHERE icaohex IN ('4B43C1')";
         $result = $conn->query($query);
 
         while ($rs = $result->fetch_array(MYSQLI_ASSOC))
         {
             $ac = $aclist[$rs["icaohex"]];
+            //$ac = $aclist["DF07D3"];
 
             if ($ac) {
                 $ac["registration"] = $rs["registration"];
                 $ac["aircraftModelType"] = $rs["aircraftModelType"];
-                $ac["manufacturer"] = $rs["manufacturer"];
                 $ac["aircraftCategoryId"] = $rs["aircraftCategoryId"];
 
                 $aclist[$rs["icaohex"]] = $ac;
+                //$aclist["DF07D3"] = $ac;
             }
         }
+
+        return $aclist;
     }
 ?>

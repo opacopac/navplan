@@ -5,9 +5,9 @@
 navplanApp
 	.factory('mapService', mapService);
 
-mapService.$inject = ['$http', 'trafficService', 'weatherService'];
+mapService.$inject = ['$http', 'weatherService'];
 
-function mapService($http, trafficService, weatherService)
+function mapService($http, weatherService)
 {
 	var MAX_ZOOMLEVEL = 17;
 
@@ -26,7 +26,7 @@ function mapService($http, trafficService, weatherService)
 	var isGeopointSelectionActive = false;
 	var wgs84Sphere = new ol.Sphere(6378137);
 	var minZoomLevel = [];
-	var maxAgeSecTrackDots = 120; 
+	var maxAgeSecTrackDots = 120;
 	var maxAgeSecInactive = 30;
 	var maxTrafficForDots = 30;
 	var airportBaseUrl = 'php/airports.php?v=' + navplanVersion;
@@ -117,6 +117,7 @@ function mapService($http, trafficService, weatherService)
 			{ layer: reportingpointLayer, minZoom:  11 },
 			{ layer: userWpLayer, minZoom:  11 },
 			{ layer: webcamLayer, minZoom:  9 },
+            { layer: trafficLayer, minZoom:  7 },
 			{ layer: weatherLayer, minZoom:  9 }];
 
 		setLayerVisibility();
@@ -130,8 +131,8 @@ function mapService($http, trafficService, weatherService)
 				target: 'map',
 				controls:
 					[
-						new ol.control.ScaleLine({ units: 'nautical' })
-						//new ol.control.Attribution()
+						new ol.control.ScaleLine({ units: 'nautical' }),
+						new ol.control.Attribution()
 					],
 				layers: [
 					mapLayer,
@@ -2137,7 +2138,7 @@ function mapService($http, trafficService, weatherService)
 		layerSource.clear();
 
 		if (lastPositions)
-			drawTrafficTrack(lastPositions, layerSource, { actype: "OWN" }, false);
+			drawTrafficTrack({ actype: "OWN", positions: lastPositions }, layerSource, false);
 	}
 
 
@@ -2200,11 +2201,9 @@ function mapService($http, trafficService, weatherService)
 
 			layerSource.addFeature(planeFeature);
 
-			if (ac.registration)
+			if (ac.registration || ac.callsign)
 			{
-				var csFeature = createCallsignFeature(
-                    ac.positions[maxIdx],
-					ac.registration);
+				var csFeature = createRegistrationCallsignFeature(ac);
 
 				layerSource.addFeature(csFeature);
 			}
@@ -2284,7 +2283,7 @@ function mapService($http, trafficService, weatherService)
 					rotation = 0;
 					rotWithView = false;
 					break;
-				case "UKNOWN":
+				case "UNKNOWN":
 					icon += "traffic_unknown" + iconSuffix + ".png";
 					rotation = 0;
 					rotWithView = false;
@@ -2349,13 +2348,20 @@ function mapService($http, trafficService, weatherService)
 		}
 
 
-		function createCallsignFeature(position, callsign)
+		function createRegistrationCallsignFeature(ac)
 		{
 			var icon = "icon/";
 			var color = "#FF0000";
+            var regCallText = "";
 
-			if (!callsign)
-				callsign = "";
+            if (ac.fullCallsign)
+                regCallText = ac.fullCallsign;
+            else if (ac.callsign && !equalsRegCall(ac.registration, ac.callsign))
+                regCallText = ac.callsign;
+            else if (ac.registration)
+                regCallText = ac.registration;
+
+            var position = ac.positions[ac.positions.length - 1];
 
 			var csFeature = new ol.Feature({
 				geometry: new ol.geom.Point(ol.proj.fromLonLat([position.longitude, position.latitude]))
@@ -2365,7 +2371,7 @@ function mapService($http, trafficService, weatherService)
 				new ol.style.Style({
 					text: new ol.style.Text({
 						font: 'bold 14px Calibri,sans-serif',
-						text: callsign,
+						text: regCallText,
 						fill: new ol.style.Fill({color: color}),
 						stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2}),
 						offsetX: 0,
@@ -2376,6 +2382,15 @@ function mapService($http, trafficService, weatherService)
 
 			return csFeature;
 		}
+
+
+		function equalsRegCall(registration, callsign)
+        {
+            regStripped = registration.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            callStripped = callsign.toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+            return regStripped == callStripped;
+        }
 	}
 
 
@@ -2393,7 +2408,7 @@ function mapService($http, trafficService, weatherService)
 					new ol.Attribution({ html: 'Elevation Data: <a href="https://lta.cr.usgs.gov/SRTM" target="_blank">SRTM</a>' }),
 					new ol.Attribution({ html: 'Map Visualization: <a href="http://www.opentopomap.org/" target="_blank">OpenTopoMap</a> <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank">(CC-BY-SA)</a>' }),
 					new ol.Attribution({ html: 'Aviation Data: <a href="http://www.openaip.net/" target="_blank">openAIP</a> <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/" target="_blank">(BY-NC-SA)</a>' }),
-					new ol.Attribution({ html: 'Traffic Data: <a href="http://wiki.glidernet.org/about" target="_blank">Open Glider Network</a>' }),
+					new ol.Attribution({ html: 'Traffic Data: <a href="http://wiki.glidernet.org/about" target="_blank">Open Glider Network</a> | <a href="http://www.ADSBexchange.com/" target="_blank">ADSBexchange</a>' }),
 					new ol.Attribution({ html: 'Aerodrome Charts: <a href="http://www.avare.ch/" target="_blank">Avare.ch</a>' }),
 					new ol.Attribution({ html: 'Weather Data: <a href="https://www.aviationweather.gov/" target="_blank">NOAA - Aviation Weather Center</a>' }),
 					new ol.Attribution({ html: 'Geographical Data: <a href="http://www.geonames.org/" target="_blank">GeoNames</a> <a href="http://creativecommons.org/licenses/by/3.0/" target="_blank">(CC-BY)</a>' }),

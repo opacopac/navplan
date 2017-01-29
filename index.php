@@ -50,9 +50,9 @@
 	<script src="js/angular-resource.min.js"></script>
 	<script src="js/bootstrap.min.js"></script>
 	<script src="js/ui-bootstrap-tpls-1.3.2.min.js"></script>
-
 	<script src="js/ol.js"></script>
 	<script src="js/turf.min.js"></script>
+    <script src="js/telephony.js?v=<?php echo $ver ?>"></script>
 	<script src="navplanHelper.js?v=<?php echo $ver ?>"></script>
 	<script src="navplanApp.js?v=<?php echo $ver ?>"></script>
 	<script src="navplanCtrl.js?v=<?php echo $ver ?>"></script>

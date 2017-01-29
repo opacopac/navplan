@@ -24,6 +24,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 			var data = json2obj(storedGlobalData);
 
 			$scope.globalData.initialData = false;
+			$scope.globalData.sessionId = $scope.createSessionId();
 			$scope.globalData.user = data.user;
 			$scope.globalData.pilot = data.pilot;
 			$scope.globalData.aircraft = data.aircraft;
@@ -35,11 +36,11 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 			$scope.globalData.selectedWp = data.selectedWp;
 			$scope.globalData.wpBackup = data.wpBackup;
 			$scope.globalData.trafficTimer = data.trafficTimer;
-			$scope.globalData.showLocation = data.showLocation;
-			$scope.globalData.showTraffic = data.showTraffic;
+			$scope.globalData.showLocation = false; // data.showLocation;
+			$scope.globalData.showTraffic = false; // data.showTraffic;
 			$scope.globalData.cacheIsActive = data.cacheIsActive;
-			$scope.globalData.locationStatus = data.locationStatus;
-			$scope.globalData.trafficStatus = data.trafficStatus;
+			$scope.globalData.locationStatus = "off"; // data.locationStatus;
+			$scope.globalData.trafficStatus = "off"; // data.trafficStatus;
 			$scope.globalData.cacheStatus = data.cacheStatus;
 			$scope.globalData.cacheProgress = data.cacheProgress;
 			$scope.globalData.clickHistory = []; // internally used only
@@ -47,6 +48,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 		else // load default values
 		{
 			$scope.globalData.initialData = true;
+			$scope.globalData.sessionId = $scope.createSessionId();
 			$scope.globalData.user =
 			{
 				email: undefined,
@@ -85,7 +87,8 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 			};
 			$scope.globalData.settings =
 			{
-				variation: 2
+				variation: 2,
+				maxTrafficHeightFt: 15000
 			};
 			$scope.globalData.currentMapPos = 
 			{
@@ -106,7 +109,13 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 			$scope.globalData.clickHistory = []; // internally used only
 		}
 	};
-	
+
+
+	$scope.createSessionId = function ()
+	{
+        return Math.floor((Math.random() * 1000000000));
+    };
+
 	
 	$scope.showSuccessMessage = function(text)
 	{

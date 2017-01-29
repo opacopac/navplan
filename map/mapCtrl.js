@@ -6,9 +6,11 @@ navplanApp
 	.controller('mapCtrl', [ '$scope', '$sce', '$route', 'mapService', 'locationService', 'trafficService', 'geonameService', 'globalData', mapCtrl ]);
 
 
-function mapCtrl($scope, $sce, $route, mapService, locationService, trafficService, geonameService, globalData) {
+function mapCtrl($scope, $sce, $route, mapService, locationService, trafficService, geonameService, globalData)
+{
 	$scope.globalData = globalData;
 	$scope.trafficTimerIntervallMs = 5000;
+	$scope.trafficMinZoomlevel = 7;
 	$scope.selectedTraffic = {};
 	$scope.followTrafficAddress = undefined;
 	$scope.followTrafficLastPosition = undefined;
@@ -87,11 +89,22 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 		}
 		else if (feature.acInfo)
 		{
+        	var csText = "Unknown";
+
+        	if (feature.acInfo.callsign)
+        	{
+                csText = feature.acInfo.callsign;
+
+                if (feature.acInfo.fullCallsign)
+                    csText += " (" + feature.acInfo.fullCallsign + ")";
+            }
+
+
 			$scope.selectedTraffic = {
 				position: mapService.getLatLonCoordinates(feature.getGeometry().getCoordinates()),
 				registration: feature.acInfo.registration ? feature.acInfo.registration : "Unknown",
+                callsign: csText,
 				aircraftModelType: feature.acInfo.aircraftModelType ? feature.acInfo.aircraftModelType : "N/A",
-				manufacturer: feature.acInfo.manufacturer ? feature.acInfo.manufacturer : "N/A",
 				acaddress: feature.acInfo.acaddress,
 				addresstype: feature.acInfo.addresstype,
 				receiver: feature.acInfo.receiver
@@ -712,8 +725,7 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 
 	$scope.onTrafficTimer = function()
 	{
-		if (navigator.onLine)
-			$scope.updateTraffic();
+        $scope.updateTraffic();
 	};
 
 
@@ -721,47 +733,42 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 	{
 		if (!$scope.globalData.showTraffic)
 			return;
-		
+
+		var pos = mapService.getMapPosition();
+		if (pos.zoom < $scope.trafficMinZoomlevel)
+		{
+            $scope.globalData.trafficStatus = "waiting";
+            $scope.$apply();
+            return;
+        }
+
 		var extent = mapService.getViewExtent();
 
-		trafficService.requestTraffic(extent, 120, trafficCallback);
+		trafficService.requestTraffic(extent, 120, $scope.globalData.settings.maxTrafficHeightFt, $scope.globalData.sessionId, successCallback, errorCallback);
 
-		function trafficCallback(acList)
+		if ($scope.globalData.trafficStatus != "current")
+            $scope.globalData.trafficStatus = "waiting";
+
+		function successCallback(acList)
         {
             mapService.updateTraffic(acList);
             $scope.globalData.trafficStatus = "current";
+
+            if ($scope.followTrafficAddress)
+                $scope.followTraffic(acList);
         }
 
-/*			.then(
-				function(response)
-				{
-					if (response.data.aclist)
-					{
-						trafficService.calcTimestamps(response.data.aclist); // TODO: temp => calc ms in php
-						mapService.updateTraffic(response.data.aclist);
-						$scope.globalData.trafficStatus = "current";
-
-						if ($scope.followTrafficAddress)
-							$scope.followTraffic(response.data.aclist);
-					}
-					else
-					{
-						$scope.globalData.trafficStatus = "error";
-						console.error("ERROR reading traffic", response.data);
-					}
-				},
-				function(response)
-				{
-					$scope.globalData.trafficStatus = "error";
-					console.error("ERROR", response.status, response.data);
-				}
-			);*/
+        function errorCallback()
+        {
+            $scope.globalData.trafficStatus = "error";
+            mapService.updateTraffic(undefined);
+        }
 	};
 
 
-	$scope.followTraffic = function(aclist)
+	$scope.followTraffic = function(acList)
 	{
-		var ac = aclist[$scope.followTrafficAddress];
+		var ac = acList[$scope.followTrafficAddress];
 
 		if (!ac || !ac.positions || ac.positions.length == 0)
 			return;
@@ -791,7 +798,7 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 
 	$scope.startFollowTraffic = function()
 	{
-		$scope.followTrafficAddress = $scope.selectedTraffic.address;
+		$scope.followTrafficAddress = $scope.selectedTraffic.acaddress;
 		$scope.followTrafficLastPosition = $scope.selectedTraffic.position;
 
 		mapService.setMapPosition($scope.followTrafficLastPosition.latitude, $scope.followTrafficLastPosition.longitude);

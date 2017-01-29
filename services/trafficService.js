@@ -9,10 +9,11 @@ trafficService.$inject = ['$http'];
 
 function trafficService($http)
 {
+    var dataSources = { "ogn": "OGN", "adsbexchange": "ADSBX" };
+    var positionMethod = { "flarm": "FLARM", "adsb": "ADSB", "mlat" : "MLAT" };
 	var trafficBaseUrl = window.location.pathname.indexOf("branch") != -1 ? 'php/ogntraffic2.php?v=' + navplanVersion  : 'branch/php/ogntraffic.php?v=' + navplanVersion; // hack: only point to one trafficlistener
 	var adsbExchangeBaseUrl = 'https://public-api.adsbexchange.com/VirtualRadar/AircraftList.json'; //?fAltL=0&fAltU=15000&fSBnd=45.7656&fEBnd=10.7281&fNBnd=47.8556&fWBnd=5.4382';
     var acList = {};
-    var maxHeight = 15000; // TODO => config tab
 
 
 	// return api reference
@@ -21,16 +22,16 @@ function trafficService($http)
 	};
 
 
-	function requestTraffic(extent, maxagesec, callback)
+	function requestTraffic(extent, maxagesec, maxheight, sessionId, successCallback, errorCallback)
     {
-        readTrafficOgnListener(extent, maxagesec, callback);
-        readTrafficAdsbExchange(extent, maxagesec, callback);
+        readTrafficOgnListener(extent, maxagesec, sessionId, successCallback, errorCallback);
+        readTrafficAdsbExchange(extent, maxagesec, maxheight, successCallback, errorCallback);
     }
 
 
-	function readTrafficOgnListener(extent, maxagesec, callback)
+	function readTrafficOgnListener(extent, maxagesec, sessionId, successCallback, errorCallback)
 	{
-		var url = trafficBaseUrl + '&minlon=' + extent[0] + '&minlat=' + extent[1] + '&maxlon=' + extent[2] + '&maxlat=' + extent[3] + '&maxagesec=' + maxagesec;
+		var url = trafficBaseUrl + '&minlon=' + extent[0] + '&minlat=' + extent[1] + '&maxlon=' + extent[2] + '&maxlat=' + extent[3] + '&maxagesec=' + maxagesec + '&sessionid=' + sessionId;
         $http.get(url)
             .then(
                 function (response) // success
@@ -39,38 +40,57 @@ function trafficService($http)
                     {
                         var acListOgn = response.data.aclist;
 
-                        calcTimestamps(acListOgn); // TODO: temp => calc ms in php
-
                         for (var acAddress in acListOgn)
                         {
                             var ac = acListOgn[acAddress];
+
+                            for (var j = 0; j < ac.positions.length; j++)
+                            {
+                                ac.positions[j].timestamp = getMs(ac.positions[j].time);
+                                ac.positions[j].receiver = "Open Glider Network (" + ac.positions[j].receiver + ")";
+                                ac.positions[j].method = positionMethod.flarm;
+                            }
+
                             addOrUpdateAc(
+                                dataSources.ogn,
                                 ac.id,
                                 ac.addresstype,
                                 ac.actype,
                                 ac.registration,
+                                null, // callsign
+                                null, // full callsign
                                 ac.aircraftModelType,
-                                ac.manufacturer,
                                 ac.positions);
                         }
 
                         compactAcList(maxagesec);
 
-                        if (callback)
-                            callback(acList);
+                        if (successCallback)
+                            successCallback(acList);
                     }
                 },
                 function (response) // error
                 {
                     console.error("ERROR reading ac traffic from ognlistener", response.status, response.data);
+                    
+                    if (errorCallback)
+                        errorCallback();
                 }
             );
-	}
 
 
-	function readTrafficAdsbExchange(extent, maxagesec, callback)
+        function getMs(timeString)
+        {
+            var timeParts = timeString.split(":", 3);
+            var today = new Date();
+            return Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), timeParts[0], timeParts[1], timeParts[2]);
+        }
+    }
+
+
+	function readTrafficAdsbExchange(extent, maxagesec, maxHeight, successCallback, errorCallback)
     {
-        var url = adsbExchangeBaseUrl + '?fAltL=0&fAltU=' + maxHeight + '&trFmt=sa';
+        var url = adsbExchangeBaseUrl + '?fAltL=0&fAltU=' + maxHeight; //+ '&trFmt=sa';
         url += '&fWBnd=' + extent[0] + '&fSBnd=' + extent[1] + '&fEBnd=' + extent[2] + '&fNBnd=' + extent[3];
         url += "&callback=JSON_CALLBACK";
 
@@ -84,25 +104,63 @@ function trafficService($http)
 
                         for (var i = 0; i < acListAx.length; i++)
                             addOrUpdateAc(
+                                dataSources.adsbexchange,
                                 acListAx[i].Icao,
                                 "ICAO",
                                 parseAdsbExchangeAcType(acListAx[i]),
                                 acListAx[i].Reg,
+                                getCallsign(acListAx[i].Call),
+                                getFullCallsign(acListAx[i].Call),
                                 acListAx[i].Mdl,
-                                acListAx[i].Man,
                                 parseAdsbExchangePositions(acListAx[i]));
 
                         compactAcList(maxagesec);
 
-                        if (callback)
-                            callback(acList);
+                        if (successCallback)
+                            successCallback(acList);
                     }
                 },
                 function (response) // error
                 {
                     console.error("ERROR reading ac traffic from ADSBExchange", response.status, response.data);
+                    
+                    if (errorCallback)
+                        errorCallback();
                 }
             );
+
+
+        function getCallsign(callsign)
+        {
+            if (!callsign)
+                return undefined;
+
+            if (callsign.match(/^\d.*/)) // only numbers -> skip
+                return undefined;
+
+            if (callsign.match(/^.{1,3}$/)) // only 3 letters -> skip
+                return undefined;
+
+            return callsign;
+        }
+
+
+        function getFullCallsign(callsign)
+        {
+            if (!callsign)
+                return undefined;
+
+            if (!callsign.toUpperCase().match(/^[A-Z]{3}\d.*/))
+                return undefined;
+
+            var icaoCode = callsign.substring(0,3);
+            var fullCallsign = telephony[icaoCode];
+
+            if (fullCallsign)
+                return fullCallsign + " " + callsign.substring(3);
+            else
+                return callsign;
+        }
 
 
         function parseAdsbExchangePositions(ac)
@@ -110,27 +168,12 @@ function trafficService($http)
             var pos = {};
             var positions = [];
 
-            if (ac.Cos && ac.Cos.length > 0)
-            {
-                var numEntries = ac.Cos.length / 4;
-
-                for (var i = 0; i < numEntries; i += 4)
-                {
-                    pos.latitude = ac.Cos[i];
-                    pos.longitude = ac.Cos[i + 1];
-                    pos.timestamp = ac.Cos[i + 2];
-                    pos.altitude = Math.round(ac.Cos[i + 3] / 3.2808);
-                    pos.receiver = "ADSBExchange";
-
-                    positions.push(pos);
-                }
-            }
-
             pos.latitude = ac.Lat;
             pos.longitude = ac.Long;
+            pos.method = ac.Mlat ? positionMethod.mlat : positionMethod.adsb;
             pos.altitude = Math.round(ac.GAlt / 3.2808);
             pos.timestamp = ac.PosTime;
-            pos.receiver = "ADSBExchange";
+            pos.receiver = ac.Mlat ? "ADSBExchange (MLAT)" : "ADSBExchange (ADS-B)";
 
             positions.push(pos);
 
@@ -214,30 +257,39 @@ function trafficService($http)
     }
 
 
-    function addOrUpdateAc(acaddress, addresstype, actype, registration, aircraftModelType, manufacturer, positions)
+    function addOrUpdateAc(source, acaddress, addresstype, actype, registration, callsign, fullCallsign, aircraftModelType, positions)
     {
         var ac = {};
 
-        if (acList.hasOwnProperty(acaddress))
-            ac = acList[acaddress];
-        else
+        if (!acList.hasOwnProperty(acaddress)) // add new ac to list
         {
             ac.acaddress = acaddress;
+            ac.addresstype = addresstype;
+            ac.actype = actype;
+            ac.registration = registration;
+            ac.callsign = callsign;
+            ac.fullCallsign = fullCallsign;
+            ac.aircraftModelType = aircraftModelType;
             ac.positions = [];
             acList[acaddress] = ac;
         }
-
-        ac.addresstype = addresstype;
-        ac.actype = actype;
-        ac.registration = registration;
-        ac.aircraftModelType = aircraftModelType;
-        ac.manufacturer = manufacturer;
-
-        for (var i = 0; i < positions.length; i++)
+        else
         {
-            if (ac.positions.length == 0 || positions[i].timestamp > ac.positions[ac.positions.length - 1].timestamp)
-                ac.positions.push(positions[i]);
+            ac = acList[acaddress];
+
+            if (source == dataSources.adsbexchange) // overwrite ac info if data source is adsbexchange
+            {
+                ac.actype = actype;
+                ac.registration = registration;
+                ac.callsign = callsign;
+                ac.fullCallsign = fullCallsign;
+                ac.aircraftModelType = aircraftModelType;
+            }
         }
+
+        // add new positions
+        for (var i = 0; i < positions.length; i++)
+            ac.positions.push(positions[i]);
     }
 
 
@@ -250,37 +302,45 @@ function trafficService($http)
         {
             var ac = acList[acAddress];
 
-            var i = 0;
-            while (i < ac.positions.length && ac.positions[i].timestamp < oldestTimestamp)
-                i++;
+            // sort positions by time DESC
+            ac.positions.sort(function (a, b) {
+                return a.timestamp - b.timestamp;
+            });
 
-            if (i > 0)
+
+            // remove expired or identical entries
+            var newPositions = [];
+
+            for (var i = 0; i < ac.positions.length; i++)
             {
-                if (i >= ac.positions.length)
-                    delete acList[acAddress];
-                else
-                    ac.positions.splice(0, i);
+                // mark expired entries
+                if (ac.positions[i].timestamp < oldestTimestamp)
+                    continue;
+
+                // mark identical positions (lat/lon and/or time)
+                if (i > 0)
+                {
+                    if (ac.positions[i].latitude == ac.positions[i - 1].latitude && ac.positions[i].longitude == ac.positions[i - 1].longitude)
+                        continue;
+
+                    if (ac.positions[i].timestamp == ac.positions[i - 1].timestamp)
+                        continue;
+
+                    // skip mlat-positions within 30 sec after more accurate position
+                    if (ac.positions[i].method == positionMethod.mlat && ac.positions[i - 1].method != positionMethod.mlat && ac.positions[i].timestamp < ac.positions[i - 1].timestamp + 30000)
+                        continue;
+                }
+
+                newPositions.push(ac.positions[i]);
             }
+
+
+            // remove aircrafts without positions
+            if (newPositions.length == 0)
+                delete acList[acAddress];
+
+
+            ac.positions = newPositions;
         }
     }
-
-
-	function calcTimestamps(acList)
-	{
-		for (var acAddress in acList)
-		{
-			var ac = acList[acAddress];
-
-			for (var j = 0; j < ac.positions.length; j++)
-				ac.positions[j].timestamp = getMs(ac.positions[j].time);
-		}
-
-
-		function getMs(timeString)
-		{
-			var timeParts = timeString.split(":", 3);
-			var today = new Date();
-			return Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), timeParts[0], timeParts[1], timeParts[2]);
-		}
-	}
 }
