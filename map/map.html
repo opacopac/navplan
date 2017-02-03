@@ -37,7 +37,7 @@
 	</div>
 </div>
 <!-- timer -->
-<div class="mapbutton-timer" ng-show="globalData.showLocation" align="center">
+<div id="map_timer" class="mapbutton-timer" ng-show="globalData.showLocation" align="center" class="ng-cloak">
 	<span class="map-currenttime">
 		{{ globalData.timer.currentTimeString }}
 	</span>
@@ -96,7 +96,9 @@
 			<div id="ad_charts" class="collapse">
 				<p ng-repeat="chart in globalData.selectedWp.airport.charts" ng-hide="chart.source == 'VFRMxxx'">
 					<button type="button" class="btn btn-info btn-circle" ng-click="onDisplayChartClicked(chart.id)"><i class="glyphicon glyphicon-file"></i></button>
-					{{ chart.type }} <span ng-show="chart.source == 'AVARE'"><i>&copy; by <a href="http://www.avare.ch/" target="_blank">Avare.ch</a></i></span>
+					{{ chart.type }}
+					<span ng-show="chart.source == 'AVARE'"><i>&copy; by <a href="http://www.avare.ch/" target="_blank">Avare.ch</a></i></span>
+					<span ng-show="chart.source == 'VFRM'"><i>&copy; by <a href="https://www.swisstopo.admin.ch/" target="_blank">swisstopo</a></i></span>
 				</p>
 			</div>
 			<p ng-repeat="webcam in globalData.selectedWp.airport.webcams"><a href="{{ webcam.url }}" target="_blank" class="btn btn-success btn-circle"><i class="glyphicon glyphicon-facetime-video"></i></a> {{ webcam.name }}</p>
@@ -122,9 +124,20 @@
 		</div>
 		<!-- reporting point -->
 		<div ng-show="globalData.selectedWp.reportingpoint">
-			<h4>{{ globalData.selectedWp.reportingpoint.name }}</h4>
-			<p>Reporting Point</p>
-			<p>{{ getPositionString(globalData.selectedWp.reportingpoint.latitude, globalData.selectedWp.reportingpoint.longitude) }}</p>
+			<h4>{{ globalData.selectedWp.reportingpoint.name }} ({{ globalData.selectedWp.reportingpoint.airport_icao }})</h4>
+			<p ng-show="globalData.selectedWp.reportingpoint.type == 'POINT'">Reporting Point</p>
+			<p ng-show="globalData.selectedWp.reportingpoint.type == 'SECTOR'">ARR Sector</p>
+			<p ng-hide="globalData.selectedWp.reportingpoint.type == 'SECTOR'">{{ getPositionString(globalData.selectedWp.reportingpoint.latitude, globalData.selectedWp.reportingpoint.longitude) }}</p>
+			<p ng-show="globalData.selectedWp.reportingpoint.min_ft || globalData.selectedWp.reportingpoint.max_ft ">Altitude:
+				{{ globalData.selectedWp.reportingpoint.min_ft ? "min. " + globalData.selectedWp.reportingpoint.min_ft + "ft" : "" }}
+				<span ng-show="globalData.selectedWp.reportingpoint.min_ft && globalData.selectedWp.reportingpoint.max_ft">/</span>
+				{{ globalData.selectedWp.reportingpoint.max_ft ? "max. " + globalData.selectedWp.reportingpoint.max_ft + "ft" : "" }}
+			</p>
+			<p ng-show="globalData.selectedWp.reportingpoint.inbd_comp || globalData.selectedWp.reportingpoint.outbd_comp ">Compulsory:
+				{{ globalData.selectedWp.reportingpoint.inbd_comp ? "INBD" : "" }}
+				<span ng-show="globalData.selectedWp.reportingpoint.inbd_comp && globalData.selectedWp.reportingpoint.outbd_comp">&amp;</span>
+				{{ globalData.selectedWp.reportingpoint.outbd_comp ? "OUTBD" : "" }}
+			</p>
 			<hr />
 			<p ng-show="globalData.selectedWp.isNew"><button type="button" class="btn btn-success btn-circle" ng-click="onAddSelectedWaypointClicked()"><i class="glyphicon glyphicon-plus"></i></button> Add to Track</p>
 			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-warning btn-circle" ng-click="onEditSelectedWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Edit Track Waypoint</p>
@@ -175,16 +188,16 @@
 		<h4>{{ selectedTraffic.registration }}</h4>
 		<table cellspacing="2">
 			<tr>
+				<td>Callsign:</td>
+				<td>{{ selectedTraffic.callsign }}</td>
+			</tr>
+			<tr>
 				<td>Model:</td>
 				<td>{{ selectedTraffic.aircraftModelType }}</td>
 			</tr>
 			<tr>
-				<td>Manufacturer:</td>
-				<td>{{ selectedTraffic.manufacturer }}</td>
-			</tr>
-			<tr>
 				<td>Address:</td>
-				<td>{{ selectedTraffic.address }} ({{ selectedTraffic.addresstype }})</td>
+				<td>{{ selectedTraffic.acaddress }} ({{ selectedTraffic.addresstype }})</td>
 			</tr>
 			<tr>
 				<td>Receiver:</td>

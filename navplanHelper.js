@@ -2,6 +2,26 @@
  * helper functions
  */
 
+
+function writeServerErrLog(errLog)
+{
+	$.post("php/errorlog.php", obj2json(errLog));
+}
+
+
+function displayGenericError()
+{
+	var msg = '<div class="container messages"><div class="alert alert-danger">';
+	msg += "Sorry, something went wrong! :( Try to: <br>\n";
+	msg += "- reload the page (CTRL+F5)<br>\n";
+	msg += "- clear the browser cache<br>\n";
+	msg += "- use a different browser (e.g Chrome 24+, Safari 6.2+, Firefox 23+, IE 10+)\n";
+	msg += '</div></div>';
+
+	document.body.innerHTML += msg;
+}
+
+
 function setCookie(cname, cvalue, exdays)
 {
 	if (exdays > 0)
@@ -55,6 +75,22 @@ function sendPostForm(action, target, varName, varData)
 	form.submit();
 
 	//document.body.removeChild(form);
+}
+
+
+function createAndClickLink(href, target)
+{
+	var a = document.createElement("a");
+	a.href = href;
+	a.target = target;
+	a.style = "display: none";
+
+	document.body.appendChild(a);
+
+	a.click();
+
+    // doesn't work with firefox
+    //document.body.removeChild(a);
 }
 
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env php
 <?php
 
-$lockfile = './ognlistener.lock';
+$lockFile = './ognlistener.lock';
 $dumpfiles[0] = './ogndump0.txt';
 $dumpfiles[1] = './ogndump1.txt';
 $comlogfiles[0] = './comlog0.' . getmypid() . '.txt';
@@ -109,8 +109,8 @@ while(!feof($fp))
     // file rotation
     if ($time - $lastswitch > $logrotatesec)
     {
-        $file = switchfile($file);
-        $comlog = switchcomlogfile($comlog);
+        $file = switchDumpFile($file);
+        $comlog = switchcommlogfile($comlog);
         $lastswitch = $time;
     }
 
@@ -160,7 +160,7 @@ while(!feof($fp))
 
 disconnect($fp);
 
-unlink($lockfile); // remove lock file
+unlink($lockFile); // remove lock file
 
 writelog("INFO", "closing ognlistener");
 
@@ -173,11 +173,11 @@ function writelog($loglevel, $message)
 
 function createLockFile()
 {
-    global $lockfile;
+    global $lockFile;
 
-    if (file_exists($lockfile))
+    if (file_exists($lockFile))
     {
-        $pid = file_get_contents($lockfile);
+        $pid = file_get_contents($lockFile);
 
         if (posix_kill($pid, 0))
         {
@@ -186,7 +186,7 @@ function createLockFile()
         }
     }
 
-    $file = fopen($lockfile, "w");
+    $file = fopen($lockFile, "w");
     fwrite($file, getmypid());
     fclose($file);
 }
@@ -209,14 +209,14 @@ function switchfile($file)
 
 function switchcomlogfile($file)
 {
-    global $comlogfiles, $comlogindex;
+    global $commlogfiles, $commlogindex;
 
     if ($file)
         fclose($file);
 
-    $comlogindex = ($comlogindex + 1) % count($comlogfiles);
+    $commlogindex = ($commlogindex + 1) % count($commlogfiles);
 
-    $file = fopen($comlogfiles[$comlogindex], "w");
+    $file = fopen($commlogfiles[$commlogindex], "w");
 
     return $file;
 }
@@ -224,21 +224,21 @@ function switchcomlogfile($file)
 
 function connect()
 {
-    global $ogn_host, $ogn_port, $ogn_user, $ogn_software, $ogn_software_version, $ogn_filter, $lockfile;
+    global $ognHost, $ognPort, $ognUser, $ognSoftware, $ognSoftwareVersion, $ogn_filter, $lockFile;
 
-    $fp = fsockopen($ogn_host, $ogn_port, $errno, $errstr, 30);
+    $fp = fsockopen($ognHost, $ognPort, $errno, $errstr, 30);
 
     if (!$fp)
 	{
-		unlink($lockfile); // remove lock file
+		unlink($lockFile); // remove lock file
         writelog("ERROR", "unable to connect: $errstr ($errno)");
         die;
 	}
 
     // login
-    $loginStr = "user " . $ogn_user;
+    $loginStr = "user " . $ognUser;
     $loginStr .= " pass -1";
-    $loginStr .= " vers " . $ogn_software . " " . $ogn_software_version;
+    $loginStr .= " vers " . $ognSoftware . " " . $ognSoftwareVersion;
     $loginStr .= " filter " . $ogn_filter . "\r\n";
     fwrite($fp, $loginStr);
 

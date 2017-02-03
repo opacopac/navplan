@@ -23,20 +23,98 @@
 		$lon1 = mysqli_real_escape_string($conn, $_GET["lon1"]);
 		$lat2 = mysqli_real_escape_string($conn, $_GET["lat2"]);
 		$lon2 = mysqli_real_escape_string($conn, $_GET["lon2"]);
+		$transformation = mysqli_real_escape_string($conn, $_GET["transformation"]);
 
-        // calculate lat/lon bounding box
-        $dpp_east = ($lon2 - $lon1) / ($pixel1_east - $pixel0_east);
-        $dpp_south = ($lat2 - $lat1) / ($pixel1_south - $pixel0_south);
-        $lat_nw = $lat1 - $pixel0_south * $dpp_south;
-        $lon_nw = $lon1 - $pixel0_east * $dpp_east;
-        $lat_se = $lat_nw + $img_height * $dpp_south;
-        $lon_se = $lon_nw + $img_width * $dpp_east;
+		if ($transformation == "rotate") // rotate
+		{
+		    $center_pix_east = $img_width / 2;
+		    $center_pix_south = $img_height / 2;
+		    $angle_pix = atan2($pixel1_south - $pixel0_south, $pixel1_east - $pixel0_east) / pi() * 180.0 + 90.0;
+		    $angle_latlon = getBearingDeg($lat1, $lon1, $lat2, $lon2);
+		    $angle_rot = $angle_latlon - $angle_pix;
 
-		// web mercator coordinates
-		$mer_n = lat2y($lat_nw);
-		$mer_w = lon2x($lon_nw);
-		$mer_s = lat2y($lat_se);
-		$mer_e = lon2x($lon_se);
+            // rotate image
+		    $abs_filename = $snipoffstring . $filename;
+		    if (!is_file($abs_filename))
+			    die("file not found: " . $abs_filename);
+
+			$rot_filename = getRotFilename($filename);
+			$rot_abs_filename = $snipoffstring . $rot_filename;
+
+            $im = new Imagick();
+            $im->readImage($abs_filename);
+		    $im->rotateImage(new ImagickPixel('#00000000'), $angle_rot);
+		    $im->quantizeImage(255, imagick::COLORSPACE_RGB, 0, false, false);
+		    $im->writeImage($rot_abs_filename);
+
+            $filename = $rot_filename;
+
+            // rotate points
+            $img_rot_height = $im->getImageGeometry()['height'];
+            $img_rot_width = $im->getImageGeometry()['width'];
+            $rot_center_pix_east = $img_rot_width / 2;
+            $rot_center_pix_south = $img_rot_height / 2;
+
+            $rot_rad = $angle_rot / 180.0 * pi();
+            $rot_pixel0_east = $rot_center_pix_east + cos($rot_rad) * ($pixel0_east - $center_pix_east) - sin($rot_rad) * ($pixel0_south - $center_pix_south);
+            $rot_pixel0_south = $rot_center_pix_south + cos($rot_rad) * ($pixel0_south - $center_pix_south) + sin($rot_rad) * ($pixel0_east - $center_pix_east);
+            $rot_pixel1_east = $rot_center_pix_east + cos($rot_rad) * ($pixel1_east - $center_pix_east) - sin($rot_rad) * ($pixel1_south - $center_pix_south);
+            $rot_pixel1_south = $rot_center_pix_south + cos($rot_rad) * ($pixel1_south - $center_pix_south) + sin($rot_rad) * ($pixel1_east - $center_pix_east);
+
+            print "center_pix_east: " . $center_pix_east . "<br>\n";
+            print "center_pix_south: " . $center_pix_south . "<br>\n";
+            print "rot_center_pix_east: " . $rot_center_pix_east . "<br>\n";
+            print "rot_center_pix_south: " . $rot_center_pix_south . "<br>\n";
+
+            print "pixel0_east: " . ($pixel0_east - $center_pix_east) . "<br>\n";
+            print "pixel0_south: " . ($pixel0_south - $center_pix_south). "<br>\n";
+            print "rot_pixel0_east: " . ($rot_pixel0_east - $rot_center_pix_east). "<br>\n";
+            print "rot_pixel0_south: " . ($rot_pixel0_south - $rot_center_pix_south). "<br>\n";
+
+            print "pixel1_east: " . ($pixel1_east - $center_pix_east) . "<br>\n";
+            print "pixel1_south: " . ($pixel1_south - $center_pix_south). "<br>\n";
+            print "rot_pixel1_east: " . ($rot_pixel1_east - $rot_center_pix_east) . "<br>\n";
+            print "rot_pixel1_south: " . ($rot_pixel1_south - $rot_center_pix_south) . "<br>\n";
+
+            $dpp_east = abs(($lon2 - $lon1) / ($rot_pixel1_east - $rot_pixel0_east));
+            $dpp_south = abs(($lat2 - $lat1) / ($rot_pixel1_south - $rot_pixel0_south));
+
+            $lat_sw = $lat1 - ($img_rot_height  - $rot_pixel0_south) * $dpp_south;
+            $lon_sw = $lon1 - $rot_pixel0_east * $dpp_east;
+            $lat_ne = $lat_sw + $img_rot_height * $dpp_south;
+            $lon_ne = $lon_sw + $img_rot_width * $dpp_east;
+
+		    echo "rotation pix: " . $angle_pix . "°<br>\n";
+		    echo "rotation latlon: " . $angle_latlon . "°<br>\n";
+		    echo "rotation: " . $angle_rot . "°<br>\n";
+            echo "height: " . $img_rot_height . "<br>\n";
+            echo "width: " . $img_rot_width . "<br>\n";
+            print "lat_sw: " . $lat_sw . "<br>\n";
+            print "lon_sw: " . $lon_sw . "<br>\n";
+            print "lat_ne: " . $lat_ne . "<br>\n";
+            print "lon_ne: " . $lon_ne . "<br>\n";
+		}
+		else // stretch vertically / horizontally
+		{
+            $dpp_east = abs(($lon2 - $lon1) / ($pixel1_east - $pixel0_east));
+            $dpp_south = abs(($lat2 - $lat1) / ($pixel1_south - $pixel0_south));
+
+            $lat_sw = $lat1 - ($img_height  - $pixel0_south) * $dpp_south;
+            $lon_sw = $lon1 - $pixel0_east * $dpp_east;
+            $lat_ne = $lat_sw + $img_height * $dpp_south;
+            $lon_ne = $lon_sw + $img_width * $dpp_east;
+
+            /*print "lat_sw: " . $lat_sw . "<br>\n";
+            print "lon_sw: " . $lon_sw . "<br>\n";
+            print "lat_ne: " . $lat_ne . "<br>\n";
+            print "lon_ne: " . $lon_ne . "<br>\n";*/
+		}
+
+		// convert to web mercator coordinates
+		$mer_s = lat2y($lat_sw);
+		$mer_w = lon2x($lon_sw);
+		$mer_n = lat2y($lat_ne);
+		$mer_e = lon2x($lon_ne);
 
 		// delete existing chart
 		$query = "DELETE FROM ad_charts WHERE airport_icao = '" . $icao . "' AND source = 'AVARE' AND type = '" . $chartname . "'";
@@ -65,9 +143,10 @@
 		if ($result === FALSE)
 			die("error adding chart: " . $conn->error . " query:" . $query);
 
-			
-		print "<b>Adding chart successful!</b><br />\n";
+
+		print "<b>chart successfully added!</b><br />\n";
 		print "<a href='" . $php_self . "'>back to file list </a><br />\n";
+	    print "<img src='" . $snipoffstring . $filename . "' />\n";
 
 		$conn->close();
 	}
@@ -105,10 +184,13 @@
 		print "    <tr><td>ICAO / Chart Name:</td><td><input type='text' name='icao' value='" . $icao . "' />&nbsp;<input type='text' name='chartname' value='" . $chartname . "' /></td></tr>\n";
 		print "    <tr><td>Image height / width:</td><td><input id='img_height' type='text' name='img_height' />&nbsp;<input id='img_width' type='text' name='img_width' /></td></tr>\n";
 		print "    <tr><td colspan='2'>Reference Points:</td></tr>\n";
-		print "    <tr><td> - Pixel 1:</td><td><input id='pixel0_x' type='text' name='pixel0_east' value='0' />&nbsp;<input id='pixel0_y' type='text' name='pixel0_south' value='0' /> (select on image)</td></tr>\n";
-		print "    <tr><td> - Lat/Lon 1:</td><td><input type='text' name='lat1' />&nbsp;<input type='text' name='lon1'/> (enter coordinates)</td></tr>\n";
-		print "    <tr><td> - Pixel 2:</td><td><input id='pixel1_x' type='text' name='pixel1_east' value='0' />&nbsp;<input id='pixel1_y' type='text' name='pixel1_south' value='0' /> (select on image)</td></tr>\n";
-		print "    <tr><td> - Lat/Lon 2:</td><td><input type='text' name='lat2' />&nbsp;<input type='text' name='lon2'/> (enter coordinates)</td></tr>\n";
+		print "    <tr><td> - Pixel 1:</td><td><input id='pixel0_x' type='text' name='pixel0_east' value='" . ($_GET["pixel0_east"] ? $_GET["pixel0_east"] : "0") . "' />&nbsp;";
+		print "      <input id='pixel0_y' type='text' name='pixel0_south' value='" . ($_GET["pixel0_south"] ? $_GET["pixel0_south"] : "0") . "' /> (select on image)</td></tr>\n";
+		print "    <tr><td> - Lat/Lon 1:</td><td><input type='text' name='lat1' value='" . $_GET["lat1"] . "' />&nbsp;<input type='text' name='lon1' value='" . $_GET["lon1"] . "' /> (enter coordinates)</td></tr>\n";
+		print "    <tr><td> - Pixel 2:</td><td><input id='pixel1_x' type='text' name='pixel1_east' value='" . ($_GET["pixel1_east"] ? $_GET["pixel1_east"] : "0") . "' />&nbsp;";
+		print "      <input id='pixel1_y' type='text' name='pixel1_south' value='" . ($_GET["pixel1_south"] ? $_GET["pixel1_south"] : "0") . "' /> (select on image)</td></tr>\n";
+		print "    <tr><td> - Lat/Lon 2:</td><td><input type='text' name='lat2' value='" . $_GET["lon2"] . "' />&nbsp;<input type='text' name='lon2' value='" . $_GET["lon2"] . "' /> (enter coordinates)</td></tr>\n";
+		print "    <tr><td> - Transformation:</td><td><input type='radio' name='transformation' value='stretch' checked /> stretch&nbsp;<input type='radio' name='transformation' value='rotate'/> rotate</td></tr>\n";
 		print "    <tr><td><input type='hidden' name='filename' value='" . $filename . "' />\n";
 		print "    <tr><td><input type='submit' name='mode' value='import' /><br />\n";
 		print "  </table>\n";
@@ -158,4 +240,41 @@
 	// mercator <-> wgs84
 	function lon2x($lon) { return deg2rad($lon) * 6378137.0; }
 	function lat2y($lat) { return log(tan(M_PI_4 + deg2rad($lat) / 2.0)) * 6378137.0; }
+
+
+    function getBearingDeg($lat1, $lon1, $lat2, $lon2)
+    {
+        $toRad = (pi() / 180.0);
+        $toDeg = (180.0 / pi());
+
+        $f1 = $lat1 * $toRad;
+        $f2 = $lat2 * $toRad;
+        $dl = ($lon2 - $lon1) * $toRad;
+        $y = sin($dl) * cos($f2);
+        $x = cos($f1) * sin($f2) - sin($f1) * cos($f2) * cos($dl);
+        $t = atan2($y, $x);
+
+        return $t * $toDeg;
+    }
+
+
+    function rotate($point, $angle, $origin, $neworigin)
+    {
+        $x = $point[0] - $origin[0];
+        $y = $point[1] - $origin[1];
+        $rot_x = $neworigin[0] + $x * cos($angle) - $y * sin($angle);
+        $rot_y = $neworigin[1] + $x * cos($angle) + $y * sin($angle);
+
+        return array($rot_x, $rot_y);
+    }
+
+
+	function getRotFilename($orig_filename)
+	{
+	    $dir = pathinfo($orig_filename, PATHINFO_DIRNAME);
+	    $ext = pathinfo($orig_filename, PATHINFO_EXTENSION);
+	    $base = basename($orig_filename, "." . $ext);
+
+	    return $dir . "/" . $base . "_rot." . $ext;
+	}
 ?>

@@ -1,5 +1,9 @@
 <?php
-    // content type
+	include "version.php";
+
+    // headers
+    header('Cache-Control: must-revalidate');
+    header('Expires: 0');
     header('Content-Type: text/cache-manifest');
 
     // manifest header
@@ -15,7 +19,7 @@
 	}
 	else // don't cache anything
 	{
-        echo "# " . time() . "\n"; // change manifest constantly
+        echo "# " . floor(time() / 60) . "\n"; // change manifest every minute
     	echo "\n";
 		echo "NETWORK:\n";
 		echo "*\n";
@@ -25,26 +29,29 @@
 
 	function addStaticUrls()
 	{
+	    global $ver;
+
 		// default entries
 		echo "# default files\n";
 		echo "CACHE:\n";
 
 		// html
-		echo "index.php\n";
-		echo "about/about.html\n";
-		echo "map/map.html\n";
-		echo "settings/settings.html\n";
-		echo "waypoints/waypoints.html\n";
-		echo "tracks/tracks.html\n";
+		echo "./?v=" . $ver . "\n";
+		echo "about/about.html?v=" . $ver . "\n";
+		echo "map/map.html?v=" . $ver . "\n";
+		echo "settings/settings.html?v=" . $ver . "\n";
+		echo "waypoints/waypoints.html?v=" . $ver . "\n";
+		echo "tracks/tracks.html?v=" . $ver . "\n";
 
-		// php TODO: post => get
-		echo "php/airports.php\n";
-		echo "php/airspace.php\n";
-		echo "php/navaids.php\n";
-		echo "php/webcams.php\n";
-		
+		// php
+		echo "php/airports.php?v=" . $ver . "\n";
+		echo "php/airspace.php?v=" . $ver . "\n";
+		echo "php/navaids.php?v=" . $ver . "\n";
+		echo "php/webcams.php?v=" . $ver . "\n";
+		echo "php/reportingPoints.php?v=" . $ver . "\n";
+
 		// css
-		echo "css/navplan.css?v=1.1\n";
+		echo "css/navplan.css?v=" . $ver . "\n";
 		echo "css/bootstrap.min.css\n";
 		echo "css/ol.css\n";
 		echo "css/arial-narrow.css\n";
@@ -76,7 +83,9 @@
 		echo "icon/traffic_parachute.png\n";
 		echo "icon/traffic_plane.png\n";
 		echo "icon/webcam.png\n";
-		echo "icon/wp_report.png\n";
+		echo "icon/rp.png\n";
+		echo "icon/rp_inbd.png\n";
+		echo "icon/rp_comp.png\n";
 		echo "icon/wp_user.png\n";
 
 		// js
@@ -90,24 +99,24 @@
         echo "js/ui-bootstrap-tpls-1.3.2.min.js\n";
         echo "js/ol.js\n";
         echo "js/turf.min.js\n";
-		echo "navplanHelper.js?v=1.1\n";
-		echo "navplanApp.js?v=1.1\n";
-		echo "navplanCtrl.js?v=1.1\n";
-		echo "map/mapCtrl.js?v=1.1\n";
-		echo "login/loginCtrl.js?v=1.1\n";
-		echo "forgotpw/forgotpwCtrl.js?v=1.1\n";
-		echo "edituser/edituserCtrl.js?v=1.1\n";
-		echo "waypoints/waypointCtrl.js?v=1.1\n";
-		echo "tracks/trackCtrl.js?v=1.1\n";
-		echo "settings/settingsCtrl.js?v=1.1\n";
-		echo "services/mapService.js?v=1.1\n";
-		echo "services/locationService.js?v=1.1\n";
-		echo "services/trafficService.js?v=1.1\n";
-		echo "services/geonameService.js?v=1.1\n";
-		echo "services/waypointService.js?v=1.1\n";
-		echo "services/fuelService.js?v=1.1\n";
-		echo "services/userService.js?v=1.1\n";
-		echo "services/weatherService.js?v=1.1\n";
+		echo "navplanHelper.js?v=" . $ver . "\n";
+		echo "navplanApp.js?v=" . $ver . "\n";
+		echo "navplanCtrl.js?v=" . $ver . "\n";
+		echo "map/mapCtrl.js?v=" . $ver . "\n";
+		echo "login/loginCtrl.js?v=" . $ver . "\n";
+		echo "forgotpw/forgotpwCtrl.js?v=" . $ver . "\n";
+		echo "edituser/edituserCtrl.js?v=" . $ver . "\n";
+		echo "waypoints/waypointCtrl.js?v=" . $ver . "\n";
+		echo "tracks/trackCtrl.js?v=" . $ver . "\n";
+		echo "settings/settingsCtrl.js?v=" . $ver . "\n";
+		echo "services/mapService.js?v=" . $ver . "\n";
+		echo "services/locationService.js?v=" . $ver . "\n";
+		echo "services/trafficService.js?v=" . $ver . "\n";
+		echo "services/geonameService.js?v=" . $ver . "\n";
+		echo "services/waypointService.js?v=" . $ver . "\n";
+		echo "services/fuelService.js?v=" . $ver . "\n";
+		echo "services/userService.js?v=" . $ver . "\n";
+		echo "services/weatherService.js?v=" . $ver . "\n";
 		echo "\n";
 
 		
@@ -117,9 +126,9 @@
 
 		
 		echo "FALLBACK:\n";
-		echo "edituser/edituser.html offline.html\n";
-		echo "forgotpw/forgotpw.html offline.html\n";
-		echo "login/login.html offline.html\n";
+		echo "edituser/edituser.html?v=" . $ver . " offline.html?v=" . $ver . "\n";
+		echo "forgotpw/forgotpw.html?v=" . $ver . " offline.html?v=" . $ver . "\n";
+		echo "login/login.html?v=" . $ver . " offline.html?v=" . $ver . "\n";
 		echo "\n";
 	}
 
@@ -199,10 +208,16 @@
 	function getTileUrl($lat, $lon, $zoom)
 	{
 	    $localBaseUrl = "maptiles/";
-		$otmBaseUrl = array(
+		/*$otmBaseUrl = array(
 			"//a.tile.opentopomap.org/",
 			"//b.tile.opentopomap.org/",
 			"//c.tile.opentopomap.org/"
+		);*/
+
+		$otmBaseUrl = array(
+			"//opentopomap.org/",
+			"//opentopomap.org/",
+			"//opentopomap.org/"
 		);
 
 		$ytile = floor((($lon + 180) / 360) * pow(2, $zoom));
@@ -222,7 +237,10 @@
 
 	function isLocalTile($z, $y, $x)
 	{
-	    $zrange = [6, 13];
+	    if ($z <= 6)
+	        return true;
+
+	    $zrange = [7, 14];
 
         if ($z < $zrange[0] || $z > $zrange[1])
             return false;

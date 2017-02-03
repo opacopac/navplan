@@ -9,6 +9,15 @@ userService.$inject = ['$http'];
 
 function userService($http)
 {
+	var userBaseUrl = 'php/users.php';
+	var navplanBaseUrl = 'php/navplan.php';
+	var navplanBaseUrlGet = navplanBaseUrl + '?v=' + navplanVersion;
+	var userWpBaseUrl = 'php/userWaypoint.php';
+	var userWpBaseUrlGet = userWpBaseUrl + '?v=' + navplanVersion;
+	var userTrackBaseUrl = 'php/userTrack.php';
+	var userTrackBaseUrlGet = userTrackBaseUrl + '?v=' + navplanVersion;
+
+
 	// service api
 	return {
 		login: login,
@@ -32,99 +41,99 @@ function userService($http)
 
 	function login(email, password)
 	{
-		return $http.post('php/users.php', obj2json({ action: 'login', email: email, password: password }));
+		return $http.post(userBaseUrl, obj2json({ action: 'login', email: email, password: password }));
 	}
 
 	
 	function register(email, password)
 	{
-		return $http.post('php/users.php', obj2json({ action: 'register', email: email, password: password }));
+		return $http.post(userBaseUrl, obj2json({ action: 'register', email: email, password: password }));
 	}
 	
 	
 	function forgotPassword(email)
 	{
-		return $http.post('php/users.php', obj2json({ action: 'forgotpassword', email: email }));
+		return $http.post(userBaseUrl, obj2json({ action: 'forgotpassword', email: email }));
 	}
 
 	
 	function updatePassword(email, oldpassword, newpassword)
 	{
-		return $http.post('php/users.php', obj2json({ action: 'updatepassword', email: email, oldpassword: oldpassword, newpassword: newpassword }));
+		return $http.post(userBaseUrl, obj2json({ action: 'updatepassword', email: email, oldpassword: oldpassword, newpassword: newpassword }));
 	}
 	
 	
 	function readNavplanList()
 	{
-		return $http.get('php/navplan.php');
+		return $http.get(navplanBaseUrlGet);
 	}
 
 
 	function readNavplan(navplan_id)
 	{
-		return $http.get('php/navplan.php?id=' + navplan_id);
+		return $http.get(navplanBaseUrlGet + '&id=' + navplan_id);
 	}
 	
 	
 	function createNavplan(globalData)
 	{
-		return $http.post('php/navplan.php', obj2json({ globalData: globalData }));
+		return $http.post(navplanBaseUrl, obj2json({ globalData: globalData }));
 	}
 
 	
 	function updateNavplan(globalData)
 	{
-		return $http.put('php/navplan.php', obj2json({ globalData: globalData }));
+		return $http.put(navplanBaseUrl, obj2json({ globalData: globalData }));
 	}
 
 
 	function deleteNavplan(navplan_id)
 	{
-		return $http.delete('php/navplan.php?id=' + navplan_id);
+		return $http.delete(navplanBaseUrlGet + '&id=' + navplan_id);
 	}
 
 	
 	function saveUserWaypoint(wp)
 	{
-		if (wp.id > 0)
-			return $http.put('php/userWaypoint.php', obj2json({ wp: wp }));
+		if (wp.userWaypoint && wp.userWaypoint.id > 0)
+			return $http.put(userWpBaseUrl, obj2json({ id: wp.userWaypoint.id, wp: wp }));
 		else
-			return $http.post('php/userWaypoint.php', obj2json({ wp: wp }));
+			return $http.post(userWpBaseUrl, obj2json({ wp: wp }));
 	}
 
 	
 	function deleteUserWaypoint(id)
 	{
-		return $http.delete('php/userWaypoint.php?id=' + id);
+		return $http.delete(userWpBaseUrlGet + '&id=' + id);
 	}
 
 
 	function createUserTrack(timestamp, name, positions)
 	{
-		return $http.post('php/userTrack.php', obj2json({ timestamp: timestamp, name: name, positions: positions }));
+		return $http.post(userTrackBaseUrl, obj2json({ timestamp: timestamp, name: name, positions: positions }));
 	}
 
 
 	function updateUserTrack(id, name)
 	{
-		return $http.put('php/userTrack.php', obj2json({ id: id, name: name }));
+		return $http.put(userTrackBaseUrl, obj2json({ id: id, name: name }));
 	}
 
 
 	function readUserTrackList()
 	{
-		return $http.get('php/userTrack.php');
+		return $http.get(userTrackBaseUrlGet);
 	}
 
 
 	function readUserTrack(trackid)
 	{
-		return $http.get('php/userTrack.php?id=' + encodeURI(trackid));
+		return $http.get(userTrackBaseUrlGet + '&id=' + encodeURI(trackid));
 	}
 
 
 	function deleteUserTrack(trackid)
 	{
-		return $http.delete('php/userTrack.php?id=' + encodeURI(trackid));
+		return $http.delete(userTrackBaseUrlGet + '&id=' + encodeURI(trackid));
 	}
 }

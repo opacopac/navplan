@@ -50,9 +50,9 @@
 
 		$query .= " UNION ";
 		
-		$query .= "(SELECT 'global' AS type, id, name, name AS wpname, NULL AS frequency, NULL AS callsign, NULL AS airport_icao, latitude, longitude, NULL AS elevation FROM global_waypoints WHERE";
-		$query .= " name LIKE '" . $search . "%'";
-		$query .= " ORDER BY name ASC";
+		$query .= "(SELECT 'report' AS type, id, CONCAT(name , ' (', airport_icao, ')') AS name, name AS wpname, NULL AS frequency, NULL AS callsign, airport_icao, latitude, longitude, NULL AS elevation FROM reporting_points WHERE";
+		$query .= " airport_icao LIKE '" . $search . "%'";
+		$query .= " ORDER BY airport_icao ASC, name ASC";
 		$query .= " LIMIT 10)";
 
         if ($email && $token)
@@ -110,7 +110,7 @@
 		
 		$query .= " UNION ";
 		
-		$query .= "SELECT 3 AS sortOrder, 'global' AS type, id, name, name AS wpname, NULL AS frequency, NULL AS callsign, NULL AS airport_icao, latitude, longitude, NULL AS elevation FROM global_waypoints WHERE";
+		$query .= "SELECT 3 AS sortOrder, 'report' AS type, id, CONCAT(name , ' (', airport_icao, ')') AS name, name AS wpname, NULL AS frequency, NULL AS callsign, airport_icao AS airport_icao, latitude, longitude, NULL AS elevation FROM reporting_points WHERE";
 		$query .= " latitude > " . ($lat - $rad);
 		$query .= " AND latitude < " . ($lat + $rad);
 		$query .= " AND longitude > " . ($lon - $rad);

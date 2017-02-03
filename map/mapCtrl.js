@@ -3,12 +3,16 @@
  */
 
 navplanApp
-	.controller('mapCtrl', [ '$scope', '$sce', '$route', 'mapService', 'locationService', 'trafficService', 'geonameService', 'userService', 'globalData', mapCtrl ]);
+	.controller('mapCtrl', [ '$scope', '$sce', '$route', 'mapService', 'locationService', 'trafficService', 'geonameService', 'globalData', mapCtrl ]);
 
 
-function mapCtrl($scope, $sce, $route, mapService, locationService, trafficService, geonameService, userService, globalData) {
+function mapCtrl($scope, $sce, $route, mapService, locationService, trafficService, geonameService, globalData)
+{
+	$scope.$route = $route;
 	$scope.globalData = globalData;
 	$scope.trafficTimerIntervallMs = 5000;
+	$scope.trafficMinZoomlevel = 7;
+	$scope.trafficMaxAgeSec = 120;
 	$scope.selectedTraffic = {};
 	$scope.followTrafficAddress = undefined;
 	$scope.followTrafficLastPosition = undefined;
@@ -49,6 +53,8 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 	
 	$scope.onMapClicked = function(event, clickCoordinates, maxRadius)
 	{
+		$scope.globalData.clickHistory.push(clickCoordinates); // used internally only
+
 		geonameService.searchGeonamesByPosition(clickCoordinates[1], clickCoordinates[0], maxRadius)
 			.success(function(data) {
 				if (data.geonames)
@@ -67,9 +73,65 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 
 	$scope.onFeatureSelected = function(event, feature)
 	{
-		if (feature.geopoint && !feature.airport && !feature.navaid && !feature.reportingpoint && !feature.userWaypoint)
+		if (feature.geopoint || feature.airport || feature.navaid || feature.reportingpoint || feature.userWaypoint)
 		{
-			$scope.globalData.selectedWp = {
+			$scope.globalData.selectedWp = $scope.getWpFromFeature(feature, mapService.getLatLonFromPixel(event.pixel[0], event.pixel[1]));
+			$scope.globalData.selectedWp.isNew = true;
+
+			$scope.$apply();
+			$scope.openFeatureOverlay($scope.globalData.selectedWp.latitude, $scope.globalData.selectedWp.longitude);
+		}
+		else if (feature.waypoint)
+		{
+			$scope.globalData.selectedWp = feature.waypoint;
+			$scope.globalData.selectedWp.airport = feature.waypoint.airport; // if set, undefined otherwise
+			$scope.$apply();
+
+			$scope.openFeatureOverlay(feature.waypoint.latitude, feature.waypoint.longitude);
+		}
+		else if (feature.acInfo)
+		{
+        	var csText = "Unknown";
+
+        	if (feature.acInfo.callsign)
+        	{
+                csText = feature.acInfo.callsign;
+
+                if (feature.acInfo.fullCallsign)
+                    csText += " (" + feature.acInfo.fullCallsign + ")";
+            }
+
+
+			$scope.selectedTraffic = {
+				position: mapService.getLatLonCoordinates(feature.getGeometry().getCoordinates()),
+				registration: feature.acInfo.registration ? feature.acInfo.registration : "Unknown",
+                callsign: csText,
+				aircraftModelType: feature.acInfo.aircraftModelType ? feature.acInfo.aircraftModelType : "N/A",
+				acaddress: feature.acInfo.acaddress,
+				addresstype: feature.acInfo.addresstype,
+				receiver: feature.acInfo.receiver
+			};
+
+			mapService.addOverlay(feature.getGeometry().getCoordinates(), trafficContainer, true);
+			$scope.$apply();
+		}
+		else if (feature.webcam)
+		{
+			window.open(feature.webcam.url);
+		}
+		else if (feature.weatherInfo)
+		{
+			$scope.selectedWeather = feature.weatherInfo;
+			mapService.addOverlay(feature.getGeometry().getCoordinates(), weatherContainer, true);
+			$scope.$apply();
+		}
+	};
+
+
+	$scope.getWpFromFeature = function(feature, latLon)
+	{
+		if (feature.geopoint && !feature.airport && !feature.navaid && !feature.reportingpoint && !feature.userWaypoint) {
+			return {
 				type: feature.geopoint.type,
 				geopoint: feature.geopoint,
 				id: feature.geopoint.id,
@@ -82,16 +144,11 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 				mt: '',
 				dist: '',
 				alt: '',
-				remark: '',
-				isNew: true
+				remark: ''
 			};
-			$scope.$apply();
-
-			$scope.openFeatureOverlay(feature.geopoint.latitude, feature.geopoint.longitude);
 		}
-		else if (feature.airport)
-		{
-			$scope.globalData.selectedWp = {
+		else if (feature.airport) {
+			return {
 				type: 'airport',
 				airport: feature.airport,
 				freq: getFrequency(feature.airport),
@@ -103,16 +160,11 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 				mt: '',
 				dist: '',
 				alt: '',
-				remark: '',
-				isNew: true
+				remark: ''
 			};
-			$scope.$apply();
-
-			$scope.openFeatureOverlay(feature.airport.latitude, feature.airport.longitude);
 		}
-		else if (feature.navaid)
-		{
-			$scope.globalData.selectedWp = {
+		else if (feature.navaid) {
+			return {
 				type: 'navaid',
 				navaid: feature.navaid,
 				freq: feature.navaid.frequency,
@@ -123,36 +175,48 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 				mt: '',
 				dist: '',
 				alt: '',
-				remark: '',
-				isNew: true
+				remark: ''
 			};
-			$scope.$apply();
-
-			$scope.openFeatureOverlay(feature.navaid.latitude, feature.navaid.longitude);
 		}
-		else if (feature.reportingpoint)
-		{
-			$scope.globalData.selectedWp = {
-				type: 'global',
+		else if (feature.reportingpoint) {
+			var lat, lon;
+			if (feature.reportingpoint.type == 'SECTOR') {
+				lat = latLon.latitude;
+				lon = latLon.longitude;
+			}
+			else {
+				lat = feature.reportingpoint.latitude;
+				lon = feature.reportingpoint.longitude;
+			}
+
+			var alt, ismaxalt, isminalt;
+			if (feature.reportingpoint.max_ft) {
+				alt = feature.reportingpoint.max_ft;
+				ismaxalt = true;
+			}
+			else if (feature.reportingpoint.min_ft) {
+				alt = feature.reportingpoint.min_ft;
+				isminalt = true;
+			}
+
+			return {
+				type: 'report',
 				reportingpoint: feature.reportingpoint,
 				freq: '',
 				callsign: '',
 				checkpoint: feature.reportingpoint.name,
-				latitude: feature.reportingpoint.latitude,
-				longitude: feature.reportingpoint.longitude,
+				latitude: lat,
+				longitude: lon,
 				mt: '',
 				dist: '',
-				alt: '',
-				remark: feature.reportingpoint.remark,
-				isNew: true
+				alt: alt ? alt : '',
+				ismaxalt: ismaxalt,
+				isminalt: isminalt,
+				remark: feature.reportingpoint.remark
 			};
-			$scope.$apply();
-
-			$scope.openFeatureOverlay(feature.reportingpoint.latitude, feature.reportingpoint.longitude);
 		}
-		else if (feature.userWaypoint)
-		{
-			$scope.globalData.selectedWp = {
+		else if (feature.userWaypoint) {
+			return {
 				type: 'user',
 				userWaypoint: feature.userWaypoint,
 				id: feature.userWaypoint.id,
@@ -164,74 +228,11 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 				mt: '',
 				dist: '',
 				alt: '',
-				remark: feature.userWaypoint.remark,
-				isNew: true
+				remark: feature.userWaypoint.remark
 			};
-			$scope.$apply();
-
-			$scope.openFeatureOverlay(feature.userWaypoint.latitude, feature.userWaypoint.longitude);
 		}
-		else if (feature.waypoint)
-		{
-			$scope.globalData.selectedWp = feature.waypoint;
-			$scope.globalData.selectedWp.airport = feature.waypoint.airport; // if set, undefined otherwise
-			$scope.$apply();
-
-			$scope.openFeatureOverlay(feature.waypoint.latitude, feature.waypoint.longitude);
-		}
-		else if (feature.acInfo)
-		{
-			$scope.selectedTraffic = {
-				position: mapService.getLatLonCoordinates(feature.getGeometry().getCoordinates()),
-				registration: "Unknown",
-				aircraftModelType: "N/A",
-				manufacturer: "N/A",
-				address: feature.acInfo.address,
-				addresstype: feature.acInfo.addresstype,
-				receiver: feature.acInfo.receiver
-			};
-
-
-			if (feature.acInfo.addresstype != "ICAO")
-			{
-				mapService.addOverlay(feature.getGeometry().getCoordinates(), trafficContainer, true);
-				$scope.$apply();
-			}
-			else {
-				trafficService.readAcDetails(feature.acInfo.address)
-					.then(
-						function (response) {
-							if (!response.data || !response.data.aircrafts || response.data.aircrafts.length > 1) {
-								console.error("ERROR reading callsign");
-							}
-							else {
-								if (response.data.aircrafts.length == 1)
-								{
-									var acDetails = response.data.aircrafts[0];
-									$scope.selectedTraffic.registration = acDetails.registration;
-									$scope.selectedTraffic.aircraftModelType = acDetails.aircraftModelType;
-									$scope.selectedTraffic.manufacturer = acDetails.manufacturer;
-								}
-
-								mapService.addOverlay(feature.getGeometry().getCoordinates(), trafficContainer, true);
-							}
-						},
-						function (response) {
-							console.error("ERROR reading ac details", response.status, response.data);
-						}
-					)
-			}
-		}
-		else if (feature.webcam)
-		{
-			window.open(feature.webcam.url);
-		}
-		else if (feature.weatherInfo)
-		{
-			$scope.selectedWeather = feature.weatherInfo;
-			mapService.addOverlay(feature.getGeometry().getCoordinates(), weatherContainer, true);
-			$scope.$apply();
-		}
+		else
+			return undefined;
 
 
 		function getFrequency(airport)
@@ -262,7 +263,7 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 				case "AFIS" : return "AD"; // TODO: TEMP
 				case "OTHER" :
 				{
-					if (radio.description.toUpperCase().startsWith("AD"))
+					if (radio.description.toUpperCase().indexOf("AD") == 0) // starts with AD...
 						return "AD";
 					else
 						return radio.typespec;
@@ -271,8 +272,8 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 			}
 		}
 	};
-	
-	
+
+
 	$scope.onMapMoveEnd = function(event)
 	{
 		var view = event.map.getView();
@@ -282,8 +283,24 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 			zoom: view.getZoom()
 		};
 	};
-	
-	
+
+
+	$scope.onTrackModifyEnd = function(feature, latLon, idx, isInsert)
+	{
+		var newWp = $scope.getWpFromFeature(feature, latLon);
+
+		if (newWp)
+		{
+			if (isInsert)
+				$scope.globalData.navplan.waypoints.splice(idx, 0, newWp);
+			else
+				$scope.globalData.navplan.waypoints.splice(idx, 1, newWp);
+		}
+
+		$scope.updateWaypoints();
+	};
+
+
 	$scope.onAddSelectedWaypointClicked = function()
 	{
 		$scope.globalData.selectedWp.isNew = false;
@@ -519,14 +536,14 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 		switch ($scope.globalData.cacheStatus)
 		{
 			case "off" :
-				$scope.globalData.offlineCache = true;
+				$scope.globalData.cacheIsActive = true;
 				break;
 			default :
-				$scope.globalData.offlineCache = false;
+				$scope.globalData.cacheIsActive = false;
 		}
 
 		
-		if ($scope.globalData.offlineCache)
+		if ($scope.globalData.cacheIsActive)
 		{
 			setWaypointCacheCookie();
 			setChartCacheCookie();
@@ -631,7 +648,7 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 
 			function getRestUrl(chartId)
 			{
-				return 'php/ad_charts.php?id=' + chartId;
+				return 'php/ad_charts.php?v=' + navplanVersion + '&id=' + chartId;
 			}
 
 
@@ -644,14 +661,23 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 
 		function updateAppCache()
 		{
-			if (window.applicationCache.status === window.applicationCache.DOWNLOADING) {
-				window.applicationCache.abort();
+			if (!$scope.appCache || $scope.appCache.status == $scope.appCache.UNCACHED)
+			{
+				$scope.showErrorMessage("Application Cache not available!");
+				$scope.globalData.cacheStatus = "error";
+				return;
 			}
-			else {
+
+			if ($scope.appCache.status == $scope.appCache.DOWNLOADING)
+			{
+				$scope.appCache.abort();
+			}
+			else
+			{
 				$scope.globalData.cacheStatus = "updating";
 				$scope.globalData.cacheProgress = {loaded: 0, total: 100, percent: 0};
 
-				window.applicationCache.update(); // TODO: catch error
+				$scope.appCache.update();
 			}
 		}		
 	};
@@ -701,8 +727,8 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 
 	$scope.onTrafficTimer = function()
 	{
-		if (navigator.onLine)
-			$scope.updateTraffic();
+	    if ($scope.$route.current.controller == "mapCtrl")
+            $scope.updateTraffic();
 	};
 
 
@@ -710,40 +736,48 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 	{
 		if (!$scope.globalData.showTraffic)
 			return;
-		
+
+		var pos = mapService.getMapPosition();
+		if (pos.zoom < $scope.trafficMinZoomlevel)
+		{
+            $scope.globalData.trafficStatus = "waiting";
+            $scope.$apply();
+            return;
+        }
+
 		var extent = mapService.getViewExtent();
 
-		trafficService.readTraffic(extent, 120)
-			.then(
-				function(response)
-				{
-					if (response.data.aclist)
-					{
-						trafficService.calcTimestamps(response.data.aclist); // TODO: temp => calc ms in php
-						mapService.updateTraffic(response.data.aclist);
-						$scope.globalData.trafficStatus = "current";
+		trafficService.requestTraffic(extent, $scope.trafficMaxAgeSec, $scope.globalData.settings.maxTrafficAltitudeFt + 1000, $scope.globalData.sessionId, successCallback, errorCallback);
 
-						if ($scope.followTrafficAddress)
-							$scope.followTraffic(response.data.aclist);
-					}
-					else
-					{
-						$scope.globalData.trafficStatus = "error";
-						console.error("ERROR reading traffic", response.data);
-					}
-				},
-				function(response)
-				{
-					$scope.globalData.trafficStatus = "error";
-					console.error("ERROR", response.status, response.data);
-				}
-			);
+		if ($scope.globalData.trafficStatus != "current")
+            $scope.globalData.trafficStatus = "waiting";
+
+		function successCallback(acList)
+        {
+            if (!$scope.globalData.showTraffic)
+                return;
+
+            $scope.globalData.trafficStatus = "current";
+            mapService.updateTraffic(acList, $scope.globalData.settings.maxTrafficAltitudeFt);
+
+            if ($scope.followTrafficAddress)
+                $scope.followTraffic(acList);
+        }
+
+        function errorCallback(acList)
+        {
+            if (!$scope.globalData.showTraffic)
+                return;
+
+            $scope.globalData.trafficStatus = "error";
+            mapService.updateTraffic(acList, $scope.globalData.settings.maxTrafficAltitudeFt);
+        }
 	};
 
 
-	$scope.followTraffic = function(aclist)
+	$scope.followTraffic = function(acList)
 	{
-		var ac = aclist[$scope.followTrafficAddress];
+		var ac = acList[$scope.followTrafficAddress];
 
 		if (!ac || !ac.positions || ac.positions.length == 0)
 			return;
@@ -773,7 +807,7 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 
 	$scope.startFollowTraffic = function()
 	{
-		$scope.followTrafficAddress = $scope.selectedTraffic.address;
+		$scope.followTrafficAddress = $scope.selectedTraffic.acaddress;
 		$scope.followTrafficLastPosition = $scope.selectedTraffic.position;
 
 		mapService.setMapPosition($scope.followTrafficLastPosition.latitude, $scope.followTrafficLastPosition.longitude);
@@ -878,15 +912,32 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 		mapService.updateSize();
 	};
 
-	mapService.init(
-		$scope.onMapClicked,
-		$scope.onFeatureSelected,
-		$scope.onMapMoveEnd,
-		$scope.globalData.currentMapPos);
+	try
+	{
+		mapService.init(
+			$scope.onMapClicked,
+			$scope.onFeatureSelected,
+			$scope.onMapMoveEnd,
+			$scope.onTrackModifyEnd,
+			$scope.globalData.currentMapPos);
 
-	$scope.updateWaypoints();
-	$scope.updateFlightTrack();
-	$scope.resizeMap();
+		$scope.updateWaypoints();
+		$scope.updateFlightTrack();
+		$scope.resizeMap();
+	}
+	catch(err)
+	{
+		$scope.$parent.error_alert_message = "Sorry, an error occured while loading the map! Try to reload the page (CTRL+F5), or clear the browser cache, or use a newer browser (e.g Chrome 24+, Safari 6.2+, Firefox 23+, IE 10+)";
+
+		var errLog = {
+			handler: 'mapinit',
+			verJs: navplanVersion,
+			verIdx: indexVersion,
+			errMsg: err.message
+		};
+
+		writeServerErrLog(errLog);
+	}
 
 	window.removeEventListener("resize", $scope.resizeMap);
 	window.addEventListener("resize", $scope.resizeMap);

@@ -1,31 +1,47 @@
 <?php
-    if(empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == "off")
+	include "version.php";
+
+	$host = "www.navplan.ch";
+
+    if(empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == "off" || $_SERVER['HTTP_HOST'] != $host)
     {
-        $redirect = 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+        $redirect = 'https://' . $host . $_SERVER['REQUEST_URI'];
         header('HTTP/1.1 301 Moved Permanently');
         header('Location: ' . $redirect);
     }
     else
     {
-        header("Cache-Control: public, max-age=21600"); // max 6h
-
-        /*header("Cache-Control: no-store, no-cache, must-revalidate"); // HTTP/1.1
-        header("Cache-Control: post-check=0, pre-check=0", false);
-        header("Expires: Sat, 26 Jul 1997 05:02:00 GMT"); // Date in the past
-        header("Pragma: no-cache"); // HTTP/1.0
-        header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");*/
+        header("Cache-Control: public, max-age=60"); // max 1 min (must be public for appcache to work)
     }
 ?><!DOCTYPE HTML>
-<html manifest='manifest.php' lang="de" data-ng-app="navplanApp" data-ng-controller="navplanCtrl">
+<html lang="de" data-ng-app="navplanApp" data-ng-controller="navplanCtrl">
 <head>
-	<title>NAV-Flightplan</title>
-	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1">
+	<title>navplan.ch</title>
 	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1">
+    <meta name="description" content="VFR Flight Planning in Switzerland" />
+    <!-- twitter -->
+    <meta name="twitter:card" value="VFR Flight Planning in Switzerland">
+    <meta name="twitter:title" content="NAVPLAN.CH" />
+    <meta name="twitter:description" content="VFR Flight Planning in Switzerland" />
+    <meta name="twitter:image" content="http://www.navplan.ch/branch/about/navplan_example.png" />
+    <!-- facebook -->
+    <meta property="og:title" content="NAVPLAN.CH" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://www.navplan.ch/branch/" />
+    <meta property="og:image" content="http://www.navplan.ch/branch/about/navplan_example.png" />
+    <meta property="og:description" content="VFR Flight Planning in Switzerland" />
+    <!-- favicon -->
 	<link rel="icon" type="image/png" href="icon/favicon.png" />
-	<link rel="stylesheet" href = "css/bootstrap.min.css">
-	<link rel="stylesheet" href = "css/ol.css">
-	<link rel="stylesheet" href = "css/arial-narrow.css" type="text/css" />
-	<link rel="stylesheet" href = "css/navplan.css?v=1.1">
+	<!-- css -->
+	<link rel="stylesheet" href="css/bootstrap.min.css">
+	<link rel="stylesheet" href="css/ol.css">
+	<link rel="stylesheet" href="css/arial-narrow.css" type="text/css" />
+    <link rel="stylesheet" href="font-awesome/css/font-awesome.min.css">
+	<link rel="stylesheet" href="css/navplan.css?v=<?php echo $ver ?>">
+	<!-- version -->
+	<script>var indexVersion = "<?php echo $ver ?>";</script>
+	<!-- js -->
 	<script src="js/jquery-1.12.3.min.js"></script>
 	<script src="js/jquery-ui.min.js"></script>
 	<script src="js/jquery.ui.touch-punch.min.js"></script>
@@ -36,24 +52,25 @@
 	<script src="js/ui-bootstrap-tpls-1.3.2.min.js"></script>
 	<script src="js/ol.js"></script>
 	<script src="js/turf.min.js"></script>
-	<script src="navplanHelper.js?v=1.1"></script>
-	<script src="navplanApp.js?v=1.1"></script>
-	<script src="navplanCtrl.js?v=1.1"></script>
-	<script src="map/mapCtrl.js?v=1.1"></script>
-	<script src="login/loginCtrl.js?v=1.1"></script>
-	<script src="forgotpw/forgotpwCtrl.js?v=1.1"></script>
-	<script src="edituser/edituserCtrl.js?v=1.1"></script>
-	<script src="waypoints/waypointCtrl.js?v=1.1"></script>
-	<script src="tracks/trackCtrl.js?v=1.1"></script>
-	<script src="settings/settingsCtrl.js?v=1.1"></script>
-	<script src="services/mapService.js?v=1.1"></script>
-	<script src="services/locationService.js?v=1.1"></script>
-	<script src="services/trafficService.js?v=1.1"></script>
-	<script src="services/geonameService.js?v=1.1"></script>
-	<script src="services/waypointService.js?v=1.1"></script>
-	<script src="services/fuelService.js?v=1.1"></script>
-	<script src="services/userService.js?v=1.1"></script>
-	<script src="services/weatherService.js?v=1.1"></script>
+    <script src="js/telephony.js?v=<?php echo $ver ?>"></script>
+	<script src="navplanHelper.js?v=<?php echo $ver ?>"></script>
+	<script src="navplanApp.js?v=<?php echo $ver ?>"></script>
+	<script src="navplanCtrl.js?v=<?php echo $ver ?>"></script>
+	<script src="map/mapCtrl.js?v=<?php echo $ver ?>"></script>
+	<script src="login/loginCtrl.js?v=<?php echo $ver ?>"></script>
+	<script src="forgotpw/forgotpwCtrl.js?v=<?php echo $ver ?>"></script>
+	<script src="edituser/edituserCtrl.js?v=<?php echo $ver ?>"></script>
+	<script src="waypoints/waypointCtrl.js?v=<?php echo $ver ?>"></script>
+	<script src="tracks/trackCtrl.js?v=<?php echo $ver ?>"></script>
+	<script src="settings/settingsCtrl.js?v=<?php echo $ver ?>"></script>
+	<script src="services/mapService.js?v=<?php echo $ver ?>"></script>
+	<script src="services/locationService.js?v=<?php echo $ver ?>"></script>
+	<script src="services/trafficService.js?v=<?php echo $ver ?>"></script>
+	<script src="services/geonameService.js?v=<?php echo $ver ?>"></script>
+	<script src="services/waypointService.js?v=<?php echo $ver ?>"></script>
+	<script src="services/fuelService.js?v=<?php echo $ver ?>"></script>
+	<script src="services/userService.js?v=<?php echo $ver ?>"></script>
+	<script src="services/weatherService.js?v=<?php echo $ver ?>"></script>
 </head>
 <body>
 	<nav id="navbar" class="navbar navbar-default">
@@ -65,7 +82,7 @@
 					<span class="icon-bar"></span>
 					<span class="icon-bar"></span>
 				</button>
-				<a class="navbar-brand" href="#/">NAV-FLIGHTPLAN</a>
+				<a class="navbar-brand" href="#/">NAVPLAN.CH</a>
 			</div>
 			<div id="navbarcontent" class="collapse navbar-collapse">
 				<ul class="nav navbar-nav">
@@ -73,6 +90,17 @@
 					<li><a href="#/waypoints" title="Waypoint List" data-toggle="collapse" data-target="#navbarcontent">Waypoints</a></li>
 					<li ng-show="isLoggedIn() || hasLastTrack()"><a href="#/tracks" title="Recorded Tracks" data-toggle="collapse" data-target="#navbarcontent">Tracks</a></li>
 					<li><a href="#/map" title="Clear Waypoints and Track" data-toggle="collapse" data-target="#navbarcontent" ng-click="onTrashClicked()"><i class="glyphicon glyphicon-trash"></i></a></li>
+					<li class="dropdown" ng-show="false"><!-- TODO: sharing buttons, unfinished yet -->
+					    <a href="#" onclick="return false;" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><i class="fa fa-share-alt fa-lg"></i></a>
+						<ul class="dropdown-menu">
+							<li><a>Share current Navplan on...</a></li>
+							<li><a href="#" onclick="return false;" ng-click="onShareClicked('facebook')"><i class="fa fa-facebook fa-fw"></i>&nbsp;  Facebook</a></li>
+							<li><a href="#" onclick="return false;" ng-click="onShareClicked('twitter')"><i class="fa fa-twitter fa-fw"></i>&nbsp;  Twitter</a></li>
+							<li><a href="#" onclick="return false;" ng-click="onShareClicked('google')"><i class="fa fa-google-plus fa-fw"></i>&nbsp;  Google+</a></li>
+							<li><a href="#" onclick="return false;" ng-click="onShareClicked('mail')"><i class="fa fa-envelope fa-fw"></i>&nbsp;  E-Mail</a></li>
+							<li><a href="#" onclick="return false;" ng-click="onShareClicked('url')"><i class="fa fa-link fa-fw"></i>&nbsp;  URL</a></li>
+						</ul>
+					</li>
 				</ul>
 				<ul class="nav navbar-nav navbar-right">
 					<li ng-hide="isLoggedIn()"><a href="#/login" title="Login or Register" data-toggle="collapse" data-target="#navbarcontent">Login</a></li>
@@ -85,11 +113,11 @@
 	</nav>
 	<!-- success messages -->
 	<div class="container messages">
-		<div id="success_alert_box" class="alert alert-success" role="alert" ng-show="success_alert_message">{{ success_alert_message }}</div>
+		<div id="success_alert_box" class="alert alert-success ng-cloak" role="alert" ng-show="success_alert_message">{{ success_alert_message }}</div>
 	</div>
 	<!-- error messages -->
 	<div class="container messages">
-		<div id="error_alert_box" class="alert alert-danger" role="alert" ng-show="error_alert_message">{{ error_alert_message }}</div>
+		<div id="error_alert_box" class="alert alert-danger ng-cloak" role="alert" ng-show="error_alert_message">{{ error_alert_message }}</div>
 	</div>
 	<!-- content -->
 	<div ng-view style="position: relative" width="100%" height="100%"></div>
@@ -166,5 +194,6 @@
 			</div>
 		</div>
 	</div>
+    <iframe id='manifest_iframe_hack' style='display: none;' src='manifest_iframe.html'></iframe>
 </body>
 </html>

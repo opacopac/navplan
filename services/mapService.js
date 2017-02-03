@@ -5,11 +5,11 @@
 navplanApp
 	.factory('mapService', mapService);
 
-mapService.$inject = ['$http', 'trafficService', 'weatherService'];
+mapService.$inject = ['$http', 'weatherService'];
 
-function mapService($http, trafficService, weatherService)
+function mapService($http, weatherService)
 {
-	const MAX_ZOOMLEVEL = 17;
+	var MAX_ZOOMLEVEL = 17;
 
 	var map = {};
 	var mapLayer, wpTrackLayer, closeIconLayer, airportLayer, navaidLayer, airspaceLayer, reportingpointLayer, userWpLayer, flightTrackLayer, geopointLayer, trafficLayer, locationLayer, weatherLayer, webcamLayer;
@@ -19,13 +19,23 @@ function mapService($http, trafficService, weatherService)
 	var userWaypoints = {};
 	var chartLayers = [];
 	var airspaces = [];
+	var wpTrackCache = { wps: undefined, alternate: undefined, variation: undefined};
 	var currentOverlay = undefined;
+	var modifySnapInteractions = [];
+	var onTrackModifyEndCallback = undefined;
 	var isGeopointSelectionActive = false;
 	var wgs84Sphere = new ol.Sphere(6378137);
 	var minZoomLevel = [];
-	var maxAgeSecTrackDots = 120; 
+	var maxAgeSecTrackDots = 120;
 	var maxAgeSecInactive = 30;
 	var maxTrafficForDots = 30;
+	var airportBaseUrl = 'php/airports.php?v=' + navplanVersion;
+	var navaidBaseUrl = 'php/navaids.php?v=' + navplanVersion;
+	var reportingpointBaseUrl = 'php/reportingPoints.php?v=' + navplanVersion;
+	var airspaceBaseUrl = 'php/airspace.php?v=' + navplanVersion;
+	var nonAdWebcamBaseUrl = 'php/webcams.php?v=' + navplanVersion + '&action=readNonAdWebcams';
+	var userWpBaseUrl = 'php/userWaypoint.php?v=' + navplanVersion;
+	var adChartBaseUrl = 'php/ad_charts.php?v=' + navplanVersion;
 
 	// return api reference
 	return {
@@ -39,6 +49,7 @@ function mapService($http, trafficService, weatherService)
 		getBearing: getBearing,
 		getDistance: getDistance,
 		getLatLonCoordinates: getLatLonCoordinates,
+		getLatLonFromPixel: getLatLonFromPixel,
 		getMapPosition: getMapPosition,
 		getMercatorCoordinates: getMercatorCoordinates,
 		getViewExtent: getViewExtent,
@@ -54,7 +65,7 @@ function mapService($http, trafficService, weatherService)
 	
 	
 	// init map
-	function init(onMapClickCallback, onFeatureSelectCallback, onMoveEndCallback, mapPos)
+	function init(onMapClickCallback, onFeatureSelectCallback, onMoveEndCallback, onTrackModEndCallback, mapPos)
 	{
 		// init layers
 		mapLayer = createMapLayer();
@@ -88,6 +99,11 @@ function mapService($http, trafficService, weatherService)
 		map.on('singleclick', onSingleClick);
 		map.on('pointermove', onPointerMove);
 		map.on('moveend', onMoveEnd);
+		map.getView().on('change:rotation', onViewRotation);
+
+
+		onTrackModifyEndCallback = onTrackModEndCallback;
+
 
 		// restore chart layers
 		for (var i = 0; i < chartLayers.length; i++)
@@ -101,6 +117,7 @@ function mapService($http, trafficService, weatherService)
 			{ layer: reportingpointLayer, minZoom:  11 },
 			{ layer: userWpLayer, minZoom:  11 },
 			{ layer: webcamLayer, minZoom:  9 },
+            { layer: trafficLayer, minZoom:  7 },
 			{ layer: weatherLayer, minZoom:  9 }];
 
 		setLayerVisibility();
@@ -112,8 +129,7 @@ function mapService($http, trafficService, weatherService)
 		{
 			return new ol.Map({
 				target: 'map',
-				//interactions: ol.interaction.defaults().extend([new dragInteraction()]),
-				controls: //ol.control.defaults().extend(
+				controls:
 					[
 						new ol.control.ScaleLine({ units: 'nautical' }),
 						new ol.control.Attribution()
@@ -123,10 +139,10 @@ function mapService($http, trafficService, weatherService)
 					airspaceLayer,
 					webcamLayer,
 					closeIconLayer,
-					navaidLayer,
-					airportLayer,
 					reportingpointLayer,
 					userWpLayer,
+					navaidLayer,
+					airportLayer,
 					weatherLayer,
 					wpTrackLayer,
 					flightTrackLayer,
@@ -154,7 +170,7 @@ function mapService($http, trafficService, weatherService)
 		// add airports to icon layer
 		function populateAirports(layer)
 		{
-			$http.get('php/airports.php')
+			$http.get(airportBaseUrl)
 				.then(
 					function (response) { // success
 						if (response.data && response.data.airports) {
@@ -182,18 +198,20 @@ function mapService($http, trafficService, weatherService)
 
 
 								// rwy icon
-								var rwyFeature = new ol.Feature({
-									geometry: new ol.geom.Point(ol.proj.fromLonLat([ap.longitude, ap.latitude]))
-								});
+								if (ap.runways && ap.runways.length > 0)
+								{
+									var rwyFeature = new ol.Feature({
+										geometry: new ol.geom.Point(ol.proj.fromLonLat([ap.longitude, ap.latitude]))
+									});
 
-								var rwyStyle = createRwyStyle(ap.type, ap.runways.length > 0 ? ap.runways[0] : undefined);
+									var rwyStyle = createRwyStyle(ap.type, ap.runways[0]);
 
-								if (rwyStyle)
-									rwyFeature.setStyle(rwyStyle);
-								else
-									continue;
-
-								layer.getSource().addFeature(rwyFeature);
+									if (rwyStyle)
+									{
+										rwyFeature.setStyle(rwyStyle);
+										layer.getSource().addFeature(rwyFeature);
+									}
+								}
 
 
 								//  parachute feature
@@ -438,7 +456,7 @@ function mapService($http, trafficService, weatherService)
 						return;
 
 					var src;
-					var rot = metar.wind_dir_degrees ? deg2rad(metar.wind_dir_degrees - 90) : undefined;
+					var rot = metar.wind_dir_degrees ? deg2rad(metar.wind_dir_degrees - 90) + map.getView().getRotation() : undefined;
 					var windrange = [[0, "0"], [2, "1-2"], [7, "5"], [12, "10"], [17, "15"], [22, "20"], [27, "25"], [32, "30"], [37, "35"], [42, "40"], [47, "45"], [55, "50"], [65, "60"], [75, "70"], [85, "80"], [95, "90"], [105, "100"]];
 
 					for (var i = 0; i < windrange.length; i++)
@@ -484,7 +502,7 @@ function mapService($http, trafficService, weatherService)
 		// add navaids to icon layer
 		function populateNavaids(layer)
 		{
-			$http.get('php/navaids.php')
+			$http.get(navaidBaseUrl)
 				.then(
 					function (response) { // success
 						if (response.data && response.data.navaids) {
@@ -564,32 +582,30 @@ function mapService($http, trafficService, weatherService)
 
 
 		// add reporting points
-		function populateReportingpoints(reportingpointLayer)
+		function populateReportingpoints(layer)
 		{
-			$http.get('php/userWaypoint.php?action=readGlobalWaypoints')
+			$http.get(reportingpointBaseUrl)
 				.then(
 					function (response) { // success
-						if (response.data && response.data.globalWaypoints) {
-							for (var i = 0; i < response.data.globalWaypoints.length; i++) {
-								var rp = response.data.globalWaypoints[i];
+						if (response.data && response.data.reportingpoints) {
+							for (var i = 0; i < response.data.reportingpoints.length; i++) {
+								var rp = response.data.reportingpoints[i];
 
 								// cache for later use
 								reportingPoints[rp.id] = rp;
 
-								var reportingpointFeature = new ol.Feature({
-									geometry: new ol.geom.Point(ol.proj.fromLonLat([rp.longitude, rp.latitude]))
-								});
+								var feature;
 
-								reportingpointFeature.reportingpoint = rp;
-
-								var reportingpointStyle = createReportingpointStyle(rp.type, rp.name);
-
-								if (reportingpointStyle)
-									reportingpointFeature.setStyle(reportingpointStyle);
+								if (rp.type == "POINT")
+									feature = createReportingPointFeature(rp);
+								else if (rp.type == "SECTOR")
+									feature = createReportingSectorFeature(rp);
 								else
 									continue;
 
-								reportingpointLayer.getSource().addFeature(reportingpointFeature);
+								feature.reportingpoint = rp;
+
+								layer.getSource().addFeature(feature);
 							}
 						}
 						else {
@@ -603,19 +619,19 @@ function mapService($http, trafficService, weatherService)
 				);
 
 
-			function createReportingpointStyle(wp_type, name) {
-				var src, offsetY;
+			function createReportingPointFeature(rp)
+			{
+				var src = "icon/";
 
-				if (wp_type == "report") {
-					src = 'icon/wp_report.png';
-					offsetY = 20;
-				}
-				else {
-					src = 'icon/wp_user.png';
-					offsetY = 20;
-				}
+				if ((rp.inbd_comp && rp.outbd_comp) || (rp.inbd_comp == null && rp.outbd_comp == null))
+					src += "rp_comp.png";
+				else if (rp.inbd_comp || rp.outbd_comp)
+					src += "rp_inbd.png";
+				else
+					src += "rp.png";
 
-				return new ol.style.Style({
+
+				var style = new ol.style.Style({
 					image: new ol.style.Icon(({
 						anchor: [0.5, 0.5],
 						anchorXUnits: 'fraction',
@@ -626,20 +642,65 @@ function mapService($http, trafficService, weatherService)
 					})),
 					text: new ol.style.Text({
 						font: 'bold 14px Calibri,sans-serif',
-						text: name,
+						text: rp.name,
 						fill: new ol.style.Fill({color: '#0077FF'}),
 						stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2}),
 						offsetX: 0,
-						offsetY: offsetY
+						offsetY: 20
 					})
 				});
+
+
+				var feature = new ol.Feature({
+					geometry: new ol.geom.Point(ol.proj.fromLonLat([rp.longitude, rp.latitude]))
+				});
+
+				feature.setStyle(style);
+
+				return feature;
+			}
+
+
+			function createReportingSectorFeature(rp)
+			{
+				var merCoords, lonLat;
+				var merPoly = [];
+
+				// convert to mercator
+				for (var i = 0; i < rp.polygon.length; i++) {
+					lonLat = rp.polygon[i];
+					merCoords = ol.proj.fromLonLat(lonLat);
+					merPoly.push(merCoords);
+				}
+
+				var style = new ol.style.Style({
+						fill: new ol.style.Fill({
+							color: 'rgba(124, 47, 215, 0.3)'}),
+						stroke: new ol.style.Stroke({
+							color: 'rgba(124, 47, 215, 0.5)',
+							width: 2}),
+						text: new ol.style.Text({
+							font: 'bold 14px Calibri,sans-serif',
+							text: rp.name,
+							fill: new ol.style.Fill({color: '#7C4AD7'}),
+							stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2}),
+						})
+				});
+
+				var feature = new ol.Feature({
+					geometry: new ol.geom.Polygon([merPoly])
+				});
+
+				feature.setStyle(style);
+
+				return feature;
 			}
 		}
 
 
 		// add airspaces to airspace layer
 		function populateAirspaces(airspaceLayer) {
-			$http.get('php/airspace.php')
+			$http.get(airspaceBaseUrl)
 				.then(
 					function (response) { // success
 						if (response.data && response.data.airspace)
@@ -774,7 +835,7 @@ function mapService($http, trafficService, weatherService)
 
 		// add webcams to webcam layer
 		function populateWebcams(webcamLayer) {
-			$http.get('php/webcams.php?action=readNonAdWebcams')
+			$http.get(nonAdWebcamBaseUrl)
 				.then(
 					function (response) { // success
 						if (!response.data || !response.data.webcams) {
@@ -959,6 +1020,17 @@ function mapService($http, trafficService, weatherService)
 		}
 
 
+		// rotate event
+		function onViewRotation(event)
+		{
+			if (wpTrackCache && wpTrackCache.wps)
+			{
+				updateWpTrack(wpTrackCache.wps, wpTrackCache.alternate, wpTrackCache.variation);
+				wpTrackLayer.getSource().changed();
+			}
+		}
+
+
 		function getClickRadius(event) {
 			var clickPos = [event.pixel[0], event.pixel[1]];
 			var coord1 = map.getCoordinateFromPixel(clickPos);
@@ -1044,7 +1116,7 @@ function mapService($http, trafficService, weatherService)
 
 		// add clickpoint if less than 6 points found
 		if (clickPixel && geopoints.length < maxPoints)
-			geopoints.push(getClickPoint(clickLonLat));
+			geopoints.push(getCoordinateGeopoint(clickLonLat));
 
 		var airspaceSelection = getAirspacesAtLatLon(clickLonLat);
 
@@ -1153,21 +1225,6 @@ function mapService($http, trafficService, weatherService)
 				return height.height * 100;
 			else
 				return height.height;
-		}
-
-
-		function getClickPoint(clickLonLat)
-		{
-			var clickPoint = {
-				type: 'user',
-				longitude: clickLonLat[0],
-				latitude: clickLonLat[1],
-				name: Math.round(clickLonLat[1] * 10000) / 10000 + " " + Math.round(clickLonLat[0] * 10000) / 10000,
-				wpname: ol.coordinate.toStringHDMS(clickLonLat)
-			};
-
-
-			return clickPoint;
 		}
 
 
@@ -1508,7 +1565,7 @@ function mapService($http, trafficService, weatherService)
 					}
 					break;
 				}
-				case 'global':
+				case 'report':
 				{
 					var rp = reportingPoints[geopoint.id];
 
@@ -1542,9 +1599,8 @@ function mapService($http, trafficService, weatherService)
 			
 		var layerSource = userWpLayer.getSource();
 		layerSource.clear();
-			
-			
-		$http.get('php/userWaypoint.php')
+
+		$http.get(userWpBaseUrl)
 			.success(function(data) {
 				if (data.userWaypoints)
 				{
@@ -1561,7 +1617,7 @@ function mapService($http, trafficService, weatherService)
 						
 						userWpFeature.userWaypoint = uwp;
 
-						var userWpStyle = createUserWpStyle(uwp.type, uwp.name);
+						var userWpStyle = createUserWpStyle(uwp.name);
 						
 						if (userWpStyle)
 							userWpFeature.setStyle(userWpStyle);
@@ -1581,18 +1637,7 @@ function mapService($http, trafficService, weatherService)
 			});
 
 
-		function createUserWpStyle(wp_type, name) {
-			var src, offsetY;
-
-			if (wp_type == "report") {
-				src = 'icon/wp_report.png';
-				offsetY = 20;
-			}
-			else {
-				src = 'icon/wp_user.png';
-				offsetY = 20;
-			}
-
+		function createUserWpStyle(name) {
 			return new ol.style.Style({
 				image: new ol.style.Icon(({
 					anchor: [0.5, 0.5],
@@ -1600,7 +1645,7 @@ function mapService($http, trafficService, weatherService)
 					anchorYUnits: 'fraction',
 					scale: 1,
 					opacity: 0.75,
-					src: src
+					src: 'icon/wp_user.png'
 				})),
 				text: new ol.style.Text({
 					font: 'bold 14px Calibri,sans-serif',
@@ -1608,47 +1653,36 @@ function mapService($http, trafficService, weatherService)
 					fill: new ol.style.Fill({color: '#0077FF'}),
 					stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2}),
 					offsetX: 0,
-					offsetY: offsetY
+					offsetY: 20
 				})
 			});
 		}
 	}
 	
 	
-	function updateWpTrack(wps, alternate, settings)
+	function updateWpTrack(wps, alternate, variation)
 	{
 		if (typeof wpTrackLayer === "undefined")
 			return;
-	
+
+		// cache parameters for updates after view rotation
+		wpTrackCache = { wps: wps, alternate: alternate, variation: variation};
+
+		// remove features
 		var trackSource = wpTrackLayer.getSource();
 		trackSource.clear();
-		
-		var trackStyle = new ol.style.Style({
-			stroke : new ol.style.Stroke({
-				color: '#FF00FF',
-				width: 5
-			})
-		});
-		
-		var trackAlternateStyle = new ol.style.Style({
-			stroke : new ol.style.Stroke({
-				color: '#FF00FF',
-				width: 4,
-				lineDash: [10, 10]
-			})
-		});
-		
-		
+
+		// remove interactions
+		for (var j = 0; j < modifySnapInteractions.length; j++)
+			 map.removeInteraction(modifySnapInteractions[j]);
+		modifySnapInteractions = [];
+
+
 		// waypoints
 		var prevWp, nextWp;
 
 		for (var i = 0; i < wps.length; i++)
 		{
-			if (i > 0)
-				prevWp = wps[i - 1];
-			else
-				prevWp = undefined;	
-				
 			if (i < wps.length - 1)
 				nextWp = wps[i + 1];
 			else if (alternate)
@@ -1656,41 +1690,47 @@ function mapService($http, trafficService, weatherService)
 			else
 				nextWp = undefined;
 				
-			updateWpTrackSegment(trackSource, wps[i], prevWp, nextWp, trackStyle, settings);
+			addTrackPoints(trackSource, wps[i], nextWp, variation);
 		}
-		
-		
+
+		addTrackLine(wps, trackSource, false);
+
+
 		// alternate
 		if (alternate)
 		{
 			if (wps.length > 0)
+			{
 				prevWp = wps[wps.length - 1];
+				nextWp = alternate;
+			}
 			else
-				prevWp = undefined;
+			{
+				prevWp = alternate;
+				nextWp = undefined;
+			}
 				
-			updateWpTrackSegment(trackSource, alternate, prevWp, undefined, trackAlternateStyle, settings);
+			addTrackPoints(trackSource, prevWp, nextWp, variation);
+
+			if (nextWp)
+			{
+				addTrackPoints(trackSource, nextWp, undefined, variation);
+				addTrackLine([prevWp, nextWp], trackSource, true);
+			}
 		}
 
 
-		function updateWpTrackSegment(trackSource, wp, prevWp, nextWp, trackStyle, settings)
+		// add snap interactions
+		addSnapInteraction(airportLayer);
+		addSnapInteraction(navaidLayer);
+		addSnapInteraction(reportingpointLayer);
+		addSnapInteraction(userWpLayer);
+
+
+		function addTrackPoints(trackSource, wp, nextWp, variation)
 		{
 			// get wp coordinates
 			var mapCoord = ol.proj.fromLonLat([wp.longitude, wp.latitude]);
-
-
-			// add track line segment
-			if (prevWp)
-			{
-				var mapCoord0 = ol.proj.fromLonLat([prevWp.longitude, prevWp.latitude]);
-
-				var trackFeature = new ol.Feature({
-					geometry: new ol.geom.LineString([ mapCoord0, mapCoord ])
-				});
-
-				trackFeature.setStyle(trackStyle);
-				trackSource.addFeature(trackFeature);
-			}
-
 
 			// add waypoint + label
 			var wpFeature  = new ol.Feature({
@@ -1702,92 +1742,174 @@ function mapService($http, trafficService, weatherService)
 			wpFeature.waypoint = wp;
 			trackSource.addFeature(wpFeature);
 
+			if (!nextWp)
+				return;
 
 			// add direction & bearing label
 			var dbFeature  = new ol.Feature({
 				geometry: new ol.geom.Point(mapCoord)
 			});
 
-			var dbStyle = createDirBearStyle(nextWp, settings);
+			var dbStyle = createDirBearStyle(nextWp, variation);
 			dbFeature.setStyle(dbStyle);
 			trackSource.addFeature(dbFeature);
 		}
 
 
+		function addTrackLine(wps, trackSource, isAlternate)
+		{
+			if (!wps || wps.length < 2)
+				return;
+
+			// define styles
+			var trackStyle;
+
+			if (!isAlternate)
+				trackStyle = new ol.style.Style({
+					stroke : new ol.style.Stroke({
+						color: '#FF00FF',
+						width: 5
+					})
+				});
+			else
+				trackStyle = new ol.style.Style({
+					stroke : new ol.style.Stroke({
+						color: '#FF00FF',
+						width: 4,
+						lineDash: [10, 10]
+					})
+				});
+
+			// get coordinate list
+			var mapCoordList = [];
+			for (var i = 0; i < wps.length; i++)
+				mapCoordList.push(ol.proj.fromLonLat([wps[i].longitude, wps[i].latitude]));
+
+			// add track line segment
+			var trackFeature = new ol.Feature({
+				geometry: new ol.geom.LineString(mapCoordList)
+			});
+
+			trackFeature.wps = wps;
+			trackFeature.originalCoordList = mapCoordList;
+
+			trackFeature.setStyle(trackStyle);
+			trackSource.addFeature(trackFeature);
+
+			if (!isAlternate)
+				addModifyInteraction(trackFeature);
+		}
+
+
+		function addModifyInteraction(trackFeature)
+		{
+			var modInteraction = new ol.interaction.Modify({
+				features: new ol.Collection([trackFeature])
+			});
+
+			modInteraction.on('modifyend', onTrackModifyEnd);
+			modifySnapInteractions.push(modInteraction);
+
+			map.addInteraction(modInteraction);
+		}
+
+
+		function addSnapInteraction(layer)
+		{
+			var snapInteraction = new ol.interaction.Snap({
+				source: layer.getSource(),
+				edge: false
+			});
+
+			modifySnapInteractions.push(snapInteraction);
+
+			map.addInteraction(snapInteraction);
+		}
+
+
+		function onTrackModifyEnd(event)
+		{
+			var lineFeature = event.features.getArray()[0];
+			var oldPoints = lineFeature.originalCoordList;
+			var newPoints = lineFeature.getGeometry().getCoordinates();
+
+			for (var i = 0; i < newPoints.length; i++)
+			{
+				if ((newPoints[i][0] == oldPoints[i][0] && newPoints[i][1] == oldPoints[i][1]) || (newPoints[i][0] == oldPoints[i][0] && newPoints[i][1] == oldPoints[i][1]))
+					continue;
+
+				var latLon = getLatLonCoordinates(newPoints[i]);
+				var feature = findSnapFeature(newPoints[i]);
+				var isInsert = !(oldPoints.length == newPoints.length);
+
+				onTrackModifyEndCallback(feature, latLon, i, isInsert);
+				break;
+			}
+		}
+
+
+		function findSnapFeature(mapCoord)
+		{
+			var snapLayers = [ airportLayer, navaidLayer, reportingpointLayer, userWpLayer ];
+
+			for (var i = 0; i < snapLayers.length; i++)
+			{
+				var features = snapLayers[i].getSource().getFeaturesInExtent([mapCoord[0], mapCoord[1], mapCoord[0], mapCoord[1]]);
+				if (features.length > 0)
+					return features[0];
+			}
+
+			// use geopoint as default feature
+			var latLon = getLatLonCoordinates(mapCoord);
+			var geoPointFeature = new ol.Feature({
+				geometry: new ol.geom.Point(mapCoord)
+			});
+
+			geoPointFeature.geopoint = getCoordinateGeopoint([latLon.longitude, latLon.latitude]);
+
+			return geoPointFeature;
+		}
+
+
 		function createWaypointStyle(wp1, wp2)
 		{
-			var rot, align;
+			var rotDeg, rotRad, align;
+			var maprotRad = map.getView().getRotation();
+			var maprotDeg = rad2deg(maprotRad);
+			var rotateWithView = true;
 
 			if (wp1.mt && wp2) // en route point
 			{
 				if (wp2.mt > wp1.mt)
-					rot = deg2rad((wp1.mt + 270 + (wp2.mt - wp1.mt) / 2) % 360);
+					rotDeg = (wp1.mt + 270 + (wp2.mt - wp1.mt) / 2) % 360;
 				else
-					rot = deg2rad((wp1.mt + 270 + (wp2.mt + 360 - wp1.mt) / 2) % 360);
+					rotDeg = (wp1.mt + 270 + (wp2.mt + 360 - wp1.mt) / 2) % 360;
 			}
 			else if (!wp1.mt && wp2) // start point
 			{
-				rot = deg2rad((wp2.mt + 180) % 360);
+				rotDeg = (wp2.mt + 180) % 360;
 			}
 			else if (wp1.mt && !wp2) // end point
 			{
-				rot = deg2rad(wp1.mt);
+				rotDeg = wp1.mt;
 			}
 			else if (!wp1.mt && !wp2) // single point
 			{
-				rot = deg2rad(45); // 45°
+				rotDeg = 45; // 45°
+				rotateWithView = false;
 			}
 			else
 				throw "invalid waypoints";
 
-			if (rot < Math.PI)
+			if (!rotateWithView || (rotDeg + maprotDeg) % 360 < 180)
 				align = "start";
 			else
 				align = "end";
 
-			return  new ol.style.Style({
-				text: new ol.style.Text({
-					font: 'bold 16px Calibri,sans-serif',
-					text: wp1.checkpoint,
-					fill: new ol.style.Fill( { color: '#660066' } ),
-					stroke: new ol.style.Stroke( {color: '#FFFFFF', width: 10 } ),
-					textAlign: align,
-					offsetX: 15 * Math.sin(rot),
-					offsetY: -15 * Math.cos(rot)
-				})
-			});
-		}
-
-
-		function createDirBearStyle(wp, settings)
-		{
-			var varRad = Number(settings.variation) ? deg2rad(Number(settings.variation)) : 0;
-			var rotRad, align, text, offX, offY;
-
-			if (!wp)
-			{
-				rotRad = 0;
-				align = "start";
-				text = '';
-				offX = 0;
-				offY = 0;
-			}
-			else if (wp.mt  < 180)
-			{
-				rotRad = deg2rad(wp.mt - 90);
-				align = "start";
-				text = wp.mt + '° ' + wp.dist + 'NM >';
-				offX = 10 * Math.sin(rotRad + Math.PI / 2);
-				offY = -10 * Math.cos(rotRad + Math.PI / 2);
-			}
+			if (rotateWithView)
+				rotRad = deg2rad(rotDeg + maprotDeg);
 			else
-			{
-				rotRad = deg2rad(wp.mt - 270);
-				align = "end";
-				text = '< ' + wp.mt + '° ' + wp.dist + 'NM';
-				offX = 10 * Math.sin(rotRad + Math.PI * 3 / 2);
-				offY = -10 * Math.cos(rotRad + Math.PI * 3 / 2);
-			}
+				rotRad = deg2rad(rotDeg);
 
 			return  new ol.style.Style({
 				image: new ol.style.Circle({
@@ -1798,14 +1920,52 @@ function mapService($http, trafficService, weatherService)
 					})
 				}),
 				text: new ol.style.Text({
+					font: 'bold 16px Calibri,sans-serif',
+					text: wp1.checkpoint,
+					fill: new ol.style.Fill( { color: '#660066' } ),
+					stroke: new ol.style.Stroke( {color: '#FFFFFF', width: 10 } ),
+					textAlign: align,
+					offsetX: 15 * Math.sin(rotRad),
+					offsetY: -15 * Math.cos(rotRad)
+				})
+			});
+		}
+
+
+		function createDirBearStyle(wp, variation)
+		{
+			var varRad = Number(variation) ? deg2rad(Number(variation)) : 0;
+			var maprotRad = map.getView().getRotation();
+			var maprotDeg = rad2deg(maprotRad);
+			var rotRad, align, text;
+
+			if (!wp)
+			{
+				rotRad = 0;
+				align = "start";
+				text = '';
+			}
+			else if ((wp.mt + maprotDeg) % 360 < 180)
+			{
+				rotRad = deg2rad(wp.mt - 90);
+				align = "start";
+				text = '   ' + wp.mt + '° ' + wp.dist + 'NM >';
+			}
+			else
+			{
+				rotRad = deg2rad(wp.mt - 270);
+				align = "end";
+				text = '< ' + wp.mt + '° ' + wp.dist + 'NM   ';
+			}
+
+			return  new ol.style.Style({
+				text: new ol.style.Text({
 					font: '14px Calibri,sans-serif',
 					text: text,
 					fill: new ol.style.Fill( { color: '#000000' } ),
 					stroke: new ol.style.Stroke( {color: '#FFFFFF', width: 10 } ),
-					rotation: rotRad + varRad,
-					textAlign: align,
-					offsetX: offX,
-					offsetY: offY
+					rotation: rotRad + varRad + maprotRad,
+					textAlign: align
 				})
 			});
 		}
@@ -1889,7 +2049,7 @@ function mapService($http, trafficService, weatherService)
 	function displayChart(chartId)
 	{
 		// load chart data
-		$http.get('php/ad_charts.php?id=' + chartId)
+		$http.get(adChartBaseUrl + '&id=' + chartId)
 			.then(
 				function(response) { // success
 
@@ -1978,11 +2138,11 @@ function mapService($http, trafficService, weatherService)
 		layerSource.clear();
 
 		if (lastPositions)
-			drawTrafficTrack(lastPositions, layerSource, { actype: "OWN" }, false);
+			drawTrafficTrack({ actype: "OWN", positions: lastPositions }, layerSource, false);
 	}
 
 
-	function updateTraffic(acList)
+	function updateTraffic(acList, maxTrafficAltitudeFt)
 	{
 		var layerSource = trafficLayer.getSource();
 		layerSource.clear();
@@ -1993,35 +2153,29 @@ function mapService($http, trafficService, weatherService)
 
 			for (var acAddress in acList)
 			{
-				var acInfo = {
-					actype: acList[acAddress].actype,
-					address: acAddress,
-					addresstype: acList[acAddress].addresstype,
-					callsign: '',
-					receiver: acList[acAddress].positions[acList[acAddress].positions.length - 1].receiver
-				};
-				
-				if (acList[acAddress].addresstype == "ICAO")
-					acInfo.callsign = trafficService.tryReadAcCallsign(acAddress);
-				
-				drawTrafficTrack(acList[acAddress].positions, layerSource, acInfo, acCount > maxTrafficForDots);
+				var ac = acList[acAddress];
+				var lastPos = ac.positions[ac.positions.length - 1];
+				ac.receiver = lastPos.receiver;
+
+				if (m2ft(lastPos.altitude) <= maxTrafficAltitudeFt)
+					drawTrafficTrack(ac, layerSource, acCount > maxTrafficForDots);
 			}
 		}
 	}
 
 
-	function drawTrafficTrack(lastPositions, layerSource, acInfo, skipDots)
+	function drawTrafficTrack(ac, layerSource, skipDots)
 	{
-		if (!lastPositions)
+		if (!ac || !ac.positions)
 			return;
 
-		var maxIdx = lastPositions.length - 1;
+		var maxIdx = ac.positions.length - 1;
 
 		// draw track dots
 		if (!skipDots) {
 			for (var i = maxIdx; i >= 0; i--) {
-				if (Date.now() - lastPositions[i].timestamp < maxAgeSecTrackDots * 1000) {
-					var trackDotFeature = createTrackDotFeature(lastPositions[i], acInfo.actype);
+				if (Date.now() - ac.positions[i].timestamp < maxAgeSecTrackDots * 1000) {
+					var trackDotFeature = createTrackDotFeature(ac.positions[i], ac.actype);
 					layerSource.addFeature(trackDotFeature);
 				}
 				else
@@ -2035,25 +2189,23 @@ function mapService($http, trafficService, weatherService)
 
 			if (maxIdx > 0) {
 				rotation = getBearing(
-					lastPositions[maxIdx - 1].latitude,
-					lastPositions[maxIdx - 1].longitude,
-					lastPositions[maxIdx].latitude,
-					lastPositions[maxIdx].longitude,
+                    ac.positions[maxIdx - 1].latitude,
+                    ac.positions[maxIdx - 1].longitude,
+                    ac.positions[maxIdx].latitude,
+                    ac.positions[maxIdx].longitude,
 					0);
 			}
 
 			var planeFeature = createTrafficFeature(
-				lastPositions[maxIdx],
+                ac.positions[maxIdx],
 				rotation,
-				acInfo);
+				ac);
 
 			layerSource.addFeature(planeFeature);
 
-			if (acInfo.callsign)
+			if (ac.registration || ac.callsign)
 			{
-				var csFeature = createCallsignFeature(
-					lastPositions[maxIdx],
-					acInfo.callsign);
+				var csFeature = createRegistrationCallsignFeature(ac);
 
 				layerSource.addFeature(csFeature);
 			}
@@ -2089,24 +2241,26 @@ function mapService($http, trafficService, weatherService)
 		}
 
 
-		function createTrafficFeature(position, rotation, acInfo)
+		function createTrafficFeature(position, rotation, ac)
 		{
 			var icon = "icon/";
 			var color = "#FF0000";
 			var heighttext = "";
 			var typetext = "";
 
-			if (!acInfo.callsign)
-				acInfo.callsign = "";
+			if (!ac.registration)
+				ac.registration = "";
 
 			if (position.altitude > 0)
-				heighttext = Math.round(position.altitude * 3.28084).toString() + " ft"; // TODO: einstellbar
+				heighttext = Math.round(m2ft(position.altitude)).toString() + " ft"; // TODO: einstellbar
 
 			var iconSuffix = "";
 			if (position.timestamp && (Date.now() - position.timestamp > maxAgeSecInactive * 1000))
 				iconSuffix = "_inactive";
 
-			switch (acInfo.actype)
+			var rotWithView = true;
+
+			switch (ac.actype)
 			{
 				case "OWN":
 					icon += "own_plane.png";
@@ -2123,19 +2277,23 @@ function mapService($http, trafficService, weatherService)
 				case "PARA_GLIDER":
 					icon += "traffic_parachute" + iconSuffix + ".png";
 					rotation = 0;
+					rotWithView = false;
 					break;
 				case "BALLOON":
 				case "AIRSHIP":
 					icon += "traffic_balloon" + iconSuffix + ".png";
 					rotation = 0;
+					rotWithView = false;
 					break;
-				case "UKNOWN":
+				case "UNKNOWN":
 					icon += "traffic_unknown" + iconSuffix + ".png";
 					rotation = 0;
+					rotWithView = false;
 					break;
 				case "STATIC_OBJECT":
 					icon += "traffic_static" + iconSuffix + ".png";
 					rotation = 0;
+					rotWithView = false;
 					break;
 				case "DROP_PLANE":
 					typetext = " - Drop Plane";
@@ -2149,9 +2307,11 @@ function mapService($http, trafficService, weatherService)
 					typetext = " - UAV";
 					icon += "traffic_plane" + iconSuffix + ".png";
 					break;
+                case "JET_AIRCRAFT":
+                    icon += "traffic_jetplane" + iconSuffix + ".png";
+                    break;
 				case "POWERED_AIRCRAFT":
 				case "TOW_PLANE":
-				case "JET_AIRCRAFT":
 				default:
 					icon += "traffic_plane" + iconSuffix + ".png";
 					break;
@@ -2169,7 +2329,8 @@ function mapService($http, trafficService, weatherService)
 						anchorYUnits: 'fraction',
 						scale: 1,
 						opacity: 1.00,
-						rotation: rotation / 180 * Math.PI,
+						rotation: deg2rad(rotation),
+						rotateWithView: rotWithView,
 						src: icon
 					}),
 					text: new ol.style.Text({
@@ -2183,19 +2344,26 @@ function mapService($http, trafficService, weatherService)
 				})
 			);
 
-			planeFeature.acInfo = acInfo;
+			planeFeature.acInfo = ac;
 
 			return planeFeature;
 		}
 
 
-		function createCallsignFeature(position, callsign)
+		function createRegistrationCallsignFeature(ac)
 		{
 			var icon = "icon/";
 			var color = "#FF0000";
+            var regCallText = "";
 
-			if (!callsign)
-				callsign = "";
+            if (ac.fullCallsign)
+                regCallText = ac.fullCallsign;
+            else if (ac.callsign && !equalsRegCall(ac.registration, ac.callsign))
+                regCallText = ac.callsign;
+            else if (ac.registration)
+                regCallText = ac.registration;
+
+            var position = ac.positions[ac.positions.length - 1];
 
 			var csFeature = new ol.Feature({
 				geometry: new ol.geom.Point(ol.proj.fromLonLat([position.longitude, position.latitude]))
@@ -2205,7 +2373,7 @@ function mapService($http, trafficService, weatherService)
 				new ol.style.Style({
 					text: new ol.style.Text({
 						font: 'bold 14px Calibri,sans-serif',
-						text: callsign,
+						text: regCallText,
 						fill: new ol.style.Fill({color: color}),
 						stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2}),
 						offsetX: 0,
@@ -2216,6 +2384,15 @@ function mapService($http, trafficService, weatherService)
 
 			return csFeature;
 		}
+
+
+		function equalsRegCall(registration, callsign)
+        {
+            regStripped = registration.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            callStripped = callsign.toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+            return regStripped == callStripped;
+        }
 	}
 
 
@@ -2233,7 +2410,7 @@ function mapService($http, trafficService, weatherService)
 					new ol.Attribution({ html: 'Elevation Data: <a href="https://lta.cr.usgs.gov/SRTM" target="_blank">SRTM</a>' }),
 					new ol.Attribution({ html: 'Map Visualization: <a href="http://www.opentopomap.org/" target="_blank">OpenTopoMap</a> <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank">(CC-BY-SA)</a>' }),
 					new ol.Attribution({ html: 'Aviation Data: <a href="http://www.openaip.net/" target="_blank">openAIP</a> <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/" target="_blank">(BY-NC-SA)</a>' }),
-					new ol.Attribution({ html: 'Traffic Data: <a href="http://wiki.glidernet.org/about" target="_blank">Open Glider Network</a>' }),
+					new ol.Attribution({ html: 'Traffic Data: <a href="http://wiki.glidernet.org/about" target="_blank">Open Glider Network</a> | <a href="http://www.ADSBexchange.com/" target="_blank">ADSBexchange</a>' }),
 					new ol.Attribution({ html: 'Aerodrome Charts: <a href="http://www.avare.ch/" target="_blank">Avare.ch</a>' }),
 					new ol.Attribution({ html: 'Weather Data: <a href="https://www.aviationweather.gov/" target="_blank">NOAA - Aviation Weather Center</a>' }),
 					new ol.Attribution({ html: 'Geographical Data: <a href="http://www.geonames.org/" target="_blank">GeoNames</a> <a href="http://creativecommons.org/licenses/by/3.0/" target="_blank">(CC-BY)</a>' }),
@@ -2245,7 +2422,8 @@ function mapService($http, trafficService, weatherService)
 
 		function getTileUrl(coordinate)
 		{
-			var otmBaseUrls = [ "//a.tile.opentopomap.org/", "//b.tile.opentopomap.org/", "//c.tile.opentopomap.org/" ];
+			//var otmBaseUrls = [ "//a.tile.opentopomap.org/", "//b.tile.opentopomap.org/", "//c.tile.opentopomap.org/" ];
+			var otmBaseUrls = [ "//opentopomap.org/", "//opentopomap.org/", "//opentopomap.org/" ];
 			var localBaseUrl = "maptiles/";
 			var z = coordinate[0];
 			var y = coordinate[1];
@@ -2265,7 +2443,10 @@ function mapService($http, trafficService, weatherService)
 
 		function isLocalTile(z, y, x)
 		{
-			var zrange = [ 6, 13 ];
+			if (z <= 6)
+				return true;
+
+			var zrange = [7, 14];
 			var zoomfact = Math.pow(2, (z - 6));
 			var yrange = [33 * zoomfact, 33 * zoomfact + zoomfact - 1 ];
 			var xrange = [22 * zoomfact, 22 * zoomfact + zoomfact - 1 ];
@@ -2297,6 +2478,12 @@ function mapService($http, trafficService, weatherService)
 	}
 
 
+	function getLatLonFromPixel(x, y)
+	{
+		return getLatLonCoordinates((map.getCoordinateFromPixel([x, y])));
+	}
+
+
 	function getDistance(lat1, lon1, lat2, lon2)
 	{
 		return (wgs84Sphere.haversineDistance([lon1,lat1],[lon2,lat2]) * 0.000539957);
@@ -2322,5 +2509,21 @@ function mapService($http, trafficService, weatherService)
 	function getAirport(icao)
 	{
 		return airports[icao];
+	}
+
+
+	function getCoordinateGeopoint(lonLat)
+	{
+		var clickPoint = {
+			type: 'user',
+			longitude: lonLat[0],
+			latitude: lonLat[1],
+			name: Math.round(lonLat[1] * 10000) / 10000 + " " + Math.round(lonLat[0] * 10000) / 10000,
+			//wpname: ol.coordinate.toStringHDMS(lonLat)
+			wpname: Math.round(lonLat[1] * 10000) / 10000 + " " + Math.round(lonLat[0] * 10000) / 10000
+		};
+
+
+		return clickPoint;
 	}
 }

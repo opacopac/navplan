@@ -9,10 +9,10 @@ trafficService.$inject = ['$http'];
 
 function weatherService($http)
 {
-	// init
+	var weatherBaseUrl = 'php/weather.php?v=' + navplanVersion;
 	var weatherinfolist = [];
 	var lastUpdated = 0;
-	const MAXAGE = 5 * 60 * 1000; // 5 min
+	var MAXAGE = 5 * 60 * 1000; // 5 min
 
 	updateWeatherInfos();
 
@@ -42,7 +42,7 @@ function weatherService($http)
 	function updateWeatherInfos(onUpdatedCallback)
 	{
 		// get metars
-		$http.get('php/weather.php')
+		$http.get(weatherBaseUrl)
 			.then(
 				function(response)
 				{

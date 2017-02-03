@@ -11,7 +11,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 {
 	// init global data object
 	$scope.globalData = globalData;
-	
+
 
 	// globally used functions
 	
@@ -24,6 +24,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 			var data = json2obj(storedGlobalData);
 
 			$scope.globalData.initialData = false;
+			$scope.globalData.sessionId = $scope.createSessionId();
 			$scope.globalData.user = data.user;
 			$scope.globalData.pilot = data.pilot;
 			$scope.globalData.aircraft = data.aircraft;
@@ -34,18 +35,20 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 			$scope.globalData.currentMapPos = data.currentMapPos;
 			$scope.globalData.selectedWp = data.selectedWp;
 			$scope.globalData.wpBackup = data.wpBackup;
-			$scope.globalData.trafficTimer = data.trafficTimer;
-			$scope.globalData.showLocation = data.showLocation;
-			$scope.globalData.showTraffic = data.showTraffic;
-			$scope.globalData.offlineCache = data.offlineCache;
-			$scope.globalData.locationStatus = data.locationStatus;
-			$scope.globalData.trafficStatus = data.trafficStatus;
+			$scope.globalData.trafficTimer = undefined;
+			$scope.globalData.showLocation = false; // data.showLocation;
+			$scope.globalData.showTraffic = false; // data.showTraffic;
+			$scope.globalData.cacheIsActive = data.cacheIsActive;
+			$scope.globalData.locationStatus = "off"; // data.locationStatus;
+			$scope.globalData.trafficStatus = "off"; // data.trafficStatus;
 			$scope.globalData.cacheStatus = data.cacheStatus;
 			$scope.globalData.cacheProgress = data.cacheProgress;
+			$scope.globalData.clickHistory = []; // internally used only
 		}
 		else // load default values
 		{
 			$scope.globalData.initialData = true;
+			$scope.globalData.sessionId = $scope.createSessionId();
 			$scope.globalData.user =
 			{
 				email: undefined,
@@ -84,7 +87,8 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 			};
 			$scope.globalData.settings =
 			{
-				variation: 2
+				variation: 2,
+				maxTrafficAltitudeFt: 15000
 			};
 			$scope.globalData.currentMapPos = 
 			{
@@ -97,14 +101,21 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 			$scope.globalData.clockTimer = undefined;
 			$scope.globalData.showLocation = false;
 			$scope.globalData.showTraffic = false;
-			$scope.globalData.offlineCache = false;
+			$scope.globalData.cacheIsActive = false;
 			$scope.globalData.locationStatus = "off"; // "off", "waiting", "current", "error"
 			$scope.globalData.trafficStatus = "off"; // "off", "waiting", "current", "error"
 			$scope.globalData.cacheStatus = "off"; // "off", "updating", "updated", "error"
 			$scope.globalData.cacheProgress =  { loaded: 0, total: 100, percent: 0 };
+			$scope.globalData.clickHistory = []; // internally used only
 		}
 	};
-	
+
+
+	$scope.createSessionId = function ()
+	{
+        return Math.floor((Math.random() * 1000000000));
+    };
+
 	
 	$scope.showSuccessMessage = function(text)
 	{
@@ -146,7 +157,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 		
 		if (cachewaypoints)
 		{
-			$scope.globalData.offlineCache = true;
+			$scope.globalData.cacheIsActive = true;
 			$scope.globalData.cacheStatus = "updated"; // TODO: check cache
 		}
 	};
@@ -267,7 +278,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 	{
 		waypointService.recalcWaypoints($scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.settings.variation, $scope.globalData.aircraft.speed);
 		fuelService.updateFuelCalc($scope.globalData.fuel, $scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.aircraft);
-		mapService.updateWpTrack($scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.settings);
+		mapService.updateWpTrack($scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.settings.variation);
 	};
 
 
@@ -362,12 +373,40 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 		{
 			positions: []
 		};
+
+		$scope.globalData.clickHistory = [];
 	
 		$scope.updateWaypoints();
 		$scope.updateFlightTrack();
 		$scope.discardCache();
 
 		mapService.clearAllCharts();
+	};
+
+
+	$scope.onShareClicked = function(shareType)
+	{
+		var sharerUrl;
+		var tinyUrl = "https://www.navplan.ch/branch/";
+		var np_title = ($scope.globalData.navplan.name && $scope.globalData.navplan.name.length > 0) ? " " + $scope.globalData.navplan.name : "";
+		var text = "Check out my VFR Navigation Log" + np_title + ":";
+		var hashtags = "navplan,vfr,flightplan";
+
+		switch (shareType)
+		{
+			case "facebook":
+				var sharerUrl = "http://www.facebook.com/sharer.php?u=" + encodeURI(tinyUrl);
+                createAndClickLink(sharerUrl, "_blank");
+				break;
+            case "twitter":
+                var sharerUrl = "https://twitter.com/share?url=" + encodeURI(tinyUrl) + "&text=" + encodeURI(text) + "&hashtags=" + encodeURI(hashtags);
+                createAndClickLink(sharerUrl, "_blank");
+                break;
+            case "google":
+                var sharerUrl = "https://plus.google.com/share?url=" + encodeURI(tinyUrl);
+                createAndClickLink(sharerUrl, "_blank");
+                break;
+		}
 	};
 
 
@@ -433,21 +472,21 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 
 	$scope.discardCache = function()
 	{
-		$scope.globalData.offlineCache = false;
+		$scope.globalData.cacheIsActive = false;
 
 		deleteCookie("cachewaypoints");
 		deleteCookie("cachecharts");
 
-		if (window.applicationCache.status === window.applicationCache.DOWNLOADING)
+		if ($scope.appCache.status == $scope.appCache.DOWNLOADING)
 		{
-			window.applicationCache.abort();
+			$scope.appCache.abort();
 		}
-		else if (window.applicationCache.status !== window.applicationCache.UNCACHED)
+		else if ($scope.appCache.status != $scope.appCache.UNCACHED)
 		{
 			$scope.globalData.cacheStatus = "updating";
 			$scope.globalData.cacheProgress = {loaded: 0, total: 100, percent: 0};
 
-			window.applicationCache.update();
+			$scope.appCache.update();
 		}
 		else
 		{
@@ -458,7 +497,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 
 	$scope.onCacheProgress = function(e)
 	{
-		if ($scope.globalData.offlineCache == false && $scope.globalData.cacheStatus == "off")
+		if ($scope.globalData.cacheIsActive == false && $scope.globalData.cacheStatus == "off")
 			return;
 
 		if (!e.loaded || !e.total) // hack for firefox
@@ -477,10 +516,10 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 
 	$scope.onCacheReady = function(e)
 	{
-		if (window.applicationCache.status == window.applicationCache.UPDATEREADY)
-			window.applicationCache.swapCache();
+		if ($scope.appCache.status == $scope.appCache.UPDATEREADY)
+			$scope.appCache.swapCache();
 
-		if ($scope.globalData.offlineCache)
+		if ($scope.globalData.cacheIsActive)
 			$scope.globalData.cacheStatus = "updated";
 		else
 			$scope.globalData.cacheStatus = "off";
@@ -491,7 +530,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 
 	$scope.onCacheError = function(e)
 	{
-		if ($scope.globalData.offlineCache == false && $scope.globalData.cacheStatus == "off")
+		if ($scope.globalData.cacheIsActive == false && $scope.globalData.cacheStatus == "off")
 			return;
 
 		$scope.globalData.cacheStatus = "error";
@@ -535,10 +574,20 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 	// event listeners
 	window.addEventListener("beforeunload", $scope.onLeaving);
 	window.addEventListener("pagehide", $scope.onLeaving);
-	window.applicationCache.addEventListener('progress', $scope.onCacheProgress, false);
-	window.applicationCache.addEventListener('noupdate', $scope.onCacheReady, false);
-	window.applicationCache.addEventListener('cached', $scope.onCacheReady, false);
-	window.applicationCache.addEventListener('updateready', $scope.onCacheReady, false);
-	window.applicationCache.addEventListener('obsolete', $scope.onCacheReady, false);
-	window.applicationCache.addEventListener('error', $scope.onCacheError, false);
+
+	// init application cache
+	window.frames[0].onload = function()
+	{
+		$scope.appCache = window.frames[0].applicationCache;
+
+		if ($scope.appCache && $scope.appCache.addEventListener)
+		{
+			$scope.appCache.addEventListener('progress', $scope.onCacheProgress, false);
+			$scope.appCache.addEventListener('noupdate', $scope.onCacheReady, false);
+			$scope.appCache.addEventListener('cached', $scope.onCacheReady, false);
+			$scope.appCache.addEventListener('updateready', $scope.onCacheReady, false);
+			$scope.appCache.addEventListener('obsolete', $scope.onCacheReady, false);
+			$scope.appCache.addEventListener('error', $scope.onCacheError, false);
+		}
+	};
 }
