@@ -224,7 +224,7 @@ function switchcomlogfile($file)
 
 function connect()
 {
-    global $ognHost, $ognPort, $ognUserPrefix, $ognSoftware, $ognSoftwareVersion, $ogn_filter, $lockFile;
+    global $ognHost, $ognPort, $ognUser, $ognSoftware, $ognSoftwareVersion, $ogn_filter, $lockFile;
 
     $fp = fsockopen($ognHost, $ognPort, $errno, $errstr, 30);
 
@@ -236,7 +236,7 @@ function connect()
 	}
 
     // login
-    $loginStr = "user " . $ognUserPrefix;
+    $loginStr = "user " . $ognUser;
     $loginStr .= " pass -1";
     $loginStr .= " vers " . $ognSoftware . " " . $ognSoftwareVersion;
     $loginStr .= " filter " . $ogn_filter . "\r\n";

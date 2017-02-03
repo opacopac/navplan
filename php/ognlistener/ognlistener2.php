@@ -5,24 +5,23 @@
     if (!$sessionId || !is_numeric($sessionId))
         die("invalid or missing sessionId");
 
-    $lockFile = './ognlistener_' .$sessionId . '.lock';
-    $dumpFiles[0] = './ognlistener_' . $sessionId . '.dump0';
-    $dumpFiles[1] = './ognlistener_' . $sessionId . '.dump1';
-    $dumpIndex = 1;
-    $commLogFile = './ognlistener_' . $sessionId . '.commlog';
-    $filterFile = './ognlistener_' . $sessionId . '.filter';
-
     $ognHost = 'aprs.glidernet.org';
     $ognPort = 14580;
-    $ognUserPrefix = 'NAVPLN';
+    $ognUser = 'NAVPLN01';
     $ognSoftware = 'navplan.ch';
     $ognSoftwareVersion = '1.0';
     $ognPingSeconds = 60;
     $ognLastPing = currentTimestamp();
 
-    $filterTimeoutSec = 15;
-    $filterLoopSleepSec = 2;
+    $lockFile = './ognlistener_' .$sessionId . '.lock';
+    $filterFile = './ognlistener_' . $sessionId . '.filter';
+    $commLogFile = './ognlistener_' . $sessionId . '.commlog';
+    $dumpFiles[0] = './ognlistener_' . $sessionId . '.dump0';
+    $dumpFiles[1] = './ognlistener_' . $sessionId . '.dump1';
+    $dumpIndex = 1;
     $dumpRotateSec = 120;
+    $filterTimeoutSec = 15;
+    $filterLoopSleepSec = 1;
 
 
     // main start
@@ -38,7 +37,7 @@
     if (!$currentFilter)
     {
         writelog("ERROR", "filter(file) not found");
-        unlink($lockFile); // remove lock file
+        removeFiles();
         die;
     }
 
@@ -54,7 +53,7 @@
     if ($pid == -1)
     {
         writelog("ERROR", "could not fork");
-        unlink($lockFile); // remove lock file
+        removeFiles();
         die;
     }
     else if ($pid) // filter reader (parent)
@@ -86,7 +85,7 @@
 
             if ($newFilter != $currentFilter) // filter changed
             {
-                writelog("INFO", "updating filters for stream " . $sessionId . ":" . $newFilter);
+                writelog("INFO", "updating filters for stream " . $sessionId);
                 writeFilter($connection, $newFilter);
 
                 $currentFilter = $newFilter;
@@ -100,12 +99,7 @@
         pcntl_wait($status); //Protect against Zombie children
 
         // remove files
-        unlink($lockFile);
-        unlink($commLogFile);
-        unlink($filterFile);
-
-        foreach ($dumpFiles as $dumpFile)
-            unlink ($dumpFile);
+        removeFiles();
     }
     else // ogn stream reader (child)
     {
@@ -192,28 +186,25 @@
     }
 
 
-    function connect($num, $filter)
+    function connect($sessionId, $filter)
     {
         // telnet aprs.glidernet.org 14580
         // user NAVPLNCH1 pass -1 vers navplan.ch 1.0 filter a/47.78917089079263/8.11271667480469/46.590956573124544/10.231704711914062 r/46.80/8.23/250
 
-        global $ognHost, $ognPort, $ognUserPrefix, $ognSoftware, $ognSoftwareVersion, $lockFile;
+        global $ognHost, $ognPort, $ognUser, $ognSoftware, $ognSoftwareVersion;
 
         $fp = fsockopen($ognHost, $ognPort, $errno, $errstr, 30);
         if (!$fp)
         {
-            unlink($lockFile); // remove lock file
             writelog("ERROR", "unable to connect: $errstr ($errno)");
+            removeFiles();
             die;
         }
 
         stream_set_blocking($fp, true);
 
-        // TODO
-        $num = "01";
-
         // login
-        $loginStr = "user " . $ognUserPrefix . $num;
+        $loginStr = "user " . $ognUser;
         $loginStr .= " pass -1";
         $loginStr .= " vers " . $ognSoftware . " " . $ognSoftwareVersion;
         $loginStr .= " filter " . $filter . "\r\n";
@@ -420,4 +411,26 @@
     {
         return (new DateTime())->getTimestamp();
     }
+
+
+    function removeFiles()
+    {
+        global $lockFile, $commLogFile, $filterFile, $dumpFiles;
+
+        foreach ($dumpFiles as $dumpFile) {
+            if (file_exists($dumpFile))
+                unlink($dumpFile);
+        }
+
+        if (file_exists($commLogFile))
+            unlink($commLogFile);
+
+
+        if (file_exists($filterFile))
+            unlink($filterFile);
+
+        if (file_exists($lockFile))
+            unlink($lockFile);
+    }
+
 ?>

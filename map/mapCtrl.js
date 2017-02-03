@@ -8,9 +8,11 @@ navplanApp
 
 function mapCtrl($scope, $sce, $route, mapService, locationService, trafficService, geonameService, globalData)
 {
+	$scope.$route = $route;
 	$scope.globalData = globalData;
 	$scope.trafficTimerIntervallMs = 5000;
 	$scope.trafficMinZoomlevel = 7;
+	$scope.trafficMaxAgeSec = 120;
 	$scope.selectedTraffic = {};
 	$scope.followTrafficAddress = undefined;
 	$scope.followTrafficLastPosition = undefined;
@@ -725,7 +727,8 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 
 	$scope.onTrafficTimer = function()
 	{
-        $scope.updateTraffic();
+	    if ($scope.$route.current.controller == "mapCtrl")
+            $scope.updateTraffic();
 	};
 
 
@@ -744,24 +747,30 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 
 		var extent = mapService.getViewExtent();
 
-		trafficService.requestTraffic(extent, 120, $scope.globalData.settings.maxTrafficHeightFt, $scope.globalData.sessionId, successCallback, errorCallback);
+		trafficService.requestTraffic(extent, $scope.trafficMaxAgeSec, $scope.globalData.settings.maxTrafficAltitudeFt + 1000, $scope.globalData.sessionId, successCallback, errorCallback);
 
 		if ($scope.globalData.trafficStatus != "current")
             $scope.globalData.trafficStatus = "waiting";
 
 		function successCallback(acList)
         {
-            mapService.updateTraffic(acList);
+            if (!$scope.globalData.showTraffic)
+                return;
+
             $scope.globalData.trafficStatus = "current";
+            mapService.updateTraffic(acList, $scope.globalData.settings.maxTrafficAltitudeFt);
 
             if ($scope.followTrafficAddress)
                 $scope.followTraffic(acList);
         }
 
-        function errorCallback()
+        function errorCallback(acList)
         {
+            if (!$scope.globalData.showTraffic)
+                return;
+
             $scope.globalData.trafficStatus = "error";
-            mapService.updateTraffic(undefined);
+            mapService.updateTraffic(acList, $scope.globalData.settings.maxTrafficAltitudeFt);
         }
 	};
 

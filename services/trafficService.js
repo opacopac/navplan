@@ -11,9 +11,10 @@ function trafficService($http)
 {
     var dataSources = { "ogn": "OGN", "adsbexchange": "ADSBX" };
     var positionMethod = { "flarm": "FLARM", "adsb": "ADSB", "mlat" : "MLAT" };
-	var trafficBaseUrl = window.location.pathname.indexOf("branch") != -1 ? 'php/ogntraffic2.php?v=' + navplanVersion  : 'branch/php/ogntraffic.php?v=' + navplanVersion; // hack: only point to one trafficlistener
+	var trafficBaseUrl = 'php/ogntraffic2.php?v=' + navplanVersion;
 	var adsbExchangeBaseUrl = 'https://public-api.adsbexchange.com/VirtualRadar/AircraftList.json'; //?fAltL=0&fAltU=15000&fSBnd=45.7656&fEBnd=10.7281&fNBnd=47.8556&fWBnd=5.4382';
     var acList = {};
+    var lastExtent = undefined;
 
 
 	// return api reference
@@ -22,16 +23,23 @@ function trafficService($http)
 	};
 
 
-	function requestTraffic(extent, maxagesec, maxheight, sessionId, successCallback, errorCallback)
+	function requestTraffic(extent, maxAgeSec, maxAltitude, sessionId, successCallback, errorCallback)
     {
-        readTrafficOgnListener(extent, maxagesec, sessionId, successCallback, errorCallback);
-        readTrafficAdsbExchange(extent, maxagesec, maxheight, successCallback, errorCallback);
+        readTrafficOgnListener(extent, maxAgeSec, sessionId, successCallback, errorCallback);
+        readTrafficAdsbExchange(extent, maxAgeSec, maxAltitude, successCallback, errorCallback);
     }
 
 
 	function readTrafficOgnListener(extent, maxagesec, sessionId, successCallback, errorCallback)
 	{
-		var url = trafficBaseUrl + '&minlon=' + extent[0] + '&minlat=' + extent[1] + '&maxlon=' + extent[2] + '&maxlat=' + extent[3] + '&maxagesec=' + maxagesec + '&sessionid=' + sessionId;
+        var waitDataSec = 1;
+
+        if (lastExtent && lastExtent[0] == extent[0] && lastExtent[1] == extent[1] && lastExtent[2] == extent[2] && lastExtent[3] == extent[3])
+            waitDataSec = 0;
+
+        lastExtent = extent;
+
+        var url = trafficBaseUrl + '&minlon=' + extent[0] + '&minlat=' + extent[1] + '&maxlon=' + extent[2] + '&maxlat=' + extent[3] + '&maxagesec=' + maxagesec + '&sessionid=' + sessionId + '&waitDataSec=' + waitDataSec;
         $http.get(url)
             .then(
                 function (response) // success
@@ -74,7 +82,7 @@ function trafficService($http)
                     console.error("ERROR reading ac traffic from ognlistener", response.status, response.data);
                     
                     if (errorCallback)
-                        errorCallback();
+                        errorCallback(acList);
                 }
             );
 
@@ -109,8 +117,8 @@ function trafficService($http)
                                 "ICAO",
                                 parseAdsbExchangeAcType(acListAx[i]),
                                 acListAx[i].Reg,
-                                getCallsign(acListAx[i].Call),
-                                getFullCallsign(acListAx[i].Call),
+                                getCallsign(acListAx[i]),
+                                getFullCallsign(acListAx[i]),
                                 acListAx[i].Mdl,
                                 parseAdsbExchangePositions(acListAx[i]));
 
@@ -125,41 +133,44 @@ function trafficService($http)
                     console.error("ERROR reading ac traffic from ADSBExchange", response.status, response.data);
                     
                     if (errorCallback)
-                        errorCallback();
+                        errorCallback(acList);
                 }
             );
 
 
-        function getCallsign(callsign)
+        function getCallsign(ac)
         {
-            if (!callsign)
+            if (!ac.Call)
                 return undefined;
 
-            if (callsign.match(/^\d.*/)) // only numbers -> skip
+            if (ac.Call.match(/^\d.*/)) // only numbers -> skip
                 return undefined;
 
-            if (callsign.match(/^.{1,3}$/)) // only 3 letters -> skip
+            if (ac.Call.match(/^.{1,3}$/)) // only 3 letters -> skip
                 return undefined;
 
-            return callsign;
+            return ac.Call;
         }
 
 
-        function getFullCallsign(callsign)
+        function getFullCallsign(ac)
         {
-            if (!callsign)
+            if (!ac.Call)
                 return undefined;
 
-            if (!callsign.toUpperCase().match(/^[A-Z]{3}\d.*/))
+            if (!ac.Call.toUpperCase().match(/^[A-Z]{3}\d.*/)) // check format 3 letters + 1 digit + rest
                 return undefined;
 
-            var icaoCode = callsign.substring(0,3);
+            if (!ac.OpIcao) // check if op-code is present (can differ from 3-letter-designator), remark: trade off = accept some false negatives but no false positives
+                return undefined;
+
+            var icaoCode = ac.Call.substring(0,3);
             var fullCallsign = telephony[icaoCode];
 
             if (fullCallsign)
-                return fullCallsign + " " + callsign.substring(3);
+                return fullCallsign + " " + ac.Call.substring(3);
             else
-                return callsign;
+                return ac.Call;
         }
 
 
@@ -171,7 +182,7 @@ function trafficService($http)
             pos.latitude = ac.Lat;
             pos.longitude = ac.Long;
             pos.method = ac.Mlat ? positionMethod.mlat : positionMethod.adsb;
-            pos.altitude = Math.round(ac.GAlt / 3.2808);
+            pos.altitude = ft2m(ac.GAlt);
             pos.timestamp = ac.PosTime;
             pos.receiver = ac.Mlat ? "ADSBExchange (MLAT)" : "ADSBExchange (ADS-B)";
 

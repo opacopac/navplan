@@ -1,10 +1,10 @@
 // version
-var navplanVersion = "1.2q"; // should be the same as in version.txt
+var navplanVersion = "1.2r"; // should be the same as in version.txt
 
 
 // js error handler
 var errLogSent = false;
-window.onerror = function(message, url, linenumber)
+window.onerror = function(message, url, linenum, colnum, error)
 {
 	if (!errLogSent)
 	{
@@ -15,7 +15,9 @@ window.onerror = function(message, url, linenumber)
 			verIdx: indexVersion,
 			errMsg: message,
 			errUrl: url,
-			errLine: linenumber
+			errLine: linenum,
+			errColumn: colnum ? colnum : '',
+			stackTrace: (error && error.stack) ? error.stack : ''
 		};
 
 		writeServerErrLog(errLog);

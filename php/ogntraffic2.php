@@ -8,6 +8,7 @@
     $maxLon = checkNumeric($_GET["maxlon"]);
     $maxAgeSec = checkNumeric($_GET["maxagesec"]);
     $sessionId = checkNumeric($_GET["sessionid"]);
+    $waitDataSec = checkNumeric($_GET["waitDataSec"]);
 
     $dumpFiles[0] = './ognlistener/ognlistener_' . $sessionId . '.dump0';
     $dumpFiles[1] = './ognlistener/ognlistener_' . $sessionId . '.dump1';
@@ -26,8 +27,11 @@
     if (!file_exists($lockFile))
     {
         startListener($sessionId);
-        die("ERROR: lock file not found, trying to restart ogn listener");
+        sleep(1);
     }
+
+    if ($waitDataSec > 0)
+        sleep($waitDataSec);
 
 
     // open db connection

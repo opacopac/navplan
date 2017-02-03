@@ -35,7 +35,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 			$scope.globalData.currentMapPos = data.currentMapPos;
 			$scope.globalData.selectedWp = data.selectedWp;
 			$scope.globalData.wpBackup = data.wpBackup;
-			$scope.globalData.trafficTimer = data.trafficTimer;
+			$scope.globalData.trafficTimer = undefined;
 			$scope.globalData.showLocation = false; // data.showLocation;
 			$scope.globalData.showTraffic = false; // data.showTraffic;
 			$scope.globalData.cacheIsActive = data.cacheIsActive;
@@ -88,7 +88,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 			$scope.globalData.settings =
 			{
 				variation: 2,
-				maxTrafficHeightFt: 15000
+				maxTrafficAltitudeFt: 15000
 			};
 			$scope.globalData.currentMapPos = 
 			{

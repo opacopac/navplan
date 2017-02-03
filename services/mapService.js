@@ -2142,7 +2142,7 @@ function mapService($http, weatherService)
 	}
 
 
-	function updateTraffic(acList)
+	function updateTraffic(acList, maxTrafficAltitudeFt)
 	{
 		var layerSource = trafficLayer.getSource();
 		layerSource.clear();
@@ -2154,9 +2154,11 @@ function mapService($http, weatherService)
 			for (var acAddress in acList)
 			{
 				var ac = acList[acAddress];
-				ac.receiver = ac.positions[ac.positions.length - 1].receiver;
+				var lastPos = ac.positions[ac.positions.length - 1];
+				ac.receiver = lastPos.receiver;
 
-				drawTrafficTrack(ac, layerSource, acCount > maxTrafficForDots);
+				if (m2ft(lastPos.altitude) <= maxTrafficAltitudeFt)
+					drawTrafficTrack(ac, layerSource, acCount > maxTrafficForDots);
 			}
 		}
 	}
@@ -2250,7 +2252,7 @@ function mapService($http, weatherService)
 				ac.registration = "";
 
 			if (position.altitude > 0)
-				heighttext = Math.round(position.altitude * 3.28084).toString() + " ft"; // TODO: einstellbar
+				heighttext = Math.round(m2ft(position.altitude)).toString() + " ft"; // TODO: einstellbar
 
 			var iconSuffix = "";
 			if (position.timestamp && (Date.now() - position.timestamp > maxAgeSecInactive * 1000))
