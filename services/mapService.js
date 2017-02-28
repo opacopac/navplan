@@ -19,7 +19,7 @@ function mapService($http, weatherService)
 	var userWaypoints = {};
 	var chartLayers = [];
 	var airspaces = [];
-	var wpTrackCache = { wps: undefined, alternate: undefined, variation: undefined};
+	var wpTrackCache = { wps: undefined, alternate: undefined, variation: undefined };
 	var currentOverlay = undefined;
 	var modifySnapInteractions = [];
 	var onTrackModifyEndCallback = undefined;
@@ -911,7 +911,7 @@ function mapService($http, weatherService)
 						eventConsumed = true;
 					}
 				},
-				null,
+				0,
 				function (layer) // layers to search for features
 				{
 					return (layer === geopointLayer ||
@@ -943,7 +943,7 @@ function mapService($http, weatherService)
 							eventConsumed = true;
 						}
 					},
-					null,
+					0,
 					function (layer) // layers to search for features
 					{
 						return layer === trafficLayer;
@@ -976,7 +976,7 @@ function mapService($http, weatherService)
 				function (feature, layer) {
 					return layer;
 				},
-				null,
+				0,
 				function (layer) {
 					return (layer === geopointLayer ||
 						layer === closeIconLayer ||
@@ -2157,7 +2157,7 @@ function mapService($http, weatherService)
 				var lastPos = ac.positions[ac.positions.length - 1];
 				ac.receiver = lastPos.receiver;
 
-				if (m2ft(lastPos.altitude) <= maxTrafficAltitudeFt)
+				if (!lastPos.altitude || m2ft(lastPos.altitude) <= maxTrafficAltitudeFt)
 					drawTrafficTrack(ac, layerSource, acCount > maxTrafficForDots);
 			}
 		}
@@ -2356,8 +2356,8 @@ function mapService($http, weatherService)
 			var color = "#FF0000";
             var regCallText = "";
 
-            if (ac.fullCallsign)
-                regCallText = ac.fullCallsign;
+            if (ac.opCallsign)
+                regCallText = ac.opCallsign;
             else if (ac.callsign && !equalsRegCall(ac.registration, ac.callsign))
                 regCallText = ac.callsign;
             else if (ac.registration)

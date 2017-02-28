@@ -7,7 +7,13 @@
     switch ($_SERVER['REQUEST_METHOD'])
     {
         case 'GET':
-            if ($_GET["id"])
+			if ($_GET["shareid"])
+			{
+                readSharedNavplan(
+                    checkString($_GET["shareid"], 10, 10)
+				);
+			}
+            elseif ($_GET["id"])
             {
                 readNavplan(
                     checkId(intval($_GET["id"])),
@@ -25,11 +31,20 @@
             break;
         case 'POST':
             $input = json_decode(file_get_contents('php://input'), true);
-            createNavplan(
-                escapeNavplanData($conn, $input["globalData"]),
-                checkEscapeEmail($conn, $_COOKIE["email"]),
-                checkEscapeToken($conn, $_COOKIE["token"])
-            );
+			if ($input["createShared"] === true)
+			{
+				createSharedNavplan(
+					escapeNavplanData($conn, $input["globalData"])
+				);
+			}
+			else
+			{
+				createNavplan(
+					escapeNavplanData($conn, $input["globalData"]),
+					checkEscapeEmail($conn, $_COOKIE["email"]),
+					checkEscapeToken($conn, $_COOKIE["token"])
+				);
+			}
             break;
         case 'PUT':
             $input = json_decode(file_get_contents('php://input'), true);
@@ -106,10 +121,61 @@
 		}
 		else
 			die("no navplan with id: '" . $navplan_id . "' of current user found");
+
+		// add waypoints
+		$wpalt = readNavplanWaypoints($navplan_id);
 		
+		$navplan["waypoints"] = $wpalt["waypoints"];
+		$navplan["alternate"] = $wpalt["alternate"];
+	
+		echo json_encode(array("navplan" => $navplan), JSON_NUMERIC_CHECK);		
+	}			
+
+	
+	function readSharedNavplan($share_id)
+	{
+		global $conn;
+
+		// get navplan details
+		$query = "SELECT id, title, aircraft_speed, aircraft_consumption, extra_fuel FROM navplan";
+		$query .= " WHERE share_id = '" . $share_id . "'";
+		
+		$result = $conn->query($query);
+
+		if ($result === FALSE)
+			die("error reading navplan: " . $conn->error . " query:" . $query);
+
+		if ($result->num_rows > 0)
+		{
+			$row = $result->fetch_assoc();
+			$navplan["id"] = $row["id"];
+			$navplan["title"] = $row["title"];
+			$navplan["aircraft_speed"] = $row["aircraft_speed"];
+			$navplan["aircraft_consumption"] = $row["aircraft_consumption"];
+			$navplan["extra_fuel"] = $row["extra_fuel"];
+		}
+		else
+			die("no navplan with share-id: '" . $share_id . "' found");
+
+		// add waypoints			
+		$wpalt = readNavplanWaypoints($navplan["id"]);
+
+		$navplan["waypoints"] = $wpalt["waypoints"];
+		$navplan["alternate"] = $wpalt["alternate"];
+		$navplan["id"] = NULL;
+
+		
+		echo json_encode(array("navplan" => $navplan), JSON_NUMERIC_CHECK);		
+	}			
+	
+	
+	function readNavplanWaypoints($navplanId)
+	{
+		global $conn;
+
 		// get navplan waypoints
 		$query = "SELECT wp.type, wp.freq, wp.callsign, wp.checkpoint, wp.alt, wp.isminalt, wp.ismaxalt, wp.remark, wp.latitude, wp.longitude, wp.airport_icao, wp.is_alternate FROM navplan_waypoints AS wp";
-		$query .= " WHERE wp.navplan_id = '" . $navplan_id . "'";
+		$query .= " WHERE wp.navplan_id = '" . $navplanId . "'";
 		$query .= " ORDER BY wp.sortorder ASC";
 		
 		$result = $conn->query($query);
@@ -140,11 +206,7 @@
 				$waypoints[] = $wp;
 		}
 		
-		$navplan["waypoints"] = $waypoints;
-		$navplan["alternate"] = $alternate;
-
-
-		echo json_encode(array("navplan" => $navplan), JSON_NUMERIC_CHECK);
+		return array(waypoints => $waypoints, alternate => $alternate);
 	}
 	
 	
@@ -163,7 +225,7 @@
 			die("error reading navplan/user: " . $conn->error . " query:" . $query);
 
 		if ($result->num_rows <= 0)
-			die("no navplan with id: '" . $navplan_id . "' of current user found");
+			die("no navplan with id: '" . $navplan["id"] . "' of current user found");
 
 		// update navplan
 		$query = "UPDATE navplan SET";
@@ -234,6 +296,55 @@
 
 
 		echo json_encode(array("navplan_id" => $navplan_id), JSON_NUMERIC_CHECK);
+	}
+	
+	
+	function createSharedNavplan($navplan)
+	{
+		global $conn;
+
+        // check if shared navplan already exists
+        $navplanHash = hash("md5", serialize($navplan));
+
+        $query = "SELECT share_id FROM navplan WHERE md5_hash = '" . $navplanHash . "'";
+
+        $result = $conn->query($query);
+
+        if ($result === FALSE)
+            die("error reading navplan by hash: " . $conn->error . " query:" . $query);
+
+        if ($result->num_rows > 0)
+        {
+            $row = $result->fetch_assoc();
+            $share_id = $row["share_id"];
+        }
+        else
+        {
+            // create random id
+            $share_id = createRandomString(10);
+
+            // create navplan
+            $query = "INSERT INTO navplan (share_id, md5_hash, title, aircraft_speed, aircraft_consumption, extra_fuel) VALUES (";
+            $query .= "'" . $share_id . "',";
+            $query .= "'" . $navplanHash . "',";
+            $query .= "'" . $navplan["title"] . "',";
+            $query .= "'" . $navplan["aircraft_speed"] . "',";
+            $query .= "'" . $navplan["aircraft_consumption"] . "',";
+            $query .= "'" . $navplan["extra_fuel"] . "')";
+
+            $result = $conn->query($query);
+
+            if ($result === FALSE)
+                die("error inserting navplan: " . $conn->error . " query:" . $query);
+            else
+                $navplan_id = $conn->insert_id;
+
+            // create waypoints
+            createWaypoints($conn, $navplan["waypoints"], $navplan["alternate"], $navplan_id);
+        }
+
+		
+		echo json_encode(array("share_id" => $share_id), JSON_NUMERIC_CHECK);
 	}
 	
 	

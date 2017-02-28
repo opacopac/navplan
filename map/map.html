@@ -17,15 +17,11 @@
 </div>
 <!-- location button -->
 <div class="mapbutton-location">
-	<button type="button" class="btn btn-circle btn-lg" ng-class="{ 'btn-primary' : globalData.locationStatus == 'off', 'btn-success' : globalData.locationStatus == 'current', 'btn-warning' : globalData.locationStatus == 'waiting', 'btn-danger' : globalData.locationStatus == 'error' }" ng-class="{ 'active': globalData.showLocation }" ng-click="onLocationClicked();" title="start/stop tracking own position"><span class="glyphicon glyphicon-record"></span></button>
+	<button type="button" class="btn btn-circle btn-lg" ng-class="{ 'btn-primary' : globalData.locationStatus == 'off', 'btn-success' : globalData.locationStatus == 'current', 'btn-warning' : globalData.locationStatus == 'waiting', 'btn-danger' : globalData.locationStatus == 'error' }" ng-class="{ 'active': globalData.showLocation }" ng-click="onLocationClicked();" title="start/stop tracking own position"><i class="fa fa-location-arrow"></i></button>
 </div>
 <!-- traffic button -->
 <div class="mapbutton-traffic">
-	<button type="button" class="btn btn-primary btn-circle btn-lg" ng-class="{ 'btn-primary' : globalData.trafficStatus == 'off', 'btn-success' : globalData.trafficStatus == 'current', 'btn-warning' : globalData.trafficStatus == 'waiting', 'btn-danger' : globalData.trafficStatus == 'error' }" ng-class="{ 'active': globalData.showTraffic }" ng-click="onTrafficClicked();" title="show/hide traffic"><span class="glyphicon glyphicon-plane"></span></button>
-</div>
-<!-- kml export button -->
-<div class="mapbutton-kmlexport" ng-show="globalData.navplan.waypoints.length > 0">
-	<button type="button" class="btn btn-primary btn-circle btn-lg" ng-click="onKmlClicked();" title="export kml for google earth"><span class="glyphicon glyphicon-globe"></span></button>
+	<button type="button" class="btn btn-primary btn-circle btn-lg" ng-class="{ 'btn-primary' : globalData.trafficStatus == 'off', 'btn-success' : globalData.trafficStatus == 'current', 'btn-warning' : globalData.trafficStatus == 'waiting', 'btn-danger' : globalData.trafficStatus == 'error' }" ng-class="{ 'active': globalData.showTraffic }" ng-click="onTrafficClicked();" title="show/hide traffic"><i class="fa fa-plane"></i></button>
 </div>
 <!-- offline cache button -->
 <div class="mapbutton-offlinecache" ng-show="globalData.navplan.waypoints.length > 0 || globalData.cacheStatus != 'off'">

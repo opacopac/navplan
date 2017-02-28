@@ -86,27 +86,30 @@
 			</div>
 			<div id="navbarcontent" class="collapse navbar-collapse">
 				<ul class="nav navbar-nav">
-					<li><a href="#/map" title="Show Map" data-toggle="collapse" data-target="#navbarcontent">Map</a></li>
-					<li><a href="#/waypoints" title="Waypoint List" data-toggle="collapse" data-target="#navbarcontent">Waypoints</a></li>
-					<li ng-show="isLoggedIn() || hasLastTrack()"><a href="#/tracks" title="Recorded Tracks" data-toggle="collapse" data-target="#navbarcontent">Tracks</a></li>
-					<li><a href="#/map" title="Clear Waypoints and Track" data-toggle="collapse" data-target="#navbarcontent" ng-click="onTrashClicked()"><i class="glyphicon glyphicon-trash"></i></a></li>
-					<li class="dropdown" ng-show="false"><!-- TODO: sharing buttons, unfinished yet -->
-					    <a href="#" onclick="return false;" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><i class="fa fa-share-alt fa-lg"></i></a>
+					<li><a href="#/map" title="Map" data-toggle="collapse" data-target="#navbarcontent"><i class="fa fa-map-o"></i><span class="hidden-sm">&nbsp;  Map</span></a></li>
+					<li><a href="#/waypoints" title="Navigation Log & Fuel Calc" data-toggle="collapse" data-target="#navbarcontent"><i class="glyphicon glyphicon-list-alt"></i><span class="hidden-sm">&nbsp; Log &amp; Fuel</span></a></li>
+					<li ng-show="isLoggedIn() || hasLastTrack()"><a href="#/tracks" title="Recorded Tracks" data-toggle="collapse" data-target="#navbarcontent"><i class="fa fa-paw"></i><span class="hidden-sm">&nbsp; Tracks</span></a></li>
+					<li><a href="#/map" title="Clear current Waypoints and Track" data-toggle="collapse" data-target="#navbarcontent" ng-click="onTrashClicked()"><i class="glyphicon glyphicon-erase"></i><span class="hidden-sm hidden-md">&nbsp; Clear</span></a></li>
+					<li class="dropdown" ng-show="globalData.navplan.waypoints.length > 0"><!-- TODO: sharing buttons, unfinished yet -->
+					    <a href="#" onclick="return false;" title="Share or Export" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><i class="glyphicon glyphicon-share-alt"></i><span class="hidden-sm hidden-md">&nbsp; Share</span></a>
 						<ul class="dropdown-menu">
-							<li><a>Share current Navplan on...</a></li>
+							<li><a href="#" onclick="return false;" ng-click="createPdfNavplan()"><i class="fa fa-file-pdf-o fa-fw"></i>&nbsp; PDF</a></li>
+							<li><a href="#" onclick="return false;" ng-click="createExcelNavplan()"><i class="fa fa-file-excel-o fa-fw"></i>&nbsp; Excel</a></li>
+							<li><a href="#" onclick="return false;" ng-click="exportKml()"><i class="fa fa-globe fa-fw"></i>&nbsp; KML (Google Earth)</a></li>
+							<!--<li><a>Share current Navplan on...</a></li>
 							<li><a href="#" onclick="return false;" ng-click="onShareClicked('facebook')"><i class="fa fa-facebook fa-fw"></i>&nbsp;  Facebook</a></li>
 							<li><a href="#" onclick="return false;" ng-click="onShareClicked('twitter')"><i class="fa fa-twitter fa-fw"></i>&nbsp;  Twitter</a></li>
 							<li><a href="#" onclick="return false;" ng-click="onShareClicked('google')"><i class="fa fa-google-plus fa-fw"></i>&nbsp;  Google+</a></li>
-							<li><a href="#" onclick="return false;" ng-click="onShareClicked('mail')"><i class="fa fa-envelope fa-fw"></i>&nbsp;  E-Mail</a></li>
+							<li><a href="#" onclick="return false;" ng-click="onShareClicked('mail')"><i class="fa fa-envelope fa-fw"></i>&nbsp;  E-Mail</a></li>-->
 							<li><a href="#" onclick="return false;" ng-click="onShareClicked('url')"><i class="fa fa-link fa-fw"></i>&nbsp;  URL</a></li>
 						</ul>
 					</li>
 				</ul>
 				<ul class="nav navbar-nav navbar-right">
-					<li ng-hide="isLoggedIn()"><a href="#/login" title="Login or Register" data-toggle="collapse" data-target="#navbarcontent">Login</a></li>
-					<li ng-show="isLoggedIn()"><a href="#/edituser" title="Edit User" data-toggle="collapse" data-target="#navbarcontent">{{ globalData.user.email }}</a></li>
-					<li><a href="#/settings" title="Edit Settings" data-toggle="collapse" data-target="#navbarcontent"><i class="glyphicon glyphicon-cog"></i></a></li>
-					<li><a href="#/about" data-toggle="collapse" data-target="#navbarcontent">About</a></li>
+					<li ng-hide="isLoggedIn()"><a href="#/login" title="Login or Register" data-toggle="collapse" data-target="#navbarcontent"><i class="glyphicon glyphicon-user"></i><span class="hidden-sm">&nbsp; Login</span></a></li>
+					<li ng-show="isLoggedIn()"><a href="#/edituser" title="Edit User" data-toggle="collapse" data-target="#navbarcontent"><i class="glyphicon glyphicon-user"></i><span class="hidden-sm hidden-md">&nbsp; {{ globalData.user.email }}</span></a></li>
+					<li><a href="#/settings" title="Edit Settings" data-toggle="collapse" data-target="#navbarcontent"><i class="glyphicon glyphicon-cog"></i><span class="hidden-md hidden-sm">&nbsp; Settings</span></a></li>
+					<li><a href="#/about" data-toggle="collapse" data-target="#navbarcontent"><i class="glyphicon glyphicon-info-sign"></i><span class="hidden-md hidden-sm">&nbsp; About</span></a></li>
 				</ul>
 			</div>
 		</div>
@@ -190,6 +193,23 @@
 				</div>
 				<div class="modal-footer">
 					<button type="button" class="btn btn-default" data-dismiss="modal" ng-click="onCancelEditWpClicked()">Cancel</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- share url dialog -->
+	<div class="modal fade" id="shareUrlDialog" tabindex="-1" role="dialog" aria-labelledby="shareUrlModeLabel">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+					<h4 class="modal-title" id="shareUrlModeLabel">Share URL</h4>
+				</div>
+				<div class="modal-body">
+					URL: <input type="text" class="form-control" ng-model="globalData.shareUrl" />
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
 				</div>
 			</div>
 		</div>

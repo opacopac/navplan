@@ -66,7 +66,7 @@ function trafficService($http)
                                 ac.actype,
                                 ac.registration,
                                 null, // callsign
-                                null, // full callsign
+                                null, // operator callsign
                                 ac.aircraftModelType,
                                 ac.positions);
                         }
@@ -118,7 +118,7 @@ function trafficService($http)
                                 parseAdsbExchangeAcType(acListAx[i]),
                                 acListAx[i].Reg,
                                 getCallsign(acListAx[i]),
-                                getFullCallsign(acListAx[i]),
+                                getOperatorCallsign(acListAx[i]),
                                 acListAx[i].Mdl,
                                 parseAdsbExchangePositions(acListAx[i]));
 
@@ -143,6 +143,9 @@ function trafficService($http)
             if (!ac.Call)
                 return undefined;
 
+            if (!ac.Reg) // no registration -> use call sign
+                return ac.Call;
+
             if (ac.Call.match(/^\d.*/)) // only numbers -> skip
                 return undefined;
 
@@ -153,24 +156,38 @@ function trafficService($http)
         }
 
 
-        function getFullCallsign(ac)
+        function getOperatorCallsign(ac)
         {
+            var opCallsign, icaoCode;
+
             if (!ac.Call)
                 return undefined;
 
-            if (!ac.Call.toUpperCase().match(/^[A-Z]{3}\d.*/)) // check format 3 letters + 1 digit + rest
+            if (ac.Mil && !ac.OpIcao) // if military but no opcode -> assume tactical call sign
                 return undefined;
 
-            if (!ac.OpIcao) // check if op-code is present (can differ from 3-letter-designator), remark: trade off = accept some false negatives but no false positives
-                return undefined;
+            if (ac.Call.toUpperCase().match(/^[A-Z]{3}\d[A-Z0-9]{0,3}/)) // check for default format (3 letters + 1 digit + 1-3x digit/letter)
+            {
+                icaoCode = ac.Call.substring(0, 3);
+                opCallsign = telephony[icaoCode];
 
-            var icaoCode = ac.Call.substring(0,3);
-            var fullCallsign = telephony[icaoCode];
+                if (opCallsign)
+                    return opCallsign + " " + ac.Call.substring(3);
+                else
+                    return undefined;
+            }
+            else if (ac.OpIcao && ac.Call.match(/^\d{1,4}$/)) // digits only but opcode present-> assume opcode as operator
+            {
+                icaoCode = ac.OpIcao;
+                opCallsign = telephony[icaoCode];
 
-            if (fullCallsign)
-                return fullCallsign + " " + ac.Call.substring(3);
+                if (opCallsign)
+                    return opCallsign + " " + ac.Call;
+                else
+                    return undefined;
+            }
             else
-                return ac.Call;
+                return undefined;
         }
 
 
@@ -182,7 +199,7 @@ function trafficService($http)
             pos.latitude = ac.Lat;
             pos.longitude = ac.Long;
             pos.method = ac.Mlat ? positionMethod.mlat : positionMethod.adsb;
-            pos.altitude = ft2m(ac.GAlt);
+            pos.altitude = ac.Gnd ? undefined : ft2m(ac.GAlt);
             pos.timestamp = ac.PosTime;
             pos.receiver = ac.Mlat ? "ADSBExchange (MLAT)" : "ADSBExchange (ADS-B)";
 
@@ -268,7 +285,7 @@ function trafficService($http)
     }
 
 
-    function addOrUpdateAc(source, acaddress, addresstype, actype, registration, callsign, fullCallsign, aircraftModelType, positions)
+    function addOrUpdateAc(source, acaddress, addresstype, actype, registration, callsign, opCallsign, aircraftModelType, positions)
     {
         var ac = {};
 
@@ -279,7 +296,7 @@ function trafficService($http)
             ac.actype = actype;
             ac.registration = registration;
             ac.callsign = callsign;
-            ac.fullCallsign = fullCallsign;
+            ac.opCallsign = opCallsign;
             ac.aircraftModelType = aircraftModelType;
             ac.positions = [];
             acList[acaddress] = ac;
@@ -293,7 +310,7 @@ function trafficService($http)
                 ac.actype = actype;
                 ac.registration = registration;
                 ac.callsign = callsign;
-                ac.fullCallsign = fullCallsign;
+                ac.opCallsign = opCallsign;
                 ac.aircraftModelType = aircraftModelType;
             }
         }

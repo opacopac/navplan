@@ -386,15 +386,15 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 
 	$scope.onShareClicked = function(shareType)
 	{
-		var sharerUrl;
+		/*var sharerUrl;
 		var tinyUrl = "https://www.navplan.ch/branch/";
 		var np_title = ($scope.globalData.navplan.name && $scope.globalData.navplan.name.length > 0) ? " " + $scope.globalData.navplan.name : "";
 		var text = "Check out my VFR Navigation Log" + np_title + ":";
-		var hashtags = "navplan,vfr,flightplan";
+		var hashtags = "navplan,vfr,flightplan";*/
 
 		switch (shareType)
 		{
-			case "facebook":
+			/*case "facebook":
 				var sharerUrl = "http://www.facebook.com/sharer.php?u=" + encodeURI(tinyUrl);
                 createAndClickLink(sharerUrl, "_blank");
 				break;
@@ -405,9 +405,65 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
             case "google":
                 var sharerUrl = "https://plus.google.com/share?url=" + encodeURI(tinyUrl);
                 createAndClickLink(sharerUrl, "_blank");
-                break;
-		}
+                break;*/
+			case "url":
+				$scope.createShareUrl();
+				break;
+			}
 	};
+	
+	
+	// TODO: include in onShareClicked
+	$scope.createPdfNavplan = function()
+	{
+		var navplanData = $scope.getNavplanExportData();
+		
+		sendPostForm('php/navplanPdf.php', '_blank', 'data', JSON.stringify(navplanData));
+	};
+	
+	
+	// TODO: include in onShareClicked
+	$scope.createExcelNavplan = function()
+	{
+		var navplanData = $scope.getNavplanExportData();
+		
+		sendPostForm('php/navplanExcel.php', '_blank', 'data', JSON.stringify(navplanData));
+	};
+
+
+	$scope.getNavplanExportData = function ()
+	{
+		var waypoints = [];
+
+		for (var i = 0; i < $scope.globalData.navplan.waypoints.length; i++)
+			waypoints.push(getWaypointData($scope.globalData.navplan.waypoints[i]));
+
+
+		return {
+			waypoints: waypoints,
+			alternate: $scope.globalData.navplan.alternate ? getWaypointData($scope.globalData.navplan.alternate) : undefined,
+			fuel: $scope.globalData.fuel,
+			pilot: $scope.globalData.pilot,
+			aircraft: $scope.globalData.aircraft
+		};
+
+
+		function getWaypointData(wp)
+		{
+			return {
+				freq: wp.freq,
+				callsign: wp.callsign,
+				checkpoint: wp.checkpoint,
+				mtText: wp.mtText,
+				distText: wp.distText,
+				alt: wp.alt,
+				isminalt: wp.isminalt,
+				ismaxalt: wp.ismaxalt,
+				eetText: wp.eetText,
+				remark: wp.remark
+			};
+		};
+	};	
 
 
 	$scope.exportKml = function()
@@ -444,6 +500,30 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 
 		//window.open('php/navplanKml.php?waypoints=' + encodeURIComponent(JSON.stringify(waypoints)), "_blank");
 	};
+	
+	
+	$scope.createShareUrl = function()
+	{
+		userService.createSharedNavplan($scope.globalData)
+			.success(function(data) {
+				if (data.share_id)
+				{
+					$scope.globalData.shareUrl =
+						window.location.protocol
+						+ "//" + window.location.host
+						+ window.location.pathname
+						+ window.location.search
+						+ "#/share/" + data.share_id;
+
+					$('#shareUrlDialog').modal('show');
+				}
+				else
+					console.error("ERROR creating shared navplan", data);
+			})
+			.error(function(data, status) {
+				console.error("ERROR creating shared navplan", status, data);
+			});
+	}
 
 
 	$scope.backupSelectedWaypoint = function()
@@ -563,6 +643,71 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 
 		$scope.$apply();
 	};
+
+	
+	$scope.loadNavplanToGlobalData = function(navplanData)
+	{
+		// general data
+		$scope.globalData.navplan.id = navplanData.id;
+		$scope.globalData.navplan.title = navplanData.title;
+		$scope.globalData.aircraft.speed = navplanData.aircraft_speed;
+		$scope.globalData.aircraft.consumption = navplanData.aircraft_consumption;
+		$scope.globalData.fuel.extraTime = navplanData.extra_fuel;
+		$scope.globalData.navplan.alternate = undefined; // TODO
+		
+		// waypoints
+		$scope.globalData.navplan.waypoints = [ ];
+		var wp;
+
+		if (navplanData.waypoints)
+		{
+			for (var i = 0; i < navplanData.waypoints.length; i++)
+			{
+				wp = $scope.getWaypointFromData(navplanData.waypoints[i]);
+				$scope.globalData.navplan.waypoints.push(wp);
+			}
+		}
+
+		// alternate
+		$scope.globalData.navplan.alternate = undefined;
+
+		if (navplanData.alternate)
+		{
+			wp = $scope.getWaypointFromData(navplanData.alternate);
+			$scope.globalData.navplan.alternate = wp;
+		}
+
+		$scope.updateWaypoints();
+		$scope.discardCache();	
+	};
+	
+	
+	$scope.getWaypointFromData = function(wp_data)
+	{
+		var ap = undefined;
+
+		if (wp_data.airport_icao)
+			ap = mapService.getAirport(wp_data.airport_icao);
+
+		return {
+			type: wp_data.type,
+			freq: wp_data.freq,
+			callsign: wp_data.callsign,
+			checkpoint: wp_data.checkpoint,
+			airport_icao: wp_data.airport_icao,
+			latitude: wp_data.latitude,
+			longitude: wp_data.longitude,
+			charts: wp_data.charts,
+			webcams: wp_data.webcams,
+			mt: '',
+			dist: '',
+			alt: wp_data.alt,
+			isminalt: wp_data.isminalt,
+			ismaxalt: wp_data.ismaxalt,
+			remark: wp_data.remark,
+			airport: ap
+		};
+	}
 	
 	
 	// init stuff

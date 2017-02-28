@@ -3,10 +3,10 @@
  */
 
 navplanApp
-	.controller('mapCtrl', [ '$scope', '$sce', '$route', 'mapService', 'locationService', 'trafficService', 'geonameService', 'globalData', mapCtrl ]);
+	.controller('mapCtrl', [ '$scope', '$sce', '$route', 'mapService', 'locationService', 'trafficService', 'geonameService', 'userService', 'globalData', mapCtrl ]);
 
 
-function mapCtrl($scope, $sce, $route, mapService, locationService, trafficService, geonameService, globalData)
+function mapCtrl($scope, $sce, $route, mapService, locationService, trafficService, geonameService, userService, globalData)
 {
 	$scope.$route = $route;
 	$scope.globalData = globalData;
@@ -97,9 +97,13 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
         	{
                 csText = feature.acInfo.callsign;
 
-                if (feature.acInfo.fullCallsign)
-                    csText += " (" + feature.acInfo.fullCallsign + ")";
+                if (feature.acInfo.opCallsign)
+                    csText += " (" + feature.acInfo.opCallsign + ")";
             }
+            else if (feature.acInfo.opCallsign)
+			{
+				csText = feature.acInfo.opCallsign;
+			}
 
 
 			$scope.selectedTraffic = {
@@ -929,19 +933,45 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 	{
 		$scope.$parent.error_alert_message = "Sorry, an error occured while loading the map! Try to reload the page (CTRL+F5), or clear the browser cache, or use a newer browser (e.g Chrome 24+, Safari 6.2+, Firefox 23+, IE 10+)";
 
-		var errLog = {
-			handler: 'mapinit',
-			verJs: navplanVersion,
-			verIdx: indexVersion,
-			errMsg: err.message
-		};
+        var errLog = {
+            handler: 'mapinit',
+            verJs: navplanVersion,
+            verIdx: indexVersion,
+            errMsg: err && err.message ? err.message : "unknown",
+            stackTrace: err && err.stack ? err.stack : "unknown"
+        };
 
 		writeServerErrLog(errLog);
 	}
+	
+	
+	$scope.loadSharedNavplan = function(shareId)
+	{
+		userService.readSharedNavplan(shareId)
+			.success(function(data)
+			{
+				if (data.navplan)
+					$scope.loadNavplanToGlobalData(data.navplan);
+				else
+					console.error("ERROR", data);
+			})
+			.error(function(data, status)
+			{
+				console.error("ERROR", status, data);
+			});
+	};
+	
+	
+
 
 	window.removeEventListener("resize", $scope.resizeMap);
 	window.addEventListener("resize", $scope.resizeMap);
 
 	if ($route.current.$$route.showtraffic && !$scope.globalData.showTraffic)
 		$scope.onTrafficClicked();
+		
+	if ($route.current.params.shareid)
+	{
+		$scope.loadSharedNavplan($route.current.params.shareid)
+	}
 }

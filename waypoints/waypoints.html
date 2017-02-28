@@ -1,18 +1,7 @@
 <div class="container nonmapcontent">
 	<div class="form-horizontal">
 		<div class="form-group" ng-show="isLoggedIn()">
-			<label for="navplan_name" class="control-label col-sm-3">Navplan Name</label>
-			<div class="col-sm-6">
-				<div class="input-group">
-					<input id="navplan_name" type="text" class="form-control" placeholder="Enter Name" ng-model="globalData.navplan.title" />
-					<span class="input-group-btn">
-						<button type="button" class="btn btn-primary" title="Save Navplan" ng-click="saveNavplan();" ng-disabled="!globalData.navplan.title"><i class="glyphicon glyphicon-save"></i></button>
-					</span>					
-				</div>
-			</div>	
-		</div>	
-		<div class="form-group" ng-show="isLoggedIn()">
-			<label for="navplan_list" class="control-label col-sm-3">Saved Navplans</label>
+			<label for="navplan_list" class="control-label col-sm-3">Saved NavLogs</label>
 			<div class="col-sm-6">
 				<div class="input-group">
 					<select id="navplan_list" class="form-control" ng-model="selectedNavplanId">
@@ -20,11 +9,22 @@
 						<option ng-repeat="navplan in globalData.user.navplanList" value="{{ navplan.id }}">{{ navplan.title }}</option>
 					</select>
 					<span class="input-group-btn">
-						<button type="button" class="btn btn-success" title="Load Navplan" ng-click="loadNavplan();" ng-disabled="!selectedNavplanId"><i class="glyphicon glyphicon-open"></i></button>
-						<button type="button" class="btn btn-danger" title="Delete Navplan" ng-click="deleteNavplan();" ng-disabled="!selectedNavplanId"><i class="glyphicon glyphicon-trash"></i></button>
+						<button type="button" class="btn btn-success" title="Load Navigation Log" ng-click="loadNavplan();" ng-disabled="!selectedNavplanId"><i class="glyphicon glyphicon-open"></i></button>
+						<button type="button" class="btn btn-danger" title="Delete Navigation Log" ng-click="deleteNavplan();" ng-disabled="!selectedNavplanId"><i class="glyphicon glyphicon-trash"></i></button>
 					</span>					
 				</div>
 			</div>
+		</div>	
+		<div class="form-group">
+			<label for="navplan_name" class="control-label col-sm-3">NavLog Name</label>
+			<div class="col-sm-6">
+				<div class="input-group">
+					<input id="navplan_name" type="text" class="form-control" placeholder="Enter Name" ng-model="globalData.navplan.title" />
+					<span class="input-group-btn">
+						<button type="button" class="btn btn-primary" title="Save Navigation Log (login required)" ng-click="saveNavplan();" ng-disabled="!globalData.navplan.title || !isLoggedIn()"><i class="glyphicon glyphicon-save"></i></button>
+					</span>					
+				</div>
+			</div>	
 		</div>	
 		<div class="form-group">
 			<label for="aircraft_speed" class="control-label col-sm-3">Ground Speed</label>
@@ -162,7 +162,6 @@
 		<div class="form-group">
 			<a id="dlPdfLink" href="#" class="btn btn-danger" title="Print Navplan as PDF" ng-click="$event.preventDefault(); createPdfNavplan();"><i class="glyphicon glyphicon-print"></i> Print PDF</a>&nbsp;
 			<a id="dlExcelLink" href="#" class="btn btn-success" title="Save Navplan as Excel" ng-click="$event.preventDefault(); createExcelNavplan();"><i class="glyphicon glyphicon-th"></i> Excel Export</a>&nbsp;
-			<a id="dlKmlLink2" href="#" class="btn btn-primary" title="Save KML-Track for Google Earth" ng-click="$event.preventDefault(); onKmlClicked();"><i class="glyphicon glyphicon-globe"></i>  KML Export</a>
 		</div>
 	</div>
 </div>

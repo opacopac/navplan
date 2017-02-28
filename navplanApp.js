@@ -1,5 +1,5 @@
 // version
-var navplanVersion = "1.2r"; // should be the same as in version.txt
+var navplanVersion = "1.2t"; // should be the same as in version.txt
 
 
 // js error handler
@@ -49,7 +49,9 @@ function routeprovider($routeProvider)
 	$routeProvider
 		.when("/",  { templateUrl: 'map/map.html?v=' + navplanVersion, controller: 'mapCtrl' })
 		.when("/map",  { templateUrl: 'map/map.html?v=' + navplanVersion, controller: 'mapCtrl' })
+        .when("/map2",  { templateUrl: 'map2/map2.html?v=' + navplanVersion, controller: 'mapCtrl2' })
 		.when("/traffic",  { templateUrl: 'map/map.html?v=' + navplanVersion, controller: 'mapCtrl', showtraffic: true })
+		.when("/share/:shareid",  { templateUrl: 'map/map.html?v=' + navplanVersion, controller: 'mapCtrl' })
 		.when("/waypoints",  { templateUrl: 'waypoints/waypoints.html?v=' + navplanVersion, controller: 'waypointCtrl' })
 		.when("/tracks",  { templateUrl: 'tracks/tracks.html?v=' + navplanVersion, controller: 'trackCtrl' })
 		.when("/login",  { templateUrl: 'login/login.html?v=' + navplanVersion, controller: 'loginCtrl' })

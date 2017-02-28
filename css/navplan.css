@@ -66,16 +66,9 @@ html, body {
   z-index: 20;
 }
 
-.mapbutton-kmlexport {
-  position: absolute;
-  top: 55px;
-  right: 10px;
-  z-index: 20;
-}
-
 .mapbutton-offlinecache {
   position: absolute;
-  top: 115px;
+  top: 55px;
   right: 10px;
   z-index: 20;
 }
@@ -83,7 +76,7 @@ html, body {
 .map-cacheprogress {
   position: absolute;
   width: 50px;
-  top: 175px;
+  top: 115px;
   right: 10px;
   z-index: 20;
 }
