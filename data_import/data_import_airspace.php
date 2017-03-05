@@ -5,7 +5,7 @@
 	$conn->set_charset("utf8");
 	
 	// clear table
-	$query = "DELETE FROM openaip_airspace";
+	$query = "DELETE FROM openaip_airspace2";
 	$result = $conn->query($query);
 
 	if (!$result)
@@ -32,7 +32,7 @@
 		
 		foreach ($data_file->AIRSPACES->ASP as $airspace)
 		{
-			$query = "INSERT INTO openaip_airspace (category, aip_id, country, name, alt_top_reference, alt_top_height, alt_top_unit, alt_bottom_reference, alt_bottom_height, alt_bottom_unit, polygon) VALUES (";
+			$query = "INSERT INTO openaip_airspace2 (category, aip_id, country, name, alt_top_reference, alt_top_height, alt_top_unit, alt_bottom_reference, alt_bottom_height, alt_bottom_unit, polygon, polygon2) VALUES (";
 			$query .= " '" . $airspace['CATEGORY'] . "',";
 			$query .= " '" . $airspace->ID . "',";
 			$query .= " '" . $airspace->COUNTRY . "',";
@@ -43,9 +43,10 @@
 			$query .= " '" . $airspace->ALTLIMIT_BOTTOM['REFERENCE'] . "',";
 			$query .= " '" . $airspace->ALTLIMIT_BOTTOM->ALT . "',";
 			$query .= " '" . $airspace->ALTLIMIT_BOTTOM->ALT['UNIT'] . "',";
-			$query .= " '" . $airspace->GEOMETRY->POLYGON . "'";
+			$query .= " '" . $airspace->GEOMETRY->POLYGON . "',";
+            $query .= " GeomFromText('POLYGON((" . $airspace->GEOMETRY->POLYGON . "))')";
 			$query .= ")";
-			
+
 			$result = $conn->query($query);
 
 			if (!$result)
