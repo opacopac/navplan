@@ -32,8 +32,8 @@
 		
 		foreach ($navaid_file->NAVAIDS->NAVAID as $navaid)
 		{
-		    if ($navaid->COUNTRY != 'CH' && $navaid->ID != 'BLM' && $navaid->ID != 'BN' && $navaid->ID != 'BS')
-		        continue;
+		    /*if ($navaid->COUNTRY != 'CH' && $navaid->ID != 'BLM' && $navaid->ID != 'BN' && $navaid->ID != 'BS')
+		        continue;*/
 
 			$query = "INSERT INTO openaip_navaids2 (type, country, name, kuerzel, latitude, longitude, elevation, frequency, declination, truenorth, lonlat) VALUES (";
 			$query .= " '" . $navaid['TYPE'] . "',";

@@ -2,23 +2,25 @@
 include "config.php";
 include "helper.php";
 
+// open db connection
+$conn = openDb();
+
+// read/check input parameters
 $minLat = checkNumeric($_GET["minlat"]);
 $maxLat = checkNumeric($_GET["maxlat"]);
 $minLon = checkNumeric($_GET["minlon"]);
 $maxLon = checkNumeric($_GET["maxlon"]);
-$sessionId = checkNumeric($_GET["sessionid"]);
-
-// open db connection
-$conn = openDb();
+$email = $_COOKIE["email"] ? checkEscapeEmail($conn, $_COOKIE["email"]) : NULL;
+$token = $_COOKIE["token"] ? checkEscapeToken($conn, $_COOKIE["token"]) : NULL;
 
 // load data
 $extent = "GeomFromText('POLYGON((" . $minLon . " " . $minLat . "," . $maxLon . " " . $minLat . "," . $maxLon . " " . $maxLat . "," . $minLon . " " . $maxLat . "," . $minLon . " " . $minLat . "))')";
-
 $navaids = getNavaids($extent);
 $airports = getAirports($extent);
 $airspaces = getAirspaces($extent);
 $webcams = getWebcams($minLon, $minLat, $maxLon, $maxLat);
-$reportingPoints = getReportingPoints($minLon, $minLat, $maxLon, $maxLat);
+$reportingPoints = getReportingPoints($extent);
+$userPoints = getUserPoints($email, $token, $minLon, $minLat, $maxLon, $maxLat);
 
 // close db
 $conn->close();
@@ -30,6 +32,7 @@ $return_object = json_encode(
         "airports" => $airports,
         "airspaces" => $airspaces,
         "reportingPoints" => $reportingPoints,
+        "userPoints" => $userPoints,
         "webcams" => $webcams),
     JSON_NUMERIC_CHECK);
 
@@ -61,10 +64,9 @@ function getNavaids($extent)
         $navaids[] = array(
             id => $rs["id"],
             type => $rs["type"],
-//				country => $rs["country"],
             kuerzel => $rs["kuerzel"],
-            latitude => reduceDegAccuracy($rs["latitude"]),
-            longitude => reduceDegAccuracy($rs["longitude"]),
+            latitude => reduceDegAccuracy($rs["latitude"], "NAVAID"),
+            longitude => reduceDegAccuracy($rs["longitude"], "NAVAID"),
             elevation => $rs["elevation"],
             frequency => $rs["frequency"],
             unit => $unit,
@@ -91,16 +93,18 @@ function getAirports($extent)
 
     $airports = [];
     $apIds = [];
+    $apIcaos = [];
 
     while ($rs = $result->fetch_array(MYSQLI_ASSOC))
     {
         // build return object
-        $airports[$rs["icao"]] = array(
+        $ap = array(
+            id => $rs["id"],
             type => $rs["type"],
             name => $rs["name"],
             icao => $rs["icao"],
-            latitude => reduceDegAccuracy($rs["latitude"]),
-            longitude => reduceDegAccuracy($rs["longitude"]),
+            latitude => reduceDegAccuracy($rs["latitude"], "AIRPORT"),
+            longitude => reduceDegAccuracy($rs["longitude"], "AIRPORT"),
             elevation => $rs["elevation"],
             runways => [],
             radios => [],
@@ -109,19 +113,27 @@ function getAirports($extent)
             mapfeatures => []
         );
 
+        $ap["runways"] = [];
+        $ap["radios"] = [];
+        $ap["charts"] = [];
+        $ap["webcams"] = [];
+        $ap["mapfeatures"] = [];
+
+        $airports[] = $ap;
         $apIds[] = $rs["id"];
+        $apIcaos[] = $rs["icao"];
     }
 
     if (count($airports) == 0)
         return $airports;
 
     $apIdList = join(",", $apIds);
-    $apIcaoList = "'" . join("','", array_keys($airports)) . "'";
+    $apIcaoList = "'" . join("','", $apIcaos) . "'";
 
 
     // load runways
     $query  = "SELECT";
-    $query .= "  apt.icao,";
+    $query .= "  rwy.airport_id,";
     $query .= "  rwy.name,";
     $query .= "  rwy.surface,";
     $query .= "  rwy.length,";
@@ -135,10 +147,8 @@ function getAirports($extent)
     $query .= "  rwy.papi1,";
     $query .= "  rwy.papi2";
     $query .= " FROM openaip_runways2 AS rwy ";
-    $query .= " INNER JOIN openaip_airports2 AS apt ";
-    $query .= "   ON apt.id = rwy.airport_id";
     $query .= " WHERE rwy.operations = 'ACTIVE' AND airport_id IN (" . $apIdList . ")";
-    $query .= " ORDER BY rwy.length DESC";
+    $query .= " ORDER BY rwy.length DESC, rwy.surface ASC, rwy.id ASC";
 
     $result = $conn->query($query);
 
@@ -162,13 +172,21 @@ function getAirports($extent)
             papi2 => $rs["papi2"]
         );
 
-        $airports[$rs["icao"]]["runways"][] = $runway;
+        // add to airport object
+        foreach ($airports as &$ap)
+        {
+            if ($ap["id"] == $rs["airport_id"])
+            {
+                $ap["runways"][] = $runway;
+                break;
+            }
+        }
     }
 
 
     // load radios frequencies
     $query  = "SELECT";
-    $query .= "  apt.icao,";
+    $query .= "  rad.airport_id,";
     $query .= "  rad.category,";
     $query .= "  rad.frequency,";
     $query .= "  rad.type,";
@@ -177,8 +195,6 @@ function getAirports($extent)
     $query .= "  (CASE WHEN rad.category = 'COMMUNICATION' THEN 1 WHEN rad.category = 'OTHER' THEN 2 ELSE 3 END) AS sortorder1,";
     $query .= "  (CASE WHEN rad.type = 'TOWER' THEN 1 WHEN rad.type = 'CTAF' THEN 2 WHEN rad.type = 'OTHER' THEN 3 ELSE 4 END) AS sortorder2";
     $query .= " FROM openaip_radios2 AS rad ";
-    $query .= " INNER JOIN openaip_airports2 AS apt ";
-    $query .= "   ON apt.id = rad.airport_id";
     $query .= " WHERE airport_id IN (" . $apIdList . ")";
     $query .= " ORDER BY";
     $query .= "   sortorder1 ASC,";
@@ -200,7 +216,15 @@ function getAirports($extent)
             description => $rs["description"]
         );
 
-        $airports[$rs["icao"]]["radios"][] = $radio;
+        // add to airport object
+        foreach ($airports as &$ap)
+        {
+            if ($ap["id"] == $rs["airport_id"])
+            {
+                $ap["radios"][] = $radio;
+                break;
+            }
+        }
     }
 
 
@@ -247,7 +271,15 @@ function getAirports($extent)
             mercator_w => $rs["mercator_w"]
         );
 
-        $airports[$rs["airport_icao"]]["charts"][] = $chart;
+        // add to airport object
+        foreach ($airports as &$ap)
+        {
+            if ($ap["icao"] == $rs["airport_icao"])
+            {
+                $ap["charts"][] = $chart;
+                break;
+            }
+        }
     }
 
 
@@ -273,7 +305,15 @@ function getAirports($extent)
             url => $rs["url"]
         );
 
-        $airports[$rs["airport_icao"]]["webcams"][] = $webcam;
+        // add to airport object
+        foreach ($airports as &$ap)
+        {
+            if ($ap["icao"] == $rs["airport_icao"])
+            {
+                $ap["webcams"][] = $webcam;
+                break;
+            }
+        }
     }
 
 
@@ -300,7 +340,16 @@ function getAirports($extent)
             name => $rs["name"]
         );
 
-        $airports[$rs["airport_icao"]]["mapfeatures"][] = $mapfeature;
+
+        // add to airport object
+        foreach ($airports as &$ap)
+        {
+            if ($ap["icao"] == $rs["airport_icao"])
+            {
+                $ap["mapfeatures"][] = $mapfeature;
+                break;
+            }
+        }
     }
 
     return $airports;
@@ -326,18 +375,19 @@ function getAirspaces($extent)
     $query .= "  air.alt_bottom_unit,";
     $query .= "  air.polygon,";
     $query .= "  cor.type AS corr_type,";
-    $query .= "  cor.exclude_aip_id,";
-    $query .= "  cor.alt_top_reference AS corr_alt_top_reference,";
-    $query .= "  cor.alt_top_height AS corr_alt_top_height,";
-    $query .= "  cor.alt_top_unit AS corr_alt_top_unit,";
-    $query .= "  cor.alt_bottom_reference AS corr_alt_bottom_reference,";
-    $query .= "  cor.alt_bottom_height AS corr_alt_bottom_height,";
-    $query .= "  cor.alt_bottom_unit AS corr_alt_bottom_unit";
+    $query .= "  cor.corr_cat AS corr_cat,";
+    $query .= "  cor.corr_alt_top_reference AS corr_alt_top_reference,";
+    $query .= "  cor.corr_alt_top_height AS corr_alt_top_height,";
+    $query .= "  cor.corr_alt_top_unit AS corr_alt_top_unit,";
+    $query .= "  cor.corr_alt_bottom_reference AS corr_alt_bottom_reference,";
+    $query .= "  cor.corr_alt_bottom_height AS corr_alt_bottom_height,";
+    $query .= "  cor.corr_alt_bottom_unit AS corr_alt_bottom_unit";
     $query .= " FROM openaip_airspace2 AS air";
-    $query .= "   LEFT JOIN airspace_corr AS cor ON cor.aip_id = air.aip_id";
+    $query .= "   LEFT JOIN airspace_corr2 AS cor ON cor.aip_id = air.aip_id";
     $query .= " WHERE";
     $query .= "  (cor.type IS NULL OR cor.type != 'HIDE')";
-    $query .= "  AND MBRIntersects(polygon2, " . $extent . ")";
+    $query .= "    AND";
+    $query .= "  MBRIntersects(extent, " . $extent . ")";
 
 
     $result = $conn->query($query);
@@ -356,8 +406,8 @@ function getAirspaces($extent)
         foreach ($coord_pairs as $latlon)
         {
             $coords = explode(" ", trim($latlon));
-            $coords[0] = reduceDegAccuracy($coords[0]);
-            $coords[1] = reduceDegAccuracy($coords[1]);
+            $coords[0] = reduceDegAccuracy($coords[0], "AIRSPACE");
+            $coords[1] = reduceDegAccuracy($coords[1], "AIRSPACE");
             $polygon[] = $coords;
         }
 
@@ -365,7 +415,7 @@ function getAirspaces($extent)
         $airspaces[$rs["aip_id"]] = array(
             id => (int)$rs["id"],
             aip_id => (int)$rs["aip_id"],
-            category => $rs["category"],
+            category => $rs["corr_cat"] ? $rs["corr_cat"] : $rs["category"],
             country => $rs["country"],
             name => $rs["name"],
             alt => array(
@@ -415,8 +465,8 @@ function getWebcams($minLon, $minLat, $maxLon, $maxLat)
             id => $rs["id"],
             name => $rs["name"],
             url => $rs["url"],
-            latitude => reduceDegAccuracy($rs["latitude"]),
-            longitude => reduceDegAccuracy($rs["longitude"])
+            latitude => reduceDegAccuracy($rs["latitude"], "WEBCAM"),
+            longitude => reduceDegAccuracy($rs["longitude"], "WEBCAM")
         );
     }
 
@@ -424,11 +474,11 @@ function getWebcams($minLon, $minLat, $maxLon, $maxLat)
 }
 
 
-function getReportingPoints($minLon, $minLat, $maxLon, $maxLat)
+function getReportingPoints($extent)
 {
     global $conn;
 
-    $query = "SELECT * FROM reporting_points WHERE longitude >= " . $minLon . " AND longitude <= " . $maxLon . " AND latitude >= " . $minLat . " AND latitude <= " . $maxLat;
+    $query = "SELECT * FROM reporting_points2 WHERE MBRIntersects(extent, " . $extent . ")";
 
     $result = $conn->query($query);
     if ($result === FALSE)
@@ -461,11 +511,58 @@ function getReportingPoints($minLon, $minLat, $maxLon, $maxLat)
             outbd_comp => $rs["outbd_comp"],
             min_ft => $rs["min_ft"],
             max_ft => $rs["max_ft"],
-            latitude => reduceDegAccuracy($rs["latitude"]),
-            longitude => reduceDegAccuracy($rs["longitude"]),
+            latitude => reduceDegAccuracy($rs["latitude"], "REPORTINGPOINT"),
+            longitude => reduceDegAccuracy($rs["longitude"], "REPORTINGPOINT"),
             polygon => $polygon
         );
     }
 
     return $reportingpoints;
 }
+
+
+function getUserPoints($email, $token, $minLon, $minLat, $maxLon, $maxLat)
+{
+    global $conn;
+
+    $userPoints = [];
+
+    if ($email && $token)
+    {
+        $query = "SELECT uwp.* FROM user_waypoints AS uwp";
+        $query .= " INNER JOIN users AS usr ON uwp.user_id = usr.id";
+        $query .= " WHERE usr.email = '" . $email . "' AND usr.token = '" . $token . "'";
+        $query .= " AND (uwp.longitude >= " . $minLon . " AND uwp.longitude <= " . $maxLon . " AND uwp.latitude >= " . $minLat . " AND uwp.latitude <= " . $maxLat . ")";
+
+        $result = $conn->query($query);
+
+        if ($result === FALSE)
+            die("error reading user waypoint list: " . $conn->error . " query:" . $query);
+
+        while ($rs = $result->fetch_array(MYSQLI_ASSOC))
+        {
+            $userPoints[] = array(
+                id => $rs["id"],
+                type => $rs["type"],
+                name => $rs["name"],
+                latitude => $rs["latitude"],
+                longitude => $rs["longitude"],
+                remark => $rs["remark"]
+            );
+        }
+    }
+
+
+    return $userPoints;
+}
+
+/* copy-convert point / polygon rows:
+ * UPDATE reporting_points2 AS repA, (SELECT id, polygon FROM reporting_points2) AS repB
+ * SET repA.polygon2 = GeomFromText(CONCAT('POLYGON((', repB.polygon , '))'))
+ * WHERE repA.id = repB.id AND repA.type = 'SECTOR'
+ *
+ * UPDATE reporting_points2 AS repA, (SELECT id, latitude, longitude FROM reporting_points2) AS repB
+ * SET repA.polygon2 = GeomFromText(CONCAT('POLYGON((', repB.longitude, ' ', repB.latitude, '))'))
+ * WHERE repA.id = repB.id AND repA.type = 'POINT'
+ *
+ */

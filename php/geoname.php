@@ -34,23 +34,34 @@
 
 		// cols: type, id, name, wpname, frequency, callsign, airport_icao, latitude, longitude, elevation
 	
-		$query = "(SELECT 'airport' AS type, id, CONCAT(icao, ' (', name ,')') AS name, icao AS wpname, NULL AS frequency, NULL AS callsign, icao AS airport_icao, latitude, longitude, elevation FROM openaip_airports WHERE";
-		$query .= " icao LIKE '" . $search . "%'";
-		$query .= " OR name LIKE '" . $search . "%'";
-		$query .= " ORDER BY icao ASC";
+		$query = "(SELECT";
+		$query .= "   'airport' AS type,";
+		$query .= "   id,";
+		$query .= "   CASE WHEN (icao IS NOT NULL AND icao<>'') THEN CONCAT(name, ' (', icao ,')') ELSE name END AS name,";
+		$query .= "   icao AS wpname,";
+		$query .= "   NULL AS frequency,";
+		$query .= "   NULL AS callsign,";
+		$query .= "   icao AS airport_icao,";
+		$query .= "   latitude,";
+		$query .= "   longitude,";
+		$query .= "   elevation";
+		$query .= " FROM openaip_airports2 WHERE";
+		$query .= "   icao LIKE '" . $search . "%'";
+		$query .= "   OR name LIKE '" . $search . "%'";
+		$query .= " ORDER BY CASE WHEN country = 'CH' THEN 1 ELSE 2 END ASC, icao ASC";
 		$query .= " LIMIT 10)";
 
 		$query .= " UNION ";
 		
-		$query .= "(SELECT 'navaid' AS type, id, CONCAT(name, ' (', type, ')') AS name, CONCAT(kuerzel, ' ', type) AS wpname, frequency, kuerzel AS callsign, NULL AS airport_icao, latitude, longitude, elevation FROM openaip_navaids WHERE";
+		$query .= "(SELECT 'navaid' AS type, id, CONCAT(name, ' (', type, ')') AS name, CONCAT(kuerzel, ' ', type) AS wpname, frequency, kuerzel AS callsign, NULL AS airport_icao, latitude, longitude, elevation FROM openaip_navaids2 WHERE";
 		$query .= " kuerzel LIKE '" . $search . "%'";
 		$query .= " OR name LIKE '" . $search . "%'";
-		$query .= " ORDER BY kuerzel ASC";
+		$query .= " ORDER BY CASE WHEN country = 'CH' THEN 1 ELSE 2 END ASC, kuerzel ASC";
 		$query .= " LIMIT 10)";
 
 		$query .= " UNION ";
 		
-		$query .= "(SELECT 'report' AS type, id, CONCAT(name , ' (', airport_icao, ')') AS name, name AS wpname, NULL AS frequency, NULL AS callsign, airport_icao, latitude, longitude, NULL AS elevation FROM reporting_points WHERE";
+		$query .= "(SELECT 'report' AS type, id, CONCAT(name , ' (', airport_icao, ')') AS name, name AS wpname, NULL AS frequency, NULL AS callsign, airport_icao, latitude, longitude, NULL AS elevation FROM reporting_points2 WHERE";
 		$query .= " airport_icao LIKE '" . $search . "%'";
 		$query .= " ORDER BY airport_icao ASC, name ASC";
 		$query .= " LIMIT 10)";
@@ -69,10 +80,10 @@
 
 		$query .= " UNION ";
 		
-		$query .= "(SELECT 'geoname' AS type, geonameid AS id, name, name AS wpname, NULL AS frequency, NULL AS callsign, NULL AS airport_icao, latitude, longitude, elevation FROM geonames WHERE";
+		$query .= "(SELECT 'geoname' AS type, geonameid AS id, CONCAT(name, ' (', country_code, ')') AS name, name AS wpname, NULL AS frequency, NULL AS callsign, NULL AS airport_icao, latitude, longitude, elevation FROM geonames WHERE";
 		$query .= " MATCH (name, alternatenames) AGAINST ('" . $search . "*' IN BOOLEAN MODE)";
 		$query .= " AND " . getGeonamesFilterQuery();
-		$query .= " ORDER BY population DESC";
+		$query .= " ORDER BY CASE WHEN country_code = 'CH' THEN 1 ELSE 2 END ASC, population DESC";
 		$query .= " LIMIT 10)";
 		
 		// execute query
@@ -94,15 +105,29 @@
 
 		// cols: sortorder, type, id, name, frequency, callsign, latitude, longitude, elevation
 
-		$query .= "SELECT 1 AS sortOrder, 'airport' AS type, id, CONCAT(icao, ' (', name ,')') AS name, icao as wpname, NULL AS frequency, NULL AS callsign, icao AS airport_icao, latitude, longitude, elevation FROM openaip_airports WHERE";
-		$query .= " latitude > " . ($lat - $rad);
-		$query .= " AND latitude < " . ($lat + $rad);
-		$query .= " AND longitude > " . ($lon - $rad);
-		$query .= " AND longitude < " . ($lon + $rad);
+		//$query .= "SELECT 1 AS sortOrder, 'airport' AS type, id, CONCAT(name, ' (', icao ,')') AS name, icao as wpname, NULL AS frequency, NULL AS callsign, icao AS airport_icao, latitude, longitude, elevation FROM openaip_airports2 WHERE";
+
+        $query =  "SELECT";
+        $query .= "   1 AS sortOrder,";
+        $query .= "   'airport' AS type,";
+        $query .= "   id,";
+        $query .= "   CASE WHEN (icao IS NOT NULL AND icao<>'') THEN CONCAT(name, ' (', icao ,')') ELSE name END AS name,";
+        $query .= "   icao AS wpname,";
+        $query .= "   NULL AS frequency,";
+        $query .= "   NULL AS callsign,";
+        $query .= "   icao AS airport_icao,";
+        $query .= "   latitude,";
+        $query .= "   longitude,";
+        $query .= "   elevation";
+        $query .= " FROM openaip_airports2 WHERE";
+		$query .= "   latitude > " . ($lat - $rad);
+		$query .= "   AND latitude < " . ($lat + $rad);
+		$query .= "   AND longitude > " . ($lon - $rad);
+		$query .= "   AND longitude < " . ($lon + $rad);
 
 		$query .= " UNION ";
 		
-		$query .= "SELECT 2 AS sortOrder, 'navaid' AS type, id, CONCAT(name, ' (', type, ')') AS name, CONCAT(kuerzel, ' ', type) AS wpname, frequency, kuerzel AS callsign, NULL AS airport_icao, latitude, longitude, elevation FROM openaip_navaids WHERE";
+		$query .= "SELECT 2 AS sortOrder, 'navaid' AS type, id, CONCAT(name, ' (', type, ')') AS name, CONCAT(kuerzel, ' ', type) AS wpname, frequency, kuerzel AS callsign, NULL AS airport_icao, latitude, longitude, elevation FROM openaip_navaids2 WHERE";
 		$query .= " latitude > " . ($lat - $rad);
 		$query .= " AND latitude < " . ($lat + $rad);
 		$query .= " AND longitude > " . ($lon - $rad);
@@ -110,7 +135,7 @@
 		
 		$query .= " UNION ";
 		
-		$query .= "SELECT 3 AS sortOrder, 'report' AS type, id, CONCAT(name , ' (', airport_icao, ')') AS name, name AS wpname, NULL AS frequency, NULL AS callsign, airport_icao AS airport_icao, latitude, longitude, NULL AS elevation FROM reporting_points WHERE";
+		$query .= "SELECT 3 AS sortOrder, 'report' AS type, id, CONCAT(name , ' (', airport_icao, ')') AS name, name AS wpname, NULL AS frequency, NULL AS callsign, airport_icao AS airport_icao, latitude, longitude, NULL AS elevation FROM reporting_points2 WHERE";
 		$query .= " latitude > " . ($lat - $rad);
 		$query .= " AND latitude < " . ($lat + $rad);
 		$query .= " AND longitude > " . ($lon - $rad);

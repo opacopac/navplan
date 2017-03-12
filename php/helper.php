@@ -82,9 +82,19 @@ function checkEscapeToken($conn, $token)
 }
 
 
-function reduceDegAccuracy($value)
+function reduceDegAccuracy($value, $type)
 {
-    return round($value, 6);
+    switch ($type)
+    {
+        case "AIRSPACE":
+            $digits = 4;
+            break;
+        default:
+            $digits = 6;
+            break;
+    }
+
+    return round($value, $digits);
 }
 
 
@@ -99,4 +109,14 @@ function createRandomString($len)
 	    $result .= "" . $charArray[$randItem];
     }
     return $result;
+}
+
+
+function printLine($text)
+{
+    if ($text)
+        print $text;
+
+    print "<br>\n";
+    ob_flush();
 }

@@ -255,6 +255,33 @@ function roundToDigits(num, digits)
 }
 
 
+//region EXTENTS
+
+function containsExtent(outerExtent, innerExtent)
+{
+    if (!outerExtent || !innerExtent)
+        return false;
+
+    return (outerExtent[0] <= innerExtent[0] && outerExtent[1] <= innerExtent[1] && outerExtent[2] >= innerExtent[2] && outerExtent[3] >= innerExtent[3]);
+}
+
+
+function calcOversizeExtent(extent, factor)
+{
+    var halfDiffLon = (extent[2] - extent[0]) / 2;
+    var halfDiffLat = (extent[3] - extent[1]) / 2;
+    var centerLon = extent[0] + halfDiffLon;
+    var centerLat = extent[1] + halfDiffLat;
+
+    return [centerLon - halfDiffLon * factor,
+        centerLat - halfDiffLat * factor,
+        centerLon + halfDiffLon * factor,
+        centerLat + halfDiffLat * factor];
+}
+
+//endregion
+
+
 function m2ft(height_m)
 {
 	return height_m * 3.2808;
@@ -276,6 +303,27 @@ function deg2rad(deg)
 function rad2deg(rad)
 {
 	return rad / (2 * Math.PI) * 360;
+}
+
+
+function airspaceListToggle()
+{
+    var asContainerFull = document.getElementById("airspace-popup");
+    var asContainerSimple = document.getElementById("airspace-popup-simplified");
+
+    if (!asContainerFull || !asContainerSimple)
+        return;
+
+    if (asContainerFull.style.display == 'block')
+    {
+        asContainerFull.style.display = 'none';
+        asContainerSimple.style.display = 'block';
+    }
+    else
+    {
+        asContainerFull.style.display = 'block';
+        asContainerSimple.style.display = 'none';
+    }
 }
 
 

@@ -9,85 +9,111 @@ trafficService.$inject = ['$http'];
 
 function weatherService($http)
 {
-	var weatherBaseUrl = 'php/weather.php?v=' + navplanVersion;
-	var weatherinfolist = [];
-	var lastUpdated = 0;
-	var MAXAGE = 5 * 60 * 1000; // 5 min
+    const OVERSIZE_FACTOR = 1.3;
+    const MAXAGE = 5 * 60 * 1000; // 5 min
+    var weatherBaseUrl2 = 'https://www.aviationweather.gov/gis/scripts/MetarJSON.php?jsonp=JSON_CALLBACK&taf=true&density=all&bbox='; //6.0,44.0,10.0,48.0';
+	var weatherInfoCache = { extent: undefined, timestamp: undefined, weatherInfos: undefined };
 
-	updateWeatherInfos();
 
 	// return api reference
 	return {
-		getAirportWeatherInfo: getAirportWeatherInfo,
-		getAllWeatherInfos: getAllWeatherInfo,
-		getWorstSkyCondition: getWorstSkyCondition
+        getAreaWeatherInfos: getAreaWeatherInfos,
+        getTafAgeString: getTafAgeString,
+        getAgeString: getAgeString
 	};
-	
-	
-	function getAirportWeatherInfo(airport_icao)
-	{
-		return weatherinfolist[airport_icao];
-	}
 
 
-	function getAllWeatherInfo(callback)
-	{
-		if (Date.now() > lastUpdated + MAXAGE)
-			updateWeatherInfos(callback);
-		else if (callback)
-			callback(weatherinfolist);
-	}
+    function getAreaWeatherInfos(extent, successCallback, errorCallback)
+    {
+        if (containsExtent(weatherInfoCache.extent, extent) && !isCacheExpired())
+            successCallback(weatherInfoCache.weatherInfos); // return from cache
+        else
+            loadAreaWeatherInfos(calcOversizeExtent(extent, OVERSIZE_FACTOR), successCallback, errorCallback); // load from server
+
+    }
 
 
-	function updateWeatherInfos(onUpdatedCallback)
-	{
-		// get metars
-		$http.get(weatherBaseUrl)
-			.then(
-				function(response)
-				{
-					if (!response.data) {
-						console.error("ERROR reading METAR/TAF");
-					}
-					else {
-						weatherinfolist = response.data.weatherinfolist;
-						lastUpdated = Date.now();
-					}
-				},
-				function(response)
-				{
-					console.error("ERROR reading METAR/TAF", response.status, response.data);
-				}
-			)
-			.then(
-				function () {
-					if (onUpdatedCallback)
-						onUpdatedCallback(weatherinfolist);
-				}
-			)
-	}
+    function loadAreaWeatherInfos(extent, successCallback, errorCallback)
+    {
+        var url = weatherBaseUrl2 + extent[0] + "," + extent[1] + "," + extent[2] + "," + extent[3];
+
+        $http.jsonp(url, {jsonpCallbackParam: 'jsonp'})
+            .then(
+                function (response) // success
+                {
+                    if (response && response.data && response.data.features)
+                    {
+                        cacheWeatherInfos(extent, response.data.features);
+
+                        if (successCallback)
+                            successCallback(response.data.features);
+                    }
+                    else
+                    {
+                        console.error("ERROR reading weather info ", response.status, response.data);
+
+                        if (errorCallback)
+                            errorCallback();
+                    }
+                },
+                function (response) // error
+                {
+                    console.error("ERROR reading weather info ", response.status, response.data);
+
+                    if (errorCallback)
+                        errorCallback();
+                }
+            );
+    }
 
 
-	function getWorstSkyCondition(metar)
-	{
-		var condRank = { "CAVOK": 1, "SKC" : 1, "CLR" : 1, "NSC" : 1, "FEW" : 2, "SCT" : 3, "BKN" : 4, "OVC" : 5 };
-		var worstRank = 0;
-		var worstSkyCond;
+    function cacheWeatherInfos(extent, weatherInfoList)
+    {
+        if (!weatherInfoList || !extent)
+            return;
 
-		if (!metar || !metar.sky_condition)
-			return undefined;
+        weatherInfoCache = {extent: extent, timestamp: Date.now(), weatherInfos: weatherInfoList};
+    }
 
-		for (var i = 0; i < metar.sky_condition.length; i++)
-		{
-			var cond = metar.sky_condition[i].sky_cover;
 
-			if (worstRank < condRank[cond])
-			{
-				worstRank = condRank[cond];
-				worstSkyCond = cond;
-			}
-		}
+	function isCacheExpired()
+    {
+        if (weatherInfoCache.timestamp && weatherInfoCache.timestamp + MAXAGE > Date.now())
+            return false;
 
-		return worstSkyCond;
-	}
+        return true;
+    }
+
+
+	function getTafAgeString(weatherInfo)
+    {
+        if (!weatherInfo || !weatherInfo.properties || !weatherInfo.properties.rawTaf)
+            return;
+
+        var matches = weatherInfo.properties.rawTaf.match(/^TAF( [A-Z]{3})? [A-Z]{4} (\d\d)(\d\d)(\d\d)Z.*$/);
+
+        if (!matches || matches.length != 5)
+            return;
+
+        var d = new Date();
+        var datestring = d.getFullYear() + "-" + zeroPad(d.getMonth() + 1) + "-" + matches[2] + "T" + matches[3] + ":" + matches[4] + ":00Z";
+
+        return getAgeString(datestring);
+    }
+
+
+    function getAgeString(datestring)
+    {
+        if (!datestring)
+            return;
+
+        var ms = Date.now() - Date.parse(datestring);
+        var h = Math.floor(ms / 1000 / 3600);
+        var m = Math.floor(ms / 1000 / 60 - h * 60);
+
+        if (h > 0)
+            return h + "h " + m + "min";
+        else
+            return m + "min";
+    }
 }

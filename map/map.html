@@ -2,7 +2,7 @@
 <div class="container mapsearch">
 	<div class="input-group">
 		<input id="searchWpInput" type="text" class="form-control" placeholder="search waypoint / coordinates or click on map" ng-model="globalData.navplan.selectedWaypoint.checkpoint"
-			   uib-typeahead="geoname.name for geoname in searchGeonamesByValue($viewValue)" typeahead-min-length="2"
+			   uib-typeahead="geoname.name for geoname in onSearchGeonamesByName($viewValue)" typeahead-min-length="2"
 			   typeahead-on-select="onGeonameSelect($item)"
 			   ng-blur="updateTrack()" />
 		<span class="input-group-btn">
@@ -54,7 +54,7 @@
 	<div id="feature-popup-content">
 		<!-- airport -->
 		<div ng-show="globalData.selectedWp.airport">
-			<h4>{{ globalData.selectedWp.airport.name }} ({{ globalData.selectedWp.airport.icao }})</h4>
+			<h4>{{ globalData.selectedWp.airport.name }}<span ng-show="globalData.selectedWp.airport.icao"> ({{ globalData.selectedWp.airport.icao }})</span></h4>
 			<p>{{ getAdTypeString(globalData.selectedWp.airport.type) }}</p>
 			<p>{{ getPositionString(globalData.selectedWp.airport.latitude, globalData.selectedWp.airport.longitude) }}</p>
 			<p>Elevation: {{ getElevationString(globalData.selectedWp.airport.elevation) }}</p>
@@ -208,16 +208,16 @@
 <div id="weather-popup" class="ol-popup ol-popup-weather" style="visibility: hidden">
 	<a href="#" id="weather-popup-closer" class="ol-popup-closer" ng-click="$event.preventDefault(); onCloseOverlayClicked()"></a>
 	<div id="weather-popup-content">
-		<h4>METAR / TAF {{ selectedWeather.airport_icao }}</h4>
-		<p ng-show="selectedWeather.metar" >
-			METAR {{ selectedWeather.metar.raw_text }}
+		<h4>METAR / TAF {{ selectedWeather.properties.id }}</h4>
+		<p ng-show="selectedWeather.properties.rawOb" >
+			METAR {{ selectedWeather.properties.rawOb }}
 			<br />
-			<i>({{ getAgeString(selectedWeather.metar.observation_time); }} old)</i>
+			<i>({{ getAgeString(selectedWeather.properties.obsTime); }} old)</i>
 		</p>
-		<p ng-show="selectedWeather.taf" >
-			{{ selectedWeather.taf.raw_text }}
+		<p ng-show="selectedWeather.properties.rawTaf" >
+			{{ selectedWeather.properties.rawTaf }}
 			<br />
-			<i>({{ getAgeString(selectedWeather.taf.issue_time); }} old)</i>
+			<i>({{ getTafAgeString(selectedWeather); }} old)</i>
 		</p>
 	</div>
 </div>

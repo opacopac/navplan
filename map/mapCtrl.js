@@ -3,11 +3,13 @@
  */
 
 navplanApp
-	.controller('mapCtrl', [ '$scope', '$sce', '$route', 'mapService', 'locationService', 'trafficService', 'geonameService', 'userService', 'globalData', mapCtrl ]);
+	.controller('mapCtrl', [ '$scope', '$sce', '$route', 'mapService', 'locationService', 'trafficService', 'geonameService', 'userService', 'weatherService', 'globalData', mapCtrl ]);
 
 
-function mapCtrl($scope, $sce, $route, mapService, locationService, trafficService, geonameService, userService, globalData)
+function mapCtrl($scope, $sce, $route, mapService, locationService, trafficService, geonameService, userService, weatherService, globalData)
 {
+    //region INIT VARS
+
 	$scope.$route = $route;
 	$scope.globalData = globalData;
 	$scope.trafficTimerIntervallMs = 5000;
@@ -21,14 +23,18 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 	var trafficContainer = document.getElementById('traffic-popup');
 	var weatherContainer = document.getElementById('weather-popup');
 
+	//endregion
 
-	$scope.searchGeonamesByValue = function(search)
+
+    //region SEARCH
+
+    $scope.onSearchGeonamesByName = function(search)
 	{
 		return geonameService.searchGeonamesByValue(search);
 	};
 
-	
-	// select geopoint from search 
+
+	// select geopoint from search
 	$scope.onGeonameSelect = function ($item)
 	{
 		$scope.globalData.navplan.selectedWaypoint = {
@@ -40,18 +46,34 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 			longitude: $item.longitude
 		};
 
-		mapService.setMapPosition($item.latitude, $item.longitude, 12, true);
+		mapService.setMapPosition($item.latitude, $item.longitude, 11, true);
 		mapService.drawGeopointSelection([ $item ], undefined);
 	};
-	
-	
+
+
 	$scope.onGeonameSearch = function()
 	{
-		// TODO
+	    // re-trigger typeahead by adding a space
+        $("#searchWpInput").controller('ngModel').$setViewValue($scope.globalData.navplan.selectedWaypoint.checkpoint.trim() + ' ');
 	};
 
-	
-	$scope.onMapClicked = function(event, clickCoordinates, maxRadius)
+
+	// ctrl+f => focus search box
+    $scope.onKeyDown = function(e)
+    {
+        if (e.keyCode === 114 || (e.ctrlKey && e.keyCode === 70)) // check for ctrl+f
+        {
+            e.preventDefault();
+            document.getElementById("searchWpInput").focus();
+        }
+    };
+
+	//endregion
+
+
+    //region MAP
+
+    $scope.onMapClicked = function(event, clickCoordinates, maxRadius)
 	{
 		$scope.globalData.clickHistory.push(clickCoordinates); // used internally only
 
@@ -71,223 +93,38 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 	};
 
 
-	$scope.onFeatureSelected = function(event, feature)
-	{
-		if (feature.geopoint || feature.airport || feature.navaid || feature.reportingpoint || feature.userWaypoint)
-		{
-			$scope.globalData.selectedWp = $scope.getWpFromFeature(feature, mapService.getLatLonFromPixel(event.pixel[0], event.pixel[1]));
-			$scope.globalData.selectedWp.isNew = true;
+    $scope.onMapMoveEnd = function(event)
+    {
+        var view = event.map.getView();
 
-			$scope.$apply();
-			$scope.openFeatureOverlay($scope.globalData.selectedWp.latitude, $scope.globalData.selectedWp.longitude);
-		}
-		else if (feature.waypoint)
-		{
-			$scope.globalData.selectedWp = feature.waypoint;
-			$scope.globalData.selectedWp.airport = feature.waypoint.airport; // if set, undefined otherwise
-			$scope.$apply();
-
-			$scope.openFeatureOverlay(feature.waypoint.latitude, feature.waypoint.longitude);
-		}
-		else if (feature.acInfo)
-		{
-        	var csText = "Unknown";
-
-        	if (feature.acInfo.callsign)
-        	{
-                csText = feature.acInfo.callsign;
-
-                if (feature.acInfo.opCallsign)
-                    csText += " (" + feature.acInfo.opCallsign + ")";
-            }
-            else if (feature.acInfo.opCallsign)
-			{
-				csText = feature.acInfo.opCallsign;
-			}
+        $scope.globalData.currentMapPos = {
+            center: view.getCenter(),
+            zoom: view.getZoom()
+        };
+    };
 
 
-			$scope.selectedTraffic = {
-				position: mapService.getLatLonCoordinates(feature.getGeometry().getCoordinates()),
-				registration: feature.acInfo.registration ? feature.acInfo.registration : "Unknown",
-                callsign: csText,
-				aircraftModelType: feature.acInfo.aircraftModelType ? feature.acInfo.aircraftModelType : "N/A",
-				acaddress: feature.acInfo.acaddress,
-				addresstype: feature.acInfo.addresstype,
-				receiver: feature.acInfo.receiver
-			};
+    $scope.onZoomInClicked = function()
+    {
+        var zoom = mapService.getMapPosition().zoom;
 
-			mapService.addOverlay(feature.getGeometry().getCoordinates(), trafficContainer, true);
-			$scope.$apply();
-		}
-		else if (feature.webcam)
-		{
-			window.open(feature.webcam.url);
-		}
-		else if (feature.weatherInfo)
-		{
-			$scope.selectedWeather = feature.weatherInfo;
-			mapService.addOverlay(feature.getGeometry().getCoordinates(), weatherContainer, true);
-			$scope.$apply();
-		}
-	};
+        if (zoom < mapService.MAX_ZOOMLEVEL)
+            mapService.setMapPosition(null, null, zoom + 1);
+    };
 
 
-	$scope.getWpFromFeature = function(feature, latLon)
-	{
-		if (feature.geopoint && !feature.airport && !feature.navaid && !feature.reportingpoint && !feature.userWaypoint) {
-			return {
-				type: feature.geopoint.type,
-				geopoint: feature.geopoint,
-				id: feature.geopoint.id,
-				freq: '',
-				callsign: '',
-				checkpoint: feature.geopoint.wpname,
-				airport_icao: '',
-				latitude: feature.geopoint.latitude,
-				longitude: feature.geopoint.longitude,
-				mt: '',
-				dist: '',
-				alt: '',
-				remark: ''
-			};
-		}
-		else if (feature.airport) {
-			return {
-				type: 'airport',
-				airport: feature.airport,
-				freq: getFrequency(feature.airport),
-				callsign: getCallsign(feature.airport),
-				checkpoint: feature.airport.icao,
-				airport_icao: feature.airport.icao,
-				latitude: feature.airport.latitude,
-				longitude: feature.airport.longitude,
-				mt: '',
-				dist: '',
-				alt: '',
-				remark: ''
-			};
-		}
-		else if (feature.navaid) {
-			return {
-				type: 'navaid',
-				navaid: feature.navaid,
-				freq: feature.navaid.frequency,
-				callsign: feature.navaid.kuerzel,
-				checkpoint: feature.navaid.kuerzel + ' ' + feature.navaid.type,
-				latitude: feature.navaid.latitude,
-				longitude: feature.navaid.longitude,
-				mt: '',
-				dist: '',
-				alt: '',
-				remark: ''
-			};
-		}
-		else if (feature.reportingpoint) {
-			var lat, lon;
-			if (feature.reportingpoint.type == 'SECTOR') {
-				lat = latLon.latitude;
-				lon = latLon.longitude;
-			}
-			else {
-				lat = feature.reportingpoint.latitude;
-				lon = feature.reportingpoint.longitude;
-			}
+    $scope.onZoomOutClicked = function()
+    {
+        var zoom = mapService.getMapPosition().zoom;
 
-			var alt, ismaxalt, isminalt;
-			if (feature.reportingpoint.max_ft) {
-				alt = feature.reportingpoint.max_ft;
-				ismaxalt = true;
-			}
-			else if (feature.reportingpoint.min_ft) {
-				alt = feature.reportingpoint.min_ft;
-				isminalt = true;
-			}
+        if (zoom > 1)
+            mapService.setMapPosition(null, null, zoom - 1);
+    };
 
-			return {
-				type: 'report',
-				reportingpoint: feature.reportingpoint,
-				freq: '',
-				callsign: '',
-				checkpoint: feature.reportingpoint.name,
-				latitude: lat,
-				longitude: lon,
-				mt: '',
-				dist: '',
-				alt: alt ? alt : '',
-				ismaxalt: ismaxalt,
-				isminalt: isminalt,
-				remark: feature.reportingpoint.remark
-			};
-		}
-		else if (feature.userWaypoint) {
-			return {
-				type: 'user',
-				userWaypoint: feature.userWaypoint,
-				id: feature.userWaypoint.id,
-				freq: '',
-				callsign: '',
-				checkpoint: feature.userWaypoint.name,
-				latitude: feature.userWaypoint.latitude,
-				longitude: feature.userWaypoint.longitude,
-				mt: '',
-				dist: '',
-				alt: '',
-				remark: feature.userWaypoint.remark
-			};
-		}
-		else
-			return undefined;
+    //endregion
 
 
-		function getFrequency(airport)
-		{
-			if (!airport || !airport.radios || airport.radios.length == 0)
-				return '';
-			else
-				return airport.radios[0].frequency;
-		}
-
-
-		function getCallsign(airport)
-		{
-			if (!airport || !airport.radios || airport.radios.length == 0)
-				return '';
-
-			var radio = airport.radios[0];
-
-			switch (radio.type)
-			{
-				case "TOWER" : return "TWR";
-				case "APPROACH" : return "APP";
-				case "ARRIVAL" : return "ARR";
-				case "DEPARTURE" : return "DEP";
-				case "GLIDING" : return "GLD";
-				case "GROUND" : return "GND";
-				case "CTAF" : return "AD";
-				case "AFIS" : return "AD"; // TODO: TEMP
-				case "OTHER" :
-				{
-					if (radio.description.toUpperCase().indexOf("AD") == 0) // starts with AD...
-						return "AD";
-					else
-						return radio.typespec;
-				}
-				default : return radio.type;
-			}
-		}
-	};
-
-
-	$scope.onMapMoveEnd = function(event)
-	{
-		var view = event.map.getView();
-		
-		$scope.globalData.currentMapPos = {
-			center: view.getCenter(),
-			zoom: view.getZoom()
-		};
-	};
-
+    //region WAYPOINTS
 
 	$scope.onTrackModifyEnd = function(feature, latLon, idx, isInsert)
 	{
@@ -313,7 +150,7 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 
 		mapService.closeOverlay();
 	};
-	
+
 
 	$scope.onSetAsAlternateClicked = function()
 	{
@@ -323,8 +160,8 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 
 		mapService.closeOverlay();
 	};
-	
-	
+
+
 	$scope.onRemoveSelectedWaypointClicked = function()
 	{
 		if ($scope.globalData.selectedWp == $scope.globalData.navplan.alternate)
@@ -375,9 +212,74 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 		$scope.updateWaypoints();
 		$scope.discardCache();
 	};
-	
-	
-	$scope.onDisplayChartClicked = function(chartId)
+
+	//endregion
+
+
+    //region FEATURES N OVERLAYS
+
+    $scope.onFeatureSelected = function(event, feature)
+    {
+        if (feature.geopoint || feature.airport || feature.navaid || feature.reportingpoint || feature.userWaypoint)
+        {
+            $scope.globalData.selectedWp = $scope.getWpFromFeature(feature, mapService.getLatLonFromPixel(event.pixel[0], event.pixel[1]));
+            $scope.globalData.selectedWp.isNew = true;
+
+            $scope.$apply();
+            $scope.openFeatureOverlay($scope.globalData.selectedWp.latitude, $scope.globalData.selectedWp.longitude);
+        }
+        else if (feature.waypoint)
+        {
+            $scope.globalData.selectedWp = feature.waypoint;
+            $scope.globalData.selectedWp.airport = feature.waypoint.airport; // if set, undefined otherwise
+            $scope.$apply();
+
+            $scope.openFeatureOverlay(feature.waypoint.latitude, feature.waypoint.longitude);
+        }
+        else if (feature.acInfo)
+        {
+            var csText = "Unknown";
+
+            if (feature.acInfo.callsign)
+            {
+                csText = feature.acInfo.callsign;
+
+                if (feature.acInfo.opCallsign)
+                    csText += " (" + feature.acInfo.opCallsign + ")";
+            }
+            else if (feature.acInfo.opCallsign)
+            {
+                csText = feature.acInfo.opCallsign;
+            }
+
+
+            $scope.selectedTraffic = {
+                position: mapService.getLatLonCoordinates(feature.getGeometry().getCoordinates()),
+                registration: feature.acInfo.registration ? feature.acInfo.registration : "Unknown",
+                callsign: csText,
+                aircraftModelType: feature.acInfo.aircraftModelType ? feature.acInfo.aircraftModelType : "N/A",
+                acaddress: feature.acInfo.acaddress,
+                addresstype: feature.acInfo.addresstype,
+                receiver: feature.acInfo.receiver
+            };
+
+            mapService.addOverlay(feature.getGeometry().getCoordinates(), trafficContainer, true);
+            $scope.$apply();
+        }
+        else if (feature.webcam)
+        {
+            window.open(feature.webcam.url);
+        }
+        else if (feature.weatherInfo)
+        {
+            $scope.selectedWeather = feature.weatherInfo;
+            mapService.addOverlay(feature.getGeometry().getCoordinates(), weatherContainer, true);
+            $scope.$apply();
+        }
+    };
+
+
+    $scope.onDisplayChartClicked = function(chartId)
 	{
 		mapService.displayChart(chartId);
 		mapService.closeOverlay();
@@ -410,24 +312,17 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 	};
 
 
-	$scope.onZoomInClicked = function()
-	{
-		var zoom = mapService.getMapPosition().zoom;
-
-		if (zoom < mapService.MAX_ZOOMLEVEL)
-			mapService.setMapPosition(null, null, zoom + 1);
-	};
+    $scope.onToggleElementClicked = function(element)
+    {
+        $(element).toggle();
+    };
 
 
-	$scope.onZoomOutClicked = function()
-	{
-		var zoom = mapService.getMapPosition().zoom;
+    //endregion
 
-		if (zoom > 1)
-			mapService.setMapPosition(null, null, zoom - 1);
-	};
 
-	
+    //region LOCATION
+
 	$scope.onLocationClicked = function()
 	{
 		$scope.globalData.showLocation = !$scope.globalData.showLocation;
@@ -458,10 +353,50 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 	{
 		$scope.stopClockTimer();
 		locationService.stopWatching();
-		mapService.updateLocation(undefined);
+		mapService.drawOwnPlane(undefined);
 		$scope.globalData.locationStatus = "off";
 	};
 
+
+    $scope.onLocationChanged = function(currentPosition)
+    {
+        var lastPositions = locationService.getLastPositions();
+
+        mapService.drawOwnPlane(lastPositions);
+
+        if ($scope.globalData.showLocation)
+        {
+            var lastIdx = lastPositions.length - 1;
+
+            if (lastIdx >= 1)
+            {
+                var latDiff = lastPositions[lastIdx].latitude - lastPositions[lastIdx - 1].latitude;
+                var lonDiff = lastPositions[lastIdx].longitude - lastPositions[lastIdx - 1].longitude;
+                var pos = mapService.getMapPosition();
+
+                mapService.setMapPosition(pos.center[1] + latDiff, pos.center[0] + lonDiff, pos.zoom);
+            }
+            else
+                mapService.setMapPosition(currentPosition.coords.latitude, currentPosition.coords.longitude);
+        }
+
+        $scope.globalData.locationStatus = "current";
+        $scope.$apply();
+    };
+
+
+    $scope.onLocationError = function(error)
+    {
+        // TODO
+        $scope.showErrorMessage(error.message);
+        $scope.globalData.locationStatus = "error";
+        $scope.$apply();
+    };
+
+	//endregion
+
+
+    //region STOPWATCH
 
 	$scope.startClockTimer = function()
 	{
@@ -489,27 +424,12 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 		$scope.globalData.timer.elapsedTimeString = "+00:00";
 	};
 
-
-	$scope.storeTrackLocal = function()
-	{
-		var lastTrack = {
-			timestamp: Math.floor(Date.now() / 1000),
-			name: "",
-			positions: shrinkPositions(locationService.getLastPositions())
-		};
-
-		if ($scope.isLoggedIn()) {
-			if ($scope.globalData.navplan && $scope.globalData.navplan.title)
-				lastTrack.name = $scope.globalData.navplan.title;
-		}
-
-		localStorage.setItem("lasttrack", obj2json(lastTrack));
-
-		$scope.showSuccessMessage("Track sucessfully stored in 'tracks' tab!");
-	};
+	//endregion
 
 
-	$scope.onTrafficClicked = function()
+    //region TRAFFIC
+
+    $scope.onTrafficClicked = function()
 	{
 		$scope.globalData.showTraffic = !$scope.globalData.showTraffic;
 
@@ -529,203 +449,9 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 			window.clearInterval($scope.globalData.trafficTimer);
 			$scope.globalData.trafficTimer = undefined;
 			$scope.stopFollowTraffic();
-			mapService.updateTraffic(undefined);
+			mapService.drawTraffic(undefined);
 			$scope.globalData.trafficStatus = "off";
 		}
-	};
-	
-	
-	$scope.onOfflineCacheClicked = function()
-	{
-		switch ($scope.globalData.cacheStatus)
-		{
-			case "off" :
-				$scope.globalData.cacheIsActive = true;
-				break;
-			default :
-				$scope.globalData.cacheIsActive = false;
-		}
-
-		
-		if ($scope.globalData.cacheIsActive)
-		{
-			setWaypointCacheCookie();
-			setChartCacheCookie();
-			updateAppCache();
-		}
-		else
-		{
-			$scope.discardCache();
-		}
-		
-		
-		function setWaypointCacheCookie()
-		{
-			var cacheWps = [];
-			var wps = $scope.globalData.navplan.waypoints;
-			var variation = globalData.settings.variation ? globalData.settings.variation : 0;
-			
-			if (wps && wps.length > 0)
-			{
-				for (var i = 0; i < wps.length; i++)
-					cacheWps.push(getCacheWaypoint(wps[i]));
-				
-				if ($scope.globalData.navplan.alternate)
-					cacheWps.push(getCacheWaypoint($scope.globalData.navplan.alternate));
-
-				// start high res
-				cacheWps.push({
-					lat: wps[0].latitude,
-					lon: wps[0].longitude,
-					tt: 0,
-					dist: 0,
-					rad: 5,
-					maxzoom: 13
-				});
-				
-				// destination high res
-				cacheWps.push({
-					lat: wps[wps.length - 1].latitude,
-					lon: wps[wps.length - 1].longitude,
-					tt: 0,
-					dist: 0,
-					rad: 5,
-					maxzoom: 13
-				});
-			}
-			
-			setCookie("cachewaypoints", obj2json(cacheWps), 0);
-			
-			
-			function getCacheWaypoint(wp)
-			{
-				var tt = (wp.mt) ? (wp.mt + variation + 180) % 360 : 0; // reverse direction, pointing back from waypoint
-				var dist = (wp.dist) ? wp.dist : 0;
-			
-				return {
-					lat: wp.latitude,
-					lon: wp.longitude,
-					tt: tt,
-					dist: dist,
-					rad: 3,
-					maxzoom: 12
-				};
-			}
-		}
-
-
-		function setChartCacheCookie()
-		{
-			var chartUrls = [];
-			var wps = $scope.globalData.navplan.waypoints;
-
-			// waypoints
-			for (var i = 0; i < wps.length; i++)
-			{
-				if (wps[i].airport && wps[i].airport.charts && wps[i].airport.charts.length > 0)
-				{
-					for (var j = 0; j < wps[i].airport.charts.length; j++)
-					{
-						pushUnique(chartUrls, getRestUrl(wps[i].airport.charts[j].id));
-						pushUnique(chartUrls, getChartUrl(wps[i].airport.charts[j].filename));
-					}
-				}
-			}
-
-			// alternate
-			var wpAlt = $scope.globalData.navplan.alternate;
-
-			if (wpAlt)
-			{
-				if (wpAlt.airport && wpAlt.airport.charts && wpAlt.airport.charts.length > 0)
-				{
-					for (var k = 0; k < wpAlt.airport.charts.length; k++)
-					{
-						pushUnique(chartUrls, getRestUrl(wpAlt.airport.charts[k].id));
-						pushUnique(chartUrls, getChartUrl(wpAlt.airport.charts[k].filename));
-					}
-				}
-			}
-
-			setCookie("cachecharts", obj2json(chartUrls), 0);
-
-
-			function getRestUrl(chartId)
-			{
-				return 'php/ad_charts.php?v=' + navplanVersion + '&id=' + chartId;
-			}
-
-
-			function getChartUrl(filename)
-			{
-				return 'charts/' + filename;
-			}
-		}
-
-
-		function updateAppCache()
-		{
-			if (!$scope.appCache || $scope.appCache.status == $scope.appCache.UNCACHED)
-			{
-				$scope.showErrorMessage("Application Cache not available!");
-				$scope.globalData.cacheStatus = "error";
-				return;
-			}
-
-			if ($scope.appCache.status == $scope.appCache.DOWNLOADING)
-			{
-				$scope.appCache.abort();
-			}
-			else
-			{
-				$scope.globalData.cacheStatus = "updating";
-				$scope.globalData.cacheProgress = {loaded: 0, total: 100, percent: 0};
-
-				$scope.appCache.update();
-			}
-		}		
-	};
-
-
-	$scope.onKmlClicked = function()
-	{
-		$scope.exportKml();
-	};
-
-
-	$scope.onLocationChanged = function(currentPosition)
-	{
-		var lastPositions = locationService.getLastPositions();
-
-		mapService.updateLocation(lastPositions);
-
-		if ($scope.globalData.showLocation)
-		{
-			var lastIdx = lastPositions.length - 1;
-
-			if (lastIdx >= 1)
-			{
-				var latDiff = lastPositions[lastIdx].latitude - lastPositions[lastIdx - 1].latitude;
-				var lonDiff = lastPositions[lastIdx].longitude - lastPositions[lastIdx - 1].longitude;
-				var pos = mapService.getMapPosition();
-				
-				mapService.setMapPosition(pos.center[1] + latDiff, pos.center[0] + lonDiff, pos.zoom);
-			}
-			else
-				mapService.setMapPosition(currentPosition.coords.latitude, currentPosition.coords.longitude);
-		}
-		
-		$scope.globalData.locationStatus = "current";
-		$scope.$apply();
-	};
-
-
-	$scope.onLocationError = function(error)
-	{
-		// TODO
-		$scope.showErrorMessage(error.message);
-		$scope.globalData.locationStatus = "error";
-		$scope.$apply();
 	};
 
 
@@ -762,7 +488,7 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
                 return;
 
             $scope.globalData.trafficStatus = "current";
-            mapService.updateTraffic(acList, $scope.globalData.settings.maxTrafficAltitudeFt);
+            mapService.drawTraffic(acList, $scope.globalData.settings.maxTrafficAltitudeFt);
 
             if ($scope.followTrafficAddress)
                 $scope.followTraffic(acList);
@@ -774,7 +500,7 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
                 return;
 
             $scope.globalData.trafficStatus = "error";
-            mapService.updateTraffic(acList, $scope.globalData.settings.maxTrafficAltitudeFt);
+            mapService.drawTraffic(acList, $scope.globalData.settings.maxTrafficAltitudeFt);
         }
 	};
 
@@ -823,25 +549,331 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 		$scope.followTrafficAddress = undefined;
 		$scope.followTrafficLastPosition = undefined;
 	};
-	
-	
-	$scope.onToggleElementClicked = function(element)
-	{
-		$(element).toggle();
-	};
+
+	//endregion
 
 
-	$scope.getAgeString = function(datestring)
-	{
-		var ms = Date.now() - Date.parse(datestring);
-		var h = Math.floor(ms / 1000 / 3600);
-		var m = Math.floor(ms / 1000 / 60 - h * 60);
+    //region CACHING
 
-		if (h > 0)
-			return h + "h " + m + "min";
-		else
-			return m + "min";
-	};
+    $scope.onOfflineCacheClicked = function()
+    {
+        switch ($scope.globalData.cacheStatus)
+        {
+            case "off" :
+                $scope.globalData.cacheIsActive = true;
+                break;
+            default :
+                $scope.globalData.cacheIsActive = false;
+        }
+
+
+        if ($scope.globalData.cacheIsActive)
+        {
+            setWaypointCacheCookie();
+            setChartCacheCookie();
+            updateAppCache();
+        }
+        else
+        {
+            $scope.discardCache();
+        }
+
+
+        function setWaypointCacheCookie()
+        {
+            var cacheWps = [];
+            var wps = $scope.globalData.navplan.waypoints;
+            var variation = globalData.settings.variation ? globalData.settings.variation : 0;
+
+            if (wps && wps.length > 0)
+            {
+                for (var i = 0; i < wps.length; i++)
+                    cacheWps.push(getCacheWaypoint(wps[i]));
+
+                if ($scope.globalData.navplan.alternate)
+                    cacheWps.push(getCacheWaypoint($scope.globalData.navplan.alternate));
+
+                // start high res
+                cacheWps.push({
+                    lat: wps[0].latitude,
+                    lon: wps[0].longitude,
+                    tt: 0,
+                    dist: 0,
+                    rad: 5,
+                    maxzoom: 13
+                });
+
+                // destination high res
+                cacheWps.push({
+                    lat: wps[wps.length - 1].latitude,
+                    lon: wps[wps.length - 1].longitude,
+                    tt: 0,
+                    dist: 0,
+                    rad: 5,
+                    maxzoom: 13
+                });
+            }
+
+            setCookie("cachewaypoints", obj2json(cacheWps), 0);
+
+
+            function getCacheWaypoint(wp)
+            {
+                var tt = (wp.mt) ? (wp.mt + variation + 180) % 360 : 0; // reverse direction, pointing back from waypoint
+                var dist = (wp.dist) ? wp.dist : 0;
+
+                return {
+                    lat: wp.latitude,
+                    lon: wp.longitude,
+                    tt: tt,
+                    dist: dist,
+                    rad: 3,
+                    maxzoom: 12
+                };
+            }
+        }
+
+
+        function setChartCacheCookie()
+        {
+            var chartUrls = [];
+            var wps = $scope.globalData.navplan.waypoints;
+
+            // waypoints
+            for (var i = 0; i < wps.length; i++)
+            {
+                if (wps[i].airport && wps[i].airport.charts && wps[i].airport.charts.length > 0)
+                {
+                    for (var j = 0; j < wps[i].airport.charts.length; j++)
+                    {
+                        pushUnique(chartUrls, getRestUrl(wps[i].airport.charts[j].id));
+                        pushUnique(chartUrls, getChartUrl(wps[i].airport.charts[j].filename));
+                    }
+                }
+            }
+
+            // alternate
+            var wpAlt = $scope.globalData.navplan.alternate;
+
+            if (wpAlt)
+            {
+                if (wpAlt.airport && wpAlt.airport.charts && wpAlt.airport.charts.length > 0)
+                {
+                    for (var k = 0; k < wpAlt.airport.charts.length; k++)
+                    {
+                        pushUnique(chartUrls, getRestUrl(wpAlt.airport.charts[k].id));
+                        pushUnique(chartUrls, getChartUrl(wpAlt.airport.charts[k].filename));
+                    }
+                }
+            }
+
+            setCookie("cachecharts", obj2json(chartUrls), 0);
+
+
+            function getRestUrl(chartId)
+            {
+                return 'php/ad_charts.php?v=' + navplanVersion + '&id=' + chartId;
+            }
+
+
+            function getChartUrl(filename)
+            {
+                return 'charts/' + filename;
+            }
+        }
+
+
+        function updateAppCache()
+        {
+            if (!$scope.appCache || $scope.appCache.status == $scope.appCache.UNCACHED)
+            {
+                $scope.showErrorMessage("Application Cache not available!");
+                $scope.globalData.cacheStatus = "error";
+                return;
+            }
+
+            if ($scope.appCache.status == $scope.appCache.DOWNLOADING)
+            {
+                $scope.appCache.abort();
+            }
+            else
+            {
+                $scope.globalData.cacheStatus = "updating";
+                $scope.globalData.cacheProgress = {loaded: 0, total: 100, percent: 0};
+
+                $scope.appCache.update();
+            }
+        }
+    };
+
+    //endregion
+
+
+	//region UTIL FUNCTIONS
+
+    $scope.getWpFromFeature = function(feature, latLon)
+    {
+        if (feature.geopoint && !feature.airport && !feature.navaid && !feature.reportingpoint && !feature.userWaypoint) {
+            return {
+                type: feature.geopoint.type,
+                geopoint: feature.geopoint,
+                id: feature.geopoint.id,
+                freq: '',
+                callsign: '',
+                checkpoint: feature.geopoint.wpname,
+                airport_icao: '',
+                latitude: feature.geopoint.latitude,
+                longitude: feature.geopoint.longitude,
+                mt: '',
+                dist: '',
+                alt: '',
+                remark: ''
+            };
+        }
+        else if (feature.airport) {
+            return {
+                type: 'airport',
+                airport: feature.airport,
+                freq: getFrequency(feature.airport),
+                callsign: getCallsign(feature.airport),
+                checkpoint: feature.airport.icao,
+                airport_icao: feature.airport.icao,
+                latitude: feature.airport.latitude,
+                longitude: feature.airport.longitude,
+                mt: '',
+                dist: '',
+                alt: '',
+                remark: ''
+            };
+        }
+        else if (feature.navaid) {
+            return {
+                type: 'navaid',
+                navaid: feature.navaid,
+                freq: feature.navaid.frequency,
+                callsign: feature.navaid.kuerzel,
+                checkpoint: feature.navaid.kuerzel + ' ' + feature.navaid.type,
+                latitude: feature.navaid.latitude,
+                longitude: feature.navaid.longitude,
+                mt: '',
+                dist: '',
+                alt: '',
+                remark: ''
+            };
+        }
+        else if (feature.reportingpoint) {
+            var lat, lon;
+            if (feature.reportingpoint.type == 'SECTOR') {
+                lat = latLon.latitude;
+                lon = latLon.longitude;
+            }
+            else {
+                lat = feature.reportingpoint.latitude;
+                lon = feature.reportingpoint.longitude;
+            }
+
+            var alt, ismaxalt, isminalt;
+            if (feature.reportingpoint.max_ft) {
+                alt = feature.reportingpoint.max_ft;
+                ismaxalt = true;
+            }
+            else if (feature.reportingpoint.min_ft) {
+                alt = feature.reportingpoint.min_ft;
+                isminalt = true;
+            }
+
+            return {
+                type: 'report',
+                reportingpoint: feature.reportingpoint,
+                freq: '',
+                callsign: '',
+                checkpoint: feature.reportingpoint.name,
+                latitude: lat,
+                longitude: lon,
+                mt: '',
+                dist: '',
+                alt: alt ? alt : '',
+                ismaxalt: ismaxalt,
+                isminalt: isminalt,
+                remark: feature.reportingpoint.remark
+            };
+        }
+        else if (feature.userWaypoint) {
+            return {
+                type: 'user',
+                userWaypoint: feature.userWaypoint,
+                id: feature.userWaypoint.id,
+                freq: '',
+                callsign: '',
+                checkpoint: feature.userWaypoint.name,
+                latitude: feature.userWaypoint.latitude,
+                longitude: feature.userWaypoint.longitude,
+                mt: '',
+                dist: '',
+                alt: '',
+                remark: feature.userWaypoint.remark
+            };
+        }
+        else
+            return undefined;
+
+
+        function getFrequency(airport)
+        {
+            if (!airport || !airport.radios || airport.radios.length == 0)
+                return '';
+            else
+                return airport.radios[0].frequency;
+        }
+
+
+        function getCallsign(airport)
+        {
+            if (!airport || !airport.radios || airport.radios.length == 0)
+                return '';
+
+            var radio = airport.radios[0];
+
+            switch (radio.type)
+            {
+                case "TOWER" : return "TWR";
+                case "APPROACH" : return "APP";
+                case "ARRIVAL" : return "ARR";
+                case "DEPARTURE" : return "DEP";
+                case "GLIDING" : return "GLD";
+                case "GROUND" : return "GND";
+                case "CTAF" : return "AD";
+                case "AFIS" : return "AD"; // TODO: TEMP
+                case "OTHER" :
+                {
+                    if (radio.description.toUpperCase().indexOf("AD") == 0) // starts with AD...
+                        return "AD";
+                    else
+                        return radio.typespec;
+                }
+                default : return radio.type;
+            }
+        }
+    };
+
+
+    $scope.storeTrackLocal = function()
+    {
+        var lastTrack = {
+            timestamp: Math.floor(Date.now() / 1000),
+            name: "",
+            positions: shrinkPositions(locationService.getLastPositions())
+        };
+
+        if ($scope.isLoggedIn()) {
+            if ($scope.globalData.navplan && $scope.globalData.navplan.title)
+                lastTrack.name = $scope.globalData.navplan.title;
+        }
+
+        localStorage.setItem("lasttrack", obj2json(lastTrack));
+
+        $scope.showSuccessMessage("Track sucessfully stored in 'tracks' tab!");
+    };
 
 
 	$scope.getAdTypeString = function(adtype)
@@ -864,7 +896,19 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 	};
 
 
-	$scope.getPositionString = function(latitude, longitude)
+	$scope.getAgeString = function(dateString)
+    {
+        return weatherService.getAgeString(dateString)
+    };
+
+
+    $scope.getTafAgeString = function(weatherInfo)
+    {
+        return weatherService.getTafAgeString(weatherInfo)
+    };
+
+
+    $scope.getPositionString = function(latitude, longitude)
 	{
 		return getDmsString(latitude, longitude);
 	};
@@ -909,14 +953,36 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 	};
 
 
-	$scope.resizeMap = function(event)
+	$scope.resizeMapToWindow = function(event)
 	{
 		$('#map').height($(window).height() - $('#navbarheader').height());
 		$('#map').width($(window).width());
-		mapService.updateSize();
+		mapService.updateMapSize();
 	};
 
-	try
+
+    $scope.loadSharedNavplan = function(shareId)
+    {
+        userService.readSharedNavplan(shareId)
+            .success(function(data)
+            {
+                if (data.navplan)
+                    $scope.loadNavplanToGlobalData(data.navplan);
+                else
+                    console.error("ERROR", data);
+            })
+            .error(function(data, status)
+            {
+                console.error("ERROR", status, data);
+            });
+    };
+
+    //endregion
+
+
+    //region INIT MAP & EVENT LISTENERS
+
+    try
 	{
 		mapService.init(
 			$scope.onMapClicked,
@@ -927,7 +993,7 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 
 		$scope.updateWaypoints();
 		$scope.updateFlightTrack();
-		$scope.resizeMap();
+		$scope.resizeMapToWindow();
 	}
 	catch(err)
 	{
@@ -943,35 +1009,19 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 
 		writeServerErrLog(errLog);
 	}
-	
-	
-	$scope.loadSharedNavplan = function(shareId)
-	{
-		userService.readSharedNavplan(shareId)
-			.success(function(data)
-			{
-				if (data.navplan)
-					$scope.loadNavplanToGlobalData(data.navplan);
-				else
-					console.error("ERROR", data);
-			})
-			.error(function(data, status)
-			{
-				console.error("ERROR", status, data);
-			});
-	};
-	
-	
 
 
-	window.removeEventListener("resize", $scope.resizeMap);
-	window.addEventListener("resize", $scope.resizeMap);
+    window.removeEventListener("keydown", $scope.onKeyDown);
+    window.addEventListener("keydown", $scope.onKeyDown);
+	
+	window.removeEventListener("resize", $scope.resizeMapToWindow);
+	window.addEventListener("resize", $scope.resizeMapToWindow);
 
 	if ($route.current.$$route.showtraffic && !$scope.globalData.showTraffic)
 		$scope.onTrafficClicked();
 		
 	if ($route.current.params.shareid)
-	{
-		$scope.loadSharedNavplan($route.current.params.shareid)
-	}
+		$scope.loadSharedNavplan($route.current.params.shareid);
+
+	//endregion
 }

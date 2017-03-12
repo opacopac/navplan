@@ -36,7 +36,7 @@ function trackCtrl($scope, userService, mapService, globalData) {
 						if (response.data && response.data.track) {
 							$scope.globalData.track = response.data.track;
 							$scope.globalData.track.positions = unshrinkPositions($scope.globalData.track.positions);
-							mapService.updateFlightTrack($scope.globalData.track.positions);
+							mapService.drawFlightTrack($scope.globalData.track.positions);
 						}
 						else
 							console.error("ERROR reading track:", response.status, response.data);

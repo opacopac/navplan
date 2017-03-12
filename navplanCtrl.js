@@ -278,14 +278,14 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 	{
 		waypointService.recalcWaypoints($scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.settings.variation, $scope.globalData.aircraft.speed);
 		fuelService.updateFuelCalc($scope.globalData.fuel, $scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.aircraft);
-		mapService.updateWpTrack($scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.settings.variation);
+		mapService.drawWaypoints($scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.settings.variation);
 	};
 
 
 	$scope.updateFlightTrack = function()
 	{
 		if ($scope.globalData.track && $scope.globalData.track.positions)
-			mapService.updateFlightTrack($scope.globalData.track.positions);
+			mapService.drawFlightTrack($scope.globalData.track.positions);
 	};
 
 
@@ -323,7 +323,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 			.success(function(data) {
 				if (data.success == 1)
 				{
-					mapService.updateUserWaypoints();
+					mapService.loadAndDrawUserPoints();
 					mapService.closeOverlay();
 
 					$scope.showSuccessMessage("User Waypoint successfully saved");
@@ -343,7 +343,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 			.success(function(data) {
 				if (data.success == 1)
 				{
-					mapService.updateUserWaypoints();
+					mapService.loadAndDrawUserPoints();
 					mapService.closeOverlay();
 
 					$scope.showSuccessMessage("User Waypoint successfully deleted");

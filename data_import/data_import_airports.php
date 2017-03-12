@@ -38,8 +38,8 @@
 		
 		foreach ($airport_file->WAYPOINTS->AIRPORT as $airport)
 		{
-		    if ($airport->COUNTRY != 'CH' && $airport->ICAO != 'LFSB')
-		        continue;
+		    /*if ($airport->COUNTRY != 'CH' && $airport->ICAO != 'LFSB')
+		        continue;*/
 
 			$query = "INSERT INTO openaip_airports2 (type, country, name, icao, latitude, longitude, elevation, lonlat) VALUES (";
 			$query .= " '" . $airport['TYPE'] . "',";
@@ -56,8 +56,11 @@
 
 			if (!$result)
 			{
-				print "ERROR AP: " . $conn->error;
-				exit;
+				print "ERROR AP: " . $conn->error . "<br>\n";
+				print "File: " . $abs_filename . "<br>\n";
+				var_dump($airport);
+				print "<br><br>\n\n";
+				continue;
 			}
 			
 			$airport_id = $conn->insert_id;

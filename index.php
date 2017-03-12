@@ -19,18 +19,18 @@
 	<title>navplan.ch</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1">
-    <meta name="description" content="VFR Flight Planning in Switzerland" />
+    <meta name="description" content="VFR flight planning online. Open-source, non-commercial hobbyist project with a Swiss focus." />
     <!-- twitter -->
-    <meta name="twitter:card" value="VFR Flight Planning in Switzerland">
+    <meta name="twitter:card" value="summary">
     <meta name="twitter:title" content="NAVPLAN.CH" />
-    <meta name="twitter:description" content="VFR Flight Planning in Switzerland" />
+    <meta name="twitter:description" content="VFR flight planning online. Open-source, non-commercial hobbyist project with a Swiss focus." />
     <meta name="twitter:image" content="http://www.navplan.ch/branch/about/navplan_example.png" />
     <!-- facebook -->
     <meta property="og:title" content="NAVPLAN.CH" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://www.navplan.ch/branch/" />
     <meta property="og:image" content="http://www.navplan.ch/branch/about/navplan_example.png" />
-    <meta property="og:description" content="VFR Flight Planning in Switzerland" />
+    <meta property="og:description" content="VFR flight planning online. Open-source, non-commercial hobbyist project with a Swiss focus." />
     <!-- favicon -->
 	<link rel="icon" type="image/png" href="icon/favicon.png" />
 	<!-- css -->
@@ -64,6 +64,7 @@
 	<script src="tracks/trackCtrl.js?v=<?php echo $ver ?>"></script>
 	<script src="settings/settingsCtrl.js?v=<?php echo $ver ?>"></script>
 	<script src="services/mapService.js?v=<?php echo $ver ?>"></script>
+    <script src="services/mapFeatureService.js?v=<?php echo $ver ?>"></script>
 	<script src="services/locationService.js?v=<?php echo $ver ?>"></script>
 	<script src="services/trafficService.js?v=<?php echo $ver ?>"></script>
 	<script src="services/geonameService.js?v=<?php echo $ver ?>"></script>
