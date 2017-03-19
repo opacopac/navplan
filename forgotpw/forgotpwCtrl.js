@@ -14,16 +14,20 @@ function forgotpwCtrl($scope, globalData, userService)
 	$scope.onReqPwClicked = function()
 	{
 		userService.forgotPassword($scope.email)
-			.success(function(data) {
-				if (data.resultcode == 0)
-				{
-					$scope.showSuccessMessage("A new password has be sent to your email");
-				}
-				else if (data.resultcode == -2)
-					$scope.showErrorMessage("Email not found!");
-			})
-			.error(function(data, status) {
-				console.error("ERROR", status, data);
-			});
+			.then(
+			    function(response) // success
+                {
+                    if (response.data.resultcode == 0)
+                    {
+                        $scope.showSuccessMessage("A new password has be sent to your email");
+                    }
+                    else if (response.data.resultcode == -2)
+                        $scope.showErrorMessage("Email not found!");
+    			},
+                function(response) // error
+                {
+                    logResponseError("ERROR sending new pw", response);
+                }
+            );
 	}
 }

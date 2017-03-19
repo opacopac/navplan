@@ -10,6 +10,7 @@
 
 	<h4>geonames</h4>
 	<p><a href="data_import_geonames.php">import geonames</a></p>
+    <p><a href="data_import_geonames_codes.php">import geoname admin codes</a></p>
 
 	<h4>charts</h4>
 	<p><a href="data_import_vfrm_charts.php">vfrm charts</a></p>

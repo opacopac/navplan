@@ -5,7 +5,7 @@
 	$conn->set_charset("utf8");
 	
 	// clear table
-	$query = "DELETE FROM openaip_navaids";
+	$query = "DELETE FROM openaip_navaids2";
 	$result = $conn->query($query);
 
 	if (!$result)
@@ -32,10 +32,10 @@
 		
 		foreach ($navaid_file->NAVAIDS->NAVAID as $navaid)
 		{
-		    if ($navaid->COUNTRY != 'CH' && $navaid->ID != 'BLM' && $navaid->ID != 'BN' && $navaid->ID != 'BS')
-		        continue;
+		    /*if ($navaid->COUNTRY != 'CH' && $navaid->ID != 'BLM' && $navaid->ID != 'BN' && $navaid->ID != 'BS')
+		        continue;*/
 
-			$query = "INSERT INTO openaip_navaids (type, country, name, kuerzel, latitude, longitude, elevation, frequency, declination, truenorth) VALUES (";
+			$query = "INSERT INTO openaip_navaids2 (type, country, name, kuerzel, latitude, longitude, elevation, frequency, declination, truenorth, lonlat) VALUES (";
 			$query .= " '" . $navaid['TYPE'] . "',";
 			$query .= " '" . $navaid->COUNTRY . "',";
 			$query .= " '" . mysqli_real_escape_string($conn, $navaid->NAME) . "',";
@@ -45,9 +45,10 @@
 			$query .= " '" . $navaid->GEOLOCATION->ELEV . "',";
 			$query .= " '" . $navaid->RADIO->FREQUENCY . "',";
 			$query .= " '" . $navaid->PARAMS->DECLINATION . "',";
-			$query .= " '" . $navaid->ALIGNEDTOTRUENORTH->ELEV . "'";
+			$query .= " '" . $navaid->ALIGNEDTOTRUENORTH->ELEV . "',";
+            $query .= " GeomFromText('POINT(" . $navaid->GEOLOCATION->LON . " " . $navaid->GEOLOCATION->LAT . ")')";
 			$query .= ")";
-			
+
 			$result = $conn->query($query);
 
 			if (!$result)

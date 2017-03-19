@@ -26,9 +26,11 @@ function userService($http)
 		updatePassword: updatePassword,
 		readNavplanList: readNavplanList,
 		readNavplan: readNavplan,
+		readSharedNavplan: readSharedNavplan,
 		createNavplan: createNavplan,
 		updateNavplan: updateNavplan,
 		deleteNavplan: deleteNavplan,
+		createSharedNavplan: createSharedNavplan,
 		saveUserWaypoint: saveUserWaypoint,
 		deleteUserWaypoint: deleteUserWaypoint,
 		readUserTrackList: readUserTrackList,
@@ -75,9 +77,21 @@ function userService($http)
 	}
 	
 	
+	function readSharedNavplan(share_id)
+	{
+		return $http.get(navplanBaseUrlGet + '&shareid=' + share_id);
+	}
+	
+	
 	function createNavplan(globalData)
 	{
 		return $http.post(navplanBaseUrl, obj2json({ globalData: globalData }));
+	}
+
+
+	function createSharedNavplan(globalData)
+	{
+		return $http.post(navplanBaseUrl, obj2json({ createShared: true, globalData: globalData }));
 	}
 
 	

@@ -1,82 +1,122 @@
 <?php
-	function openDb()
-	{
-		global $db_host, $db_user, $db_pw, $db_name;
-	
-		// open db connection
-		$conn = new mysqli($db_host, $db_user, $db_pw, $db_name);
-		$conn->set_charset("utf8");
-		
-		return $conn;
-	}
-	
 
-	function checkNumeric($num)
-	{
-		if (!is_numeric($num))
-			die("format error: '" . $num . "' is not numeric");
+function openDb()
+{
+    global $db_host, $db_user, $db_pw, $db_name;
 
-		return $num;
-	}
+    // open db connection
+    $conn = new mysqli($db_host, $db_user, $db_pw, $db_name);
+    $conn->set_charset("utf8");
+
+    return $conn;
+}
 
 
-	function checkString($string, $minlen, $maxlen)
-	{
-	    if (isset($maxlen) && strlen($string) > $maxlen)
-			die("format error: string '" . $string . "' too long");
+function checkNumeric($num)
+{
+    if (!is_numeric($num))
+        die("format error: '" . $num . "' is not numeric");
 
-	    if (isset($minlen) && strlen($string) < $minlen)
-			die("format error: string '" . $string . "' too short");
-
-        return $string;
-	}
+    return $num;
+}
 
 
-    function checkEmail($email)
+function checkString($string, $minlen, $maxlen)
+{
+    if (isset($maxlen) && strlen($string) > $maxlen)
+        die("format error: string '" . $string . "' too long");
+
+    if (isset($minlen) && strlen($string) < $minlen)
+        die("format error: string '" . $string . "' too short");
+
+    return $string;
+}
+
+
+function checkEmail($email)
+{
+    if (!$email)
+        die("email is null");
+
+    // TODO: check email format with regexp
+    return checkString($email, 1, 100);
+}
+
+
+function checkToken($token)
+{
+    if (!$token)
+        die("token is null");
+
+    return checkString($token, 1, 100);
+}
+
+
+function checkId($id)
+{
+    if (!is_numeric($id))
+        die("format error");
+
+    if ($id < 0 || $id > 4294967295)
+        die("format error");
+
+    return $id;
+}
+
+
+function checkEscapeString($conn, $string, $minlen, $maxlen)
+{
+    return mysqli_real_escape_string($conn, checkString($string, $minlen, $maxlen));
+}
+
+
+function checkEscapeEmail($conn, $email)
+{
+    return mysqli_real_escape_string($conn, checkEmail($email));
+}
+
+
+function checkEscapeToken($conn, $token)
+{
+    return mysqli_real_escape_string($conn, checkToken($token));
+}
+
+
+function reduceDegAccuracy($value, $type)
+{
+    switch ($type)
     {
-        if (!$email)
-            die("email is null");
-
-        // TODO: check email format with regexp
-        return checkString($email, 1, 100);
+        case "AIRSPACE":
+            $digits = 4;
+            break;
+        default:
+            $digits = 6;
+            break;
     }
 
+    return round($value, $digits);
+}
 
-    function checkToken($token)
-    {
-        if (!$token)
-            die("token is null");
 
-        return checkString($token, 1, 100);
+function createRandomString($len)
+{
+    $result = "";
+    $chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+    $charArray = str_split($chars);
+    for($i = 0; $i < $len; $i++)
+	{
+	    $randItem = array_rand($charArray);
+	    $result .= "" . $charArray[$randItem];
     }
+    return $result;
+}
 
 
-    function checkId($id)
-    {
-        if (!is_numeric($id))
-			die("format error");
+function printLine($text)
+{
+    if ($text)
+        print $text;
 
-        if ($id < 0 || $id > 4294967295)
-			die("format error");
-
-        return $id;
-    }
-
-
-	function checkEscapeString($conn, $string, $minlen, $maxlen)
-	{
-        return mysqli_real_escape_string($conn, checkString($string, $minlen, $maxlen));
-	}
-
-
-	function checkEscapeEmail($conn, $email)
-	{
-        return mysqli_real_escape_string($conn, checkEmail($email));
-	}
-
-
-	function checkEscapeToken($conn, $token)
-	{
-        return mysqli_real_escape_string($conn, checkToken($token));
-	}
-?>
+    print "<br>\n";
+    ob_flush();
+}

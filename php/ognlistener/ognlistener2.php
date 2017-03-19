@@ -63,23 +63,23 @@
             $newFilter = getFilter();
             $filterTime = getFilterTime();
 
-            if (!$newFilter || !$filterTime)
+            if (!$newFilter || !$filterTime) // filter not found
             {
                 writelog("ERROR", "filter(file) not found");
                 disconnect($connection);
                 break;
             }
 
-            if ($filterTime + $filterTimeoutSec < currentTimestamp())
+            if ($filterTime + $filterTimeoutSec < currentTimestamp()) // filter too old
             {
                 writelog("INFO", "filter timed out");
                 disconnect($connection);
                 break;
             }
 
-            if (!$connection)
+            if (pcntl_wait($status, WNOHANG) != 0) // child aborted
             {
-                writelog("ERROR", "connection lost");
+                writelog("ERROR", "child process lost");
                 break;
             }
 

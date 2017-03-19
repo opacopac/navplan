@@ -66,16 +66,9 @@ html, body {
   z-index: 20;
 }
 
-.mapbutton-kmlexport {
-  position: absolute;
-  top: 55px;
-  right: 10px;
-  z-index: 20;
-}
-
 .mapbutton-offlinecache {
   position: absolute;
-  top: 115px;
+  top: 55px;
   right: 10px;
   z-index: 20;
 }
@@ -83,7 +76,7 @@ html, body {
 .map-cacheprogress {
   position: absolute;
   width: 50px;
-  top: 175px;
+  top: 115px;
   right: 10px;
   z-index: 20;
 }
@@ -272,6 +265,12 @@ html, body {
   color: rgba(174, 30, 34, 1.0);
 }
 
+.airspace-overlay-green {
+    background-color: rgba(255, 255, 255, 0.8);
+    border-color: rgba(0, 150, 64, 0.9);
+    color: rgba(0, 150, 64, 1.0);
+}
+
 .airspace-overlay-heighttext-normal {
   font-style: normal;
 }
@@ -282,11 +281,10 @@ html, body {
 
 .airspace-class {
   position: absolute;
-  left: -10px;
-  top: 13px;
+  right: 72px;
+  top: 15px;
   text-align: center;
   font-weight: bold;
-  font-size: larger;
   padding-left: 4px;
   padding-right: 4px;
 }
@@ -299,6 +297,11 @@ html, body {
 .airspace-class-blue {
   color: rgba(255, 255, 255, 1.0);
   background-color: rgba(23, 128, 194, 1.0);
+}
+
+.airspace-class-green {
+    color: rgba(255, 255, 255, 1.0);
+    background-color: rgba(0, 150, 64, 1.0);
 }
 
 .airspace-name {
@@ -321,4 +324,15 @@ html, body {
 .airspace-name-blue {
   color: rgba(23, 128, 194, 1.0);
   background-color: rgba(255, 255, 255, 0.8);
+}
+
+.airspace-name-green {
+  color: rgba(0, 150, 64, 1.0);
+  background-color: rgba(255, 255, 255, 1.0);
+}
+
+.airspace-toggle {
+    cursor: pointer;
+    color: rgba(23, 128, 194, 1.0);
+    background-color: rgba(255, 255, 255, 0.8);
 }

@@ -25,131 +25,23 @@ function waypointCtrl($scope, $http, geonameService, fuelService, userService, m
 
 	makeWaypointsSortable($scope.updateOrderCallback);
 
-	
-	$scope.createPdfNavplan = function()
-	{
-		var navplanData = $scope.getNavplanExportData();
-		
-		sendPostForm('php/navplanPdf.php', '_blank', 'data', JSON.stringify(navplanData));
-	};
-	
-	
-	$scope.createExcelNavplan = function()
-	{
-		var navplanData = $scope.getNavplanExportData();
-		
-		sendPostForm('php/navplanExcel.php', '_blank', 'data', JSON.stringify(navplanData));
-	};
-
-
-	$scope.getNavplanExportData = function ()
-	{
-		var waypoints = [];
-
-		for (var i = 0; i < $scope.globalData.navplan.waypoints.length; i++)
-			waypoints.push(getWaypointData($scope.globalData.navplan.waypoints[i]));
-
-
-		return {
-			waypoints: waypoints,
-			alternate: $scope.globalData.navplan.alternate ? getWaypointData($scope.globalData.navplan.alternate) : undefined,
-			fuel: $scope.globalData.fuel,
-			pilot: $scope.globalData.pilot,
-			aircraft: $scope.globalData.aircraft
-		};
-
-
-		function getWaypointData(wp)
-		{
-			return {
-				freq: wp.freq,
-				callsign: wp.callsign,
-				checkpoint: wp.checkpoint,
-				mtText: wp.mtText,
-				distText: wp.distText,
-				alt: wp.alt,
-				isminalt: wp.isminalt,
-				ismaxalt: wp.ismaxalt,
-				eetText: wp.eetText,
-				remark: wp.remark
-			};
-		};
-	};
-
 
 	$scope.loadNavplan = function()
 	{
 		userService.readNavplan($scope.selectedNavplanId)
-			.success(function(data) {
-				if (data.navplan)
-				{
-					// general data
-					$scope.globalData.navplan.id = data.navplan.id;
-					$scope.globalData.navplan.title = data.navplan.title;
-					$scope.globalData.aircraft.speed = data.navplan.aircraft_speed;
-					$scope.globalData.aircraft.consumption = data.navplan.aircraft_consumption;
-					$scope.globalData.fuel.extraTime = data.navplan.extra_fuel;
-					$scope.globalData.navplan.alternate = undefined; // TODO
-					
-					// waypoints
-					$scope.globalData.navplan.waypoints = [ ];
-					var wp;
-
-					if (data.navplan.waypoints)
-					{
-						for (var i = 0; i < data.navplan.waypoints.length; i++)
-						{
-							wp = $scope.getWaypointFromData(data.navplan.waypoints[i]);
-							$scope.globalData.navplan.waypoints.push(wp);
-						}
-					}
-
-					// alternate
-					$scope.globalData.navplan.alternate = undefined;
-
-					if (data.navplan.alternate)
-					{
-						wp = $scope.getWaypointFromData(data.navplan.alternate);
-						$scope.globalData.navplan.alternate = wp;
-					}
-
-					$scope.updateWaypoints();
-					$scope.discardCache();
-				}
-				else
-					console.error("ERROR", data);
-			})
-			.error(function(data, status) {
-				console.error("ERROR", status, data);
-			});
-	};
-	
-	
-	$scope.getWaypointFromData = function (wp_data)
-	{
-		var ap = undefined;
-
-		if (wp_data.airport_icao)
-			ap = mapService.getAirport(wp_data.airport_icao);
-
-		return {
-			type: wp_data.type,
-			freq: wp_data.freq,
-			callsign: wp_data.callsign,
-			checkpoint: wp_data.checkpoint,
-			airport_icao: wp_data.airport_icao,
-			latitude: wp_data.latitude,
-			longitude: wp_data.longitude,
-			charts: wp_data.charts,
-			webcams: wp_data.webcams,
-			mt: '',
-			dist: '',
-			alt: wp_data.alt,
-			isminalt: wp_data.isminalt,
-			ismaxalt: wp_data.ismaxalt,
-			remark: wp_data.remark,
-			airport: ap
-		};
+			.then(
+			    function(response) // success
+                {
+                    if (response && response.data && response.data.navplan)
+                        $scope.loadNavplanToGlobalData(response.data.navplan);
+                    else
+                        logResponseError("ERROR reading navplan", response);
+                },
+			    function(response) // error
+                {
+                    logResponseError("ERROR reading navplan", response);
+                }
+            );
 	};
 	
 	
@@ -158,57 +50,79 @@ function waypointCtrl($scope, $http, geonameService, fuelService, userService, m
 		if ($scope.globalData.navplan.id)
 		{
 			userService.updateNavplan($scope.globalData)
-				.success(function(data) {
-					if (data.success == 1)
-					{
-						$scope.readNavplanList();
-						$scope.showSuccessMessage("Navplan successfully updated!");
-					}
-					else
-						console.error("ERROR updating navplan", data);
-				})
-				.error(function(data, status) {
-					console.error("ERROR updating navplan", status, data);
-				});
+                .then(
+                    function(response) // success
+                    {
+                        if (response && response.data && response.data.success == 1) {
+                            $scope.readNavplanList();
+                            $scope.showSuccessMessage("Flight log successfully updated!");
+                        }
+                        else
+                            logResponseError("ERROR updating navplan", response);
+                    },
+                    function(response) // error
+                    {
+                        logResponseError("ERROR updating navplan", response);
+		    		}
+                );
 		}
 		else
 		{
 			userService.createNavplan($scope.globalData)
-				.success(function(data) {
-					if (data.navplan_id >= 0)
-					{
-						$scope.globalData.navplan.id = data.navplan_id;
-						$scope.readNavplanList();
-						$scope.showSuccessMessage("Navplan successfully saved!");
-					}
-					else
-						console.error("ERROR creating navplan", data);
-				})
-				.error(function(data, status) {
-					console.error("ERROR creating navplan", status, data);
-				});
+                .then(
+                    function(response) // success
+                    {
+                        if (response && response.data && response.data.navplan_id >= 0)
+                        {
+                            $scope.globalData.navplan.id = response.data.navplan_id;
+                            $scope.readNavplanList();
+                            $scope.showSuccessMessage("Flight log successfully saved!");
+                        }
+                        else
+                            logResponseError("ERROR creating navplan", response);
+    				},
+                    function(response) // error
+                    {
+                        logResponseError("ERROR creating navplan", response);
+	    			}
+                );
 		}
 	};
+
+    $scope.saveNavplanCopy = function()
+    {
+        $scope.globalData.navplan.id = undefined;
+        $scope.saveNavplan();
+    };
 
 
 	$scope.deleteNavplan = function()
 	{
-		if ($scope.selectedNavplanId)
-		{
-			userService.deleteNavplan($scope.selectedNavplanId)
-				.success(function(data) {
-					if (data.success == 1)
-					{
-						$scope.readNavplanList();
-						$scope.showSuccessMessage("Navplan successfully deleted!");
-					}
-					else
-						console.error("ERROR", data);
-				})
-				.error(function(data, status) {
-					console.error("ERROR", status, data);
-				});
-		}
+        $scope.showRuSureMessage(
+            "Delete Flight Log?",
+            "Do you really want to delete this flight log?",
+            function()
+            {
+                if ($scope.selectedNavplanId) {
+                    userService.deleteNavplan($scope.selectedNavplanId)
+                        .then(
+                            function (response) // success
+                            {
+                                if (response && response.data && response.data.success == 1) {
+                                    $scope.readNavplanList();
+                                    $scope.showSuccessMessage("Flight log successfully deleted!");
+                                }
+                                else
+                                    logResponseError("ERROR deleting navplan", response);
+                            },
+                            function (response) // error
+                            {
+                                logResponseError("ERROR deleting navplan", response);
+                            }
+                        );
+                }
+            }
+        );
 	};
 	
 

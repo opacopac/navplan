@@ -5,13 +5,13 @@
 	$conn->set_charset("utf8");
 	
 	// clear table
-	$query = "DELETE FROM openaip_runways";
+	$query = "DELETE FROM openaip_runways2";
 	$result = $conn->query($query);
 
-	$query = "DELETE FROM openaip_radios";
+	$query = "DELETE FROM openaip_radios2";
 	$result = $conn->query($query);
 
-	$query = "DELETE FROM openaip_airports";
+	$query = "DELETE FROM openaip_airports2";
 	$result = $conn->query($query);
 
 	if (!$result)
@@ -38,25 +38,29 @@
 		
 		foreach ($airport_file->WAYPOINTS->AIRPORT as $airport)
 		{
-		    if ($airport->COUNTRY != 'CH' && $airport->ICAO != 'LFSB')
-		        continue;
+		    /*if ($airport->COUNTRY != 'CH' && $airport->ICAO != 'LFSB')
+		        continue;*/
 
-			$query = "INSERT INTO openaip_airports (type, country, name, icao, latitude, longitude, elevation) VALUES (";
+			$query = "INSERT INTO openaip_airports2 (type, country, name, icao, latitude, longitude, elevation, lonlat) VALUES (";
 			$query .= " '" . $airport['TYPE'] . "',";
 			$query .= " '" . $airport->COUNTRY . "',";
 			$query .= " '" . mysqli_real_escape_string($conn, $airport->NAME) . "',";
 			$query .= " '" . $airport->ICAO . "',";
 			$query .= " '" . $airport->GEOLOCATION->LAT . "',";
 			$query .= " '" . $airport->GEOLOCATION->LON . "',";
-			$query .= " '" . $airport->GEOLOCATION->ELEV . "'";
+			$query .= " '" . $airport->GEOLOCATION->ELEV . "',";
+            $query .= " GeomFromText('POINT(" . $airport->GEOLOCATION->LON . " " . $airport->GEOLOCATION->LAT . ")')";
 			$query .= ")";
 			
 			$result = $conn->query($query);
 
 			if (!$result)
 			{
-				print "ERROR AP: " . $conn->error;
-				exit;
+				print "ERROR AP: " . $conn->error . "<br>\n";
+				print "File: " . $abs_filename . "<br>\n";
+				var_dump($airport);
+				print "<br><br>\n\n";
+				continue;
 			}
 			
 			$airport_id = $conn->insert_id;
@@ -71,7 +75,7 @@
 			    $papi1 = ($runway->DIRECTION[0]->LANDINGAIDS && $runway->DIRECTION[0]->LANDINGAIDS->PAPI && $runway->DIRECTION[0]->LANDINGAIDS->PAPI == 'TRUE') ? '1' : "NULL";
 			    $papi2 = ($runway->DIRECTION[1]->LANDINGAIDS && $runway->DIRECTION[1]->LANDINGAIDS->PAPI && $runway->DIRECTION[1]->LANDINGAIDS->PAPI == 'TRUE') ? '1' : "NULL";
 
-				$query = "INSERT INTO openaip_runways (airport_id, operations, name, surface, length, width, direction1, direction2, tora1, tora2, lda1, lda2, papi1, papi2) VALUES (";
+				$query = "INSERT INTO openaip_runways2 (airport_id, operations, name, surface, length, width, direction1, direction2, tora1, tora2, lda1, lda2, papi1, papi2) VALUES (";
 				$query .= " '" . $airport_id . "',";
 				$query .= " '" . $runway['OPERATIONS'] . "',";
 				$query .= " '" . mysqli_real_escape_string($conn, $runway->NAME) . "',";
@@ -100,7 +104,7 @@
 			// add radios
 			foreach ($airport->RADIO as $radio)
 			{
-				$query = "INSERT INTO openaip_radios (airport_id, category, frequency, type, typespec, description) VALUES (";
+				$query = "INSERT INTO openaip_radios2 (airport_id, category, frequency, type, typespec, description) VALUES (";
 				$query .= " '" . $airport_id . "',";
 				$query .= " '" . $radio['CATEGORY'] . "',";
 				$query .= " '" . $radio->FREQUENCY . "',";

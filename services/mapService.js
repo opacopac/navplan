@@ -5,23 +5,24 @@
 navplanApp
 	.factory('mapService', mapService);
 
-mapService.$inject = ['$http', 'weatherService'];
+mapService.$inject = ['$http', 'mapFeatureService', 'weatherService'];
 
-function mapService($http, weatherService)
+function mapService($http, mapFeatureService, weatherService)
 {
+    //region INIT
+
 	var MAX_ZOOMLEVEL = 17;
 
 	var map = {};
 	var mapLayer, wpTrackLayer, closeIconLayer, airportLayer, navaidLayer, airspaceLayer, reportingpointLayer, userWpLayer, flightTrackLayer, geopointLayer, trafficLayer, locationLayer, weatherLayer, webcamLayer;
-	var airports = {};
-	var navaids = {};
-	var reportingPoints = {};
-	var userWaypoints = {};
+    var airspaceImageLayer; //, airportImageLayer, navaidImageLayer, reportingpointImageLayer, userWpImageLayer, weatherImageLayer, webcamImageLayer;
 	var chartLayers = [];
-	var airspaces = [];
-	var wpTrackCache = { wps: undefined, alternate: undefined, variation: undefined};
+	var wpTrackCache = { wps: undefined, alternate: undefined, variation: undefined };
 	var currentOverlay = undefined;
 	var modifySnapInteractions = [];
+    var onFeatureSelectCallback = undefined;
+    var onMapClickCallback = undefined;
+    var onMoveEndCallback = undefined;
 	var onTrackModifyEndCallback = undefined;
 	var isGeopointSelectionActive = false;
 	var wgs84Sphere = new ol.Sphere(6378137);
@@ -29,22 +30,29 @@ function mapService($http, weatherService)
 	var maxAgeSecTrackDots = 120;
 	var maxAgeSecInactive = 30;
 	var maxTrafficForDots = 30;
-	var airportBaseUrl = 'php/airports.php?v=' + navplanVersion;
-	var navaidBaseUrl = 'php/navaids.php?v=' + navplanVersion;
-	var reportingpointBaseUrl = 'php/reportingPoints.php?v=' + navplanVersion;
-	var airspaceBaseUrl = 'php/airspace.php?v=' + navplanVersion;
-	var nonAdWebcamBaseUrl = 'php/webcams.php?v=' + navplanVersion + '&action=readNonAdWebcams';
-	var userWpBaseUrl = 'php/userWaypoint.php?v=' + navplanVersion;
 	var adChartBaseUrl = 'php/ad_charts.php?v=' + navplanVersion;
+    var displaceAirspaceCat = {
+        "CTR": ['A', 'B', 'C', 'D', 'E', 'F', 'G'],
+        "A": ['E', 'F', 'G'],
+        "B": ['E', 'F', 'G'],
+        "C": ['E', 'F', 'G'],
+        "D": ['E', 'F', 'G']
+    };
 
-	// return api reference
+
+    // return api reference
 	return {
 		MAX_ZOOMLEVEL: MAX_ZOOMLEVEL,
 		addOverlay: addOverlay,
 		clearAllCharts: clearAllCharts,
 		closeOverlay: closeOverlay,
 		displayChart: displayChart,
-		drawGeopointSelection: drawGeopointSelection,
+        drawFlightTrack: drawFlightTrack,
+        drawGeopointSelection: drawGeopointSelection,
+        drawOwnPlane: drawOwnPlane,
+        drawTraffic: drawTraffic,
+        drawWaypoints: drawWaypoints,
+        fitView: fitView,
 		getAirport: getAirport,
 		getBearing: getBearing,
 		getDistance: getDistance,
@@ -54,1013 +62,1207 @@ function mapService($http, weatherService)
 		getMercatorCoordinates: getMercatorCoordinates,
 		getViewExtent: getViewExtent,
 		init: init,
+        loadAndDrawUserPoints: loadAndDrawUserPoints,
 		setMapPosition: setMapPosition,
-		updateFlightTrack: updateFlightTrack,
-		updateLocation: updateLocation,
-		updateSize: updateSize,
-		updateTraffic: updateTraffic,
-		updateUserWaypoints: updateUserWaypoints,
-		updateWpTrack: updateWpTrack
+        updateMapSize: updateMapSize
 	};
-	
+
+	//endregion
+
+
+    //region INIT MAP
 	
 	// init map
-	function init(onMapClickCallback, onFeatureSelectCallback, onMoveEndCallback, onTrackModEndCallback, mapPos)
-	{
-		// init layers
-		mapLayer = createMapLayer();
-		locationLayer = createEmptyVectorLayer();
-		trafficLayer = createEmptyVectorLayer();
-		wpTrackLayer = createEmptyVectorLayer();
-		closeIconLayer = createEmptyVectorLayer();
-		airportLayer = createEmptyVectorLayer();
-		navaidLayer = createEmptyVectorLayer();
-		reportingpointLayer = createEmptyVectorLayer();
-		userWpLayer = createEmptyVectorLayer();
-		airspaceLayer = createEmptyVectorLayer();
-		flightTrackLayer = createEmptyVectorLayer();
-		webcamLayer = createEmptyVectorLayer();
-		weatherLayer = createEmptyVectorLayer();
-		geopointLayer = createEmptyVectorLayer();
-
-		// populate layers
-		populateAirports(airportLayer);
-		populateNavaids(navaidLayer);
-		populateAirspaces(airspaceLayer);
-		populateWebcams(webcamLayer);
-		populateReportingpoints(reportingpointLayer);
-		updateUserWaypoints();
-
-
-		// init map
-		map = createMap();
-
-		// register map events
-		map.on('singleclick', onSingleClick);
-		map.on('pointermove', onPointerMove);
-		map.on('moveend', onMoveEnd);
-		map.getView().on('change:rotation', onViewRotation);
-
-
-		onTrackModifyEndCallback = onTrackModEndCallback;
-
-
-		// restore chart layers
-		for (var i = 0; i < chartLayers.length; i++)
-			map.getLayers().insertAt(i + 1, chartLayers[i]);
-
-		minZoomLevel = [
-			{ layer: closeIconLayer, minZoom: 9 },
-			{ layer: airportLayer, minZoom: 9 },
-			{ layer: navaidLayer, minZoom: 9 },
-			{ layer: airspaceLayer, minZoom:  9 },
-			{ layer: reportingpointLayer, minZoom:  11 },
-			{ layer: userWpLayer, minZoom:  11 },
-			{ layer: webcamLayer, minZoom:  9 },
-            { layer: trafficLayer, minZoom:  7 },
-			{ layer: weatherLayer, minZoom:  9 }];
-
-		setLayerVisibility();
-
-
-		// functions
-
-		function createMap()
-		{
-			return new ol.Map({
-				target: 'map',
-				controls:
-					[
-						new ol.control.ScaleLine({ units: 'nautical' }),
-						new ol.control.Attribution()
-					],
-				layers: [
-					mapLayer,
-					airspaceLayer,
-					webcamLayer,
-					closeIconLayer,
-					reportingpointLayer,
-					userWpLayer,
-					navaidLayer,
-					airportLayer,
-					weatherLayer,
-					wpTrackLayer,
-					flightTrackLayer,
-					geopointLayer,
-					trafficLayer,
-					locationLayer
-				],
-				view: new ol.View(
-					{
-						center: mapPos.center,
-						zoom: mapPos.zoom
-					})
-			});
-		}
-
-
-		function createEmptyVectorLayer()
-		{
-			return new ol.layer.Vector({
-				source: new ol.source.Vector({})
-			});
-		}
-
-
-		// add airports to icon layer
-		function populateAirports(layer)
-		{
-			$http.get(airportBaseUrl)
-				.then(
-					function (response) { // success
-						if (response.data && response.data.airports) {
-							for (var key in response.data.airports) {
-								var ap = response.data.airports[key];
-
-								// cache for later use
-								airports[ap.icao] = ap;
-
-								// airport icon
-								var adFeature = new ol.Feature({
-									geometry: new ol.geom.Point(ol.proj.fromLonLat([ap.longitude, ap.latitude]))
-								});
-
-								adFeature.airport = ap;
-
-								var adStyle = createAdStyle(ap.type, ap.icao);
-
-								if (adStyle)
-									adFeature.setStyle(adStyle);
-								else
-									continue;
-
-								layer.getSource().addFeature(adFeature);
-
-
-								// rwy icon
-								if (ap.runways && ap.runways.length > 0)
-								{
-									var rwyFeature = new ol.Feature({
-										geometry: new ol.geom.Point(ol.proj.fromLonLat([ap.longitude, ap.latitude]))
-									});
-
-									var rwyStyle = createRwyStyle(ap.type, ap.runways[0]);
-
-									if (rwyStyle)
-									{
-										rwyFeature.setStyle(rwyStyle);
-										layer.getSource().addFeature(rwyFeature);
-									}
-								}
-
-
-								//  parachute feature
-								if (ap.mapfeatures && ap.mapfeatures.length > 0 && ap.mapfeatures[0].type == "PARACHUTE")
-								{
-									var parachuteFeature = new ol.Feature({
-										geometry: new ol.geom.Point(ol.proj.fromLonLat([ap.longitude, ap.latitude]))
-									});
-
-									parachuteFeature.airport = ap;
-
-									var parachuteStyle = createParachuteStyle();
-									parachuteFeature.setStyle(parachuteStyle);
-
-									layer.getSource().addFeature(parachuteFeature);
-								}
-							}
-						}
-						else {
-							console.error("ERROR reading airports", response);
-						}
-					},
-					function(response) // error
-					{
-						console.error("ERROR reading airports", response.status, response.data);
-					}
-				)
-				.then(
-					function() {
-						weatherService.getAllWeatherInfos(populateWeatherInfo);
-					}
-				);
-
-
-			function createAdStyle(ad_type, name)
-			{
-				var textColor = "#451A57";
-				var src;
-
-				if (ad_type == "APT" || ad_type == "INTL_APT")
-					src = 'icon/ad_civ.png';
-				else if (ad_type == "AF_CIVIL" || ad_type == "GLIDING")
-					src = 'icon/ad_civ_nofac.png';
-				else if (ad_type == "AF_MIL_CIVIL")
-					src = 'icon/ad_civmil.png';
-				else if (ad_type == "HELI_CIVIL")
-					src = 'icon/ad_heli.png';
-				else if (ad_type == "AF_WATER")
-					src = 'icon/ad_water.png';
-				else if (ad_type == "AD_MIL") {
-					src = 'icon/ad_mil.png';
-					textColor = "#AE1E22";
-				}
-				else if (ad_type == "AD_CLOSED") {
-					src = 'icon/ad_closed.png';
-					name = '';
-				}
-				else
-					return;
-
-				return new ol.style.Style({
-					image: new ol.style.Icon(({
-						anchor: [0.5, 0.5],
-						anchorXUnits: 'fraction',
-						anchorYUnits: 'fraction',
-						scale: 1,
-						opacity: 0.75,
-						src: src
-					})),
-					text: new ol.style.Text({
-						font: 'bold 14px Calibri,sans-serif',
-						text: name,
-						fill: new ol.style.Fill({color: textColor}),
-						stroke: new ol.style.Stroke({color: "#FFFFFF", width: 2}),
-						offsetX: 0,
-						offsetY: 25
-					})
-				});
-			}
-
-
-			function createRwyStyle(ad_type, rwy)
-			{
-				if (!rwy)
-					return;
-
-				var src;
-				var rwy_surface = rwy.surface ? rwy.surface : undefined;
-				var rwy_direction = rwy.direction1 ? rwy.direction1 : undefined;
-
-
-				if (ad_type == "AD_MIL")
-					src = 'icon/rwy_mil.png';
-				else if (rwy_surface == "ASPH" || rwy_surface == "CONC")
-					src = 'icon/rwy_concrete.png';
-				else if (rwy_surface == "GRAS")
-					src = 'icon/rwy_grass.png';
-				else
-					return;
-
-				return new ol.style.Style({
-					image: new ol.style.Icon(({
-						anchor: [0.5, 0.5],
-						anchorXUnits: 'fraction',
-						anchorYUnits: 'fraction',
-						scale: 1,
-						rotation: (rwy_direction - 45) / 180 * Math.PI,
-						rotateWithView: true,
-						opacity: 0.75,
-						src: src
-					}))
-				});
-			}
-
-
-			function createParachuteStyle()
-			{
-				return new ol.style.Style({
-					image: new ol.style.Icon(({
-						anchor: [45, 16],
-						anchorXUnits: 'pixels',
-						anchorYUnits: 'pixels',
-						scale: 1,
-						rotateWithView: false,
-						opacity: 0.8,
-						src: 'icon/feature_parachute.png'
-					}))
-				});
-			}
-
-
-			function populateWeatherInfo(weatherinfolist)
-			{
-				for (var icao in weatherinfolist)
-				{
-					var ap = airports[icao];
-
-					if (!ap)
-						continue;
-					else
-						ap.weatherInfo = weatherinfolist[icao];
-
-					// sky conditions
-					var skycondFeature = new ol.Feature({
-						geometry: new ol.geom.Point(ol.proj.fromLonLat([ap.longitude, ap.latitude]))
-					});
-
-					skycondFeature.weatherInfo = {
-						airport_icao: icao,
-						metar: 	weatherinfolist[icao].metar,
-						taf: weatherinfolist[icao].taf
-					};
-
-					var skycondStyle = createSkycondStyle(weatherinfolist[icao].metar);
-
-					if (skycondStyle) {
-						skycondFeature.setStyle(skycondStyle);
-						weatherLayer.getSource().addFeature(skycondFeature);
-					}
-
-
-					// wind
-					var windFeature = new ol.Feature({
-						geometry: new ol.geom.Point(ol.proj.fromLonLat([ap.longitude, ap.latitude]))
-					});
-
-					windFeature.weatherInfo = {
-						airport_icao: icao,
-						metar: 	weatherinfolist[icao].metar,
-						taf: weatherinfolist[icao].taf
-					};
-
-					var windStyle = createWindStyle(weatherinfolist[icao].metar);
-
-					if (windStyle) {
-						windFeature.setStyle(windStyle);
-						weatherLayer.getSource().addFeature(windFeature);
-					}
-
-				}
-
-
-				function createSkycondStyle(metar)
-				{
-					if (!metar)
-						return;
-
-					var worstSkyCond = weatherService.getWorstSkyCondition(metar);
-					var wx_cond = metar.wx_string ? metar.wx_string : "";
-					var src;
-
-					switch (worstSkyCond)
-					{
-						case "CAVOK" :
-						case "SKC" :
-						case "CLR" :
-						case "NSC" :
-							src = "icon/sky_skc.png";
-							break;
-						case "FEW" :
-							src = "icon/sky_few.png";
-							break;
-						case "SCT" :
-							src = "icon/sky_sct.png";
-							break;
-						case "BKN" :
-							src = "icon/sky_bkn.png";
-							break;
-						case "OVC" :
-							src = "icon/sky_ovc.png";
-							break;
-						default:
-							return;
-					}
-
-					return new ol.style.Style({
-						image: new ol.style.Icon(({
-							anchor: [-24, 20],
-							anchorXUnits: 'pixels',
-							anchorYUnits: 'pixels',
-							scale: 1,
-							//opacity: 0.75,
-							src: src
-						})),
-						text: new ol.style.Text({
-							textAlign: "start",
-							textBaseline: "baseline",
-							font: '13px Calibri,sans-serif',
-							text: wx_cond,
-							fill: new ol.style.Fill({color: '#000000'}),
-							stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2}),
-							offsetX: 43,
-							offsetY: -8
-						})
-					});
-				}
-
-
-				function createWindStyle(metar)
-				{
-					if (!metar)
-						return;
-
-					var src;
-					var rot = metar.wind_dir_degrees ? deg2rad(metar.wind_dir_degrees - 90) + map.getView().getRotation() : undefined;
-					var windrange = [[0, "0"], [2, "1-2"], [7, "5"], [12, "10"], [17, "15"], [22, "20"], [27, "25"], [32, "30"], [37, "35"], [42, "40"], [47, "45"], [55, "50"], [65, "60"], [75, "70"], [85, "80"], [95, "90"], [105, "100"]];
-
-					for (var i = 0; i < windrange.length; i++)
-					{
-						if (metar.wind_speed_kt <= windrange[i][0])
-						{
-							src = "icon/wind_" + windrange[i][1] + "kt.png";
-
-							if (i == 0)
-								rot = 0;
-
-							break;
-						}
-					}
-
-					if (!src)
-						return;
-
-					var anchorX = -15 - 17;
-					var anchorY = 5 - 17;
-					var fakeX = anchorX * Math.cos(-rot) - anchorY * Math.sin(-rot) + 17;
-					var fakeY = anchorX * Math.sin(-rot) + anchorY * Math.cos(-rot) + 17;
-
-					return new ol.style.Style({
-						image: new ol.style.Icon(({
-							anchor: [fakeX, fakeY],
-							anchorXUnits: 'pixels',
-							anchorYUnits: 'pixels',
-							//anchor: [0.5, 0.5],
-							//anchorXUnits: 'fraction',
-							//anchorYUnits: 'fraction',
-							scale: 1,
-							rotation: rot,
-							rotateWithView: true,
-							src: src
-						}))
-					});
-				}
-			}
-		}
-
-
-		// add navaids to icon layer
-		function populateNavaids(layer)
-		{
-			$http.get(navaidBaseUrl)
-				.then(
-					function (response) { // success
-						if (response.data && response.data.navaids) {
-							for (var i = 0; i < response.data.navaids.length; i++) {
-								var navaid = response.data.navaids[i];
-
-								// cache for later use
-								navaids[navaid.id] = navaid;
-
-								var navaidFeature = new ol.Feature({
-									geometry: new ol.geom.Point(ol.proj.fromLonLat([navaid.longitude, navaid.latitude]))
-								});
-
-								navaidFeature.navaid = navaid;
-
-								var navaidStyle = createNavaidStyle(navaid.type, navaid.kuerzel);
-
-								if (navaidStyle)
-									navaidFeature.setStyle(navaidStyle);
-								else
-									continue;
-
-								layer.getSource().addFeature(navaidFeature);
-							}
-						}
-						else {
-							console.error("ERROR reading navaids", response);
-						}
-					},
-					function(response) // error
-					{
-						console.error("ERROR reading navaids", response.status, response.data);
-					}
-				);
-
-
-			function createNavaidStyle(navaid_type, name) {
-				var src, offsetY;
-
-				if (navaid_type == "NDB") {
-					src = 'icon/navaid_ndb.png';
-					offsetY = 33;
-				}
-				else if (navaid_type == "VOR-DME" || navaid_type == "DVOR-DME") {
-					src = 'icon/navaid_vor-dme.png';
-					offsetY = 20;
-				}
-				else if (navaid_type == "DME") {
-					src = 'icon/navaid_dme.png';
-					offsetY = 20;
-				}
-				else
-					return;
-
-				return new ol.style.Style({
-					image: new ol.style.Icon(({
-						anchor: [0.5, 0.5],
-						anchorXUnits: 'fraction',
-						anchorYUnits: 'fraction',
-						scale: 1,
-						opacity: 0.75,
-						src: src
-					})),
-					text: new ol.style.Text({
-						//textAlign: align,
-						//textBaseline: baseline,
-						font: 'bold 14px Calibri,sans-serif',
-						text: name,
-						fill: new ol.style.Fill({color: '#451A57'}),
-						stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2}),
-						offsetX: 0,
-						offsetY: offsetY
-					})
-				});
-			}
-		}
-
-
-		// add reporting points
-		function populateReportingpoints(layer)
-		{
-			$http.get(reportingpointBaseUrl)
-				.then(
-					function (response) { // success
-						if (response.data && response.data.reportingpoints) {
-							for (var i = 0; i < response.data.reportingpoints.length; i++) {
-								var rp = response.data.reportingpoints[i];
-
-								// cache for later use
-								reportingPoints[rp.id] = rp;
-
-								var feature;
-
-								if (rp.type == "POINT")
-									feature = createReportingPointFeature(rp);
-								else if (rp.type == "SECTOR")
-									feature = createReportingSectorFeature(rp);
-								else
-									continue;
-
-								feature.reportingpoint = rp;
-
-								layer.getSource().addFeature(feature);
-							}
-						}
-						else {
-							console.error("ERROR reading reporting points", response);
-						}
-					},
-					function(response) // error
-					{
-						console.error("ERROR reading reporting points", response.status, response.data);
-					}
-				);
-
-
-			function createReportingPointFeature(rp)
-			{
-				var src = "icon/";
-
-				if ((rp.inbd_comp && rp.outbd_comp) || (rp.inbd_comp == null && rp.outbd_comp == null))
-					src += "rp_comp.png";
-				else if (rp.inbd_comp || rp.outbd_comp)
-					src += "rp_inbd.png";
-				else
-					src += "rp.png";
-
-
-				var style = new ol.style.Style({
-					image: new ol.style.Icon(({
-						anchor: [0.5, 0.5],
-						anchorXUnits: 'fraction',
-						anchorYUnits: 'fraction',
-						scale: 1,
-						opacity: 0.75,
-						src: src
-					})),
-					text: new ol.style.Text({
-						font: 'bold 14px Calibri,sans-serif',
-						text: rp.name,
-						fill: new ol.style.Fill({color: '#0077FF'}),
-						stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2}),
-						offsetX: 0,
-						offsetY: 20
-					})
-				});
-
-
-				var feature = new ol.Feature({
-					geometry: new ol.geom.Point(ol.proj.fromLonLat([rp.longitude, rp.latitude]))
-				});
-
-				feature.setStyle(style);
-
-				return feature;
-			}
-
-
-			function createReportingSectorFeature(rp)
-			{
-				var merCoords, lonLat;
-				var merPoly = [];
-
-				// convert to mercator
-				for (var i = 0; i < rp.polygon.length; i++) {
-					lonLat = rp.polygon[i];
-					merCoords = ol.proj.fromLonLat(lonLat);
-					merPoly.push(merCoords);
-				}
-
-				var style = new ol.style.Style({
-						fill: new ol.style.Fill({
-							color: 'rgba(124, 47, 215, 0.3)'}),
-						stroke: new ol.style.Stroke({
-							color: 'rgba(124, 47, 215, 0.5)',
-							width: 2}),
-						text: new ol.style.Text({
-							font: 'bold 14px Calibri,sans-serif',
-							text: rp.name,
-							fill: new ol.style.Fill({color: '#7C4AD7'}),
-							stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2}),
-						})
-				});
-
-				var feature = new ol.Feature({
-					geometry: new ol.geom.Polygon([merPoly])
-				});
-
-				feature.setStyle(style);
-
-				return feature;
-			}
-		}
-
-
-		// add airspaces to airspace layer
-		function populateAirspaces(airspaceLayer) {
-			$http.get(airspaceBaseUrl)
-				.then(
-					function (response) { // success
-						if (response.data && response.data.airspace)
-						{
-							for (var key in response.data.airspace)
-							{
-								var airspace = response.data.airspace[key];
-
-
-								// cache for later use
-								airspaces[airspace.id] = airspace;
-
-								convertPolygon(airspace);
-
-								var airspaceFeature = new ol.Feature({
-									geometry: new ol.geom.Polygon([airspace.merPolygon]),
-									airspace: airspace
-								});
-
-								var airspaceStyle = createAirspaceStyle(airspace.category);
-
-								if (airspaceStyle)
-									airspaceFeature.setStyle(airspaceStyle);
-								else
-									continue;
-
-								airspaceLayer.getSource().addFeature(airspaceFeature);
-							}
-						}
-						else {
-							console.error("ERROR reading airspaces", response);
-						}
-					},
-					function(response) // error
-					{
-						console.error("ERROR reading airspaces", response.status, response.data);
-					}
-				);
-
-
-			function convertPolygon(airspace)
-			{
-				var merCoords, lonLat;
-				var merPoly = [];
-				var minLat, maxLat, minLon, maxLon;
-
-				for (var i = 0; i < airspace.polygon.length; i++)
-				{
-					lonLat = airspace.polygon[i];
-					merCoords = ol.proj.fromLonLat(lonLat);
-					merPoly.push(merCoords);
-
-					if (!minLon || lonLat[0] < minLon)
-						minLon = lonLat[0];
-
-					if (!maxLon || lonLat[0] > maxLon)
-						maxLon = lonLat[0];
-
-					if (!minLat || lonLat[1] < minLat)
-						minLat = lonLat[1];
-
-					if (!maxLat || lonLat[1] > maxLat)
-						maxLat = lonLat[1];
-				}
-
-				airspace.merPolygon = merPoly;
-				airspace.lonLatExtent = [[minLon, maxLon], [minLat, maxLat]];
-			}
-
-
-			function createAirspaceStyle(category) {
-				if (category == "CTR") {
-					return new ol.style.Style({
-						fill: new ol.style.Fill({
-							color: 'rgba(152, 206, 235, 0.3)'
-						}),
-						stroke: new ol.style.Stroke({
-							color: 'rgba(23, 128, 194, 0.8)',
-							width: 3,
-							lineDash: [10, 7]
-						})
-					});
-				}
-				else if (category == "FIR") {
-					return new ol.style.Style({
-						fill: new ol.style.Fill({
-							color: 'rgba(152, 206, 235, 0.3)'
-						}),
-						stroke: new ol.style.Stroke({
-							color: 'rgba(23, 128, 194, 0.8)',
-							//color: 'rgba(0, 0, 0, 1.0)',
-							width: 3,
-							lineDash: [1, 7]
-						})
-					});
-				}
-				else if (category == "A") {
-					return new ol.style.Style({
-						stroke: new ol.style.Stroke({
-							color: 'rgba(174, 30, 34, 0.8)',
-							width: 3
-						})
-					});
-				}
-				else if (category == "C" || category == "D") {
-					return new ol.style.Style({
-						stroke: new ol.style.Stroke({
-							color: 'rgba(23, 128, 194, 0.8)',
-							width: 3
-						})
-					});
-				}
-				else if (category == "E" || category == "TMZ") {
-					return new ol.style.Style({
-						stroke: new ol.style.Stroke({
-							color: 'rgba(23, 128, 194, 0.8)',
-							width: 2
-						})
-					});
-				}
-				else if (category == "DANGER" || category == "RESTRICTED") {
-					return new ol.style.Style({
-						stroke: new ol.style.Stroke({
-							color: 'rgba(174, 30, 34, 0.8)',
-							width: 2
-						})
-					});
-				}
-			}
-		}
-
-
-		// add webcams to webcam layer
-		function populateWebcams(webcamLayer) {
-			$http.get(nonAdWebcamBaseUrl)
-				.then(
-					function (response) { // success
-						if (!response.data || !response.data.webcams) {
-							console.error("ERROR reading webcams", response);
-						}
-						else {
-							for (var i = 0; i < response.data.webcams.length; i++) {
-								var webcam = response.data.webcams[i];
-								var webcamFeature = new ol.Feature({
-									geometry: new ol.geom.Point(ol.proj.fromLonLat([webcam.longitude, webcam.latitude])),
-									title: webcam.name
-								});
-
-								var webcamStyle = new ol.style.Style({
-									image: new ol.style.Icon(({
-										anchor: [0.5, 0.5],
-										anchorXUnits: 'fraction',
-										anchorYUnits: 'fraction',
-										scale: 1,
-										opacity: 0.9,
-										src: 'icon/webcam.png',
-										title: webcam.name
-									}))
-								});
-
-								webcamFeature.setStyle(webcamStyle);
-								webcamFeature.webcam = webcam;
-
-								webcamLayer.getSource().addFeature(webcamFeature);
-							}
-						}
-					},
-					function (response) { // error
-						console.error("ERROR reading webcams", response.status, response.data);
-					}
-				);
-		}
-
-
-		// click event
-		function onSingleClick(event)
-		{
-			var eventConsumed = false;
-
-			// geopoint layers
-			map.forEachFeatureAtPixel(
-				event.pixel,
-				function (feature, layer) {
-					if (eventConsumed)
-						return;
-
-					// specific feature clicked
-					if (feature.geopoint ||
-						feature.airport ||
-						feature.navaid ||
-						feature.waypoint ||
-						feature.userWaypoint ||
-						feature.reportingpoint ||
-						feature.webcam ||
-						feature.weatherInfo ||
-						feature.closeLayer)
-					{
-						closeOverlay();
-						clearGeopointSelection();
-
-						if (feature.closeLayer) {
-							map.removeLayer(feature.closeLayer);
-							closeIconLayer.getSource().removeFeature(feature);
-						}
-						else
-							onFeatureSelectCallback(event, feature);
-
-						eventConsumed = true;
-					}
-				},
-				null,
-				function (layer) // layers to search for features
-				{
-					return (layer === geopointLayer ||
-						layer === closeIconLayer ||
-						layer === airportLayer ||
-						layer === navaidLayer ||
-						layer === reportingpointLayer ||
-						layer === userWpLayer ||
-						layer === wpTrackLayer ||
-						layer === webcamLayer ||
-						layer === weatherLayer);
-				}
-			);
-
-			// traffic layer
-			if (!eventConsumed)
-			{
-				map.forEachFeatureAtPixel(
-					event.pixel,
-					function (feature, layer) {
-						if (eventConsumed)
-							return;
-
-						// specific feature clicked
-						if (feature.acInfo)
-						{
-							onFeatureSelectCallback(event, feature);
-							clearGeopointSelection();
-							eventConsumed = true;
-						}
-					},
-					null,
-					function (layer) // layers to search for features
-					{
-						return layer === trafficLayer;
-					}
-				);
-			}
-
-
-			if (!eventConsumed)
-			{
-				if (isGeopointSelectionActive || currentOverlay) // close overlay or geopointselection
-				{
-					clearGeopointSelection();
-					closeOverlay();
-				}
-				else // click on 'empty' map
-					onMapClickCallback(event, ol.proj.toLonLat(event.coordinate), getClickRadius(event));
-			}
-		}
-
-
-		// pointermove event
-		function onPointerMove(event)
-		{
-			if (event.dragging)
-				return;
-
-			var hitLayer = map.forEachFeatureAtPixel(
-				event.pixel,
-				function (feature, layer) {
-					return layer;
-				},
-				null,
-				function (layer) {
-					return (layer === geopointLayer ||
-						layer === closeIconLayer ||
-						layer === airportLayer ||
-						layer === navaidLayer ||
-						layer === reportingpointLayer ||
-						layer === userWpLayer ||
-						layer === wpTrackLayer ||
-						layer === trafficLayer ||
-						layer === webcamLayer ||
-						layer === weatherLayer);
-				}
-			);
-
-			if (hitLayer === geopointLayer ||
-					hitLayer === closeIconLayer ||
-					hitLayer === airportLayer ||
-					hitLayer === navaidLayer ||
-					hitLayer === reportingpointLayer ||
-					hitLayer === userWpLayer ||
-					hitLayer === wpTrackLayer ||
-					hitLayer === trafficLayer ||
-					hitLayer === webcamLayer ||
-					hitLayer === weatherLayer)
-			{
-				map.getTargetElement().style.cursor = 'pointer';
-			}
-			else
-			{
-				map.getTargetElement().style.cursor = '';
-			}
-		}
-
-
-		// moveend event (pan / zoom)
-		function onMoveEnd(event)
-		{
-			setLayerVisibility();
-
-			onMoveEndCallback(event);
-		}
-
-
-		// rotate event
-		function onViewRotation(event)
-		{
-			if (wpTrackCache && wpTrackCache.wps)
-			{
-				updateWpTrack(wpTrackCache.wps, wpTrackCache.alternate, wpTrackCache.variation);
-				wpTrackLayer.getSource().changed();
-			}
-		}
-
-
-		function getClickRadius(event) {
-			var clickPos = [event.pixel[0], event.pixel[1]];
-			var coord1 = map.getCoordinateFromPixel(clickPos);
-			var lat1 = ol.proj.toLonLat(coord1)[1];
-
-			clickPos[1] -= 50;
-			var coord2 = map.getCoordinateFromPixel(clickPos);
-			var lat2 = ol.proj.toLonLat(coord2)[1];
-
-			return Math.abs(lat2 - lat1);
-		}
-	}
-
-
-	function setLayerVisibility()
-	{
-		var zoom = map.getView().getZoom();
-
-		for (var i = 0; i < minZoomLevel.length; i++)
-		{
-			if (zoom >= minZoomLevel[i].minZoom)
-				minZoomLevel[i].layer.setVisible(true);
-			else
-				minZoomLevel[i].layer.setVisible(false);
-		}
-	}
-
+	function init(mapClickCallback, featureSelectCallback, moveEndCallback, trackModEndCallback, mapPos)
+    {
+        // init layers
+        mapLayer = createMapLayer();
+        locationLayer = createEmptyVectorLayer();
+        trafficLayer = createEmptyVectorLayer();
+        wpTrackLayer = createEmptyVectorLayer();
+        closeIconLayer = createEmptyVectorLayer();
+        airportLayer = createEmptyVectorLayer();
+        navaidLayer = createEmptyVectorLayer();
+        reportingpointLayer = createEmptyVectorLayer();
+        userWpLayer = createEmptyVectorLayer();
+        airspaceLayer = createEmptyVectorLayer();
+        flightTrackLayer = createEmptyVectorLayer();
+        webcamLayer = createEmptyVectorLayer();
+        weatherLayer = createEmptyVectorLayer();
+        geopointLayer = createEmptyVectorLayer();
+
+        airspaceImageLayer = createImageVectorLayerFromVectorLayer(airspaceLayer);
+        /*airportImageLayer = createImageVectorLayerFromVectorLayer(airportLayer);
+        navaidImageLayer = createImageVectorLayerFromVectorLayer(navaidLayer);
+        reportingpointImageLayer = createImageVectorLayerFromVectorLayer(reportingpointLayer);
+        userWpImageLayer = createImageVectorLayerFromVectorLayer(userWpLayer);
+        webcamImageLayer = createImageVectorLayerFromVectorLayer(webcamLayer);
+        weatherImageLayer = createImageVectorLayerFromVectorLayer(weatherLayer);*/
+
+
+        // TODO
+        //mapFeatureService.loadMapFeatures([5.4932, 45.705, 10.871, 48.0696], drawAllFeatures);
+
+
+        // init map
+        map = new ol.Map({
+            target: 'map',
+            controls: [
+                new ol.control.ScaleLine({units: 'nautical'}),
+                new ol.control.Attribution()
+            ],
+            layers: [
+                mapLayer,
+                airspaceImageLayer,
+                //webcamImageLayer,
+                webcamLayer,
+                closeIconLayer,
+                /*reportingpointImageLayer,
+                userWpImageLayer,
+                navaidImageLayer,
+                airportImageLayer,
+                weatherImageLayer,*/
+                reportingpointLayer,
+                userWpLayer,
+                navaidLayer,
+                airportLayer,
+                weatherLayer,
+                wpTrackLayer,
+                flightTrackLayer,
+                geopointLayer,
+                trafficLayer,
+                locationLayer
+            ],
+            view: new ol.View(
+                {
+                    center: mapPos.center,
+                    zoom: mapPos.zoom
+                })
+        });
+
+        // register map events
+        map.on('singleclick', onSingleClick);
+        map.on('pointermove', onPointerMove);
+        map.on('moveend', onMoveEnd);
+        map.getView().on('change:rotation', onViewRotation);
+
+        onFeatureSelectCallback = featureSelectCallback;
+        onTrackModifyEndCallback = trackModEndCallback;
+        onMapClickCallback = mapClickCallback;
+        onMoveEndCallback = moveEndCallback;
+
+
+        // restore chart layers
+        for (var i = 0; i < chartLayers.length; i++)
+            map.getLayers().insertAt(i + 1, chartLayers[i]);
+
+        minZoomLevel = [
+            {layer: closeIconLayer, minZoom: 9},
+            /*{layer: airportImageLayer, minZoom: 9},
+            {layer: navaidImageLayer, minZoom: 9},*/
+            {layer: airportLayer, minZoom: 9},
+            {layer: navaidLayer, minZoom: 9},
+            {layer: airspaceImageLayer, minZoom: 9},
+            /*{layer: reportingpointImageLayer, minZoom: 11},
+            {layer: userWpImageLayer, minZoom: 11},
+            {layer: webcamImageLayer, minZoom: 9},*/
+            {layer: reportingpointLayer, minZoom: 11},
+            {layer: userWpLayer, minZoom: 11},
+            {layer: webcamLayer, minZoom: 9},
+            {layer: trafficLayer, minZoom: 7},
+            /*{layer: weatherImageLayer, minZoom: 9}];*/
+            {layer: weatherLayer, minZoom: 9}];
+
+        setLayerVisibility();
+    }
+
+    //endregion
+
+
+    //region LAYERS
+
+    function createEmptyVectorLayer()
+    {
+        return new ol.layer.Vector({
+            source: new ol.source.Vector({})
+        });
+    }
+
+
+    function createImageVectorLayerFromVectorLayer(vectorLayer)
+    {
+        return new ol.layer.Image({
+            source: new ol.source.ImageVector({
+                source: vectorLayer.getSource()
+            })
+        });
+    }
+
+
+    function createMapLayer()
+    {
+        return new ol.layer.Tile({
+            source: new ol.source.XYZ({
+                tileUrlFunction: getTileUrl,
+                minZoom: 0,
+                maxZoom: MAX_ZOOMLEVEL,
+                crossOrigin: null,
+                attributions:
+                    [
+                        new ol.Attribution({ html: 'Map Data: &copy; <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors <a href="https://creativecommons.org/licenses/by-sa/2.0/" target="_blank">(CC-BY-SA)</a>' }),
+                        new ol.Attribution({ html: 'Elevation Data: <a href="https://lta.cr.usgs.gov/SRTM" target="_blank">SRTM</a>' }),
+                        new ol.Attribution({ html: 'Map Visualization: <a href="http://www.opentopomap.org/" target="_blank">OpenTopoMap</a> <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank">(CC-BY-SA)</a>' }),
+                        new ol.Attribution({ html: 'Aviation Data: <a href="http://www.openaip.net/" target="_blank">openAIP</a> <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/" target="_blank">(BY-NC-SA)</a>' }),
+                        new ol.Attribution({ html: 'Traffic Data: <a href="http://wiki.glidernet.org/about" target="_blank">Open Glider Network</a> | <a href="http://www.ADSBexchange.com/" target="_blank">ADSBexchange</a>' }),
+                        new ol.Attribution({ html: 'Aerodrome Charts: <a href="http://www.avare.ch/" target="_blank">Avare.ch</a>' }),
+                        new ol.Attribution({ html: 'Weather Data: <a href="https://www.aviationweather.gov/" target="_blank">NOAA - Aviation Weather Center</a>' }),
+                        new ol.Attribution({ html: 'Geographical Data: <a href="http://www.geonames.org/" target="_blank">GeoNames</a> <a href="http://creativecommons.org/licenses/by/3.0/" target="_blank">(CC-BY)</a>' }),
+                        new ol.Attribution({ html: 'Links to Webcams: all images are digital property of the webcam owners. check the reference for details.' })
+                    ]
+            })
+        });
+
+
+        function getTileUrl(coordinate)
+        {
+            //var otmBaseUrls = [ "//a.tile.opentopomap.org/", "//b.tile.opentopomap.org/", "//c.tile.opentopomap.org/" ];
+            var otmBaseUrls = [ "//opentopomap.org/", "//opentopomap.org/", "//opentopomap.org/" ];
+            var localBaseUrl = "maptiles/";
+            var z = coordinate[0];
+            var y = coordinate[1];
+            var x = (-coordinate[2] - 1);
+
+            if (isLocalTile(z, y, x))
+            {
+                return localBaseUrl + z + "/" + y + "/" + x + ".png";
+            }
+            else
+            {
+                var n = (z + y + x) % otmBaseUrls.length;
+                return otmBaseUrls[n] + z + "/" + y + "/" + x + ".png";
+            }
+        }
+
+
+        function isLocalTile(z, y, x)
+        {
+            if (z <= 6)
+                return true;
+
+            var zrange = [7, 14];
+            var zoomfact = Math.pow(2, (z - 6));
+            var yrange = [33 * zoomfact, 33 * zoomfact + zoomfact - 1 ];
+            var xrange = [22 * zoomfact, 22 * zoomfact + zoomfact - 1 ];
+
+            if (z < zrange[0] || z > zrange[1])
+                return false;
+
+            if (y < yrange[0] || y > yrange[1])
+                return false;
+
+            if (x < xrange[0] || x > xrange[1])
+                return false;
+
+            return true;
+        }
+    }
+
+
+    function setLayerVisibility()
+    {
+        var zoom = map.getView().getZoom();
+
+        for (var i = 0; i < minZoomLevel.length; i++)
+        {
+            if (zoom >= minZoomLevel[i].minZoom)
+                minZoomLevel[i].layer.setVisible(true);
+            else
+                minZoomLevel[i].layer.setVisible(false);
+        }
+    }
+
+    //endregion
+
+
+    //region DRAW MAP FEATURES
+
+    function drawAllFeatures(mapFeatureList)
+    {
+        drawAirports(mapFeatureList.airports);
+        drawNavaids(mapFeatureList.navaids);
+        drawAirspaces(mapFeatureList.airspaces);
+        drawReportingPoints(mapFeatureList.reportingPoints);
+        drawUserPoints(mapFeatureList.userPoints);
+        drawWebcams(mapFeatureList.webcams);
+
+        weatherService.getAreaWeatherInfos(getViewExtent(), drawWeatherInfo);
+    }
+
+
+    function drawAirports(airportList)
+    {
+        airportLayer.getSource().clear();
+
+        for (var i = 0; i < airportList.length; i++) {
+            var ap = airportList[i];
+
+            // airport icon
+            var adFeature = new ol.Feature({
+                geometry: new ol.geom.Point(ol.proj.fromLonLat([ap.longitude, ap.latitude]))
+            });
+
+            adFeature.airport = ap;
+
+            var adStyle = createAdStyle(ap.type, ap.icao);
+
+            if (adStyle)
+                adFeature.setStyle(adStyle);
+            else
+                continue;
+
+            airportLayer.getSource().addFeature(adFeature);
+
+
+            // rwy icon
+            if (ap.runways && ap.runways.length > 0 && ap.type != "AD_CLOSED" && ap.type != "HELI_CIVIL" && ap.type != "HELI_MIL")
+            {
+                var rwyFeature = new ol.Feature({
+                    geometry: new ol.geom.Point(ol.proj.fromLonLat([ap.longitude, ap.latitude]))
+                });
+
+                var rwyStyle = createRwyStyle(ap.type, ap.runways[0]);
+
+                if (rwyStyle)
+                {
+                    rwyFeature.setStyle(rwyStyle);
+                    airportLayer.getSource().addFeature(rwyFeature);
+                }
+            }
+
+
+            //  parachute feature
+            if (ap.mapfeatures && ap.mapfeatures.length > 0 && ap.mapfeatures[0].type == "PARACHUTE")
+            {
+                var parachuteFeature = new ol.Feature({
+                    geometry: new ol.geom.Point(ol.proj.fromLonLat([ap.longitude, ap.latitude]))
+                });
+
+                parachuteFeature.airport = ap;
+
+                var parachuteStyle = createParachuteStyle();
+                parachuteFeature.setStyle(parachuteStyle);
+
+                airportLayer.getSource().addFeature(parachuteFeature);
+            }
+        }
+
+
+        function createAdStyle(ad_type, name)
+        {
+            var textColor = "#451A57";
+            var src;
+
+            if (ad_type == "APT" || ad_type == "INTL_APT")
+                src = 'icon/ad_civ.png';
+            else if (ad_type == "AF_CIVIL" || ad_type == "GLIDING" || ad_type == "LIGHT_AIRCRAFT")
+                src = 'icon/ad_civ_nofac.png';
+            else if (ad_type == "AF_MIL_CIVIL")
+                src = 'icon/ad_civmil.png';
+            else if (ad_type == "HELI_CIVIL")
+                src = 'icon/ad_heli.png';
+            else if (ad_type == "HELI_MIL")
+                src = 'icon/ad_heli_mil.png';
+            else if (ad_type == "AF_WATER")
+                src = 'icon/ad_water.png';
+            else if (ad_type == "AD_MIL") {
+                src = 'icon/ad_mil.png';
+                textColor = "#AE1E22";
+            }
+            else if (ad_type == "AD_CLOSED") {
+                src = 'icon/ad_closed.png';
+                name = '';
+            }
+            else
+                return;
+
+            return new ol.style.Style({
+                image: new ol.style.Icon(({
+                    anchor: [0.5, 0.5],
+                    anchorXUnits: 'fraction',
+                    anchorYUnits: 'fraction',
+                    scale: 1,
+                    opacity: 0.75,
+                    src: src
+                })),
+                text: new ol.style.Text({
+                    font: 'bold 14px Calibri,sans-serif',
+                    text: name,
+                    fill: new ol.style.Fill({color: textColor}),
+                    stroke: new ol.style.Stroke({color: "#FFFFFF", width: 2}),
+                    offsetX: 0,
+                    offsetY: 25
+                })
+            });
+        }
+
+
+        function createRwyStyle(ad_type, rwy)
+        {
+            if (!rwy)
+                return;
+
+            var src;
+            var rwy_surface = rwy.surface ? rwy.surface : undefined;
+            var rwy_direction = rwy.direction1 ? rwy.direction1 : undefined;
+
+
+            if (ad_type == "AD_MIL")
+                src = 'icon/rwy_mil.png';
+            else if (rwy_surface == "ASPH" || rwy_surface == "CONC")
+                src = 'icon/rwy_concrete.png';
+            else if (rwy_surface != "WATE")
+                src = 'icon/rwy_grass.png';
+            else
+                return;
+
+            return new ol.style.Style({
+                image: new ol.style.Icon(({
+                    anchor: [0.5, 0.5],
+                    anchorXUnits: 'fraction',
+                    anchorYUnits: 'fraction',
+                    scale: 1,
+                    rotation: (rwy_direction - 45) / 180 * Math.PI,
+                    rotateWithView: true,
+                    opacity: 0.75,
+                    src: src
+                }))
+            });
+        }
+
+
+        function createParachuteStyle()
+        {
+            return new ol.style.Style({
+                image: new ol.style.Icon(({
+                    anchor: [45, 16],
+                    anchorXUnits: 'pixels',
+                    anchorYUnits: 'pixels',
+                    scale: 1,
+                    rotateWithView: false,
+                    opacity: 0.8,
+                    src: 'icon/feature_parachute.png'
+                }))
+            });
+        }
+    }
+
+
+    function drawWeatherInfo(weatherInfoList)
+    {
+        weatherLayer.getSource().clear();
+
+        if (!weatherInfoList)
+            return;
+
+        for (var i = 0; i < weatherInfoList.length; i++)
+        {
+            var weatherInfo = weatherInfoList[i];
+            var icao = weatherInfo.properties.id;
+            var ap = mapFeatureService.getAirportByIcao(icao);
+
+            if (!ap)
+                continue;
+            else
+                ap.weatherInfo = weatherInfo;
+
+            // sky conditions
+            var skycondFeature = new ol.Feature({
+                geometry: new ol.geom.Point(ol.proj.fromLonLat([ap.longitude, ap.latitude]))
+            });
+
+            skycondFeature.weatherInfo = weatherInfo;
+
+            var skycondStyle = createSkycondStyle(weatherInfo);
+
+            if (skycondStyle) {
+                skycondFeature.setStyle(skycondStyle);
+                weatherLayer.getSource().addFeature(skycondFeature);
+            }
+
+
+            // wind
+            var windFeature = new ol.Feature({
+                geometry: new ol.geom.Point(ol.proj.fromLonLat([ap.longitude, ap.latitude]))
+            });
+
+            windFeature.weatherInfo = weatherInfo;
+
+            var windStyle = createWindStyle(weatherInfo);
+
+            if (windStyle) {
+                windFeature.setStyle(windStyle);
+                weatherLayer.getSource().addFeature(windFeature);
+            }
+        }
+
+
+        function createSkycondStyle(weatherInfo)
+        {
+            if (!weatherInfo)
+                return;
+
+            var wx_cond = weatherInfo.properties.wx ? weatherInfo.properties.wx : "";
+            var src;
+
+            switch (weatherInfo.properties.cover)
+            {
+                case "CAVOK" :
+                case "SKC" :
+                case "CLR" :
+                case "NSC" :
+                    src = "icon/sky_skc.png";
+                    break;
+                case "FEW" :
+                    src = "icon/sky_few.png";
+                    break;
+                case "SCT" :
+                    src = "icon/sky_sct.png";
+                    break;
+                case "BKN" :
+                    src = "icon/sky_bkn.png";
+                    break;
+                case "OVC" :
+                    src = "icon/sky_ovc.png";
+                    break;
+                default:
+                    return;
+            }
+
+            return new ol.style.Style({
+                image: new ol.style.Icon(({
+                    anchor: [-24, 20],
+                    anchorXUnits: 'pixels',
+                    anchorYUnits: 'pixels',
+                    scale: 1,
+                    //opacity: 0.75,
+                    src: src
+                })),
+                text: new ol.style.Text({
+                    textAlign: "start",
+                    textBaseline: "baseline",
+                    font: '13px Calibri,sans-serif',
+                    text: wx_cond,
+                    fill: new ol.style.Fill({color: '#000000'}),
+                    stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2}),
+                    offsetX: 43,
+                    offsetY: -8
+                })
+            });
+        }
+
+
+        function createWindStyle(weatherInfo)
+        {
+            if (!weatherInfo)
+                return;
+
+            var src;
+            var rot = weatherInfo.properties.wdir ? deg2rad(weatherInfo.properties.wdir - 90) + map.getView().getRotation() : undefined;
+            var windrange = [[0, "0"], [2, "1-2"], [7, "5"], [12, "10"], [17, "15"], [22, "20"], [27, "25"], [32, "30"], [37, "35"], [42, "40"], [47, "45"], [55, "50"], [65, "60"], [75, "70"], [85, "80"], [95, "90"], [105, "100"]];
+
+            for (var i = 0; i < windrange.length; i++)
+            {
+                if (weatherInfo.properties.wspd <= windrange[i][0])
+                {
+                    src = "icon/wind_" + windrange[i][1] + "kt.png";
+
+                    if (i == 0)
+                        rot = 0;
+
+                    break;
+                }
+            }
+
+            if (!src)
+                return;
+
+            var anchorX = -15 - 17;
+            var anchorY = 5 - 17;
+            var fakeX = anchorX * Math.cos(-rot) - anchorY * Math.sin(-rot) + 17;
+            var fakeY = anchorX * Math.sin(-rot) + anchorY * Math.cos(-rot) + 17;
+
+            return new ol.style.Style({
+                image: new ol.style.Icon(({
+                    anchor: [fakeX, fakeY],
+                    anchorXUnits: 'pixels',
+                    anchorYUnits: 'pixels',
+                    //anchor: [0.5, 0.5],
+                    //anchorXUnits: 'fraction',
+                    //anchorYUnits: 'fraction',
+                    scale: 1,
+                    rotation: rot,
+                    rotateWithView: true,
+                    src: src
+                }))
+            });
+        }
+    }
+
+
+    function drawNavaids(navaidList)
+    {
+        navaidLayer.getSource().clear();
+
+        for (var i = 0; i < navaidList.length; i++) {
+            var navaid = navaidList[i];
+
+            var navaidFeature = new ol.Feature({
+                geometry: new ol.geom.Point(ol.proj.fromLonLat([navaid.longitude, navaid.latitude]))
+            });
+
+            navaidFeature.navaid = navaid;
+
+            var navaidStyle = createNavaidStyle(navaid.type, navaid.kuerzel);
+
+            if (navaidStyle)
+                navaidFeature.setStyle(navaidStyle);
+            else
+                continue;
+
+            navaidLayer.getSource().addFeature(navaidFeature);
+
+
+            function createNavaidStyle(navaid_type, name)
+            {
+                var src, textOffsetY;
+
+                if (navaid_type == "NDB") {
+                    src = 'icon/navaid_ndb.png';
+                    textOffsetY = 33;
+                }
+                else if (navaid_type == "VOR-DME" || navaid_type == "DVOR-DME") {
+                    src = 'icon/navaid_vor-dme.png';
+                    textOffsetY = 20;
+                }
+                else if (navaid_type == "VOR" || navaid_type == "DVOR") {
+                    src = 'icon/navaid_vor.png';
+                    textOffsetY = 20;
+                }
+                else if (navaid_type == "DME") {
+                    src = 'icon/navaid_dme.png';
+                    textOffsetY = 20;
+                }
+                else if (navaid_type == "TACAN") {
+                    src = 'icon/navaid_tacan.png';
+                    textOffsetY = 25;
+                }
+                else if (navaid_type == "VORTAC" || navaid_type == "DVORTAC") {
+                    src = 'icon/navaid_vortac.png';
+                    textOffsetY = 25;
+                }
+                else
+                    return;
+
+                return new ol.style.Style({
+                    image: new ol.style.Icon(({
+                        anchor: [0.5, 0.5],
+                        anchorXUnits: 'fraction',
+                        anchorYUnits: 'fraction',
+                        scale: 1,
+                        opacity: 0.75,
+                        src: src
+                    })),
+                    text: new ol.style.Text({
+                        //textAlign: align,
+                        //textBaseline: baseline,
+                        font: 'bold 14px Calibri,sans-serif',
+                        text: name,
+                        fill: new ol.style.Fill({color: '#451A57'}),
+                        stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2}),
+                        offsetX: 0,
+                        offsetY: textOffsetY
+                    })
+                });
+            }
+        }
+    }
+
+
+    function drawReportingPoints(reportingPointList)
+    {
+        reportingpointLayer.getSource().clear();
+
+        for (var i = 0; i < reportingPointList.length; i++) {
+            var rp = reportingPointList[i];
+
+            var feature;
+
+            if (rp.type == "POINT")
+                feature = createReportingPointFeature(rp);
+            else if (rp.type == "SECTOR")
+                feature = createReportingSectorFeature(rp);
+            else
+                continue;
+
+            feature.reportingpoint = rp;
+
+            reportingpointLayer.getSource().addFeature(feature);
+        }
+
+
+        function createReportingPointFeature(rp)
+        {
+            var src = "icon/";
+
+            if ((rp.inbd_comp && rp.outbd_comp) || (rp.inbd_comp == null && rp.outbd_comp == null))
+                src += "rp_comp.png";
+            else if (rp.inbd_comp || rp.outbd_comp)
+                src += "rp_inbd.png";
+            else
+                src += "rp.png";
+
+
+            var style = new ol.style.Style({
+                image: new ol.style.Icon(({
+                    anchor: [0.5, 0.5],
+                    anchorXUnits: 'fraction',
+                    anchorYUnits: 'fraction',
+                    scale: 1,
+                    opacity: 0.75,
+                    src: src
+                })),
+                text: new ol.style.Text({
+                    font: 'bold 14px Calibri,sans-serif',
+                    text: rp.name,
+                    fill: new ol.style.Fill({color: '#0077FF'}),
+                    stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2}),
+                    offsetX: 0,
+                    offsetY: 20
+                })
+            });
+
+
+            var feature = new ol.Feature({
+                geometry: new ol.geom.Point(ol.proj.fromLonLat([rp.longitude, rp.latitude]))
+            });
+
+            feature.setStyle(style);
+
+            return feature;
+        }
+
+
+        function createReportingSectorFeature(rp)
+        {
+            var merCoords, lonLat;
+            var merPoly = [];
+
+            // convert to mercator
+            for (var i = 0; i < rp.polygon.length; i++) {
+                lonLat = rp.polygon[i];
+                merCoords = ol.proj.fromLonLat(lonLat);
+                merPoly.push(merCoords);
+            }
+
+            var style = new ol.style.Style({
+                fill: new ol.style.Fill({
+                    color: 'rgba(124, 47, 215, 0.3)'}),
+                stroke: new ol.style.Stroke({
+                    color: 'rgba(124, 47, 215, 0.5)',
+                    width: 2}),
+                text: new ol.style.Text({
+                    font: 'bold 14px Calibri,sans-serif',
+                    text: rp.name,
+                    fill: new ol.style.Fill({color: '#7C4AD7'}),
+                    stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2}),
+                })
+            });
+
+            var feature = new ol.Feature({
+                geometry: new ol.geom.Polygon([merPoly])
+            });
+
+            feature.setStyle(style);
+
+            return feature;
+        }
+    }
+
+
+    function loadAndDrawUserPoints()
+    {
+        mapFeatureService.loadAllUserPoints(drawUserPoints);
+    }
+
+
+    function drawUserPoints(userpointList)
+    {
+        if (!userWpLayer)
+            return;
+
+        userWpLayer.getSource().clear();
+
+        for (var i = 0; i < userpointList.length; i++)
+        {
+            var up = userpointList[i];
+
+            var userWpFeature = new ol.Feature({
+                geometry: new ol.geom.Point(ol.proj.fromLonLat([up.longitude, up.latitude]))
+            });
+
+            userWpFeature.userWaypoint = up;
+
+            var userWpStyle = createUserPointStyle(up.name);
+
+            if (userWpStyle)
+                userWpFeature.setStyle(userWpStyle);
+            else
+                continue;
+
+            userWpLayer.getSource().addFeature(userWpFeature);
+        }
+
+
+        function createUserPointStyle(name) {
+            return new ol.style.Style({
+                image: new ol.style.Icon(({
+                    anchor: [0.5, 0.5],
+                    anchorXUnits: 'fraction',
+                    anchorYUnits: 'fraction',
+                    scale: 1,
+                    opacity: 0.75,
+                    src: 'icon/wp_user.png'
+                })),
+                text: new ol.style.Text({
+                    font: 'bold 14px Calibri,sans-serif',
+                    text: name,
+                    fill: new ol.style.Fill({color: '#0077FF'}),
+                    stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2}),
+                    offsetX: 0,
+                    offsetY: 20
+                })
+            });
+        }
+    }
+
+
+    function drawAirspaces(airspaceList)
+    {
+        airspaceLayer.getSource().clear();
+
+        for (var key in airspaceList)
+        {
+            var airspace = airspaceList[key];
+
+            convertPolygon(airspace);
+
+            var airspaceFeature = new ol.Feature({
+                geometry: new ol.geom.Polygon([airspace.merPolygon]),
+                airspace: airspace
+            });
+
+            var airspaceStyle = createAirspaceStyle(airspace.category);
+
+            if (airspaceStyle)
+                airspaceFeature.setStyle(airspaceStyle);
+            else
+                continue;
+
+            airspaceLayer.getSource().addFeature(airspaceFeature);
+        }
+
+
+        function convertPolygon(airspace)
+        {
+            var merCoords, lonLat;
+            var merPoly = [];
+            var minLat, maxLat, minLon, maxLon;
+
+            for (var i = 0; i < airspace.polygon.length; i++)
+            {
+                lonLat = airspace.polygon[i];
+                merCoords = ol.proj.fromLonLat(lonLat);
+                merPoly.push(merCoords);
+
+                if (!minLon || lonLat[0] < minLon)
+                    minLon = lonLat[0];
+
+                if (!maxLon || lonLat[0] > maxLon)
+                    maxLon = lonLat[0];
+
+                if (!minLat || lonLat[1] < minLat)
+                    minLat = lonLat[1];
+
+                if (!maxLat || lonLat[1] > maxLat)
+                    maxLat = lonLat[1];
+            }
+
+            airspace.merPolygon = merPoly;
+            airspace.lonLatExtent = [[minLon, maxLon], [minLat, maxLat]];
+        }
+
+
+        function createAirspaceStyle(category) {
+            if (category == "CTR") {
+                return new ol.style.Style({
+                    fill: new ol.style.Fill({
+                        color: 'rgba(152, 206, 235, 0.3)'
+                    }),
+                    stroke: new ol.style.Stroke({
+                        color: 'rgba(23, 128, 194, 0.8)',
+                        width: 3,
+                        lineDash: [10, 7]
+                    })
+                });
+            }
+            else if (category == "A") {
+                return new ol.style.Style({
+                    stroke: new ol.style.Stroke({
+                        color: 'rgba(174, 30, 34, 0.8)',
+                        width: 3
+                    })
+                });
+            }
+            else if (category == "B" || category == "C" || category == "D") {
+                return new ol.style.Style({
+                    stroke: new ol.style.Stroke({
+                        color: 'rgba(23, 128, 194, 0.8)',
+                        width: 3
+                    })
+                });
+            }
+            else if (category == "E") {
+                return new ol.style.Style({
+                    stroke: new ol.style.Stroke({
+                        color: 'rgba(23, 128, 194, 0.8)',
+                        width: 2
+                    })
+                });
+            }
+            else if (category == "DANGER" || category == "RESTRICTED" || category == "PROHIBITED") {
+                return new ol.style.Style({
+                    stroke: new ol.style.Stroke({
+                        color: 'rgba(174, 30, 34, 0.8)',
+                        width: 2
+                    })
+                });
+            }
+            else if (category == "TMZ" || category == "RMZ" || category == "FIZ") {
+                return new ol.style.Style({
+                    /*fill: new ol.style.Fill({
+                     color: 'rgba(152, 206, 235, 0.3)'
+                     }),*/
+                    stroke: new ol.style.Stroke({
+                        color: 'rgba(23, 128, 194, 0.8)',
+                        //color: 'rgba(0, 0, 0, 1.0)',
+                        width: 3,
+                        lineDash: [1, 7]
+                    })
+                });
+            }
+            else if (category == "FIR" || category == "UIR") {
+                return new ol.style.Style({
+                    /*fill: new ol.style.Fill({
+                     color: 'rgba(152, 206, 235, 0.3)'
+                     }),*/
+                    stroke: new ol.style.Stroke({
+                        color: 'rgba(0, 150, 64, 0.8)',
+                        width: 3,
+                        lineDash: [5, 20]
+                    })
+                });
+            }
+            else if (category == "GLIDING" || category == "WAVE") {
+                return new ol.style.Style({
+                    stroke: new ol.style.Stroke({
+                        color: 'rgba(0, 150, 64, 0.8)',
+                        width: 2
+                    })
+                });
+            }
+        }
+    }
+
+
+    function drawWebcams(webcamList)
+    {
+        webcamLayer.getSource().clear();
+
+        for (var i = 0; i < webcamList.length; i++) {
+            var webcam = webcamList[i];
+            var webcamFeature = new ol.Feature({
+                geometry: new ol.geom.Point(ol.proj.fromLonLat([webcam.longitude, webcam.latitude])),
+                title: webcam.name
+            });
+
+            var webcamStyle = new ol.style.Style({
+                image: new ol.style.Icon(({
+                    anchor: [0.5, 0.5],
+                    anchorXUnits: 'fraction',
+                    anchorYUnits: 'fraction',
+                    scale: 1,
+                    opacity: 0.9,
+                    src: 'icon/webcam.png',
+                    title: webcam.name
+                }))
+            });
+
+            webcamFeature.setStyle(webcamStyle);
+            webcamFeature.webcam = webcam;
+
+            webcamLayer.getSource().addFeature(webcamFeature);
+        }
+    }
+
+    //endregion
+
+
+    //region USER EVENTS
+
+    // click event
+    function onSingleClick(event)
+    {
+        var eventConsumed = false;
+
+        // geopoint layers
+        map.forEachFeatureAtPixel(
+            event.pixel,
+            function (feature, layer) {
+                if (eventConsumed)
+                    return;
+
+                // specific feature clicked
+                if (feature.geopoint ||
+                    feature.airport ||
+                    feature.navaid ||
+                    feature.waypoint ||
+                    feature.userWaypoint ||
+                    feature.reportingpoint ||
+                    feature.webcam ||
+                    feature.weatherInfo ||
+                    feature.closeLayer)
+                {
+                    closeOverlay();
+                    clearGeopointSelection();
+
+                    if (feature.closeLayer) {
+                        map.removeLayer(feature.closeLayer);
+                        closeIconLayer.getSource().removeFeature(feature);
+                    }
+                    else
+                        onFeatureSelectCallback(event, feature);
+
+                    eventConsumed = true;
+                }
+            },
+            0,
+            function (layer) // layers to search for features
+            {
+                return (layer === geopointLayer ||
+                    layer === closeIconLayer ||
+                    layer === airportLayer ||
+                    layer === navaidLayer ||
+                    layer === reportingpointLayer ||
+                    layer === userWpLayer ||
+                    layer === wpTrackLayer ||
+                    layer === webcamLayer ||
+                    layer === weatherLayer);
+            }
+        );
+
+        // traffic layer
+        if (!eventConsumed)
+        {
+            map.forEachFeatureAtPixel(
+                event.pixel,
+                function (feature, layer) {
+                    if (eventConsumed)
+                        return;
+
+                    // specific feature clicked
+                    if (feature.acInfo)
+                    {
+                        onFeatureSelectCallback(event, feature);
+                        clearGeopointSelection();
+                        eventConsumed = true;
+                    }
+                },
+                0,
+                function (layer) // layers to search for features
+                {
+                    return layer === trafficLayer;
+                }
+            );
+        }
+
+
+        if (!eventConsumed)
+        {
+            if (isGeopointSelectionActive || currentOverlay) // close overlay or geopointselection
+            {
+                clearGeopointSelection();
+                closeOverlay();
+            }
+            else // click on 'empty' map
+                onMapClickCallback(event, ol.proj.toLonLat(event.coordinate), getClickRadius(event));
+        }
+    }
+
+
+    // pointermove event
+    function onPointerMove(event)
+    {
+        if (event.dragging)
+            return;
+
+        var hitLayer = map.forEachFeatureAtPixel(
+            event.pixel,
+            function (feature, layer) {
+                return layer;
+            },
+            0,
+            function (layer) {
+                return (layer === geopointLayer ||
+                    layer === closeIconLayer ||
+                    layer === airportLayer ||
+                    layer === navaidLayer ||
+                    layer === reportingpointLayer ||
+                    layer === userWpLayer ||
+                    layer === wpTrackLayer ||
+                    layer === trafficLayer ||
+                    layer === webcamLayer ||
+                    layer === weatherLayer);
+            }
+        );
+
+        if (hitLayer === geopointLayer ||
+                hitLayer === closeIconLayer ||
+                hitLayer === airportLayer ||
+                hitLayer === navaidLayer ||
+                hitLayer === reportingpointLayer ||
+                hitLayer === userWpLayer ||
+                /*hitLayer === airportImageLayer ||
+                hitLayer === navaidImageLayer ||
+                hitLayer === reportingpointImageLayer ||
+                hitLayer === userWpImageLayer ||*/
+                hitLayer === wpTrackLayer ||
+                hitLayer === trafficLayer ||
+                hitLayer === webcamLayer ||
+                hitLayer === weatherLayer)
+                /*hitLayer === webcamImageLayer ||
+                hitLayer === weatherImageLayer)*/
+        {
+            map.getTargetElement().style.cursor = 'pointer';
+        }
+        else
+        {
+            map.getTargetElement().style.cursor = '';
+        }
+    }
+
+
+    // moveend event (pan / zoom)
+    function onMoveEnd(event)
+    {
+        setLayerVisibility();
+
+        // update map features
+        if (map.getView().getZoom() >= 9) // TODO: variable zoom level
+            mapFeatureService.getMapFeatures(getViewExtent(), drawAllFeatures);
+
+        onMoveEndCallback(event);
+    }
+
+
+    // rotate event
+    function onViewRotation(event)
+    {
+        if (wpTrackCache && wpTrackCache.wps)
+        {
+            drawWaypoints(wpTrackCache.wps, wpTrackCache.alternate, wpTrackCache.variation);
+            wpTrackLayer.getSource().changed();
+        }
+    }
+
+
+    function getClickRadius(event) {
+        var clickPos = [event.pixel[0], event.pixel[1]];
+        var coord1 = map.getCoordinateFromPixel(clickPos);
+        var lat1 = ol.proj.toLonLat(coord1)[1];
+
+        clickPos[1] -= 50;
+        var coord2 = map.getCoordinateFromPixel(clickPos);
+        var lat2 = ol.proj.toLonLat(coord2)[1];
+
+        return Math.abs(lat2 - lat1);
+    }
+
+    //endregion
+
+
+    //region MAP POSITION/SIZE
+
+    function getMapPosition()
+    {
+        return {
+            center: ol.proj.toLonLat(map.getView().getCenter()),
+            zoom: map.getView().getZoom()
+        };
+    }
+
+
+    function setMapPosition(lat, lon, zoom, forceRender)
+    {
+        if (lat && lon)
+        {
+            var pos = ol.proj.fromLonLat([lon, lat]);
+            map.getView().setCenter(pos);
+        }
+
+        if (zoom)
+            map.getView().setZoom(zoom);
+
+        if (forceRender)
+            map.renderSync();
+    }
+
+
+    function updateMapSize()
+    {
+        map.updateSize();
+    }
+
+
+    function getViewExtent()
+    {
+        var extent = map.getView().calculateExtent(map.getSize());
+
+        return ol.proj.transformExtent(extent, 'EPSG:3857', 'EPSG:4326');
+    }
+
+
+    function fitView(mercator_extent)
+    {
+        if (!mercator_extent || !map || !map.getView || !map.getSize)
+            return;
+
+        var paddingFactor = 0.1;
+        var mapSize = map.getSize();
+        var padX = Math.ceil(mapSize[0] * paddingFactor / 2);
+        var padY = Math.ceil(mapSize[1] * paddingFactor / 2);
+
+        map.getView().fit(mercator_extent, { size: map.getSize(), padding: [ padX, padX, padY, padY], maxZoom: 15 });
+    }
+
+    //endregion
+
+
+	//region OVERLAYS
 
 	function addOverlay(coordinates, container, autopan)
 	{
+
+
 		if (currentOverlay)
 			closeOverlay();
 
@@ -1089,6 +1291,10 @@ function mapService($http, weatherService)
 		currentOverlay = undefined;
 	}
 
+	//endregion
+
+
+	//region GEOPOINT SELECTION
 
 	function clearGeopointSelection()
 	{
@@ -1119,6 +1325,7 @@ function mapService($http, weatherService)
 			geopoints.push(getCoordinateGeopoint(clickLonLat));
 
 		var airspaceSelection = getAirspacesAtLatLon(clickLonLat);
+		var simpleAirspaceSelection = getSimplifiedAirspaces(airspaceSelection);
 
 		var numPointsB = Math.floor(geopoints.length / 3);
 		var numPointsT = geopoints.length - numPointsB;
@@ -1156,30 +1363,16 @@ function mapService($http, weatherService)
 			var lineFeature = createLineFeature(geopoints[i]);
 			layerSource.addFeature(lineFeature);
 
-			// add data object
-			addCachedObject(geopoints[i], geoPointFeature, labelFeature);
+			// add feature object
+			addFeatureObject(geopoints[i], geoPointFeature, labelFeature);
 		}
 
-		addAirspaceOverlay(airspaceSelection, geopoints);
-		//addAirspaceFeature(layerSource, airspaceSelection, geopoints);
+		addAirspaceOverlay(geopoints, airspaceSelection, simpleAirspaceSelection);
 
 
 		function getAirspacesAtLatLon(clickLonLat)
 		{
-			var asList = [];
-			var pt = turf.point(clickLonLat);
-
-			for (key in airspaces) {
-				var airspace = airspaces[key];
-
-				if (clickLonLat[0] < airspace.lonLatExtent[0][0] || clickLonLat[0] > airspace.lonLatExtent[0][1] || clickLonLat[1] < airspace.lonLatExtent[1][0] || clickLonLat[1] > airspace.lonLatExtent[1][1])
-					continue;
-
-				var poly = turf.polygon([airspace.polygon]);
-
-				if (turf.inside(pt, poly))
-					asList.push(airspace);
-			}
+			var asList = mapFeatureService.getAirspacesAtLatLon(clickLonLat);
 
 			// reset previous exclusions
 			for (var i = 0; i < asList.length; i++)
@@ -1213,19 +1406,224 @@ function mapService($http, weatherService)
 
 
 			// sort airspaces top to bottom
-			asList.sort(function(a, b) { return getAirspaceHeight(b.alt.bottom) - getAirspaceHeight(a.alt.bottom); });
+			asList.sort(airspaceComparer);
 
 			return asList;
 		}
 
 
-		function getAirspaceHeight(height)
+		function airspaceComparer(a, b)
+        {
+            var catPrio = (a.category > b.category) ? 1 : -1;
+
+            return getAirspaceHeight(b.alt.bottom) - getAirspaceHeight(a.alt.bottom) + catPrio;
+        }
+
+
+        function airspaceComparerBottom2Top(as1, as2)
+        {
+            var bottomComp = heightComparerBottom2Top(as1.alt.bottom, as2.alt.bottom);
+
+            if (bottomComp != 0)
+                return bottomComp;
+            else
+                return heightComparerBottom2Top(as1.alt.top, as2.alt.top);
+        }
+
+
+        function heightComparerBottom2Top(alt1, alt2)
+        {
+            // AGL first
+            if (alt1.ref == "GND" && alt2.ref != "GND")
+                return -1;
+
+            if (alt1.ref != "GND" && alt2.ref == "GND")
+                return 1;
+
+            return getAirspaceHeight(alt1) - getAirspaceHeight(alt2);
+        }
+
+
+        function getAirspaceHeight(height)
 		{
 			if (height.unit == 'FL')
 				return height.height * 100;
 			else
 				return height.height;
 		}
+
+
+		function isHigherOrEqual(alt1, alt2)
+        {
+            if (alt1.ref != alt2.ref && (alt1.ref == 'GND' || alt2.ref == 'GND')) // don't mix reference planes
+                return false;
+
+            return (getAirspaceHeight(alt1) >= getAirspaceHeight(alt2));
+        }
+
+
+		function getSimplifiedAirspaces(airspaceList)
+        {
+            var i, j, cat;
+
+            if (!airspaceList)
+                return;
+
+            // sort by airspace category
+            var asByCat = {};
+
+            for (i = 0; i < airspaceList.length; i++)
+            {
+                if (!(airspaceList[i].category in asByCat))
+                    asByCat[airspaceList[i].category] = [];
+
+                asByCat[airspaceList[i].category].push(airspaceList[i]);
+            }
+
+            // group overlapping per category
+            var groupedAsByCat = {};
+
+            for (cat in asByCat)
+            {
+                groupedAsByCat[cat] = [];
+
+                // sort
+                asByCat[cat].sort(airspaceComparerBottom2Top);
+
+                var currentAs;
+
+                for (i = 0; i < asByCat[cat].length; i++)
+                {
+                    if (i == 0)
+                        currentAs = createAirspaceInfo(asByCat[cat][i]);
+
+                    if (i < asByCat[cat].length - 1)
+                    {
+                        var as2 = asByCat[cat][i + 1];
+
+                        if (isHigherOrEqual(as2.alt.bottom, currentAs.alt.bottom) && isHigherOrEqual(currentAs.alt.top, as2.alt.top)) // current completely overlaps b => stay with current & continue
+                        {
+                            currentAs.name = "";
+                            continue;
+                        }
+                        else if (isHigherOrEqual(currentAs.alt.bottom, as2.alt.bottom) && isHigherOrEqual(as2.alt.top, currentAs.alt.top)) // b completely overlaps current => use b & continue
+                        {
+                            currentAs = createAirspaceInfo(asByCat[cat][i + 1]);
+                            currentAs.name = "";
+                            continue;
+                        }
+                        else if (isHigherOrEqual(currentAs.alt.top, as2.alt.bottom)) // bottom-top-overlap => set new top height of current
+                        {
+                            currentAs.name = "";
+                            currentAs.alt.top = as2.alt.top;
+                            continue;
+                        }
+                        else
+                        {
+                            groupedAsByCat[cat].push(currentAs);
+                            currentAs = createAirspaceInfo(as2);
+                            continue;
+                        }
+                    }
+                }
+
+                groupedAsByCat[cat].push(currentAs);
+            }
+
+            // create intermediate list
+            var intermediateSimpleAsList = [];
+
+            for (cat in groupedAsByCat)
+            {
+                for (i = 0; i < groupedAsByCat[cat].length; i++)
+                    intermediateSimpleAsList.push(groupedAsByCat[cat][i]);
+            }
+
+
+            // displace airspaces
+            for (i = 0; i < intermediateSimpleAsList.length; i++)
+            {
+                var asDom = intermediateSimpleAsList[i];
+
+                if (asDom.category in displaceAirspaceCat) // check for dom category
+                {
+                    for (j = 0; j < intermediateSimpleAsList.length; j++)
+                    {
+                        var asSub = intermediateSimpleAsList[j];
+
+                        if ($.inArray(asSub.category, displaceAirspaceCat[asDom.category]) < 0) // check for sub categories
+                            continue;
+
+                        if (asSub.isDeleted) // skip if already deleted
+                            continue;
+
+                        if (isHigherOrEqual(asSub.alt.bottom, asDom.alt.top) || isHigherOrEqual(asDom.alt.bottom, asSub.alt.top)) // not overlapping => skip
+                            continue;
+
+                        if (isHigherOrEqual(asDom.alt.top, asSub.alt.top) && isHigherOrEqual(asSub.alt.bottom, asDom.alt.bottom)) // full overlap => delete sub
+                        {
+                            asSub.deleted = true;
+                            continue;
+                        }
+
+                        if (isHigherOrEqual(asDom.alt.top, asSub.alt.bottom)) // dom.top > sub.bottom => push sub up
+                        {
+                            asSub.alt.bottom = asDom.alt.top;
+
+                            if (isHigherOrEqual(asSub.alt.bottom, asSub.alt.top)) // crushed to bits => delete sub
+                                asSub.deleted = true;
+
+                            continue;
+                        }
+
+                        if (isHigherOrEqual(asSub.alt.top, asDom.alt.bottom)) // sub.top > dom.bottom => push sub down
+                        {
+                            asSub.alt.top = asDom.alt.bottom;
+
+                            if (isHigherOrEqual(asSub.alt.bottom, asSub.alt.top)) // crushed to bits => delete sub
+                                asSub.deleted = true;
+
+                            continue;
+                        }
+                    }
+                }
+            }
+
+
+            // remove deleted entries
+            var finalSimpleAsList = [];
+
+            for (i = 0; i < intermediateSimpleAsList.length; i++)
+            {
+                if (!intermediateSimpleAsList[i].deleted)
+                    finalSimpleAsList.push(intermediateSimpleAsList[i]);
+            }
+
+            finalSimpleAsList.sort(airspaceComparer);
+
+            return finalSimpleAsList;
+        }
+
+
+        function createAirspaceInfo(airspace)
+        {
+            return {
+                name: airspace.name,
+                category: airspace.category,
+                alt: {
+                    top: {
+                        height: airspace.alt.top.height,
+                        ref: airspace.alt.top.ref,
+                        unit: airspace.alt.top.unit
+                    },
+                    bottom: {
+                        height: airspace.alt.bottom.height,
+                        ref: airspace.alt.bottom.ref,
+                        unit: airspace.alt.bottom.unit
+                    }
+                }
+            }
+        }
 
 
 		function sortQuadrantClockwise(geopoints, isTopQuadrant, isLeftQuadrant)
@@ -1360,71 +1758,94 @@ function mapService($http, weatherService)
 		}
 
 
-		function addAirspaceOverlay(airspaceSelection, geopoints)
-		{
-			// determine top left coordinate
-			var minLat, maxLon;
+		function addAirspaceOverlay(geopoints, airspaceSelection, simpleAirspaceSelection)
+        {
+            // determine top left coordinate
+            var minLat, maxLon;
 
-			for (var i = 0; i < geopoints.length; i++)
-			{
-				if (!minLat || geopoints[i].latitude < minLat)
-					minLat = geopoints[i].latitude;
+            for (var i = 0; i < geopoints.length; i++) {
+                if (!minLat || geopoints[i].latitude < minLat)
+                    minLat = geopoints[i].latitude;
 
-				if (!maxLon || geopoints[i].longitude > maxLon)
-					maxLon = geopoints[i].longitude;
-			}
+                if (!maxLon || geopoints[i].longitude > maxLon)
+                    maxLon = geopoints[i].longitude;
+            }
 
-			var pixelTopLeft = map.getPixelFromCoordinate(ol.proj.fromLonLat([maxLon, minLat]));
-			pixelTopLeft[0] += 10;
-			pixelTopLeft[1] += 10;
+            var pixelTopLeft = map.getPixelFromCoordinate(ol.proj.fromLonLat([maxLon, minLat]));
+            pixelTopLeft[0] += 50;
+            //pixelTopLeft[1] += 10;
+
+            var asTableHtml;
+
+            if (airspaceSelection.length > simpleAirspaceSelection.length)
+            {
+                asTableHtml = getTableHtml(airspaceSelection, true, false);
+                asTableHtml += getTableHtml(simpleAirspaceSelection, true, true);
+            }
+            else
+                asTableHtml = getTableHtml(simpleAirspaceSelection, false, false);
+
+            var airspaceContainer = document.createElement('div');
 
 
-			var airspaceHtml = '<table style="border-spacing: 3px; border-collapse: separate;">';
-
-			for (var j = 0; j < airspaceSelection.length; j++)
-			{
-				var airspace = airspaceSelection[j];
-
-				if (airspace.hide)
-					continue;
-
-				var bottom_height = airspace.alt.bottom_replace ? airspace.alt.bottom_replace : airspace.alt.bottom;
-
-				// box
-				airspaceHtml += '<tr><td><div style="position:relative"><table class="airspace-overlay ' + getBoxClass(airspace) + '">';
-
-				// top height
-				airspaceHtml += '<tr style="border-bottom: thin solid"><td>' + getHeightText(airspace.alt.top) + '</td></tr>';
-
-				// bottom height
-				airspaceHtml += '<tr><td>' + getHeightText(bottom_height) + '</td></tr>';
-
-				airspaceHtml += '</table>';
-
-				// airspace category
-				var categoryBox = getAirspaceCategoryBox(airspace);
-
-				if (categoryBox)
-					airspaceHtml += categoryBox;
-
-				// airspace name
-				var airspaceName = getAirspaceName(airspace);
-
-				if (airspaceName)
-					airspaceHtml += airspaceName;
-
-				airspaceHtml += '</div></td></tr>';
-
-			}
-
-			airspaceHtml += '</table>';
-
-			var airspaceContainer = document.createElement('div');
-			airspaceContainer.setAttribute("id", "airspace-popup");
 			airspaceContainer.setAttribute("class", "airspace-container");
-			airspaceContainer.innerHTML = airspaceHtml;
+			airspaceContainer.innerHTML = asTableHtml;
 
 			addOverlay(map.getCoordinateFromPixel(pixelTopLeft), airspaceContainer, false);
+
+
+			function getTableHtml(airspaceSelection, showToggle, isSimplified)
+            {
+                var id = isSimplified ? "airspace-popup-simplified" : "airspace-popup";
+                var display = showToggle && !isSimplified ? "none" : "block";
+
+                var asTableHtml = '<table id="' + id + '" style="border-spacing: 3px; border-collapse: separate; display: ' + display + '">';
+
+                for (var j = 0; j < airspaceSelection.length; j++) {
+                    var airspace = airspaceSelection[j];
+
+                    if (airspace.hide)
+                        continue;
+
+                    var bottom_height = airspace.alt.bottom_replace ? airspace.alt.bottom_replace : airspace.alt.bottom;
+
+                    // box
+                    asTableHtml += '<tr><td><div style="position:relative"><table class="airspace-overlay ' + getBoxClass(airspace) + '">';
+
+                    // top height
+                    asTableHtml += '<tr style="border-bottom: thin solid"><td>' + getHeightText(airspace.alt.top) + '</td></tr>';
+
+                    // bottom height
+                    asTableHtml += '<tr><td>' + getHeightText(bottom_height) + '</td></tr>';
+
+                    asTableHtml += '</table>';
+
+                    // airspace category
+                    var categoryBox = getAirspaceCategoryBox(airspace);
+
+                    if (categoryBox)
+                        asTableHtml += categoryBox;
+
+                    // airspace name
+                    var airspaceName = getAirspaceName(airspace);
+
+                    if (airspaceName)
+                        asTableHtml += airspaceName;
+
+                    asTableHtml += '</div></td></tr>';
+                }
+
+                if (showToggle) {
+                    if (isSimplified)
+                        asTableHtml += '<tr><td><span class="airspace-toggle" onclick="airspaceListToggle()"><i class="glyphicon glyphicon-collapse-down"></i> details</span></td></tr>';
+                    else
+                        asTableHtml += '<tr><td><span class="airspace-toggle" onclick="airspaceListToggle()"><i class="glyphicon glyphicon-collapse-up"></i> group</span></td></tr>';
+                }
+
+                asTableHtml += '</table>';
+
+                return asTableHtml;
+            }
 
 
 			function getBoxClass(airspace)
@@ -1435,14 +1856,12 @@ function mapService($http, weatherService)
 					case 'DANGER':
 					case 'RESTRICTED':
 					case 'PROHIBITED':
+                        return 'airspace-overlay-red';
+                    case 'FIR':
+                    case 'UIR':
 					case 'GLIDING':
-						return 'airspace-overlay-red';
-					case 'CTR':
-					case 'FIR':
-					case 'C':
-					case 'D':
-					case 'E':
-					case 'G':
+                    case 'WAVE':
+                        return 'airspace-overlay-green';
 					default:
 						return 'airspace-overlay-blue';
 				}
@@ -1459,21 +1878,44 @@ function mapService($http, weatherService)
 					case 'A':
 						classStyle = "airspace-class-red";
 						break;
+                    case 'B':
 					case 'C':
 					case 'D':
 					case 'E':
 					case 'G':
+                    case 'F':
+                    case 'TMZ':
+                    case 'RMZ':
+                    case 'FIZ':
 						classStyle = "airspace-class-blue";
 						break;
+                    case 'FIR':
+                    case 'UIR':
+                        classStyle = "airspace-class-green";
+                        break;
 					case 'CTR':
 						classStyle = "airspace-class-blue";
-						catText = "D";
+						catText = "CTR";
 						break;
-					case 'TMZ':
-						classStyle = "airspace-class-blue";
-						catText = "E";
-						break;
+                    case 'DANGER':
+                        classStyle = "airspace-class-red";
+                        catText = "Dng";
+                        break;
+                    case 'RESTRICTED':
+                        classStyle = "airspace-class-red";
+                        catText = "R";
+                        break;
+                    case 'PROHIBITED':
+                        classStyle = "airspace-class-red";
+                        catText = "P";
+                        break;
+                    case 'GLIDING':
+                    case 'WAVE':
+                        classStyle = "airspace-class-green";
+                        catText = "GLD";
+                        break;
 					default:
+                        classStyle = "airspace-class-blue";
 						catText = undefined;
 				}
 
@@ -1496,15 +1938,14 @@ function mapService($http, weatherService)
 					case 'DANGER':
 					case 'RESTRICTED':
 					case 'PROHIBITED':
+                        classStyle = "airspace-name-red";
+                        break;
+                    case 'FIR':
+                    case 'UIR':
 					case 'GLIDING':
-						classStyle = "airspace-name-red";
+                    case 'WAVE':
+						classStyle = "airspace-name-green";
 						break;
-					case 'CTR':
-					case 'FIR':
-					case 'C':
-					case 'D':
-					case 'E':
-					case 'G':
 					default:
 						classStyle = "airspace-name-blue";
 						break;
@@ -1542,12 +1983,12 @@ function mapService($http, weatherService)
 		}
 
 
-		function addCachedObject(geopoint, geoPointFeature, labelFeature)
+		function addFeatureObject(geopoint, geoPointFeature, labelFeature)
 		{
 			switch (geopoint.type) {
 				case 'airport':
 				{
-					var ap = airports[geopoint.airport_icao];
+                    var ap = mapFeatureService.getAirportById(geopoint.id);
 
 					if (ap) {
 						geoPointFeature.airport = ap;
@@ -1557,7 +1998,7 @@ function mapService($http, weatherService)
 				}
 				case 'navaid':
 				{
-					var nav = navaids[geopoint.id];
+					var nav = mapFeatureService.getNavaidById(geopoint.id);
 
 					if (nav) {
 						geoPointFeature.navaid = nav;
@@ -1567,7 +2008,7 @@ function mapService($http, weatherService)
 				}
 				case 'report':
 				{
-					var rp = reportingPoints[geopoint.id];
+					var rp = mapFeatureService.getReportingPointById(geopoint.id);
 
 					if (rp) {
 						geoPointFeature.reportingpoint = rp;
@@ -1578,7 +2019,7 @@ function mapService($http, weatherService)
 				}
 				case 'user':
 				{
-					var uwp = userWaypoints[geopoint.id];
+					var uwp = mapFeatureService.getUserPointById(geopoint.id);
 
 					if (uwp) {
 						geoPointFeature.userWaypoint = uwp;
@@ -1591,76 +2032,12 @@ function mapService($http, weatherService)
 		}
 	}
 
+	//endregion
+
+
+    //region WAYPOINTS
 	
-	function updateUserWaypoints()
-	{
-		if (typeof userWpLayer === "undefined")
-			return;
-			
-		var layerSource = userWpLayer.getSource();
-		layerSource.clear();
-
-		$http.get(userWpBaseUrl)
-			.success(function(data) {
-				if (data.userWaypoints)
-				{
-					for (var i = 0; i < data.userWaypoints.length; i++)
-					{
-						var uwp = data.userWaypoints[i];
-
-						// cache for later use
-						userWaypoints[uwp.id] = uwp;
-
-						var userWpFeature = new ol.Feature({
-							geometry: new ol.geom.Point(ol.proj.fromLonLat([uwp.longitude, uwp.latitude]))
-						});
-						
-						userWpFeature.userWaypoint = uwp;
-
-						var userWpStyle = createUserWpStyle(uwp.name);
-						
-						if (userWpStyle)
-							userWpFeature.setStyle(userWpStyle);
-						else
-							continue;
-				
-						layerSource.addFeature(userWpFeature);
-					}
-				}
-				else
-				{
-					console.error("ERROR reading user waypoints", data);
-				}
-			})
-			.error(function(data, status) {
-				console.error("ERROR reading user waypoints", status, data);
-			});
-
-
-		function createUserWpStyle(name) {
-			return new ol.style.Style({
-				image: new ol.style.Icon(({
-					anchor: [0.5, 0.5],
-					anchorXUnits: 'fraction',
-					anchorYUnits: 'fraction',
-					scale: 1,
-					opacity: 0.75,
-					src: 'icon/wp_user.png'
-				})),
-				text: new ol.style.Text({
-					font: 'bold 14px Calibri,sans-serif',
-					text: name,
-					fill: new ol.style.Fill({color: '#0077FF'}),
-					stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2}),
-					offsetX: 0,
-					offsetY: 20
-				})
-			});
-		}
-	}
-	
-	
-	function updateWpTrack(wps, alternate, variation)
+	function drawWaypoints(wps, alternate, variation)
 	{
 		if (typeof wpTrackLayer === "undefined")
 			return;
@@ -1804,6 +2181,7 @@ function mapService($http, weatherService)
 		function addModifyInteraction(trackFeature)
 		{
 			var modInteraction = new ol.interaction.Modify({
+			    deleteCondition : function(event) { return false; }, // no delete condition
 				features: new ol.Collection([trackFeature])
 			});
 
@@ -1829,6 +2207,9 @@ function mapService($http, weatherService)
 
 		function onTrackModifyEnd(event)
 		{
+		    if (!event || !event.mapBrowserEvent)
+		        return;
+
 			var lineFeature = event.features.getArray()[0];
 			var oldPoints = lineFeature.originalCoordList;
 			var newPoints = lineFeature.getGeometry().getCoordinates();
@@ -1972,7 +2353,12 @@ function mapService($http, weatherService)
 	}
 
 
-	function updateFlightTrack(positions)
+	//endregion
+
+
+    //region TRACK
+
+	function drawFlightTrack(positions, fitToView)
 	{
 		if (typeof flightTrackLayer === "undefined")
 			return;
@@ -1988,7 +2374,9 @@ function mapService($http, weatherService)
 		});
 
 
-		for (var i = 0; i < positions.length - 1; i++)
+        var minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
+
+        for (var i = 0; i < positions.length - 1; i++)
 		{
 			var pos1 = positions[i];
 			var pos2 = positions[i + 1];
@@ -2003,60 +2391,43 @@ function mapService($http, weatherService)
 
 			flightTrackFeature.setStyle(flightTrackStyle);
 			flightTrackSource.addFeature(flightTrackFeature);
-		}
-	}
 
-
-	function getMapPosition()
-	{
-		return {
-			center: ol.proj.toLonLat(map.getView().getCenter()),
-			zoom: map.getView().getZoom()
-		};
-	}
-	
-	
-	function setMapPosition(lat, lon, zoom, forceRender)
-	{
-		if (lat && lon)
-		{
-			var pos = ol.proj.fromLonLat([lon, lat]);
-			map.getView().setCenter(pos);
+			if (fitToView)
+			{
+			    // find max extent
+                minLon = Math.min(minLon, pos1.longitude);
+                minLat = Math.min(minLat, pos1.latitude);
+                maxLon = Math.max(maxLon, pos1.longitude);
+                maxLat = Math.max(maxLat, pos1.latitude);
+            }
 		}
 
-		if (zoom)
-			map.getView().setZoom(zoom);
-
-		if (forceRender)
-			map.renderSync();
+		if (fitToView)
+        {
+            fitView(ol.proj.transformExtent([minLon, minLat, maxLon, maxLat], 'EPSG:4326', 'EPSG:3857')); // transform from lat/lon to web mercator
+        }
 	}
 
-
-	function updateSize()
-	{
-		map.updateSize();
-	}
+	//endregion
 
 
-	function getViewExtent()
-	{
-		var extent = map.getView().calculateExtent(map.getSize());
-
-		return ol.proj.transformExtent(extent, 'EPSG:3857', 'EPSG:4326');
-	}
-	
+	//region CHARTS
 	
 	function displayChart(chartId)
 	{
 		// load chart data
-		$http.get(adChartBaseUrl + '&id=' + chartId)
-			.then(
-				function(response) { // success
+        var url = adChartBaseUrl + '&id=' + chartId;
 
-					if (!response.data || !response.data.chart) {
-						console.error("ERROR reading chart");
+		$http.get(url)
+			.then(
+				function(response)
+                { // success
+                    if (!response.data || !response.data.chart)
+                    {
+						logResponseError("ERROR reading chart", response);
 					}
-					else {
+					else
+                    {
 						var extent = [response.data.chart.mercator_w, response.data.chart.mercator_s, response.data.chart.mercator_e, response.data.chart.mercator_n];
 
 						var projection = new ol.proj.Projection({
@@ -2080,10 +2451,12 @@ function mapService($http, weatherService)
 						map.getLayers().insertAt(chartLayers.length, chartLayer);
 
 						addChartCloseFeature(chartId, chartLayer, extent);
+
+						fitView(extent);
 					}
 				},
 				function(response) { // error
-					console.error("ERROR reading chart", response.status, response.data);
+                    logResponseError("ERROR reading chart", response);
 				}
 			);
 
@@ -2131,8 +2504,12 @@ function mapService($http, weatherService)
 		chartLayers = [];
 	}
 
+	//endregion
 
-	function updateLocation(lastPositions)
+
+	//region TRAFFIC / OWN PLANE
+
+	function drawOwnPlane(lastPositions)
 	{
 		var layerSource = locationLayer.getSource();
 		layerSource.clear();
@@ -2142,7 +2519,7 @@ function mapService($http, weatherService)
 	}
 
 
-	function updateTraffic(acList, maxTrafficAltitudeFt)
+	function drawTraffic(acList, maxTrafficAltitudeFt)
 	{
 		var layerSource = trafficLayer.getSource();
 		layerSource.clear();
@@ -2157,7 +2534,7 @@ function mapService($http, weatherService)
 				var lastPos = ac.positions[ac.positions.length - 1];
 				ac.receiver = lastPos.receiver;
 
-				if (m2ft(lastPos.altitude) <= maxTrafficAltitudeFt)
+				if (!lastPos.altitude || m2ft(lastPos.altitude) <= maxTrafficAltitudeFt)
 					drawTrafficTrack(ac, layerSource, acCount > maxTrafficForDots);
 			}
 		}
@@ -2356,8 +2733,8 @@ function mapService($http, weatherService)
 			var color = "#FF0000";
             var regCallText = "";
 
-            if (ac.fullCallsign)
-                regCallText = ac.fullCallsign;
+            if (ac.opCallsign)
+                regCallText = ac.opCallsign;
             else if (ac.callsign && !equalsRegCall(ac.registration, ac.callsign))
                 regCallText = ac.callsign;
             else if (ac.registration)
@@ -2395,75 +2772,10 @@ function mapService($http, weatherService)
         }
 	}
 
-
-	function createMapLayer()
-	{
-		return new ol.layer.Tile({
-			source: new ol.source.XYZ({
-				tileUrlFunction: getTileUrl,
-				minZoom: 0,
-				maxZoom: MAX_ZOOMLEVEL,
-				crossOrigin: null,
-				attributions:
-				[
-					new ol.Attribution({ html: 'Map Data: &copy; <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors <a href="https://creativecommons.org/licenses/by-sa/2.0/" target="_blank">(CC-BY-SA)</a>' }),
-					new ol.Attribution({ html: 'Elevation Data: <a href="https://lta.cr.usgs.gov/SRTM" target="_blank">SRTM</a>' }),
-					new ol.Attribution({ html: 'Map Visualization: <a href="http://www.opentopomap.org/" target="_blank">OpenTopoMap</a> <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank">(CC-BY-SA)</a>' }),
-					new ol.Attribution({ html: 'Aviation Data: <a href="http://www.openaip.net/" target="_blank">openAIP</a> <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/" target="_blank">(BY-NC-SA)</a>' }),
-					new ol.Attribution({ html: 'Traffic Data: <a href="http://wiki.glidernet.org/about" target="_blank">Open Glider Network</a> | <a href="http://www.ADSBexchange.com/" target="_blank">ADSBexchange</a>' }),
-					new ol.Attribution({ html: 'Aerodrome Charts: <a href="http://www.avare.ch/" target="_blank">Avare.ch</a>' }),
-					new ol.Attribution({ html: 'Weather Data: <a href="https://www.aviationweather.gov/" target="_blank">NOAA - Aviation Weather Center</a>' }),
-					new ol.Attribution({ html: 'Geographical Data: <a href="http://www.geonames.org/" target="_blank">GeoNames</a> <a href="http://creativecommons.org/licenses/by/3.0/" target="_blank">(CC-BY)</a>' }),
-					new ol.Attribution({ html: 'Links to Webcams: all images are digital property of the webcam owners. check the reference for details.' })
-				]
-			})
-		});
+	//endregion
 
 
-		function getTileUrl(coordinate)
-		{
-			//var otmBaseUrls = [ "//a.tile.opentopomap.org/", "//b.tile.opentopomap.org/", "//c.tile.opentopomap.org/" ];
-			var otmBaseUrls = [ "//opentopomap.org/", "//opentopomap.org/", "//opentopomap.org/" ];
-			var localBaseUrl = "maptiles/";
-			var z = coordinate[0];
-			var y = coordinate[1];
-			var x = (-coordinate[2] - 1);
-
-			if (isLocalTile(z, y, x))
-			{
-				return localBaseUrl + z + "/" + y + "/" + x + ".png";
-			}
-			else
-			{
-				var n = (z + y + x) % otmBaseUrls.length;
-				return otmBaseUrls[n] + z + "/" + y + "/" + x + ".png";
-			}
-		}
-
-
-		function isLocalTile(z, y, x)
-		{
-			if (z <= 6)
-				return true;
-
-			var zrange = [7, 14];
-			var zoomfact = Math.pow(2, (z - 6));
-			var yrange = [33 * zoomfact, 33 * zoomfact + zoomfact - 1 ];
-			var xrange = [22 * zoomfact, 22 * zoomfact + zoomfact - 1 ];
-
-			if (z < zrange[0] || z > zrange[1])
-				return false;
-
-			if (y < yrange[0] || y > yrange[1])
-				return false;
-
-			if (x < xrange[0] || x > xrange[1])
-				return false;
-
-			return true;
-		}
-	}
-
+	//region UTILS
 	
 	function getMercatorCoordinates(lat, lon)
 	{
@@ -2508,7 +2820,7 @@ function mapService($http, weatherService)
 
 	function getAirport(icao)
 	{
-		return airports[icao];
+		return mapFeatureService.getAirportByIcao(icao);
 	}
 
 
@@ -2526,4 +2838,6 @@ function mapService($http, weatherService)
 
 		return clickPoint;
 	}
+
+	//endregion
 }

@@ -1,6 +1,8 @@
 <?php
 	include "helper.php";
 
+	// TODO: refactoring => get dynamically directly from browser (jsonp): https://www.aviationweather.gov/gis/scripts/MetarJSON.php?bbox=6.0,44.0,10.0,48.0&taf=true&density=all&jsonp=callback
+
     getAllWeather();
 
 

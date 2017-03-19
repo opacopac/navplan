@@ -3,6 +3,21 @@
  */
 
 
+//region LOGGING / ERROR HANDLING
+
+function logError(message)
+{
+    console.error(message);
+}
+
+
+function logResponseError(message, response)
+{
+    console.error(message);
+    console.error(response);
+}
+
+
 function writeServerErrLog(errLog)
 {
 	$.post("php/errorlog.php", obj2json(errLog));
@@ -21,6 +36,10 @@ function displayGenericError()
 	document.body.innerHTML += msg;
 }
 
+//endregion
+
+
+//region COOKIES
 
 function setCookie(cname, cvalue, exdays)
 {
@@ -55,6 +74,10 @@ function deleteCookie(cname)
 	document.cookie = cname + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC";
 }
 
+//endregion
+
+
+//region DOWNLOAD
 
 function sendPostForm(action, target, varName, varData)
 {
@@ -93,6 +116,10 @@ function createAndClickLink(href, target)
     //document.body.removeChild(a);
 }
 
+//endregion
+
+
+//region JSON
 
 function undef2null(key, val)
 {
@@ -114,6 +141,10 @@ function json2obj(json)
 	 return JSON.parse(json);
 }
 
+//endregion
+
+
+//region ARRAYS
 
 function pushUnique(itemList, item)
 {
@@ -132,6 +163,10 @@ function removeFromArray(array, value)
 	return array;
 }
 
+//endregion
+
+
+//region TIME / COORDINATES
 
 function getMinSecString(timeMs)
 {
@@ -184,39 +219,6 @@ function getDmsString(latitude, longitude)
 }
 
 
-function zeroPad(number)
-{
-	if (number < 10)
-		return "0" + number;
-	else
-		return "" + number;
-}
-
-
-function getMorseString(text)
-{
-	var morse = {
-		"A": ".-", "B": "-...", "C": "-.-.", "D": "-..", "E": ".", "F": "..-.", "G": "--.", "H": "....", "I": "..", "J": ".---", "K": "-.-", "L": ".-..", "M": "--",
-		"N": "-.", "O": "---", "P": ".--.", "Q": "--.-", "R": ".-.", "S": "...", "T": "-", "U": "..-", "V": "...-", "W": ".--", "X": "-..-", "Y": "-.--", "Z": "--..",
-		"1": ".----", "2": "..---", "3": "...--", "4": "....-", "5": ".....", "6": "-....", "7": "--...", "8": "---..", "9": "----.", "0": "-----" };
-
-	var out = "";
-
-	for (var i = 0; i < text.length; i++)
-	{
-		if (i > 0)
-			out += " ";
-
-		var code = morse[text.substring(i, i + 1).toUpperCase()];
-
-		if (code && code.length > 0)
-			out += code;
-	}
-
-	return out;
-}
-
-
 function shrinkPositions(positions)
 {
 	var shrinkedpos = [];
@@ -249,11 +251,51 @@ function unshrinkPositions(positions)
 }
 
 
+function zeroPad(number)
+{
+    if (number < 10)
+        return "0" + number;
+    else
+        return "" + number;
+}
+
+
 function roundToDigits(num, digits)
 {
 	return Math.round(num * Math.pow(10, digits)) / Math.pow(10, digits);
 }
 
+//endregion
+
+
+//region EXTENTS
+
+function containsExtent(outerExtent, innerExtent)
+{
+    if (!outerExtent || !innerExtent)
+        return false;
+
+    return (outerExtent[0] <= innerExtent[0] && outerExtent[1] <= innerExtent[1] && outerExtent[2] >= innerExtent[2] && outerExtent[3] >= innerExtent[3]);
+}
+
+
+function calcOversizeExtent(extent, factor)
+{
+    var halfDiffLon = (extent[2] - extent[0]) / 2;
+    var halfDiffLat = (extent[3] - extent[1]) / 2;
+    var centerLon = extent[0] + halfDiffLon;
+    var centerLat = extent[1] + halfDiffLat;
+
+    return [centerLon - halfDiffLon * factor,
+        centerLat - halfDiffLat * factor,
+        centerLon + halfDiffLon * factor,
+        centerLat + halfDiffLat * factor];
+}
+
+//endregion
+
+
+//region UNIT CONVERSION
 
 function m2ft(height_m)
 {
@@ -332,3 +374,54 @@ function rad2deg(rad)
  return lng;
  }
 */
+
+//endregion
+
+
+//region MISC
+
+function getMorseString(text)
+{
+    var morse = {
+        "A": ".-", "B": "-...", "C": "-.-.", "D": "-..", "E": ".", "F": "..-.", "G": "--.", "H": "....", "I": "..", "J": ".---", "K": "-.-", "L": ".-..", "M": "--",
+        "N": "-.", "O": "---", "P": ".--.", "Q": "--.-", "R": ".-.", "S": "...", "T": "-", "U": "..-", "V": "...-", "W": ".--", "X": "-..-", "Y": "-.--", "Z": "--..",
+        "1": ".----", "2": "..---", "3": "...--", "4": "....-", "5": ".....", "6": "-....", "7": "--...", "8": "---..", "9": "----.", "0": "-----" };
+
+    var out = "";
+
+    for (var i = 0; i < text.length; i++)
+    {
+        if (i > 0)
+            out += " ";
+
+        var code = morse[text.substring(i, i + 1).toUpperCase()];
+
+        if (code && code.length > 0)
+            out += code;
+    }
+
+    return out;
+}
+
+
+function airspaceListToggle()
+{
+    var asContainerFull = document.getElementById("airspace-popup");
+    var asContainerSimple = document.getElementById("airspace-popup-simplified");
+
+    if (!asContainerFull || !asContainerSimple)
+        return;
+
+    if (asContainerFull.style.display == 'block')
+    {
+        asContainerFull.style.display = 'none';
+        asContainerSimple.style.display = 'block';
+    }
+    else
+    {
+        asContainerFull.style.display = 'block';
+        asContainerSimple.style.display = 'none';
+    }
+}
+
+//endregion
