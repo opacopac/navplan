@@ -131,6 +131,16 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 		
 		$timeout(function () { $scope.error_alert_message = ""; }, 3000, true);
 	};
+
+
+	$scope.showRuSureMessage = function(title, text, confirmCallback)
+    {
+        $scope.globalData.ruSureTitle = title;
+        $scope.globalData.ruSureMessage = text;
+        $scope.globalData.ruSureCallback = confirmCallback;
+
+        $('#ruSureDialog').modal('show');
+    };
 	
 	
 	$scope.initUser = function()
@@ -189,15 +199,19 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 	$scope.readNavplanList = function()
 	{
 		userService.readNavplanList()
-			.success(function(data) {
-				if (data.navplanList || data.navplanList === null)
-					$scope.globalData.user.navplanList = data.navplanList;
-				else
-					console.error("ERROR", data);
-			})
-			.error(function(data, status) {
-				console.error("ERROR", status, data);
-			});
+			.then(
+			    function(response) // success
+                {
+                    if (response && response.data && (response.data.navplanList || response.data.navplanList === null))
+                        $scope.globalData.user.navplanList = response.data.navplanList;
+                    else
+                        logResponseError("ERROR reading navplan list", response);
+			    },
+			    function(response) // error
+                {
+                    logResponseError("ERROR reading navplan list", response);
+			    }
+            );
 	};
 
 
@@ -207,12 +221,12 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 			.then(
 				function (response) {
 					if (!response.data || !response.data.tracks)
-						console.error("ERROR reading tracks", response.status, response.data);
+						logResponseError("ERROR reading tracks", response);
 					else
 						$scope.globalData.user.trackList = response.data.tracks;
 				},
 				function (response) {
-					console.error("ERROR reading tracks: ", response.status, response.data);
+                    logResponseError("ERROR reading tracks", response);
 				}
 			);
 	};
@@ -273,6 +287,13 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 			window.localStorage.setItem("hideDisclaimer", "true");
 	};
 
+
+    $scope.onRuSureYesClicked = function()
+    {
+        if ($scope.globalData.ruSureCallback)
+            $scope.globalData.ruSureCallback();
+    };
+
 	
 	$scope.updateWaypoints = function()
 	{
@@ -320,67 +341,77 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 	$scope.onSaveUserWaypointClicked = function()
 	{
 		userService.saveUserWaypoint($scope.globalData.selectedWp)
-			.success(function(data) {
-				if (data.success == 1)
-				{
-					mapService.loadAndDrawUserPoints();
-					mapService.closeOverlay();
+			.then(
+			    function(response) // success
+                {
+                    if (response.data.success == 1)
+                    {
+                        mapService.loadAndDrawUserPoints();
+                        mapService.closeOverlay();
 
-					$scope.showSuccessMessage("User Waypoint successfully saved");
-				}
-				else
-					console.error("ERROR", data);
-			})
-			.error(function(data, status) {
-				console.error("ERROR", status, data);
-			});
+                        $scope.showSuccessMessage("User point successfully saved");
+                    }
+                    else
+                        logResponseError("ERROR saving user point", response);
+			    },
+                function(response) // error
+                {
+                    logResponseError("ERROR saving user point", response);
+			    }
+            );
 	};
 
 
 	$scope.onDeleteUserWaypointClicked = function()
 	{
 		userService.deleteUserWaypoint($scope.globalData.selectedWp.id)
-			.success(function(data) {
-				if (data.success == 1)
-				{
-					mapService.loadAndDrawUserPoints();
-					mapService.closeOverlay();
+			.then(
+			    function(response) // success
+                {
+                    if (response.data.success == 1)
+                    {
+                        mapService.loadAndDrawUserPoints();
+                        mapService.closeOverlay();
 
-					$scope.showSuccessMessage("User Waypoint successfully deleted");
-				}
-				else
-					console.error("ERROR deleting user waypoint", data);
-			})
-			.error(function(data, status) {
-				console.error("ERROR deleting user waypoint", status, data);
-			});
+                        $scope.showSuccessMessage("User Waypoint successfully deleted");
+                    }
+                    else
+                        logResponseError("ERROR deleting user waypoint", response);
+			    },
+			    function(response) // error
+                {
+                    logResponseError("ERROR deleting user waypoint", response);
+			    }
+        );
 	};
 
 	
 	$scope.onTrashClicked = function()
 	{
-		$scope.globalData.navplan = 
-		{
-			id: undefined,
-			name: '',
-			waypoints: [],
-			selectedWaypoint: undefined,
-			alternate: undefined
-		};
-		$scope.globalData.selectedWp = undefined;
+        $scope.showRuSureMessage(
+            "Clear Map?",
+            "Do you really want to clear all waypoints, charts and tracks from the map? Unsaved changes will be lost!",
+            function()
+            {
+                $scope.globalData.navplan =
+                {
+                    id: undefined,
+                    name: '',
+                    waypoints: [],
+                    selectedWaypoint: undefined,
+                    alternate: undefined
+                };
+                $scope.globalData.selectedWp = undefined;
+                $scope.globalData.track = { positions: [] };
+                $scope.globalData.clickHistory = [];
 
-		$scope.globalData.track =
-		{
-			positions: []
-		};
+                $scope.updateWaypoints();
+                $scope.updateFlightTrack();
+                $scope.discardCache();
 
-		$scope.globalData.clickHistory = [];
-	
-		$scope.updateWaypoints();
-		$scope.updateFlightTrack();
-		$scope.discardCache();
-
-		mapService.clearAllCharts();
+                mapService.clearAllCharts();
+            }
+        );
 	};
 
 
@@ -505,25 +536,28 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 	$scope.createShareUrl = function()
 	{
 		userService.createSharedNavplan($scope.globalData)
-			.success(function(data) {
-				if (data.share_id)
-				{
-					$scope.globalData.shareUrl =
-						window.location.protocol
-						+ "//" + window.location.host
-						+ window.location.pathname
-						+ window.location.search
-						+ "#/share/" + data.share_id;
+			.then(
+			    function(response) // success
+                {
+                    if (response.data.share_id) {
+                        $scope.globalData.shareUrl =
+                            window.location.protocol
+                            + "//" + window.location.host
+                            + window.location.pathname
+                            + window.location.search
+                            + "#/share/" + response.data.share_id;
 
-					$('#shareUrlDialog').modal('show');
-				}
-				else
-					console.error("ERROR creating shared navplan", data);
-			})
-			.error(function(data, status) {
-				console.error("ERROR creating shared navplan", status, data);
-			});
-	}
+                        $('#shareUrlDialog').modal('show');
+                    }
+                    else
+                        logResponseError("ERROR creating shared navplan", response);
+                },
+			    function(response) // error
+                {
+                    logResponseError("ERROR creating shared navplan", response);
+			    }
+            );
+	};
 
 
 	$scope.backupSelectedWaypoint = function()
@@ -556,6 +590,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 
 		deleteCookie("cachewaypoints");
 		deleteCookie("cachecharts");
+        window.sessionStorage.removeItem("mapFeatureCache");
 
 		if ($scope.appCache.status == $scope.appCache.DOWNLOADING)
 		{
@@ -677,8 +712,9 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 			$scope.globalData.navplan.alternate = wp;
 		}
 
-		$scope.updateWaypoints();
-		$scope.discardCache();	
+        $scope.updateWaypoints();
+        mapService.fitView($scope.getNavplanExtentMercator());
+		$scope.discardCache();
 	};
 	
 	
@@ -707,7 +743,62 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 			remark: wp_data.remark,
 			airport: ap
 		};
-	}
+	};
+
+
+    $scope.getNavplanExtentLatLon = function()
+    {
+        var minLon, maxLon, minLat, maxLat;
+        var navplan = $scope.globalData.navplan;
+
+        if (!navplan || !navplan.waypoints)
+            return undefined;
+
+        // create list with all wps (including alternate)
+        var allWps = [];
+
+        for (var i = 0; i < navplan.waypoints.length; i++)
+            allWps.push(navplan.waypoints[i]);
+
+        if (navplan.alternate)
+            allWps.push(navplan.alternate);
+
+
+        // find max values
+        for (i = 0; i < allWps.length; i++)
+        {
+            if (!minLon || allWps[i].longitude < minLon)
+                minLon = allWps[i].longitude;
+
+            if (!minLat || allWps[i].latitude < minLat)
+                minLat = allWps[i].latitude;
+
+            if (!maxLon || allWps[i].longitude > maxLon)
+                maxLon = allWps[i].longitude;
+
+            if (!maxLat || allWps[i].latitude > maxLat)
+                maxLat = allWps[i].latitude;
+        }
+
+        if (minLon && minLat && maxLon && maxLat)
+            return [minLon, minLat, maxLon, maxLat];
+        else
+            return undefined;
+    };
+
+
+	$scope.getNavplanExtentMercator = function()
+    {
+        var extentLatLon = $scope.getNavplanExtentLatLon();
+
+        if (!extentLatLon)
+            return undefined;
+
+        var minMercator = mapService.getMercatorCoordinates(extentLatLon[1], extentLatLon[0]);
+        var maxMercator = mapService.getMercatorCoordinates(extentLatLon[3], extentLatLon[2]);
+
+        return [minMercator[0], minMercator[1], maxMercator[0], maxMercator[1]];
+    };
 	
 	
 	// init stuff

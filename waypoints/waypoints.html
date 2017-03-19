@@ -22,7 +22,8 @@
 					<input id="navplan_name" type="text" class="form-control" placeholder="Enter Name" ng-model="globalData.navplan.title" />
 					<span class="input-group-btn">
 						<button type="button" class="btn btn-primary" title="Save Navigation Log (login required)" ng-click="saveNavplan();" ng-disabled="!globalData.navplan.title || !isLoggedIn()"><i class="glyphicon glyphicon-save"></i></button>
-					</span>					
+						<button type="button" class="btn btn-primary" title="Save Copy of Navigation Log" ng-click="saveNavplanCopy();" ng-disabled="!globalData.navplan.id || !globalData.navplan.title || !isLoggedIn()"><i class="glyphicon glyphicon-duplicate"></i></button>
+					</span>
 				</div>
 			</div>	
 		</div>	

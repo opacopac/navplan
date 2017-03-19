@@ -19,23 +19,23 @@
 	<title>navplan.ch</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1">
-    <meta name="description" content="VFR flight planning online. Open-source, non-commercial hobbyist project with a Swiss focus." />
+    <meta name="description" content="VFR flight planning online. Open-source, non-commercial hobbyist project with a main focus on Switzerland." />
     <!-- twitter -->
     <meta name="twitter:card" value="summary">
     <meta name="twitter:title" content="NAVPLAN.CH" />
-    <meta name="twitter:description" content="VFR flight planning online. Open-source, non-commercial hobbyist project with a Swiss focus." />
+    <meta name="twitter:description" content="VFR flight planning online. Open-source, non-commercial hobbyist project with a main focus on Switzerland." />
     <meta name="twitter:image" content="http://www.navplan.ch/branch/about/navplan_example.png" />
     <!-- facebook -->
     <meta property="og:title" content="NAVPLAN.CH" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://www.navplan.ch/branch/" />
     <meta property="og:image" content="http://www.navplan.ch/branch/about/navplan_example.png" />
-    <meta property="og:description" content="VFR flight planning online. Open-source, non-commercial hobbyist project with a Swiss focus." />
+    <meta property="og:description" content="VFR flight planning online. Open-source, non-commercial hobbyist project with a main focus on Switzerland." />
     <!-- favicon -->
 	<link rel="icon" type="image/png" href="icon/favicon.png" />
 	<!-- css -->
-	<link rel="stylesheet" href="css/bootstrap.min.css">
-	<link rel="stylesheet" href="css/ol.css">
+	<link rel="stylesheet" href="bootstrap/3.3.7/bootstrap.min.css">
+	<link rel="stylesheet" href="openlayers/4.0.1/ol.css">
 	<link rel="stylesheet" href="css/arial-narrow.css" type="text/css" />
     <link rel="stylesheet" href="font-awesome/css/font-awesome.min.css">
 	<link rel="stylesheet" href="css/navplan.css?v=<?php echo $ver ?>">
@@ -45,13 +45,16 @@
 	<script src="js/jquery-1.12.3.min.js"></script>
 	<script src="js/jquery-ui.min.js"></script>
 	<script src="js/jquery.ui.touch-punch.min.js"></script>
-	<script src="js/angular.min.js"></script>
-	<script src="js/angular-route.min.js"></script>
-	<script src="js/angular-resource.min.js"></script>
-	<script src="js/bootstrap.min.js"></script>
+	<script src="angularjs/1.6.3/angular.min.js"></script>
+	<script src="angularjs/1.6.3/angular-route.min.js"></script>
+	<script src="angularjs/1.6.3/angular-resource.min.js"></script>
+	<script src="bootstrap/3.3.7/bootstrap.min.js"></script>
 	<script src="js/ui-bootstrap-tpls-1.3.2.min.js"></script>
-	<script src="js/ol.js"></script>
+	<script src="openlayers/4.0.1/ol.js"></script>
+    <!--<script src="openlayers/4.0.1/ol-debug.js"></script>-->
 	<script src="js/turf.min.js"></script>
+    <!-- TODO: only for debugging -->
+    <!--<script src="https://jsconsole.com/js/remote.js?b914597d-3480-46c1-a248-9794731187fc"></script>-->
     <script src="js/telephony.js?v=<?php echo $ver ?>"></script>
 	<script src="navplanHelper.js?v=<?php echo $ver ?>"></script>
 	<script src="navplanApp.js?v=<?php echo $ver ?>"></script>
@@ -134,7 +137,7 @@
 					<h4 class="modal-title" id="disclaimerModalLabel">Disclaimer</h4>
 				</div>
 				<div class="modal-body">
-					<p>The information contained on this website is for informational purposes only. <b>Do not use for actual navigation!</b></p>
+					<p><b>NOT FOR OPERATIONAL USE!</b> The information contained on this website is for informational purposes only.</p>
 					<p>The data used on this website could be outdated, inaccurate, or contain errors. Always use up-to-date official sources for your flight planning.</p>
 				</div>
 				<div class="modal-footer">
@@ -144,6 +147,24 @@
 			</div>
 		</div>
 	</div>
+    <!-- are you sure dialog -->
+    <div class="modal fade" id="ruSureDialog" tabindex="-1" role="dialog" aria-labelledby="ruSureDialogLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="ruSureDialogLabel">{{ globalData.ruSureTitle }}</h4>
+                </div>
+                <div class="modal-body">
+                    {{ globalData.ruSureMessage }}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" data-dismiss="modal" ng-click="onRuSureYesClicked()">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
 	<!-- selected waypoint dialog -->
 	<div class="modal fade" id="selectedWaypointDialog" tabindex="-1" role="dialog" aria-labelledby="selectedWaypointModalLabel">
 		<div class="modal-dialog" role="document">
@@ -183,14 +204,14 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-					<h4 class="modal-title" id="userWpModalLabel">User Waypoint</h4>
+					<h4 class="modal-title" id="userWpModalLabel">User Point</h4>
 				</div>
 				<div class="modal-body">
 					Checkpoint: <input type="text" class="form-control" ng-model="globalData.selectedWp.checkpoint" />
 					Remarks: <input type="text" class="form-control" ng-model="globalData.selectedWp.remark" />
 					<hr />
-					<p><button type="button" class="btn btn-primary btn-circle" data-dismiss="modal" ng-click="onSaveUserWaypointClicked()"><i class="glyphicon glyphicon-save"></i></button> Save my User Waypoint</p>
-					<p ng-show="globalData.selectedWp.type == 'user' && globalData.selectedWp.id > 0"><button type="button" class="btn btn-danger btn-circle" data-dismiss="modal" ng-click="onDeleteUserWaypointClicked()"><i class="glyphicon glyphicon-remove"></i></button> Delete from my User Waypoints</p>
+					<p><button type="button" class="btn btn-primary btn-circle" data-dismiss="modal" ng-click="onSaveUserWaypointClicked()"><i class="glyphicon glyphicon-save"></i></button> Save User Point</p>
+					<p ng-show="globalData.selectedWp.type == 'user' && globalData.selectedWp.id > 0"><button type="button" class="btn btn-danger btn-circle" data-dismiss="modal" ng-click="onDeleteUserWaypointClicked()"><i class="glyphicon glyphicon-remove"></i></button> Delete User Point</p>
 				</div>
 				<div class="modal-footer">
 					<button type="button" class="btn btn-default" data-dismiss="modal" ng-click="onCancelEditWpClicked()">Cancel</button>

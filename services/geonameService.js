@@ -49,12 +49,12 @@ function geonameService($http)
 						});
 					}
 					else {
-						console.error("ERROR searchung geopoints", response);
+						logResponseError("ERROR searchung geopoints", response);
 					}
 				},
 				function(response) // error
 				{
-					console.error("ERROR searchung geopoints", response.status, response.data);
+                    logResponseError("ERROR searchung geopoints", response);
 				}
 			);
 	}

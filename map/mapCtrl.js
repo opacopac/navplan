@@ -3,10 +3,10 @@
  */
 
 navplanApp
-	.controller('mapCtrl', [ '$scope', '$sce', '$route', 'mapService', 'locationService', 'trafficService', 'geonameService', 'userService', 'weatherService', 'globalData', mapCtrl ]);
+	.controller('mapCtrl', [ '$scope', '$sce', '$route', 'mapService', 'mapFeatureService', 'locationService', 'trafficService', 'geonameService', 'userService', 'weatherService', 'globalData', mapCtrl ]);
 
 
-function mapCtrl($scope, $sce, $route, mapService, locationService, trafficService, geonameService, userService, weatherService, globalData)
+function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationService, trafficService, geonameService, userService, weatherService, globalData)
 {
     //region INIT VARS
 
@@ -78,18 +78,25 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 		$scope.globalData.clickHistory.push(clickCoordinates); // used internally only
 
 		geonameService.searchGeonamesByPosition(clickCoordinates[1], clickCoordinates[0], maxRadius)
-			.success(function(data) {
-				if (data.geonames)
-				{
-					mapService.closeOverlay();
-					mapService.drawGeopointSelection(data.geonames, event.pixel);
-				}
-				else
-					console.error("ERROR searching geonames", data);
-			})
-			.error(function(data, status) {
-				console.error("ERROR searching geonames", status, data);
-			});
+			.then(
+			    function(response)
+                {
+                    if (response.data.geonames)
+                    {
+                        $scope.closeFeatureOverlay();
+                        mapService.drawGeopointSelection(response.data.geonames, event.pixel);
+                    }
+                    else
+                        logResponseError("ERROR searching geonames", response);
+			    },
+			    function(response)
+                {
+                    logResponseError("ERROR searching geonames", response);
+
+                    var geonames = [];
+                    mapService.drawGeopointSelection(geonames, event.pixel);
+    			}
+            );
 	};
 
 
@@ -148,7 +155,7 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 		$scope.addWaypoint($scope.globalData.selectedWp);
 		$scope.globalData.selectedWp = undefined;
 
-		mapService.closeOverlay();
+        $scope.closeFeatureOverlay();
 	};
 
 
@@ -158,7 +165,7 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 		$scope.setAlternate($scope.globalData.selectedWp);
 		$scope.globalData.selectedWp = undefined;
 
-		mapService.closeOverlay();
+        $scope.closeFeatureOverlay();
 	};
 
 
@@ -173,7 +180,7 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 		$scope.updateWaypoints();
 		$scope.discardCache();
 
-		mapService.closeOverlay();
+        $scope.closeFeatureOverlay();
 	};
 	
 
@@ -282,7 +289,7 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
     $scope.onDisplayChartClicked = function(chartId)
 	{
 		mapService.displayChart(chartId);
-		mapService.closeOverlay();
+		$scope.closeFeatureOverlay();
 	};
 
 
@@ -306,9 +313,17 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 	};
 
 
+	$scope.closeFeatureOverlay = function()
+    {
+        $('#ad_details').hide();
+        $('#ad_charts').hide();
+        mapService.closeOverlay();
+    };
+
+
 	$scope.onCloseOverlayClicked =  function(event)
 	{
-		mapService.closeOverlay();
+        $scope.closeFeatureOverlay();
 	};
 
 
@@ -531,7 +546,7 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
 
 		$scope.startFollowTraffic();
 
-		mapService.closeOverlay();
+        $scope.closeFeatureOverlay();
 	};
 
 
@@ -571,6 +586,7 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
         {
             setWaypointCacheCookie();
             setChartCacheCookie();
+            cacheMapFeatures();
             updateAppCache();
         }
         else
@@ -679,6 +695,24 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
             function getChartUrl(filename)
             {
                 return 'charts/' + filename;
+            }
+        }
+
+
+        function cacheMapFeatures()
+        {
+            mapFeatureService.getMapFeatures($scope.getNavplanExtentLatLon(), cacheMapFeaturesSuccess, cacheMapFeaturesError);
+
+
+            function cacheMapFeaturesSuccess(mapFeatureList)
+            {
+                window.sessionStorage.setItem("mapFeatureCache", obj2json(mapFeatureList));
+            }
+
+
+            function cacheMapFeaturesError()
+            {
+                // TODO: cache status => error
             }
         }
 
@@ -842,8 +876,8 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
                 case "DEPARTURE" : return "DEP";
                 case "GLIDING" : return "GLD";
                 case "GROUND" : return "GND";
-                case "CTAF" : return "AD";
-                case "AFIS" : return "AD"; // TODO: TEMP
+                case "CTAF" : return "AD"; // TODO: spezialregel nur für country = CH
+                case "AFIS" : return "AFIS";
                 case "OTHER" :
                 {
                     if (radio.description.toUpperCase().indexOf("AD") == 0) // starts with AD...
@@ -964,17 +998,19 @@ function mapCtrl($scope, $sce, $route, mapService, locationService, trafficServi
     $scope.loadSharedNavplan = function(shareId)
     {
         userService.readSharedNavplan(shareId)
-            .success(function(data)
-            {
-                if (data.navplan)
-                    $scope.loadNavplanToGlobalData(data.navplan);
-                else
-                    console.error("ERROR", data);
-            })
-            .error(function(data, status)
-            {
-                console.error("ERROR", status, data);
-            });
+            .then(
+                function(response)
+                {
+                    if (response.data.navplan)
+                        $scope.loadNavplanToGlobalData(response.data.navplan);
+                    else
+                        logResponseError("ERROR loading shared navplan", response);
+                },
+                function(response)
+                {
+                    logResponseError("ERROR loading shared navplan", response);
+                }
+            );
     };
 
     //endregion

@@ -14,36 +14,46 @@ function loginCtrl($scope, $location, globalData, userService)
     $scope.onLoginClicked = function()
 	{
 		userService.login($scope.email, $scope.password)
-			.success(function(data) {
-				if (data.resultcode == 0)
-				{
-					$scope.loginUser($scope.email, data.token, $scope.rememberMeChecked);
-					
-					$location.path("/map");
-				}
-				else if (data.resultcode == -1)
-					$scope.showErrorMessage("Wrong password!");
-				else if (data.resultcode == -2)
-					$scope.showErrorMessage("Email not found!");
-			})
-			.error(function(data, status) {
-				console.error("ERROR", status, data);
-			});
+			.then(
+			    function(response) // success
+                {
+                    if (response.data.resultcode == 0)
+                    {
+                        $scope.loginUser($scope.email, response.data.token, $scope.rememberMeChecked);
+
+                        $location.path("/map");
+                    }
+                    else if (response.data.resultcode == -1)
+                        $scope.showErrorMessage("Wrong password!");
+                    else if (response.data.resultcode == -2)
+                        $scope.showErrorMessage("Email not found!");
+			    },
+                function(response)
+                {
+                    logResponseError("ERROR performing login", response);
+                }
+            );
 	};
 	
     $scope.onRegisterClicked = function()
 	{
 		userService.register($scope.email, $scope.password)
-			.success(function(data) {
-				if (data.resultcode == 0)
-				{
-					$scope.loginUser($scope.email, data.token, $scope.rememberMeChecked);
-					
-					$location.path("/map");
-				}
-				else if (data.resultcode == -1)
-					$scope.showErrorMessage("Email already exists!");
-			})
-			.error(function(data, status) { console.error("ERROR", status, data); });
+			.then(
+			    function(response)
+                {
+                    if (response.data.resultcode == 0)
+                    {
+                        $scope.loginUser($scope.email, response.data.token, $scope.rememberMeChecked);
+
+                        $location.path("/map");
+                    }
+                    else if (response.data.resultcode == -1)
+                        $scope.showErrorMessage("Email already exists!");
+			    },
+			    function(response)
+                {
+                    logResponseError("ERROR registering user", response);
+                }
+            );
     };
 }

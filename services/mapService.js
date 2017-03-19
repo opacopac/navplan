@@ -15,7 +15,7 @@ function mapService($http, mapFeatureService, weatherService)
 
 	var map = {};
 	var mapLayer, wpTrackLayer, closeIconLayer, airportLayer, navaidLayer, airspaceLayer, reportingpointLayer, userWpLayer, flightTrackLayer, geopointLayer, trafficLayer, locationLayer, weatherLayer, webcamLayer;
-    var airportImageLayer, navaidImageLayer, airspaceImageLayer, reportingpointImageLayer, userWpImageLayer, weatherImageLayer, webcamImageLayer;
+    var airspaceImageLayer; //, airportImageLayer, navaidImageLayer, reportingpointImageLayer, userWpImageLayer, weatherImageLayer, webcamImageLayer;
 	var chartLayers = [];
 	var wpTrackCache = { wps: undefined, alternate: undefined, variation: undefined };
 	var currentOverlay = undefined;
@@ -52,6 +52,7 @@ function mapService($http, mapFeatureService, weatherService)
         drawOwnPlane: drawOwnPlane,
         drawTraffic: drawTraffic,
         drawWaypoints: drawWaypoints,
+        fitView: fitView,
 		getAirport: getAirport,
 		getBearing: getBearing,
 		getDistance: getDistance,
@@ -61,7 +62,7 @@ function mapService($http, mapFeatureService, weatherService)
 		getMercatorCoordinates: getMercatorCoordinates,
 		getViewExtent: getViewExtent,
 		init: init,
-        loadAndDrawUserPoints: mapFeatureService.loadAllUserPoints(drawUserPoints),
+        loadAndDrawUserPoints: loadAndDrawUserPoints,
 		setMapPosition: setMapPosition,
         updateMapSize: updateMapSize
 	};
@@ -90,13 +91,13 @@ function mapService($http, mapFeatureService, weatherService)
         weatherLayer = createEmptyVectorLayer();
         geopointLayer = createEmptyVectorLayer();
 
-        airportImageLayer = createImageVectorLayerFromVectorLayer(airportLayer);
+        airspaceImageLayer = createImageVectorLayerFromVectorLayer(airspaceLayer);
+        /*airportImageLayer = createImageVectorLayerFromVectorLayer(airportLayer);
         navaidImageLayer = createImageVectorLayerFromVectorLayer(navaidLayer);
         reportingpointImageLayer = createImageVectorLayerFromVectorLayer(reportingpointLayer);
         userWpImageLayer = createImageVectorLayerFromVectorLayer(userWpLayer);
-        airspaceImageLayer = createImageVectorLayerFromVectorLayer(airspaceLayer);
         webcamImageLayer = createImageVectorLayerFromVectorLayer(webcamLayer);
-        weatherImageLayer = createImageVectorLayerFromVectorLayer(weatherLayer);
+        weatherImageLayer = createImageVectorLayerFromVectorLayer(weatherLayer);*/
 
 
         // TODO
@@ -113,13 +114,19 @@ function mapService($http, mapFeatureService, weatherService)
             layers: [
                 mapLayer,
                 airspaceImageLayer,
-                webcamImageLayer,
+                //webcamImageLayer,
+                webcamLayer,
                 closeIconLayer,
-                reportingpointImageLayer,
+                /*reportingpointImageLayer,
                 userWpImageLayer,
                 navaidImageLayer,
                 airportImageLayer,
-                weatherImageLayer,
+                weatherImageLayer,*/
+                reportingpointLayer,
+                userWpLayer,
+                navaidLayer,
+                airportLayer,
+                weatherLayer,
                 wpTrackLayer,
                 flightTrackLayer,
                 geopointLayer,
@@ -151,14 +158,20 @@ function mapService($http, mapFeatureService, weatherService)
 
         minZoomLevel = [
             {layer: closeIconLayer, minZoom: 9},
-            {layer: airportImageLayer, minZoom: 9},
-            {layer: navaidImageLayer, minZoom: 9},
+            /*{layer: airportImageLayer, minZoom: 9},
+            {layer: navaidImageLayer, minZoom: 9},*/
+            {layer: airportLayer, minZoom: 9},
+            {layer: navaidLayer, minZoom: 9},
             {layer: airspaceImageLayer, minZoom: 9},
-            {layer: reportingpointImageLayer, minZoom: 11},
+            /*{layer: reportingpointImageLayer, minZoom: 11},
             {layer: userWpImageLayer, minZoom: 11},
-            {layer: webcamImageLayer, minZoom: 9},
+            {layer: webcamImageLayer, minZoom: 9},*/
+            {layer: reportingpointLayer, minZoom: 11},
+            {layer: userWpLayer, minZoom: 11},
+            {layer: webcamLayer, minZoom: 9},
             {layer: trafficLayer, minZoom: 7},
-            {layer: weatherImageLayer, minZoom: 9}];
+            /*{layer: weatherImageLayer, minZoom: 9}];*/
+            {layer: weatherLayer, minZoom: 9}];
 
         setLayerVisibility();
     }
@@ -776,6 +789,12 @@ function mapService($http, mapFeatureService, weatherService)
     }
 
 
+    function loadAndDrawUserPoints()
+    {
+        mapFeatureService.loadAllUserPoints(drawUserPoints);
+    }
+
+
     function drawUserPoints(userpointList)
     {
         if (!userWpLayer)
@@ -896,19 +915,6 @@ function mapService($http, mapFeatureService, weatherService)
                     })
                 });
             }
-            else if (category == "FIR" || category == "UIR" || category == "TMZ" || category == "RMZ" || category == "FIZ") {
-                return new ol.style.Style({
-                    /*fill: new ol.style.Fill({
-                        color: 'rgba(152, 206, 235, 0.3)'
-                    }),*/
-                    stroke: new ol.style.Stroke({
-                        color: 'rgba(23, 128, 194, 0.8)',
-                        //color: 'rgba(0, 0, 0, 1.0)',
-                        width: 3,
-                        lineDash: [1, 7]
-                    })
-                });
-            }
             else if (category == "A") {
                 return new ol.style.Style({
                     stroke: new ol.style.Stroke({
@@ -938,6 +944,31 @@ function mapService($http, mapFeatureService, weatherService)
                     stroke: new ol.style.Stroke({
                         color: 'rgba(174, 30, 34, 0.8)',
                         width: 2
+                    })
+                });
+            }
+            else if (category == "TMZ" || category == "RMZ" || category == "FIZ") {
+                return new ol.style.Style({
+                    /*fill: new ol.style.Fill({
+                     color: 'rgba(152, 206, 235, 0.3)'
+                     }),*/
+                    stroke: new ol.style.Stroke({
+                        color: 'rgba(23, 128, 194, 0.8)',
+                        //color: 'rgba(0, 0, 0, 1.0)',
+                        width: 3,
+                        lineDash: [1, 7]
+                    })
+                });
+            }
+            else if (category == "FIR" || category == "UIR") {
+                return new ol.style.Style({
+                    /*fill: new ol.style.Fill({
+                     color: 'rgba(152, 206, 235, 0.3)'
+                     }),*/
+                    stroke: new ol.style.Stroke({
+                        color: 'rgba(0, 150, 64, 0.8)',
+                        width: 3,
+                        lineDash: [5, 20]
                     })
                 });
             }
@@ -1106,14 +1137,20 @@ function mapService($http, mapFeatureService, weatherService)
 
         if (hitLayer === geopointLayer ||
                 hitLayer === closeIconLayer ||
-                hitLayer === airportImageLayer ||
+                hitLayer === airportLayer ||
+                hitLayer === navaidLayer ||
+                hitLayer === reportingpointLayer ||
+                hitLayer === userWpLayer ||
+                /*hitLayer === airportImageLayer ||
                 hitLayer === navaidImageLayer ||
                 hitLayer === reportingpointImageLayer ||
-                hitLayer === userWpImageLayer ||
+                hitLayer === userWpImageLayer ||*/
                 hitLayer === wpTrackLayer ||
                 hitLayer === trafficLayer ||
-                hitLayer === webcamImageLayer ||
-                hitLayer === weatherImageLayer)
+                hitLayer === webcamLayer ||
+                hitLayer === weatherLayer)
+                /*hitLayer === webcamImageLayer ||
+                hitLayer === weatherImageLayer)*/
         {
             map.getTargetElement().style.cursor = 'pointer';
         }
@@ -1203,6 +1240,20 @@ function mapService($http, mapFeatureService, weatherService)
         return ol.proj.transformExtent(extent, 'EPSG:3857', 'EPSG:4326');
     }
 
+
+    function fitView(mercator_extent)
+    {
+        if (!mercator_extent || !map || !map.getView || !map.getSize)
+            return;
+
+        var paddingFactor = 0.1;
+        var mapSize = map.getSize();
+        var padX = Math.ceil(mapSize[0] * paddingFactor / 2);
+        var padY = Math.ceil(mapSize[1] * paddingFactor / 2);
+
+        map.getView().fit(mercator_extent, { size: map.getSize(), padding: [ padX, padX, padY, padY], maxZoom: 15 });
+    }
+
     //endregion
 
 
@@ -1210,6 +1261,8 @@ function mapService($http, mapFeatureService, weatherService)
 
 	function addOverlay(coordinates, container, autopan)
 	{
+
+
 		if (currentOverlay)
 			closeOverlay();
 
@@ -1310,8 +1363,8 @@ function mapService($http, mapFeatureService, weatherService)
 			var lineFeature = createLineFeature(geopoints[i]);
 			layerSource.addFeature(lineFeature);
 
-			// add data object
-			addCachedObject(geopoints[i], geoPointFeature, labelFeature);
+			// add feature object
+			addFeatureObject(geopoints[i], geoPointFeature, labelFeature);
 		}
 
 		addAirspaceOverlay(geopoints, airspaceSelection, simpleAirspaceSelection);
@@ -1804,6 +1857,8 @@ function mapService($http, mapFeatureService, weatherService)
 					case 'RESTRICTED':
 					case 'PROHIBITED':
                         return 'airspace-overlay-red';
+                    case 'FIR':
+                    case 'UIR':
 					case 'GLIDING':
                     case 'WAVE':
                         return 'airspace-overlay-green';
@@ -1831,11 +1886,13 @@ function mapService($http, mapFeatureService, weatherService)
                     case 'F':
                     case 'TMZ':
                     case 'RMZ':
-                    case 'FIR':
-                    case 'UIR':
                     case 'FIZ':
 						classStyle = "airspace-class-blue";
 						break;
+                    case 'FIR':
+                    case 'UIR':
+                        classStyle = "airspace-class-green";
+                        break;
 					case 'CTR':
 						classStyle = "airspace-class-blue";
 						catText = "CTR";
@@ -1883,6 +1940,8 @@ function mapService($http, mapFeatureService, weatherService)
 					case 'PROHIBITED':
                         classStyle = "airspace-name-red";
                         break;
+                    case 'FIR':
+                    case 'UIR':
 					case 'GLIDING':
                     case 'WAVE':
 						classStyle = "airspace-name-green";
@@ -1924,12 +1983,12 @@ function mapService($http, mapFeatureService, weatherService)
 		}
 
 
-		function addCachedObject(geopoint, geoPointFeature, labelFeature) //TODO:necessary?
+		function addFeatureObject(geopoint, geoPointFeature, labelFeature)
 		{
 			switch (geopoint.type) {
 				case 'airport':
 				{
-					var ap = mapFeatureService.getAirportByIcao(geopoint.airport_icao);
+                    var ap = mapFeatureService.getAirportById(geopoint.id);
 
 					if (ap) {
 						geoPointFeature.airport = ap;
@@ -1939,7 +1998,7 @@ function mapService($http, mapFeatureService, weatherService)
 				}
 				case 'navaid':
 				{
-					var nav = mapFeatureService.getNavaid(geopoint.id);
+					var nav = mapFeatureService.getNavaidById(geopoint.id);
 
 					if (nav) {
 						geoPointFeature.navaid = nav;
@@ -1949,7 +2008,7 @@ function mapService($http, mapFeatureService, weatherService)
 				}
 				case 'report':
 				{
-					var rp = mapFeatureService.getReportingPoint(geopoint.id);
+					var rp = mapFeatureService.getReportingPointById(geopoint.id);
 
 					if (rp) {
 						geoPointFeature.reportingpoint = rp;
@@ -1960,7 +2019,7 @@ function mapService($http, mapFeatureService, weatherService)
 				}
 				case 'user':
 				{
-					var uwp = mapFeatureService.getUserPoint(geopoint.id);
+					var uwp = mapFeatureService.getUserPointById(geopoint.id);
 
 					if (uwp) {
 						geoPointFeature.userWaypoint = uwp;
@@ -2122,6 +2181,7 @@ function mapService($http, mapFeatureService, weatherService)
 		function addModifyInteraction(trackFeature)
 		{
 			var modInteraction = new ol.interaction.Modify({
+			    deleteCondition : function(event) { return false; }, // no delete condition
 				features: new ol.Collection([trackFeature])
 			});
 
@@ -2147,6 +2207,9 @@ function mapService($http, mapFeatureService, weatherService)
 
 		function onTrackModifyEnd(event)
 		{
+		    if (!event || !event.mapBrowserEvent)
+		        return;
+
 			var lineFeature = event.features.getArray()[0];
 			var oldPoints = lineFeature.originalCoordList;
 			var newPoints = lineFeature.getGeometry().getCoordinates();
@@ -2295,7 +2358,7 @@ function mapService($http, mapFeatureService, weatherService)
 
     //region TRACK
 
-	function drawFlightTrack(positions)
+	function drawFlightTrack(positions, fitToView)
 	{
 		if (typeof flightTrackLayer === "undefined")
 			return;
@@ -2311,7 +2374,9 @@ function mapService($http, mapFeatureService, weatherService)
 		});
 
 
-		for (var i = 0; i < positions.length - 1; i++)
+        var minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
+
+        for (var i = 0; i < positions.length - 1; i++)
 		{
 			var pos1 = positions[i];
 			var pos2 = positions[i + 1];
@@ -2326,7 +2391,21 @@ function mapService($http, mapFeatureService, weatherService)
 
 			flightTrackFeature.setStyle(flightTrackStyle);
 			flightTrackSource.addFeature(flightTrackFeature);
+
+			if (fitToView)
+			{
+			    // find max extent
+                minLon = Math.min(minLon, pos1.longitude);
+                minLat = Math.min(minLat, pos1.latitude);
+                maxLon = Math.max(maxLon, pos1.longitude);
+                maxLat = Math.max(maxLat, pos1.latitude);
+            }
 		}
+
+		if (fitToView)
+        {
+            fitView(ol.proj.transformExtent([minLon, minLat, maxLon, maxLat], 'EPSG:4326', 'EPSG:3857')); // transform from lat/lon to web mercator
+        }
 	}
 
 	//endregion
@@ -2337,14 +2416,18 @@ function mapService($http, mapFeatureService, weatherService)
 	function displayChart(chartId)
 	{
 		// load chart data
-		$http.get(adChartBaseUrl + '&id=' + chartId)
-			.then(
-				function(response) { // success
+        var url = adChartBaseUrl + '&id=' + chartId;
 
-					if (!response.data || !response.data.chart) {
-						console.error("ERROR reading chart");
+		$http.get(url)
+			.then(
+				function(response)
+                { // success
+                    if (!response.data || !response.data.chart)
+                    {
+						logResponseError("ERROR reading chart", response);
 					}
-					else {
+					else
+                    {
 						var extent = [response.data.chart.mercator_w, response.data.chart.mercator_s, response.data.chart.mercator_e, response.data.chart.mercator_n];
 
 						var projection = new ol.proj.Projection({
@@ -2368,10 +2451,12 @@ function mapService($http, mapFeatureService, weatherService)
 						map.getLayers().insertAt(chartLayers.length, chartLayer);
 
 						addChartCloseFeature(chartId, chartLayer, extent);
+
+						fitView(extent);
 					}
 				},
 				function(response) { // error
-					console.error("ERROR reading chart", response.status, response.data);
+                    logResponseError("ERROR reading chart", response);
 				}
 			);
 

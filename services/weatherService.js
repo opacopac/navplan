@@ -5,13 +5,13 @@
 navplanApp
 	.factory('weatherService', weatherService );
 
-trafficService.$inject = ['$http'];
+trafficService.$inject = ['$http', '$sce'];
 
-function weatherService($http)
+function weatherService($http, $sce)
 {
     const OVERSIZE_FACTOR = 1.3;
     const MAXAGE = 5 * 60 * 1000; // 5 min
-    var weatherBaseUrl2 = 'https://www.aviationweather.gov/gis/scripts/MetarJSON.php?jsonp=JSON_CALLBACK&taf=true&density=all&bbox='; //6.0,44.0,10.0,48.0';
+    var weatherBaseUrl2 = 'https://www.aviationweather.gov/gis/scripts/MetarJSON.php?   taf=true&density=all&bbox='; //6.0,44.0,10.0,48.0';
 	var weatherInfoCache = { extent: undefined, timestamp: undefined, weatherInfos: undefined };
 
 
@@ -37,6 +37,8 @@ function weatherService($http)
     {
         var url = weatherBaseUrl2 + extent[0] + "," + extent[1] + "," + extent[2] + "," + extent[3];
 
+        $sce.trustAsResourceUrl(url);
+
         $http.jsonp(url, {jsonpCallbackParam: 'jsonp'})
             .then(
                 function (response) // success
@@ -50,7 +52,7 @@ function weatherService($http)
                     }
                     else
                     {
-                        console.error("ERROR reading weather info ", response.status, response.data);
+                        logResponseError("ERROR reading weather info ", response);
 
                         if (errorCallback)
                             errorCallback();
@@ -58,7 +60,7 @@ function weatherService($http)
                 },
                 function (response) // error
                 {
-                    console.error("ERROR reading weather info ", response.status, response.data);
+                    logResponseError("ERROR reading weather info ", response);
 
                     if (errorCallback)
                         errorCallback();

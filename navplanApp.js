@@ -1,5 +1,5 @@
 // version
-var navplanVersion = "1.3a"; // must be the same as in version.txt
+var navplanVersion = "1.3c"; // must be the same as in version.txt
 
 
 // js error handler
@@ -41,15 +41,21 @@ $.get("version.txt?q=" + Math.random(),
 
 
 // init app
-var navplanApp = angular.module('navplanApp', [ 'ngRoute', 'ngResource', 'ui.bootstrap' ])
-	.config(routeprovider);
+var navplanApp = angular.module('navplanApp', [ 'ngRoute', 'ngResource', 'ui.bootstrap' ]);
 
-function routeprovider($routeProvider)
-{
+
+// no hash prefix (!)
+navplanApp.config(['$locationProvider', function($locationProvider) {
+    $locationProvider.hashPrefix("");
+}]);
+
+
+// route provider
+navplanApp.config(function($routeProvider) {
 	$routeProvider
+        //.when("",  { templateUrl: 'map/map.html?v=' + navplanVersion, controller: 'mapCtrl' })
 		.when("/",  { templateUrl: 'map/map.html?v=' + navplanVersion, controller: 'mapCtrl' })
 		.when("/map",  { templateUrl: 'map/map.html?v=' + navplanVersion, controller: 'mapCtrl' })
-        .when("/map2",  { templateUrl: 'map2/map2.html?v=' + navplanVersion, controller: 'mapCtrl2' })
 		.when("/traffic",  { templateUrl: 'map/map.html?v=' + navplanVersion, controller: 'mapCtrl', showtraffic: true })
 		.when("/share/:shareid",  { templateUrl: 'map/map.html?v=' + navplanVersion, controller: 'mapCtrl' })
 		.when("/waypoints",  { templateUrl: 'waypoints/waypoints.html?v=' + navplanVersion, controller: 'waypointCtrl' })
@@ -59,7 +65,21 @@ function routeprovider($routeProvider)
 		.when("/edituser",  { templateUrl: 'edituser/edituser.html?v=' + navplanVersion, controller: 'edituserCtrl' })
 		.when("/settings",  { templateUrl: 'settings/settings.html?v=' + navplanVersion, controller: 'settingsCtrl' })
 		.when("/about",  { templateUrl: 'about/about.html?v=' + navplanVersion });
-}
+});
+
+
+// url whitelist
+navplanApp.config(function($sceDelegateProvider) {
+    $sceDelegateProvider.resourceUrlWhitelist([
+        // Allow same origin resource loads.
+        'self',
+        'https://www.aviationweather.gov/gis/scripts/**',
+        'https://public-api.adsbexchange.com/VirtualRadar/**'
+        // Allow loading from our assets domain.  Notice the difference between * and **.
+        //'http://srv*.assets.example.com/**'
+    ]);
+});
+
 
 // add logging to angular exception handler
 navplanApp.config(function($provide) {

@@ -11,11 +11,6 @@ function mapFeatureService($http) {
     const OVERSIZE_FACTOR = 1.2;
     var featureCache = {extent: undefined, features: undefined};
     var airportsByIcao = {};
-    var airports = [];
-    var navaids = [];
-    var reportingPoints = [];
-    var userPoints = [];
-
     var mapFeaturesBaseUrl = 'php/mapFeatures.php?v=' + navplanVersion;
     var userWpBaseUrl = 'php/userWaypoint.php?v=' + navplanVersion;
 
@@ -23,9 +18,10 @@ function mapFeatureService($http) {
     return {
         getMapFeatures: getMapFeatures,
         getAirportByIcao: getAirportByIcao,
-        getNavaid: getNavaid,
-        getReportingPoint: getReportingPoint,
-        getUserPoint: getUserPoint,
+        getAirportById: getAirportById,
+        getNavaidById: getNavaidById,
+        getReportingPointById: getReportingPointById,
+        getUserPointById: getUserPointById,
         getAirspacesAtLatLon: getAirspacesAtLatLon,
         loadAllUserPoints: loadAllUserPoints
     };
@@ -46,16 +42,15 @@ function mapFeatureService($http) {
             .then(
                 function (response) // success
                 {
-                    if (response && response.data && response.data.airports && response.data.navaids && response.data.reportingPoints && response.data.userPoints && response.data.airspaces && response.data.webcams) {
-                        featureCache = {extent: extent, features: response.data};
-
+                    if (response && response.data && response.data.airports && response.data.navaids && response.data.reportingPoints && response.data.userPoints && response.data.airspaces && response.data.webcams)
+                    {
                         cacheFeatures(extent, response.data);
 
                         if (successCallback)
                             successCallback(response.data);
                     }
                     else {
-                        console.error("ERROR reading map features", response);
+                        logResponseError("ERROR reading map features", response);
 
                         if (errorCallback)
                             errorCallback();
@@ -63,7 +58,16 @@ function mapFeatureService($http) {
                 },
                 function (response) // error
                 {
-                    console.error("ERROR reading map features", response.status, response.data);
+                    // try loading from app cache
+                    var mapFeatureList = window.sessionStorage.getItem("mapFeatureCache");
+
+                    if (mapFeatureList && successCallback)
+                    {
+                        successCallback(json2obj(mapFeatureList));
+                        return;
+                    }
+
+                    logResponseError("ERROR reading map features", response);
 
                     if (errorCallback)
                         errorCallback();
@@ -75,15 +79,19 @@ function mapFeatureService($http) {
     function loadAllUserPoints(successCallback)
     {
         $http.get(userWpBaseUrl)
-            .success(function (data) {
-                if (data.userWaypoints)
-                    successCallback(data.userWaypoints);
-                else
-                    console.error("ERROR reading user waypoints", data);
-            })
-            .error(function (data, status) {
-                console.error("ERROR reading user waypoints", status, data);
-            });
+            .then(
+                function (response) // success
+                {
+                    if (response && response.data && response.data.userWaypoints)
+                        successCallback(response.data.userWaypoints);
+                    else
+                        logResponseError("ERROR reading user waypoints", response);
+                },
+                function (response) // error
+                {
+                    logResponseError("ERROR reading user waypoints", response);
+                }
+            );
     }
 
 
@@ -103,13 +111,6 @@ function mapFeatureService($http) {
             if (ap.icao)
                 airportsByIcao[ap.icao] = ap;
         }
-
-        airports = []; // TODO
-        navaids = [];
-        reportingPoints = [];
-        userPoints = [];
-
-
     }
 
 
@@ -119,21 +120,55 @@ function mapFeatureService($http) {
     }
 
 
-    function getNavaid(id)
+    function getAirportById(id)
     {
-        return featureCache.features.navaids[id]; // TODO: wrong
+        if (!featureCache.features || !featureCache.features.airports)
+            return;
+
+        for (var i = 0; i < featureCache.features.airports.length; i++)
+        {
+            if (featureCache.features.airports[i].id == id)
+                return featureCache.features.airports[i];
+        }
     }
 
 
-    function getReportingPoint(id)
+    function getNavaidById(id)
     {
-        return featureCache.features.reportingPoints[id];
+        if (!featureCache.features || !featureCache.features.navaids)
+            return;
+
+        for (var i = 0; i < featureCache.features.navaids.length; i++)
+        {
+            if (featureCache.features.navaids[i].id == id)
+                return featureCache.features.navaids[i];
+        }
     }
 
 
-    function getUserPoint(id)
+    function getReportingPointById(id)
     {
-        return featureCache.features.userPoints[id];
+        if (!featureCache.features || !featureCache.features.reportingPoints)
+            return;
+
+        for (var i = 0; i < featureCache.features.reportingPoints.length; i++)
+        {
+            if (featureCache.features.reportingPoints[i].id == id)
+                return featureCache.features.reportingPoints[i];
+        }
+    }
+
+
+    function getUserPointById(id)
+    {
+        if (!featureCache.features || !featureCache.features.userPoints)
+            return;
+
+        for (var i = 0; i < featureCache.features.userPoints.length; i++)
+        {
+            if (featureCache.features.userPoints[i].id == id)
+                return featureCache.features.userPoints[i];
+        }
     }
 
 
@@ -149,8 +184,8 @@ function mapFeatureService($http) {
         {
             var airspace = featureCache.features.airspaces[key];
 
-            if (lonLat[0] < airspace.lonLatExtent[0][0] || lonLat[0] > airspace.lonLatExtent[0][1] || lonLat[1] < airspace.lonLatExtent[1][0] || lonLat[1] > airspace.lonLatExtent[1][1])
-                continue;
+            /*if (lonLat[0] < airspace.lonLatExtent[0][0] || lonLat[0] > airspace.lonLatExtent[0][1] || lonLat[1] < airspace.lonLatExtent[1][0] || lonLat[1] > airspace.lonLatExtent[1][1])
+                continue;*/
 
             var poly = turf.polygon([airspace.polygon]);
 

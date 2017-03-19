@@ -246,7 +246,7 @@ function getAirports($extent)
 
     // hack: show VFRM charts only in branch
     if (strpos($_SERVER['REQUEST_URI'], "branch") === false)
-        $query .= " WHERE source != 'VFRM' ";
+        $query .= " AND source != 'VFRM' ";
 
     $query .= " ORDER BY";
     $query .= "   source ASC,";

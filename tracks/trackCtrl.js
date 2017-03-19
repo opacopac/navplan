@@ -36,13 +36,13 @@ function trackCtrl($scope, userService, mapService, globalData) {
 						if (response.data && response.data.track) {
 							$scope.globalData.track = response.data.track;
 							$scope.globalData.track.positions = unshrinkPositions($scope.globalData.track.positions);
-							mapService.drawFlightTrack($scope.globalData.track.positions);
+							mapService.drawFlightTrack($scope.globalData.track.positions, true);
 						}
 						else
-							console.error("ERROR reading track:", response.status, response.data);
+							logResponseError("ERROR reading track:", response);
 					},
 					function (response) {
-						console.error("ERROR reading track:", response.status, response.data);
+                        logResponseError("ERROR reading track:", response);
 					}
 				);
 		}
@@ -67,27 +67,43 @@ function trackCtrl($scope, userService, mapService, globalData) {
 
 	$scope.onRemoveTrackClicked = function(track)
 	{
-		userService.deleteUserTrack(track.id)
-			.then(
-				function (response) {
-					if (response.data && response.data.success == 1) {
-						$scope.showSuccessMessage("Track successfully deleted!");
-						$scope.readTrackList();
-					}
-					else
-						console.error("ERROR deleting track:", response.status, response.data);
-				},
-				function (response) {
-					console.error("ERROR deleting track:", response.status, response.data);
-				}
-			);
+        $scope.showRuSureMessage(
+            "Delete Saved Track?",
+            "Do you really want to delete this saved track?",
+            function()
+            {
+                userService.deleteUserTrack(track.id)
+                    .then(
+                        function (response) {
+                            if (response.data && response.data.success == 1) {
+                                $scope.showSuccessMessage("Track successfully deleted!");
+                                $scope.readTrackList();
+                            }
+                            else
+                                logResponseError("ERROR deleting track", response);
+                        },
+                        function (response) {
+                            logResponseError("ERROR deleting track", response);
+                        }
+                    );
+            }
+        );
 	};
 
 
 	$scope.onRemoveLasttrackClicked = function()
 	{
-		$scope.lasttrack = undefined;
-		localStorage.removeItem("lasttrack");
+        $scope.showRuSureMessage(
+            "Remove Track?",
+            "Do you really want to remove this unsaved track?",
+            function()
+            {
+                $scope.lasttrack = undefined;
+                localStorage.removeItem("lasttrack");
+
+                $scope.showSuccessMessage("Track successfully removed!");
+            }
+        );
 	};
 
 
@@ -131,10 +147,10 @@ function trackCtrl($scope, userService, mapService, globalData) {
 							$scope.readTrackList();
 						}
 						else
-							console.error("ERROR updating track:", response.status, response.data);
+							logResponseError("ERROR updating track", response);
 					},
 					function (response) {
-						console.error("ERROR updating track:", response.status, response.data);
+                        logResponseError("ERROR updating track", response);
 					}
 				);
 		}
@@ -150,10 +166,10 @@ function trackCtrl($scope, userService, mapService, globalData) {
 							localStorage.removeItem("lasttrack");
 						}
 						else
-							console.error("ERROR creating track:", response.status, response.data);
+							logResponseError("ERROR creating track", response);
 					},
 					function (response) {
-						console.error("ERROR creating track:", response.status, response.data);
+                        logResponseError("ERROR creating track", response);
 					}
 				);
 		}
@@ -173,10 +189,10 @@ function trackCtrl($scope, userService, mapService, globalData) {
 							$scope.exportKml();
 						}
 						else
-							console.error("ERROR reading track:", response.status, response.data);
+							logResponseError("ERROR reading track", response);
 					},
 					function (response) {
-						console.error("ERROR reading track:", response.status, response.data);
+                        logResponseError("ERROR reading track", response);
 					}
 				);
 		}

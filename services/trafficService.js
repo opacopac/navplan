@@ -79,7 +79,7 @@ function trafficService($http)
                 },
                 function (response) // error
                 {
-                    console.error("ERROR reading ac traffic from ognlistener", response.status, response.data);
+                    logResponseError("ERROR reading ac traffic from ognlistener", response);
                     
                     if (errorCallback)
                         errorCallback(acList);
@@ -100,9 +100,9 @@ function trafficService($http)
     {
         var url = adsbExchangeBaseUrl + '?fAltL=0&fAltU=' + maxHeight; //+ '&trFmt=sa';
         url += '&fWBnd=' + extent[0] + '&fSBnd=' + extent[1] + '&fEBnd=' + extent[2] + '&fNBnd=' + extent[3];
-        url += "&callback=JSON_CALLBACK";
+        //url += "&callback=JSON_CALLBACK";
 
-        $http.jsonp(url)
+        $http.jsonp(url, {jsonpCallbackParam: 'callback'})
             .then(
                 function (response) // success
                 {
@@ -130,7 +130,7 @@ function trafficService($http)
                 },
                 function (response) // error
                 {
-                    console.error("ERROR reading ac traffic from ADSBExchange", response.status, response.data);
+                    logResponseError("ERROR reading ac traffic from ADSBExchange", response);
                     
                     if (errorCallback)
                         errorCallback(acList);

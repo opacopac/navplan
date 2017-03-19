@@ -16,6 +16,7 @@
 		addStaticUrls();
 		addTileUrls(json_decode($_COOKIE["cachewaypoints"]), true);
 		addChartUrls(json_decode($_COOKIE["cachecharts"]), true);
+        //addMapFeaturesUrls(json_decode($_COOKIE["cachemaxextent"]), true);
 	}
 	else // don't cache anything
 	{
@@ -44,61 +45,79 @@
 		echo "tracks/tracks.html?v=" . $ver . "\n";
 
 		// php
-		echo "php/airports.php?v=" . $ver . "\n";
+		/*echo "php/airports.php?v=" . $ver . "\n";
 		echo "php/airspace.php?v=" . $ver . "\n";
 		echo "php/navaids.php?v=" . $ver . "\n";
 		echo "php/webcams.php?v=" . $ver . "\n";
-		echo "php/reportingPoints.php?v=" . $ver . "\n";
+		echo "php/reportingPoints.php?v=" . $ver . "\n";*/
+
+		// angular
+        echo "angularjs/1.6.3/angular.min.js\n";
+        echo "angularjs/1.6.3/angular-route.min.js\n";
+        echo "angularjs/1.6.3/angular-resource.min.js\n";
+
+		// bootstrap
+        echo "bootstrap/3.3.7/bootstrap.min.js\n";
+        echo "bootstrap/3.3.7/bootstrap.min.css\n";
+        echo "bootstrap/fonts/glyphicons-halflings-regular.woff2\n";
+        echo "bootstrap/fonts/glyphicons-halflings-regular.woff\n";
+        echo "bootstrap/fonts/glyphicons-halflings-regular.ttf\n";
+        echo "bootstrap/fonts/glyphicons-halflings-regular.eot\n";
+        echo "bootstrap/fonts/glyphicons-halflings-regular.svg\n";
+
+        // openlayers
+        echo "openlayers/4.0.1/ol.css\n";
+        echo "openlayers/4.0.1/ol.js\n";
 
 		// css
 		echo "css/navplan.css?v=" . $ver . "\n";
-		echo "css/bootstrap.min.css\n";
-		echo "css/ol.css\n";
 		echo "css/arial-narrow.css\n";
 
 		// fonts
         echo "fonts/arial-narrow_d0eb64ed2b91fe9a67f7800c1b14868b.ttf\n";
         echo "fonts/arial-narrow_d0eb64ed2b91fe9a67f7800c1b14868b.woff\n";
-		echo "fonts/glyphicons-halflings-regular.woff2\n";
-		echo "fonts/glyphicons-halflings-regular.woff\n";
-		echo "fonts/glyphicons-halflings-regular.ttf\n";
-		echo "fonts/glyphicons-halflings-regular.eot\n";
-		echo "fonts/glyphicons-halflings-regular.svg\n";
+
+        // font-awesome
+        echo "font-awesome/css/font-awesome.min.css\n";
+        echo "font-awesome/fonts/fontawesome-webfont.eot\n";
+        echo "font-awesome/fonts/fontawesome-webfont.svg\n";
+        echo "font-awesome/fonts/fontawesome-webfont.ttf\n";
+        echo "font-awesome/fonts/fontawesome-webfont.woff\n";
+        echo "font-awesome/fonts/fontawesome-webfont.woff2\n";
 
 		// images
 		echo "icon/ad_civ.png\n";
 		echo "icon/ad_civ_nofac.png\n";
 		echo "icon/ad_civmil.png\n";
+        echo "icon/ad_closed.png\n";
+        echo "icon/ad_heli.png\n";
+        echo "icon/ad_heli_mil.png\n";
 		echo "icon/ad_mil.png\n";
-		echo "icon/navaid_dme.png\n";
+        echo "icon/ad_water.png\n";
+        echo "icon/closerbutton.png\n";
+        echo "icon/feature_parachute.png\n";
+        echo "icon/navaid_dme.png\n";
 		echo "icon/navaid_ndb.png\n";
+        echo "icon/navaid_tacan.png\n";
+        echo "icon/navaid_vor.png\n";
 		echo "icon/navaid_vor-dme.png\n";
+        echo "icon/navaid_vortac.png\n";
 		echo "icon/own_plane.png\n";
+        echo "icon/rp.png\n";
+        echo "icon/rp_comp.png\n";
+        echo "icon/rp_inbd.png\n";
 		echo "icon/rwy_concrete.png\n";
 		echo "icon/rwy_grass.png\n";
 		echo "icon/rwy_mil.png\n";
-		echo "icon/traffic_balloon.png\n";
-		echo "icon/traffic_glider.png\n";
-		echo "icon/traffic_heli.png\n";
-		echo "icon/traffic_parachute.png\n";
-		echo "icon/traffic_plane.png\n";
 		echo "icon/webcam.png\n";
-		echo "icon/rp.png\n";
-		echo "icon/rp_inbd.png\n";
-		echo "icon/rp_comp.png\n";
 		echo "icon/wp_user.png\n";
 
 		// js
 	    echo "js/jquery-1.12.3.min.js\n";
         echo "js/jquery-ui.min.js\n";
         echo "js/jquery.ui.touch-punch.min.js\n";
-        echo "js/angular.min.js\n";
-        echo "js/angular-route.min.js\n";
-        echo "js/angular-resource.min.js\n";
-        echo "js/bootstrap.min.js\n";
-        echo "js/ui-bootstrap-tpls-1.3.2.min.js\n";
-        echo "js/ol.js\n";
         echo "js/turf.min.js\n";
+        echo "js/ui-bootstrap-tpls-1.3.2.min.js\n";
 		echo "navplanHelper.js?v=" . $ver . "\n";
 		echo "navplanApp.js?v=" . $ver . "\n";
 		echo "navplanCtrl.js?v=" . $ver . "\n";
@@ -110,6 +129,7 @@
 		echo "tracks/trackCtrl.js?v=" . $ver . "\n";
 		echo "settings/settingsCtrl.js?v=" . $ver . "\n";
 		echo "services/mapService.js?v=" . $ver . "\n";
+        echo "services/mapFeatureService.js?v=" . $ver . "\n";
 		echo "services/locationService.js?v=" . $ver . "\n";
 		echo "services/trafficService.js?v=" . $ver . "\n";
 		echo "services/geonameService.js?v=" . $ver . "\n";
@@ -133,7 +153,24 @@
 	}
 
 
-	function addChartUrls($charturls)
+/*function addMapFeaturesUrls($maxextent)
+    {
+        global $ver;
+
+        if (!$maxextent)
+            return;
+
+        $url = "php/mapFeatures.php?v=" . $ver . "&minlon=" . $maxextent[0] . "&minlat=" . $maxextent[1] . "&maxlon=" . $maxextent[2] . "&maxlat=" . $maxextent[3];
+
+        echo "# map features\n";
+        echo "CACHE:\n";
+        echo $url . "\n";
+        echo "\n";
+    }*/
+
+
+
+    function addChartUrls($charturls)
 	{
 	    if (!$charturls)
 	        return;
