@@ -1393,6 +1393,7 @@ var telephony = {
 "ESI": "Eliservizi",
 "ESJ": "Eastern Skyjets",
 "ESM": "Exec Aircraft",
+"ESQ": "Europ Star",
 "ESR": "Eastarjet",
 "ESS": "Tecsa",
 "EST": "Reval",

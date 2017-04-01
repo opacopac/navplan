@@ -21,7 +21,8 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 
 	var featureContainer = document.getElementById('feature-popup');
 	var trafficContainer = document.getElementById('traffic-popup');
-	var weatherContainer = document.getElementById('weather-popup');
+	var metarTafContainer = document.getElementById('metartaf-popup');
+    var weatherContainer = document.getElementById('weather-popup');
 
 	//endregion
 
@@ -279,8 +280,8 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
         }
         else if (feature.weatherInfo)
         {
-            $scope.selectedWeather = feature.weatherInfo;
-            mapService.addOverlay(feature.getGeometry().getCoordinates(), weatherContainer, true);
+            $scope.selectedMetarTaf = feature.weatherInfo;
+            mapService.addOverlay(feature.getGeometry().getCoordinates(), metarTafContainer, true);
             $scope.$apply();
         }
     };
@@ -293,16 +294,41 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 	};
 
 
-	$scope.onShowWeatherInfo = function()
+	$scope.onShowMetarTaf = function()
 	{
-		$scope.selectedWeather = $scope.globalData.selectedWp.airport.weatherInfo;
-		$scope.selectedWeather.airport_icao = $scope.globalData.selectedWp.airport.icao;
+		$scope.selectedMetarTaf = $scope.globalData.selectedWp.airport.weatherInfo;
+		$scope.selectedMetarTaf.airport_icao = $scope.globalData.selectedWp.airport.icao;
 		var coords = mapService.getMercatorCoordinates($scope.globalData.selectedWp.airport.latitude, $scope.globalData.selectedWp.airport.longitude);
-		mapService.addOverlay(coords, weatherContainer, true);
+		mapService.addOverlay(coords, metarTafContainer, true);
 	};
 
 
-	$scope.openFeatureOverlay = function(latitude, longitude)
+	$scope.onShowWeather = function(latitude, longitude, locationName)
+    {
+        if (locationName)
+            $scope.selectedLocationName = locationName;
+        else
+            $scope.selectedLocationName = undefined;
+
+        var coords = mapService.getMercatorCoordinates(latitude, longitude);
+        mapService.addOverlay(coords, weatherContainer, true);
+
+        var span = document.getElementById("windytviframe");
+        while (span.firstChild)
+            span.removeChild(span.firstChild);
+
+        //<iframe width="800" height="220" src="https://embed.windytv.com/embed2.html?lat=46.9458&lon=7.4713&type=forecast&metricWind=kt&metricTemp=%C2%B0C" frameborder="0"></iframe>
+        var iframe = document.createElement('iframe');
+        iframe.src = "https://embed.windytv.com/embed2.html?lat=" + latitude + "&lon=" + longitude + "&type=forecast&metricWind=kt&metricTemp=%C2%B0C";
+        iframe.width = weatherContainer.clientWidth - 2 * 16;
+        iframe.height = 220;
+        iframe.frameborder = 0;
+
+        span.appendChild(iframe);
+    };
+
+
+    $scope.openFeatureOverlay = function(latitude, longitude)
 	{
 		var coordinates = mapService.getMercatorCoordinates(latitude, longitude);
 
@@ -876,7 +902,11 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
                 case "DEPARTURE" : return "DEP";
                 case "GLIDING" : return "GLD";
                 case "GROUND" : return "GND";
-                case "CTAF" : return "AD"; // TODO: spezialregel nur für country = CH
+                case "CTAF" :
+                    if (airport.country == "CH") // spezialregel nur für country = CH
+                        return "AD";
+                    else
+                        return "CTAF";
                 case "AFIS" : return "AFIS";
                 case "OTHER" :
                 {

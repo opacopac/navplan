@@ -307,11 +307,17 @@ function trafficService($http)
 
             if (source == dataSources.adsbexchange) // overwrite ac info if data source is adsbexchange
             {
-                ac.actype = actype;
+                if (ac.actype != "DROP_PLANE") // don't overwrite drop plane type
+                    ac.actype = actype;
                 ac.registration = registration;
                 ac.callsign = callsign;
                 ac.opCallsign = opCallsign;
                 ac.aircraftModelType = aircraftModelType;
+            }
+            else if (source == dataSources.ogn)
+            {
+                if (actype == "DROP_PLANE") // overwrite drop plane type
+                    ac.actype = actype;
             }
         }
 

@@ -260,7 +260,10 @@
 		$ytile = floor((($lon + 180) / 360) * pow(2, $zoom));
 		$xtile = floor((1 - log(tan(deg2rad($lat)) + 1 / cos(deg2rad($lat))) / pi()) /2 * pow(2, $zoom));
 
-		if (isLocalTile($zoom, $ytile, $xtile))
+
+        return '//api.mapbox.com/styles/v1/opacopac/cj0mxdtd800bx2slaha4b0p68/tiles/256/' . $zoom . '/' . $ytile . '/' . $xtile . '@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2owbXNsN3ltMDAwdjMyczZudmt0bGwwdiJ9.RG5N7U6VkoIQ44S-bB-aNg';
+
+        /*if (isLocalTile($zoom, $ytile, $xtile))
 		{
             return $localBaseUrl . $zoom . "/" . $ytile . "/" . $xtile . ".png";
 		}
@@ -268,7 +271,7 @@
 		{
             $n = ($zoom + $xtile + $ytile) % 3;
             return $otmBaseUrl[$n] . $zoom . "/" . $ytile . "/" . $xtile . ".png";
-        }
+        }*/
 	}
 
 

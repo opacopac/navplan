@@ -156,6 +156,26 @@ function waypointCtrl($scope, $http, geonameService, fuelService, userService, m
 	};
 
 
+    $scope.onReverseWaypointsClicked = function ()
+    {
+        if ($scope.globalData.navplan.waypoints.length == 0)
+            return;
+
+        var wpTmp = [];
+
+        for (var i = $scope.globalData.navplan.waypoints.length - 1; i >= 0; i--)
+            wpTmp.push($scope.globalData.navplan.waypoints[i]);
+
+        $scope.globalData.navplan.waypoints = [];
+
+        for (i = 0; i < wpTmp.length; i++)
+            $scope.globalData.navplan.waypoints.push(wpTmp[i]);
+
+        $scope.updateWaypoints();
+        $scope.discardCache();
+    };
+
+
 	$scope.onKmlClicked = function()
 	{
 		$scope.exportKml();

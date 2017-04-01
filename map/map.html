@@ -58,7 +58,7 @@
 			<p>{{ getAdTypeString(globalData.selectedWp.airport.type) }}</p>
 			<p>{{ getPositionString(globalData.selectedWp.airport.latitude, globalData.selectedWp.airport.longitude) }}</p>
 			<p>Elevation: {{ getElevationString(globalData.selectedWp.airport.elevation) }}</p>
-			<p ng-show="globalData.selectedWp.airport.runways && globalData.selectedWp.airport.runways.length > 0"><button class="btn btn-link" ng-click="onToggleElementClicked('#ad_details')">Runways / Frequencies &raquo;</button></p>
+			<p ng-show="globalData.selectedWp.airport.runways && globalData.selectedWp.airport.runways.length > 0"><button class="btn btn-link btn-sm" ng-click="onToggleElementClicked('#ad_details')">Runways / Frequencies &raquo;</button></p>
 			<div id="ad_details" class="collapse">
 				<table class="table table-striped table-condensed">
 					<tr>
@@ -88,7 +88,7 @@
 					</tr>
 				</table>
 			</div>
-			<p ng-show="globalData.selectedWp.airport.charts && globalData.selectedWp.airport.charts.length > 0"><button class="btn btn-link" ng-click="onToggleElementClicked('#ad_charts')">Charts &raquo;</button></p>
+			<p ng-show="globalData.selectedWp.airport.charts && globalData.selectedWp.airport.charts.length > 0"><button class="btn btn-link btn-sm" ng-click="onToggleElementClicked('#ad_charts')">Charts &raquo;</button></p>
 			<div id="ad_charts" class="collapse">
 				<p ng-repeat="chart in globalData.selectedWp.airport.charts" ng-hide="chart.source == 'VFRMxxx'">
 					<button type="button" class="btn btn-info btn-circle" ng-click="onDisplayChartClicked(chart.id)"><i class="glyphicon glyphicon-file"></i></button>
@@ -97,8 +97,15 @@
 					<span ng-show="chart.source == 'VFRM'"><i>&copy; by <a href="https://www.swisstopo.admin.ch/" target="_blank">swisstopo</a></i></span>
 				</p>
 			</div>
-			<p ng-repeat="webcam in globalData.selectedWp.airport.webcams"><a href="{{ webcam.url }}" target="_blank" class="btn btn-success btn-circle"><i class="glyphicon glyphicon-facetime-video"></i></a> {{ webcam.name }}</p>
-			<p ng-show="globalData.selectedWp.airport.weatherInfo"><a href="#" ng-click="$event.preventDefault(); onShowWeatherInfo();" class="btn btn-success btn-circle"><i class="glyphicon glyphicon-file"></i></a> METAR / TAF</p>
+            <div class="text-right small">
+                <em><a href="http://www.openaip.net/airports?apttype_type_filter=All&country_filter=All&name_filter={{ globalData.selectedWp.airport.icao ? globalData.selectedWp.airport.icao : globalData.selectedWp.airport.name }}" target="_blank">add / correct data</a>
+                <i class="glyphicon glyphicon-info-sign info-button" title="openAIP login is required for editing"></i></em>
+            </div>
+            <hr />
+			<p ng-show="globalData.selectedWp.airport.weatherInfo"><a href="#" ng-click="$event.preventDefault(); onShowMetarTaf();" class="btn btn-info btn-circle"><i class="fa fa-cloud" aria-hidden="true"></i></a> METAR / TAF</p>
+            <p><a href="#" ng-click="$event.preventDefault(); onShowWeather(globalData.selectedWp.airport.latitude, globalData.selectedWp.airport.longitude, globalData.selectedWp.airport.icao ? globalData.selectedWp.airport.icao : globalData.selectedWp.airport.name);"
+                  class="btn btn-info btn-circle"><i class="fa fa-cloud" aria-hidden="true"></i></a> Weather Forecast</p>
+            <p ng-repeat="webcam in globalData.selectedWp.airport.webcams"><a href="{{ webcam.url }}" target="_blank" class="btn btn-success btn-circle"><i class="glyphicon glyphicon-facetime-video"></i></a> {{ webcam.name }}</p>
 			<hr />
 			<p ng-show="globalData.selectedWp.isNew"><button type="button" class="btn btn-success btn-circle" ng-click="onAddSelectedWaypointClicked()"><i class="glyphicon glyphicon-plus"></i></button> Add as Waypoint</p>
 			<p ng-show="globalData.selectedWp.isNew"><button type="button" class="btn btn-warning btn-circle" ng-click="onSetAsAlternateClicked()"><i class="glyphicon glyphicon-plus"></i></button> Set as Alternate</p>
@@ -107,12 +114,16 @@
 		</div>
 		<!-- navaid -->
 		<div ng-show="globalData.selectedWp.navaid">
-			<h4>{{ globalData.selectedWp.navaid.kuerzel }} {{ globalData.selectedWp.navaid.type }}</h4>
+			<h4>{{ globalData.selectedWp.navaid.name }} {{ globalData.selectedWp.navaid.type }} ({{ globalData.selectedWp.navaid.kuerzel }}) </h4>
 			<p>Navigational Aid</p>
 			<p>{{ getPositionString(globalData.selectedWp.navaid.latitude, globalData.selectedWp.navaid.longitude) }}</p>
 			<p>Elevation: {{ getElevationString(globalData.selectedWp.navaid.elevation) }}</p>
 			<p>Frequency: {{ globalData.selectedWp.navaid.frequency }} {{ globalData.selectedWp.navaid.unit }}</p>
 			<p>Morse: <span ng-bind-html="getMorseString(globalData.selectedWp.navaid.kuerzel)"></span></p>
+            <div class="text-right small">
+                <em><a href="http://www.openaip.net/navaids?field_openaip_navaid_type_value_many_to_one=All&field_openaip_navaid_id_value=&field_openaip_navaid_country_value_many_to_one=All&title={{ globalData.selectedWp.navaid.name }}" target="_blank">add / correct data</a>
+                    <i class="glyphicon glyphicon-info-sign info-button" title="openAIP login is required for editing"></i></em>
+            </div>
 			<hr />
 			<p ng-show="globalData.selectedWp.isNew"><button type="button" class="btn btn-success btn-circle" ng-click="onAddSelectedWaypointClicked()"><i class="glyphicon glyphicon-plus"></i></button> Add as Waypoint</p>
 			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-warning btn-circle" ng-click="onEditSelectedWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Edit Waypoint</p>
@@ -145,6 +156,9 @@
 			<p>User Point</p>
 			<p>{{ getPositionString(globalData.selectedWp.userWaypoint.latitude, globalData.selectedWp.userWaypoint.longitude) }}</p>
 			<p ng-show="globalData.selectedWp.userWaypoint.remark">Remark: {{ globalData.selectedWp.userWaypoint.remark }}</p>
+            <hr />
+            <p><a href="#" ng-click="$event.preventDefault(); onShowWeather(globalData.selectedWp.userWaypoint.latitude, globalData.selectedWp.userWaypoint.longitude, globalData.selectedWp.userWaypoint.name);"
+                  class="btn btn-info btn-circle"><i class="fa fa-cloud" aria-hidden="true"></i></a> Weather Forecast</p>
 			<hr />
 			<p ng-show="globalData.selectedWp.isNew"><button type="button" class="btn btn-success btn-circle" ng-click="onAddSelectedWaypointClicked()"><i class="glyphicon glyphicon-plus"></i></button> Add as Waypoint</p>
 			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-warning btn-circle" ng-click="onEditSelectedWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Edit Waypoint</p>
@@ -156,6 +170,9 @@
 			<h4>{{ globalData.selectedWp.geopoint.name }}</h4>
 			<p>{{ getPositionString(globalData.selectedWp.geopoint.latitude, globalData.selectedWp.geopoint.longitude) }}</p>
 			<p ng-show="globalData.selectedWp.geopoint.elevation">Elevation: {{ getElevationString(globalData.selectedWp.geopoint.elevation) }}</p>
+            <hr />
+            <p><a href="#" ng-click="$event.preventDefault(); onShowWeather(globalData.selectedWp.geopoint.latitude, globalData.selectedWp.geopoint.longitude, globalData.selectedWp.geopoint.name);"
+                  class="btn btn-info btn-circle"><i class="fa fa-cloud" aria-hidden="true"></i></a> Weather Forecast</p>
 			<hr />
 			<p ng-show="globalData.selectedWp.isNew"><button type="button" class="btn btn-success btn-circle" ng-click="onAddSelectedWaypointClicked()"><i class="glyphicon glyphicon-plus"></i></button> Add Was aypoint</p>
 			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-warning btn-circle" ng-click="onEditSelectedWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Edit Waypoint</p>
@@ -170,6 +187,9 @@
 			<p ng-show="globalData.selectedWp.callsign">Callsign: {{ globalData.selectedWp.callsign}}</p>
 			<p ng-show="globalData.selectedWp.freq">Frequency: {{ globalData.selectedWp.freq }}</p>
 			<p ng-show="globalData.selectedWp.remark">Remarks: {{ globalData.selectedWp.remark}}</p>
+            <hr />
+            <p><a href="#" ng-click="$event.preventDefault(); onShowWeather(globalData.selectedWp.latitude, globalData.selectedWp.longitude, globalData.selectedWp.geopoint.checkpoint);"
+                  class="btn btn-info btn-circle"><i class="fa fa-cloud" aria-hidden="true"></i></a> Weather Forecast</p>
 			<hr />
 			<p><button type="button" class="btn btn-warning btn-circle" ng-click="onEditSelectedWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Edit Waypoint</p>
 			<p><button type="button" class="btn btn-danger btn-circle" ng-click="onRemoveSelectedWaypointClicked()"><i class="glyphicon glyphicon-remove"></i></button> Remove Waypoint</p>
@@ -204,22 +224,30 @@
 		<p><a href="#" ng-click="$event.preventDefault(); onFollowSelectedTraffic();" class="btn btn-info btn-circle"><i class="glyphicon glyphicon-screenshot"></i></a> Follow Aircraft on Map</p>
 	</div>
 </div>
-<!-- weather popup -->
-<div id="weather-popup" class="ol-popup ol-popup-weather" style="visibility: hidden">
-	<a href="#" id="weather-popup-closer" class="ol-popup-closer" ng-click="$event.preventDefault(); onCloseOverlayClicked()"></a>
-	<div id="weather-popup-content">
-		<h4>METAR / TAF {{ selectedWeather.properties.id }}</h4>
-		<p ng-show="selectedWeather.properties.rawOb" >
-			METAR {{ selectedWeather.properties.rawOb }}
-			<br />
-			<i>({{ getAgeString(selectedWeather.properties.obsTime); }} old)</i>
+<!-- METAR TAF popup -->
+<div id="metartaf-popup" class="ol-popup ol-popup-metartaf" style="visibility: hidden">
+	<a href="#" id="metartaf-popup-closer" class="ol-popup-closer" ng-click="$event.preventDefault(); onCloseOverlayClicked()"></a>
+	<div id="metartaf-popup-content">
+		<h4>METAR / TAF {{ selectedMetarTaf.properties.id }}</h4>
+		<p ng-show="selectedMetarTaf.properties.rawOb" >
+            METAR {{ selectedMetarTaf.properties.rawOb }}
+            <br />
+			<i>({{ getAgeString(selectedMetarTaf.properties.obsTime); }} old)</i>
 		</p>
-		<p ng-show="selectedWeather.properties.rawTaf" >
-			{{ selectedWeather.properties.rawTaf }}
-			<br />
-			<i>({{ getTafAgeString(selectedWeather); }} old)</i>
+		<p ng-show="selectedMetarTaf.properties.rawTaf" >
+            {{ selectedMetarTaf.properties.rawTaf }}
+            <br />
+			<i>({{ getTafAgeString(selectedMetarTaf); }} old)</i>
 		</p>
 	</div>
+</div>
+<!-- weather popup -->
+<div id="weather-popup" class="ol-popup ol-popup-weather" style="visibility: hidden">
+    <a href="#" id="weather-popup-closer" class="ol-popup-closer" ng-click="$event.preventDefault(); onCloseOverlayClicked()"></a>
+    <div id="weather-popup-content">
+        <h4>Weather Forecast <span ng-show="selectedLocationName">for {{ selectedLocationName }}</span> </h4>
+        <span id="windytviframe"></span>
+    </div>
 </div>
 <!-- map -->
 <div id="map" class="map"></div>
