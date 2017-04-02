@@ -531,9 +531,46 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 
 		//window.open('php/navplanKml.php?waypoints=' + encodeURIComponent(JSON.stringify(waypoints)), "_blank");
 	};
-	
-	
-	$scope.createShareUrl = function()
+
+
+    $scope.exportGpx = function()
+    {
+        var routeTitle = $scope.globalData.navplan.title ? $scope.globalData.navplan.title : '';
+
+        var waypoints = [];
+        if ($scope.globalData.navplan && $scope.globalData.navplan.waypoints) {
+            for (var i = 0; i < $scope.globalData.navplan.waypoints.length; i++) {
+                var wp = $scope.globalData.navplan.waypoints[i];
+
+                waypoints.push({
+                    name: wp.checkpoint,
+                    lat: wp.latitude,
+                    lon: wp.longitude
+                });
+            }
+        }
+
+        var trackTitle = $scope.globalData.track.name ? $scope.globalData.track.name : '';
+
+        var trackpoints = [];
+        if ($scope.globalData.track && $scope.globalData.track.positions) {
+            for (var j = 0; j < $scope.globalData.track.positions.length; j++) {
+                var pos = $scope.globalData.track.positions[j];
+
+                trackpoints.push({
+                    lat: pos.latitude,
+                    lon: pos.longitude,
+                    alt: pos.altitude,
+                    time: getIsoTimeString(pos.timestamp)
+                });
+            }
+        }
+
+        sendPostForm('php/navplanGpx.php', '_blank', 'data', JSON.stringify({ routeTitle: routeTitle, waypoints: waypoints, trackTitle: trackTitle, trackpoints: trackpoints }));
+    };
+
+
+    $scope.createShareUrl = function()
 	{
 		userService.createSharedNavplan($scope.globalData)
 			.then(

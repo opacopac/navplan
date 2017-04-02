@@ -192,6 +192,13 @@ function getYearMonthDayString(date)
 }
 
 
+function getIsoTimeString(timeMs)
+{
+    var date = new Date(timeMs);
+    return date.toISOString();
+}
+
+
 function getDmsString(latitude, longitude)
 {
 	var latString = getCoordString(latitude);

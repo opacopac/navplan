@@ -9,7 +9,7 @@
     header("Content-Disposition: attachment; filename=track.kml");
 	header('Content-type: application/vnd.google-earth.kml+xml');
 
-    $xml = getDocBegin();
+    $xml = getHeaderXml();
 
     if (isset($data["wpPositions"]))
         $xml .= getWpTrackPlacemark($data["wpPositions"]);
@@ -17,13 +17,13 @@
     if (isset($data["flightPositions"]))
         $xml .= getFlightTrackPlacemark($data["flightPositions"]);
 
-    $xml .= getDocEnd();
+    $xml .= getFooterXml();
 
 	// send xml
 	echo($xml);
 
 
-	function getDocBegin()
+	function getHeaderXml()
 	{
 	    $xml = '' .
 	    '<?xml version="1.0" encoding="UTF-8"?>' . "\n" .
@@ -102,7 +102,7 @@
 	}
 
 
-	function getDocEnd()
+	function getFooterXml()
 	{
 	    $xml = '' .
 		'	</Document>' . "\n" .
