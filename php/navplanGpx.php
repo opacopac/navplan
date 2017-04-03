@@ -1,92 +1,141 @@
 <?php
-if (isset($_POST["data"]))
-    $data = json_decode(urldecode($_POST["data"]), true);
-else
-    die("ERROR: data parameter missing!");
+include("helper.php");
 
+$postData = json_decode(file_get_contents('php://input'), true);
 
-// headers
-header("Content-Disposition: attachment; filename=waypoints.gpx");
-header('Content-type: application/gpx+xml');
+if (!$postData || !$postData["userFileName"] || !$postData["data"] || !$postData["data"]["navplan"] || !$postData["data"]["track"])
+    die("ERROR: data parameters missing!");
 
 
 // create xml
-$xml = getHeaderXml();
-$xml .= getRouteXml($data["routeTitle"], $data["waypoints"]);
-$xml .= getTrackXml($data["trackTitle"], $data["trackpoints"]);
-$xml .= getFooterXml();
+$xml = createGpxXml($postData["data"]);
 
 
-// return xml
-echo($xml);
+// create temp file
+$userFileName = checkFilename($postData["userFileName"]);
+$tmpDir = createTempDir();
+$tmpFile = $tmpDir . "/" . $userFileName;
+file_put_contents(TMP_DIR_BASE . $tmpFile, $xml);
 
 
-function getHeaderXml()
+// return tempfile
+echo json_encode(array("tmpFile" => $tmpFile), JSON_NUMERIC_CHECK);
+exit;
+
+
+function createGpxXml($data)
 {
+    $routeTitle = $data["navplan"]["title"] ? $data["navplan"]["title"] : "";
+    $waypoints = getWaypoints($data["navplan"]);
+    $trackTitle = $data["track"]["name"] ? $data["track"]["name"] : "";
+    $trackpoints = $data["track"]["positions"] ? $data["track"]["positions"] : [];
+
+
+    // header
     $xml = '' .
         '<?xml version="1.0" encoding="UTF-8" standalone="no" ?>' . "\n" .
         '<gpx creator="www.navplan.ch" version="1.1" xmlns="http://www.topografix.com/GPX/1/1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">' . "\n" .
         '  <metadata>' . "\n" .
         '  </metadata>' . "\n";
 
-    return $xml;
-}
 
-
-function getRouteXml($title, $waypoints)
-{
-    if (!$waypoints || count($waypoints) == 0)
-        return '';
-
-    $xml = '' .
-        '  <rte>' . "\n" .
-        '    <name>' . $title . '</name>' . "\n";
-
-    for ($i = 0; $i < count($waypoints); $i++)
+    // waypoints
+    if ($waypoints && count($waypoints) > 0)
     {
-        $xml .= '    <rtept lat="' . $waypoints[$i]["lat"] . '" lon="' . $waypoints[$i]["lon"] . '">' . "\n";
-        $xml .= '      <name>' . $waypoints[$i]["name"] . '</name>' . "\n";
-        $xml .= '      <type>Waypoint</type>' . "\n";
-        $xml .= '    </rtept>' . "\n";
+        for ($i = 0; $i < count($waypoints); $i++)
+        {
+            $xml .= '' .
+                '  <wpt lat="' . $waypoints[$i]["latitude"] . '" lon="' . $waypoints[$i]["longitude"] . '">' . "\n" .
+                '    <name>' . $waypoints[$i]["checkpoint"] . '</name>' . "\n" .
+                '    <type>' . getWpType($waypoints[$i]) . '</type>' . "\n" .
+                '  </wpt>' . "\n";
+        }
     }
 
-    $xml .= '  </rte>' . "\n";
 
-    return $xml;
-}
-
-
-function getTrackXml($title, $trackpoints)
-{
-    if (!$trackpoints || count($trackpoints) == 0)
-        return '';
-
-    $xml = '' .
-        '  <trk>' . "\n" .
-        '    <name>' . $title . '</name>' . "\n" .
-        '    <trkseg>' . "\n";
-
-    for ($i = 0; $i < count($trackpoints); $i++)
+    // route
+    if ($waypoints && count($waypoints) > 0)
     {
         $xml .= '' .
-            '      <trkpt lat="' . $trackpoints[$i]["lat"] . '" lon="' . $trackpoints[$i]["lon"] . '">' .
-            '<ele>' . $trackpoints[$i]["alt"] . '</ele>' .
-            '<time>' . $trackpoints[$i]["time"] . '</time>' .
-            '</trkpt>' . "\n";
+            '  <rte>' . "\n" .
+            '    <name>' . $routeTitle . '</name>' . "\n";
+
+        for ($i = 0; $i < count($waypoints); $i++)
+        {
+            $xml .= '    <rtept lat="' . $waypoints[$i]["latitude"] . '" lon="' . $waypoints[$i]["longitude"] . '">' . "\n";
+            $xml .= '      <name>' . $waypoints[$i]["checkpoint"] . '</name>' . "\n";
+            $xml .= '      <type>' . getWpType($waypoints[$i]) . '</type>' . "\n";
+            $xml .= '    </rtept>' . "\n";
+        }
+
+        $xml .= '  </rte>' . "\n";
     }
 
+
+    // track
+    if ($trackpoints && count($trackpoints) > 0)
+    {
+        $xml .= '' .
+            '  <trk>' . "\n" .
+            '    <name>' . $trackTitle . '</name>' . "\n" .
+            '    <trkseg>' . "\n";
+
+        for ($i = 0; $i < count($trackpoints); $i++)
+        {
+            $unixTimeStamp = floor($trackpoints[$i]["timestamp"] / 1000); // convert from ms to s
+            $xml .= '' .
+                '    <trkpt lat="' . $trackpoints[$i]["latitude"] . '" lon="' . $trackpoints[$i]["longitude"] . '">' .
+                '<ele>' . $trackpoints[$i]["altitude"] . '</ele>' .
+                '<time>' . getIsoTimeString($unixTimeStamp) . '</time>' .
+                '</trkpt>' . "\n";
+        }
+
+        $xml .= '' .
+            '    </trkseg>' . "\n" .
+            '  </trk>' . "\n";
+    }
+
+
+    // footer
     $xml .= '' .
-        '    </trkseg>' . "\n" .
-        '  </trk>' . "\n";
+        '</gpx>';
+
 
     return $xml;
 }
 
 
-function getFooterXml()
+function getWaypoints($navplan)
 {
-    $xml = '' .
-        '</gpx>';
+    if (!$navplan["waypoints"])
+        return [];
 
-    return $xml;
+    $wpList = [];
+
+    // regular waypoints
+    for ($i = 0; $i < count($navplan["waypoints"]); $i++)
+        $wpList[] = $navplan["waypoints"][$i];
+
+    // alternate
+    if ($navplan["alternate"])
+        $wpList[] = $navplan["alternate"];
+
+
+    return $wpList;
+}
+
+
+function getWpType($waypoint)
+{
+    switch ($waypoint["type"])
+    {
+        case 'airport':
+            return "Airport";
+        case 'report':
+            return "Fix";
+        case 'navaid':
+            return $waypoint["navaid"]["type"];
+        default:
+            return "Waypoint";
+    }
 }

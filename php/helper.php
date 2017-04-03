@@ -1,5 +1,14 @@
 <?php
 
+//region CONSTANTS
+
+const TMP_DIR_BASE = '../tmp/';
+
+//endregion
+
+
+//region DB
+
 function openDb()
 {
     global $db_host, $db_user, $db_pw, $db_name;
@@ -11,6 +20,23 @@ function openDb()
     return $conn;
 }
 
+//endregion
+
+
+//region TEMP FILES
+
+function createTempDir()
+{
+    $tmpDir = createRandomString(20);
+    mkdir(TMP_DIR_BASE . $tmpDir);
+
+    return $tmpDir;
+}
+
+//endregion
+
+
+//region VALIDATORS
 
 function checkNumeric($num)
 {
@@ -31,6 +57,35 @@ function checkString($string, $minlen, $maxlen)
 
     return $string;
 }
+
+
+function checkAlphaNumeric($string, $minlen, $maxlen)
+{
+    $pattern = "/[a-zA-Z0-9]/";
+
+    if (!$string)
+        die("format error: string is null");
+
+    if (!preg_match($pattern, $string))
+        die("format error: string '" . $string . "' is not alphanumeric");
+
+    return checkString($string, $minlen, $maxlen);
+}
+
+
+function checkFilename($string)
+{
+    $pattern = '/[a-zA-Z0-9_\-\.]/';
+
+    if (!$string)
+        die("format error: string contains not allowed characters");
+
+    if (!preg_match($pattern, $string))
+        die("format error: string '" . $string . "' is not alphanumeric");
+
+    return checkString($string, 1, 50);
+}
+
 
 
 function checkEmail($email)
@@ -79,6 +134,17 @@ function checkEscapeEmail($conn, $email)
 function checkEscapeToken($conn, $token)
 {
     return mysqli_real_escape_string($conn, checkToken($token));
+}
+
+//endregion
+
+
+function getIsoTimeString($timestamp = null)
+{
+    if (!$timestamp)
+        $timestamp = time();
+
+    return gmdate('Ymd\Th:i:s\Z', $timestamp);
 }
 
 

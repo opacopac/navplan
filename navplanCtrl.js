@@ -5,9 +5,9 @@
 navplanApp
 	.controller('navplanCtrl', navplanCtrl);
 
-navplanCtrl.$inject = ['$scope', '$timeout', 'globalData', 'userService', 'mapService', 'waypointService', 'fuelService'];
+navplanCtrl.$inject = ['$scope', '$http', '$timeout', 'globalData', 'userService', 'mapService', 'waypointService', 'fuelService'];
 
-function navplanCtrl($scope, $timeout, globalData, userService, mapService, waypointService, fuelService)
+function navplanCtrl($scope, $http, $timeout, globalData, userService, mapService, waypointService, fuelService)
 {
 	// init global data object
 	$scope.globalData = globalData;
@@ -493,80 +493,25 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 				eetText: wp.eetText,
 				remark: wp.remark
 			};
-		};
-	};	
+		}
+	};
 
 
 	$scope.exportKml = function()
 	{
-		var waypoints = [];
-
-		if ($scope.globalData.navplan && $scope.globalData.navplan.waypoints) {
-			for (var i = 0; i < $scope.globalData.navplan.waypoints.length; i++) {
-				var wp = $scope.globalData.navplan.waypoints[i];
-
-				waypoints.push({
-					name: wp.checkpoint,
-					lat: wp.latitude,
-					lon: wp.longitude
-				});
-			}
-		}
-
-		var flightPositions = [];
-
-		if ($scope.globalData.track && $scope.globalData.track.positions) {
-			for (var j = 0; j < $scope.globalData.track.positions.length; j++) {
-				var pos = $scope.globalData.track.positions[j];
-
-				flightPositions.push({
-					lat: pos.latitude,
-					lon: pos.longitude,
-					alt: pos.altitude
-				});
-			}
-		}
-
-		sendPostForm('php/navplanKml.php', '_blank', 'data', JSON.stringify({ wpPositions: waypoints, flightPositions: flightPositions }));
-
-		//window.open('php/navplanKml.php?waypoints=' + encodeURIComponent(JSON.stringify(waypoints)), "_blank");
+        writeTempFileAndDownload($http, "php/navplanKml.php", "application/vnd.google-earth.kml+xml", "waypoints.kml", { navplan: $scope.globalData.navplan, track: $scope.globalData.track });
 	};
 
 
     $scope.exportGpx = function()
     {
-        var routeTitle = $scope.globalData.navplan.title ? $scope.globalData.navplan.title : '';
+        writeTempFileAndDownload($http, "php/navplanGpx.php", "application/gpx+xml", "waypoints.gpx", { navplan: $scope.globalData.navplan, track: $scope.globalData.track });
+    };
 
-        var waypoints = [];
-        if ($scope.globalData.navplan && $scope.globalData.navplan.waypoints) {
-            for (var i = 0; i < $scope.globalData.navplan.waypoints.length; i++) {
-                var wp = $scope.globalData.navplan.waypoints[i];
 
-                waypoints.push({
-                    name: wp.checkpoint,
-                    lat: wp.latitude,
-                    lon: wp.longitude
-                });
-            }
-        }
-
-        var trackTitle = $scope.globalData.track.name ? $scope.globalData.track.name : '';
-
-        var trackpoints = [];
-        if ($scope.globalData.track && $scope.globalData.track.positions) {
-            for (var j = 0; j < $scope.globalData.track.positions.length; j++) {
-                var pos = $scope.globalData.track.positions[j];
-
-                trackpoints.push({
-                    lat: pos.latitude,
-                    lon: pos.longitude,
-                    alt: pos.altitude,
-                    time: getIsoTimeString(pos.timestamp)
-                });
-            }
-        }
-
-        sendPostForm('php/navplanGpx.php', '_blank', 'data', JSON.stringify({ routeTitle: routeTitle, waypoints: waypoints, trackTitle: trackTitle, trackpoints: trackpoints }));
+    $scope.exportFpl = function()
+    {
+        writeTempFileAndDownload($http, "php/navplanFpl.php", "application/fpl+xml", "waypoints.fpl", { navplan: $scope.globalData.navplan });
     };
 
 
@@ -694,6 +639,12 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 	{
 		window.sessionStorage.setItem("globalData", obj2json($scope.globalData));
 	};
+
+
+	$scope.onVisibilityChange = function()
+    {
+        // TODO
+    };
 
 
 	$scope.onClockTimer = function()
@@ -847,6 +798,7 @@ function navplanCtrl($scope, $timeout, globalData, userService, mapService, wayp
 	// event listeners
 	window.addEventListener("beforeunload", $scope.onLeaving);
 	window.addEventListener("pagehide", $scope.onLeaving);
+	window.addEventListener("visibilitychange", $scope.onVisibilityChange);
 
 	// init application cache
 	window.frames[0].onload = function()
