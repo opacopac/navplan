@@ -2,6 +2,12 @@
  * helper functions
  */
 
+//region CONSTANTS
+
+const TMP_DIR = 'tmp/';
+
+//endregion
+
 
 //region LOGGING / ERROR HANDLING
 
@@ -79,41 +85,32 @@ function deleteCookie(cname)
 
 //region DOWNLOAD
 
-function sendPostForm(action, target, varName, varData)
+function createTempFile($http, url, mimeType, userFileName, data, successCallback)
 {
-	var form = document.createElement("form");
-	form.target = target;
-	form.method = "POST";
-	form.action = action;
+    var postData = {
+        userFileName: userFileName,
+        mimeType: mimeType,
+        data: data
+    };
 
-	var input = document.createElement("input");
-	input.type = "hidden";
-	input.name = varName;
-	input.value = encodeURIComponent(varData);
-
-	form.appendChild(input);
-
-	document.body.appendChild(form);
-
-	form.submit();
-
-	//document.body.removeChild(form);
-}
-
-
-function createAndClickLink(href, target)
-{
-	var a = document.createElement("a");
-	a.href = href;
-	a.target = target;
-	a.style = "display: none";
-
-	document.body.appendChild(a);
-
-	a.click();
-
-    // doesn't work with firefox
-    //document.body.removeChild(a);
+    $http.post(url, obj2json(postData))
+    .then(
+        function (response) // success
+        {
+            if (response && response.data && response.data.tmpFile)
+            {
+                if (successCallback)
+                    successCallback(TMP_DIR + response.data.tmpFile, mimeType, userFileName);
+                //startDownload(TMP_DIR + response.data.tmpFile, userFileName, mimeType);
+            }
+            else
+                logResponseError("ERROR writing temp file", response);
+        },
+        function (response) // error
+        {
+            logResponseError("ERROR writing temp file", response);
+        }
+    );
 }
 
 //endregion
@@ -189,6 +186,13 @@ function getHourMinString(date)
 function getYearMonthDayString(date)
 {
 	return date.getFullYear() + "-" + zeroPad(date.getMonth() + 1) + "-" + zeroPad(date.getDate());
+}
+
+
+function getIsoTimeString(timeMs)
+{
+    var date = new Date(timeMs);
+    return date.toISOString();
 }
 
 

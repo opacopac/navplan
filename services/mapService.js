@@ -13,7 +13,7 @@ function mapService($http, mapFeatureService, weatherService)
 
 	var MAX_ZOOMLEVEL = 17;
 
-	var map = {};
+	var map = undefined;
 	var mapLayer, wpTrackLayer, closeIconLayer, airportLayer, navaidLayer, airspaceLayer, reportingpointLayer, userWpLayer, flightTrackLayer, geopointLayer, trafficLayer, locationLayer, weatherLayer, webcamLayer;
     var airspaceImageLayer; //, airportImageLayer, navaidImageLayer, reportingpointImageLayer, userWpImageLayer, weatherImageLayer, webcamImageLayer;
 	var chartLayers = [];
@@ -29,7 +29,7 @@ function mapService($http, mapFeatureService, weatherService)
 	var minZoomLevel = [];
 	var maxAgeSecTrackDots = 120;
 	var maxAgeSecInactive = 30;
-	var maxTrafficForDots = 30;
+	var maxTrafficForTrails = 30;
 	var adChartBaseUrl = 'php/ad_charts.php?v=' + navplanVersion;
     var displaceAirspaceCat = {
         "CTR": ['A', 'B', 'C', 'D', 'E', 'F', 'G'],
@@ -75,6 +75,9 @@ function mapService($http, mapFeatureService, weatherService)
 	// init map
 	function init(mapClickCallback, featureSelectCallback, moveEndCallback, trackModEndCallback, mapPos)
     {
+        if (map)
+            map.setTarget(null); // detach map if already exists
+
         // init layers
         mapLayer = createMapLayer();
         locationLayer = createEmptyVectorLayer();
@@ -90,19 +93,7 @@ function mapService($http, mapFeatureService, weatherService)
         webcamLayer = createEmptyVectorLayer();
         weatherLayer = createEmptyVectorLayer();
         geopointLayer = createEmptyVectorLayer();
-
         airspaceImageLayer = createImageVectorLayerFromVectorLayer(airspaceLayer);
-        /*airportImageLayer = createImageVectorLayerFromVectorLayer(airportLayer);
-        navaidImageLayer = createImageVectorLayerFromVectorLayer(navaidLayer);
-        reportingpointImageLayer = createImageVectorLayerFromVectorLayer(reportingpointLayer);
-        userWpImageLayer = createImageVectorLayerFromVectorLayer(userWpLayer);
-        webcamImageLayer = createImageVectorLayerFromVectorLayer(webcamLayer);
-        weatherImageLayer = createImageVectorLayerFromVectorLayer(weatherLayer);*/
-
-
-        // TODO
-        //mapFeatureService.loadMapFeatures([5.4932, 45.705, 10.871, 48.0696], drawAllFeatures);
-
 
         // init map
         map = new ol.Map({
@@ -114,14 +105,8 @@ function mapService($http, mapFeatureService, weatherService)
             layers: [
                 mapLayer,
                 airspaceImageLayer,
-                //webcamImageLayer,
                 webcamLayer,
                 closeIconLayer,
-                /*reportingpointImageLayer,
-                userWpImageLayer,
-                navaidImageLayer,
-                airportImageLayer,
-                weatherImageLayer,*/
                 reportingpointLayer,
                 userWpLayer,
                 navaidLayer,
@@ -211,7 +196,8 @@ function mapService($http, mapFeatureService, weatherService)
                     [
                         new ol.Attribution({ html: 'Map Data: &copy; <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors <a href="https://creativecommons.org/licenses/by-sa/2.0/" target="_blank">(CC-BY-SA)</a>' }),
                         new ol.Attribution({ html: 'Elevation Data: <a href="https://lta.cr.usgs.gov/SRTM" target="_blank">SRTM</a>' }),
-                        new ol.Attribution({ html: 'Map Visualization: <a href="http://www.opentopomap.org/" target="_blank">OpenTopoMap</a> <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank">(CC-BY-SA)</a>' }),
+                        //new ol.Attribution({ html: 'Map Visualization: <a href="http://www.opentopomap.org/" target="_blank">OpenTopoMap</a> <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank">(CC-BY-SA)</a>' }),
+                        new ol.Attribution({ html: 'Map Visualization: <a href="https://www.mapbox.com/about/maps/" target="_blank">&copy; Mapbox</a>, <a href="https://www.mapbox.com/map-feedback/" target="_blank">Improve this map</a>' }),
                         new ol.Attribution({ html: 'Aviation Data: <a href="http://www.openaip.net/" target="_blank">openAIP</a> <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/" target="_blank">(BY-NC-SA)</a>' }),
                         new ol.Attribution({ html: 'Traffic Data: <a href="http://wiki.glidernet.org/about" target="_blank">Open Glider Network</a> | <a href="http://www.ADSBexchange.com/" target="_blank">ADSBexchange</a>' }),
                         new ol.Attribution({ html: 'Aerodrome Charts: <a href="http://www.avare.ch/" target="_blank">Avare.ch</a>' }),
@@ -231,6 +217,10 @@ function mapService($http, mapFeatureService, weatherService)
             var z = coordinate[0];
             var y = coordinate[1];
             var x = (-coordinate[2] - 1);
+
+            //return "https://tile.mapzen.com/mapzen/terrain/v1/normal/" + z + "/" + y + "/" + x + ".png?api_key=mapzen-ECzH36f";
+            //return "https://api.mapbox.com/styles/v1/opacopac/cj0msmdwf00ad2snz48faknaq/tiles/256/" + z + "/" + y + "/" + x + "@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2owbXNsN3ltMDAwdjMyczZudmt0bGwwdiJ9.RG5N7U6VkoIQ44S-bB-aNg";
+            return "https://api.mapbox.com/styles/v1/opacopac/cj0mxdtd800bx2slaha4b0p68/tiles/256/" + z + "/" + y + "/" + x + "@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2owbXNsN3ltMDAwdjMyczZudmt0bGwwdiJ9.RG5N7U6VkoIQ44S-bB-aNg";
 
             if (isLocalTile(z, y, x))
             {
@@ -567,7 +557,7 @@ function mapService($http, mapFeatureService, weatherService)
                 return;
 
             var src;
-            var rot = weatherInfo.properties.wdir ? deg2rad(weatherInfo.properties.wdir - 90) + map.getView().getRotation() : undefined;
+            var rot = weatherInfo.properties.wdir ? deg2rad(weatherInfo.properties.wdir + 90) + map.getView().getRotation() : undefined;
             var windrange = [[0, "0"], [2, "1-2"], [7, "5"], [12, "10"], [17, "15"], [22, "20"], [27, "25"], [32, "30"], [37, "35"], [42, "40"], [47, "45"], [55, "50"], [65, "60"], [75, "70"], [85, "80"], [95, "90"], [105, "100"]];
 
             for (var i = 0; i < windrange.length; i++)
@@ -1027,7 +1017,8 @@ function mapService($http, mapFeatureService, weatherService)
         // geopoint layers
         map.forEachFeatureAtPixel(
             event.pixel,
-            function (feature, layer) {
+            function (feature, layer)
+            {
                 if (eventConsumed)
                     return;
 
@@ -1045,28 +1036,27 @@ function mapService($http, mapFeatureService, weatherService)
                     closeOverlay();
                     clearGeopointSelection();
 
-                    if (feature.closeLayer) {
-                        map.removeLayer(feature.closeLayer);
-                        closeIconLayer.getSource().removeFeature(feature);
-                    }
+                    if (feature.closeLayer)
+                        removeChart(feature);
                     else
                         onFeatureSelectCallback(event, feature);
 
                     eventConsumed = true;
                 }
             },
-            0,
-            function (layer) // layers to search for features
             {
-                return (layer === geopointLayer ||
-                    layer === closeIconLayer ||
-                    layer === airportLayer ||
-                    layer === navaidLayer ||
-                    layer === reportingpointLayer ||
-                    layer === userWpLayer ||
-                    layer === wpTrackLayer ||
-                    layer === webcamLayer ||
-                    layer === weatherLayer);
+                layerFilter : function (layer) // layers to search for features
+                {
+                    return (layer === geopointLayer ||
+                        layer === closeIconLayer ||
+                        layer === airportLayer ||
+                        layer === navaidLayer ||
+                        layer === reportingpointLayer ||
+                        layer === userWpLayer ||
+                        layer === wpTrackLayer ||
+                        layer === webcamLayer ||
+                        layer === weatherLayer);
+                }
             }
         );
 
@@ -1087,10 +1077,11 @@ function mapService($http, mapFeatureService, weatherService)
                         eventConsumed = true;
                     }
                 },
-                0,
-                function (layer) // layers to search for features
                 {
-                    return layer === trafficLayer;
+                    layerFilter: function (layer) // layers to search for features
+                    {
+                        return layer === trafficLayer;
+                    }
                 }
             );
         }
@@ -1115,14 +1106,13 @@ function mapService($http, mapFeatureService, weatherService)
         if (event.dragging)
             return;
 
-        var hitLayer = map.forEachFeatureAtPixel(
+        var hit = map.forEachFeatureAtPixel(
             event.pixel,
-            function (feature, layer) {
-                return layer;
-            },
-            0,
-            function (layer) {
-                return (layer === geopointLayer ||
+            function(feature, layer) { return true; },
+            {
+                layerFilter: function(layer)
+                {
+                    return (layer === geopointLayer ||
                     layer === closeIconLayer ||
                     layer === airportLayer ||
                     layer === navaidLayer ||
@@ -1132,32 +1122,14 @@ function mapService($http, mapFeatureService, weatherService)
                     layer === trafficLayer ||
                     layer === webcamLayer ||
                     layer === weatherLayer);
+                }
             }
         );
 
-        if (hitLayer === geopointLayer ||
-                hitLayer === closeIconLayer ||
-                hitLayer === airportLayer ||
-                hitLayer === navaidLayer ||
-                hitLayer === reportingpointLayer ||
-                hitLayer === userWpLayer ||
-                /*hitLayer === airportImageLayer ||
-                hitLayer === navaidImageLayer ||
-                hitLayer === reportingpointImageLayer ||
-                hitLayer === userWpImageLayer ||*/
-                hitLayer === wpTrackLayer ||
-                hitLayer === trafficLayer ||
-                hitLayer === webcamLayer ||
-                hitLayer === weatherLayer)
-                /*hitLayer === webcamImageLayer ||
-                hitLayer === weatherImageLayer)*/
-        {
+        if (hit)
             map.getTargetElement().style.cursor = 'pointer';
-        }
         else
-        {
             map.getTargetElement().style.cursor = '';
-        }
     }
 
 
@@ -1246,7 +1218,7 @@ function mapService($http, mapFeatureService, weatherService)
         if (!mercator_extent || !map || !map.getView || !map.getSize)
             return;
 
-        var paddingFactor = 0.1;
+        var paddingFactor = 0.05;
         var mapSize = map.getSize();
         var padX = Math.ceil(mapSize[0] * paddingFactor / 2);
         var padY = Math.ceil(mapSize[1] * paddingFactor / 2);
@@ -2486,6 +2458,14 @@ function mapService($http, mapFeatureService, weatherService)
 	}
 
 
+	function removeChart(closerFeature)
+    {
+        map.removeLayer(closerFeature.closeLayer);
+        closeIconLayer.getSource().removeFeature(closerFeature);
+        removeFromArray(chartLayers, closerFeature.closeLayer);
+    }
+
+
 	function clearAllCharts()
 	{
 		for (var i = 0; i < chartLayers.length; i++)
@@ -2526,22 +2506,34 @@ function mapService($http, mapFeatureService, weatherService)
 
 		if (acList)
 		{
-			var acCount = Object.keys(acList).length;
+			var extent = getViewExtent();
+			var acListVisible = [];
 
+			// filter by visibility
 			for (var acAddress in acList)
 			{
 				var ac = acList[acAddress];
 				var lastPos = ac.positions[ac.positions.length - 1];
 				ac.receiver = lastPos.receiver;
 
-				if (!lastPos.altitude || m2ft(lastPos.altitude) <= maxTrafficAltitudeFt)
-					drawTrafficTrack(ac, layerSource, acCount > maxTrafficForDots);
+				if (lastPos.altitude && m2ft(lastPos.altitude) > maxTrafficAltitudeFt)
+				    continue;
+
+				if (lastPos.longitude < extent[0] || lastPos.latitude < extent[1] || lastPos.longitude > extent[2] || lastPos.latitude > extent[3])
+				    continue;
+
+				acListVisible.push(ac);
 			}
-		}
+
+			var showTrails = acListVisible.length <= maxTrafficForTrails;
+
+			for (var i = 0; i < acListVisible.length; i++)
+                drawTrafficTrack(acListVisible[i], layerSource, showTrails);
+        }
 	}
 
 
-	function drawTrafficTrack(ac, layerSource, skipDots)
+	function drawTrafficTrack(ac, layerSource, showTrails)
 	{
 		if (!ac || !ac.positions)
 			return;
@@ -2549,7 +2541,7 @@ function mapService($http, mapFeatureService, weatherService)
 		var maxIdx = ac.positions.length - 1;
 
 		// draw track dots
-		if (!skipDots) {
+		if (showTrails) {
 			for (var i = maxIdx; i >= 0; i--) {
 				if (Date.now() - ac.positions[i].timestamp < maxAgeSecTrackDots * 1000) {
 					var trackDotFeature = createTrackDotFeature(ac.positions[i], ac.actype);

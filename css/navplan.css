@@ -26,6 +26,12 @@ html, body {
   z-index: 30;
 }
 
+.info-button
+{
+    color: #337ab7;
+    cursor: help;
+}
+
 .alert {
   box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.4);
 }
@@ -36,6 +42,7 @@ html, body {
   position: fixed;
   z-index: 10;
 }
+
 .mapsearch {
   position: absolute;
   top: 10px;
@@ -171,9 +178,14 @@ html, body {
 .ol-popup-feature {
 }
 
-.ol-popup-weather {
+.ol-popup-metartaf {
   width: 600px;
   max-width: 95%;
+}
+
+.ol-popup-weather {
+    width: 800px;
+    max-width: 95%;
 }
 
 .ol-popup-traffic {

@@ -94,18 +94,20 @@
 					<li><a href="#/waypoints" title="Navigation Log & Fuel Calc" data-toggle="collapse" data-target="#navbarcontent"><i class="glyphicon glyphicon-list-alt"></i><span class="hidden-sm">&nbsp; Log &amp; Fuel</span></a></li>
 					<li ng-show="isLoggedIn() || hasLastTrack()"><a href="#/tracks" title="Recorded Tracks" data-toggle="collapse" data-target="#navbarcontent"><i class="fa fa-paw"></i><span class="hidden-sm">&nbsp; Tracks</span></a></li>
 					<li><a href="#/map" title="Clear current Waypoints and Track" data-toggle="collapse" data-target="#navbarcontent" ng-click="onTrashClicked()"><i class="glyphicon glyphicon-erase"></i><span class="hidden-sm hidden-md">&nbsp; Clear</span></a></li>
-					<li class="dropdown" ng-show="globalData.navplan.waypoints.length > 0"><!-- TODO: sharing buttons, unfinished yet -->
+					<li class="dropdown" ng-show="globalData.navplan.waypoints.length > 0 || (globalData.track && globalData.track.positions && globalData.track.positions.length > 0)">
 					    <a href="#" onclick="return false;" title="Share or Export" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><i class="glyphicon glyphicon-share-alt"></i><span class="hidden-sm hidden-md">&nbsp; Share</span></a>
 						<ul class="dropdown-menu">
 							<li><a href="#" onclick="return false;" ng-click="createPdfNavplan()"><i class="fa fa-file-pdf-o fa-fw"></i>&nbsp; PDF</a></li>
 							<li><a href="#" onclick="return false;" ng-click="createExcelNavplan()"><i class="fa fa-file-excel-o fa-fw"></i>&nbsp; Excel</a></li>
 							<li><a href="#" onclick="return false;" ng-click="exportKml()"><i class="fa fa-globe fa-fw"></i>&nbsp; KML (Google Earth)</a></li>
+                            <li><a href="#" onclick="return false;" ng-click="exportGpx()"><i class="fa fa-map-marker fa-fw"></i>&nbsp; GPX (Airnav Pro, SkyDemon, etc.)</a></li>
+                            <li><a href="#" onclick="return false;" ng-click="exportFpl()"><i class="fa fa-map-marker fa-fw"></i>&nbsp; FPL (Garmin, Foreflight, etc.)</a></li>
 							<!--<li><a>Share current Navplan on...</a></li>
 							<li><a href="#" onclick="return false;" ng-click="onShareClicked('facebook')"><i class="fa fa-facebook fa-fw"></i>&nbsp;  Facebook</a></li>
 							<li><a href="#" onclick="return false;" ng-click="onShareClicked('twitter')"><i class="fa fa-twitter fa-fw"></i>&nbsp;  Twitter</a></li>
 							<li><a href="#" onclick="return false;" ng-click="onShareClicked('google')"><i class="fa fa-google-plus fa-fw"></i>&nbsp;  Google+</a></li>
 							<li><a href="#" onclick="return false;" ng-click="onShareClicked('mail')"><i class="fa fa-envelope fa-fw"></i>&nbsp;  E-Mail</a></li>-->
-							<li><a href="#" onclick="return false;" ng-click="onShareClicked('url')"><i class="fa fa-link fa-fw"></i>&nbsp;  URL</a></li>
+							<li><a href="#" ng-show="globalData.navplan.waypoints.length > 0" onclick="return false;" ng-click="onShareClicked('url')"><i class="fa fa-link fa-fw"></i>&nbsp;  URL</a></li>
 						</ul>
 					</li>
 				</ul>
@@ -219,16 +221,16 @@
 			</div>
 		</div>
 	</div>
-	<!-- share url dialog -->
-	<div class="modal fade" id="shareUrlDialog" tabindex="-1" role="dialog" aria-labelledby="shareUrlModeLabel">
+	<!-- download link dialog -->
+	<div class="modal fade" id="downloadLinkDialog" tabindex="-1" role="dialog" aria-labelledby="downloadLinkModeLabel">
 		<div class="modal-dialog" role="document">
 			<div class="modal-content">
 				<div class="modal-header">
 					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-					<h4 class="modal-title" id="shareUrlModeLabel">Share URL</h4>
+					<h4 class="modal-title" id="downloadLinkModeLabel">Download</h4>
 				</div>
 				<div class="modal-body">
-					URL: <input type="text" class="form-control" ng-model="globalData.shareUrl" />
+                    File: <a href="{{ globalData.downloadLink.href }}" type="{{ globalData.downloadLink.mimeType }}" download="{{ globalData.downloadLink.filename }}" target="_blank">{{ globalData.downloadLink.text }}</a> (click to download)
 				</div>
 				<div class="modal-footer">
 					<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
@@ -236,6 +238,23 @@
 			</div>
 		</div>
 	</div>
+    <!-- share url dialog -->
+    <div class="modal fade" id="shareUrlDialog" tabindex="-1" role="dialog" aria-labelledby="shareUrlModeLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="shareUrlModeLabel">Share URL</h4>
+                </div>
+                <div class="modal-body">
+                    URL: <input type="text" class="form-control" ng-model="globalData.shareUrl" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <iframe id='manifest_iframe_hack' style='display: none;' src='manifest_iframe.html'></iframe>
 </body>
 </html>

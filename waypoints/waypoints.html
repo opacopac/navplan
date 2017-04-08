@@ -115,7 +115,12 @@
 				</tr>
 			</tbody>			
 		</table>
-	</div> 
+	</div>
+    <div class="form-inline">
+        <div class="form-group pull-right">
+            <a href="#" class="btn btn-default" title="Reverse Waypoint Order" ng-click="$event.preventDefault(); onReverseWaypointsClicked();"><i class="glyphicon glyphicon-sort"></i><span class="hidden-sm hidden-xs"> Reverse Waypoints</span></a>&nbsp;
+        </div>
+    </div>
 	<div id="fuel">
 		<table class="table table-condensed table-bordered table-striped table-nonfluid">
 			<thead>
@@ -162,7 +167,7 @@
 	<div class="form-inline">
 		<div class="form-group">
 			<a id="dlPdfLink" href="#" class="btn btn-danger" title="Print Navplan as PDF" ng-click="$event.preventDefault(); createPdfNavplan();"><i class="glyphicon glyphicon-print"></i> Print PDF</a>&nbsp;
-			<a id="dlExcelLink" href="#" class="btn btn-success" title="Save Navplan as Excel" ng-click="$event.preventDefault(); createExcelNavplan();"><i class="glyphicon glyphicon-th"></i> Excel Export</a>&nbsp;
+			<a id="dlExcelLink" href="#" class="btn btn-success" title="Save Navplan as Excel" ng-click="$event.preventDefault(); createExcelNavplan();"><i class="fa fa-file-excel-o"></i>&nbsp;Excel Export</a>&nbsp;
 		</div>
 	</div>
 </div>

@@ -1,1 +1,0 @@
-nohup php -q ognlistener2.php $1 >>./ognlistener2.log 2>>./ognlistener2.log &
