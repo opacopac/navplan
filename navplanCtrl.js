@@ -107,6 +107,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 			$scope.globalData.cacheStatus = "off"; // "off", "updating", "updated", "error"
 			$scope.globalData.cacheProgress =  { loaded: 0, total: 100, percent: 0 };
 			$scope.globalData.clickHistory = []; // internally used only
+            $scope.globalData.downloadLink = {}; // internally used only
 		}
 	};
 
@@ -427,91 +428,95 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 		{
 			/*case "facebook":
 				var sharerUrl = "http://www.facebook.com/sharer.php?u=" + encodeURI(tinyUrl);
-                createAndClickLink(sharerUrl, "_blank");
+                startDownload(sharerUrl, "_blank");
 				break;
             case "twitter":
                 var sharerUrl = "https://twitter.com/share?url=" + encodeURI(tinyUrl) + "&text=" + encodeURI(text) + "&hashtags=" + encodeURI(hashtags);
-                createAndClickLink(sharerUrl, "_blank");
+                startDownload(sharerUrl, "_blank");
                 break;
             case "google":
                 var sharerUrl = "https://plus.google.com/share?url=" + encodeURI(tinyUrl);
-                createAndClickLink(sharerUrl, "_blank");
+                startDownload(sharerUrl, "_blank");
                 break;*/
 			case "url":
 				$scope.createShareUrl();
 				break;
 			}
 	};
-	
-	
-	// TODO: include in onShareClicked
-	$scope.createPdfNavplan = function()
-	{
-		var navplanData = $scope.getNavplanExportData();
-		
-		sendPostForm('php/navplanPdf.php', '_blank', 'data', JSON.stringify(navplanData));
-	};
-	
-	
-	// TODO: include in onShareClicked
-	$scope.createExcelNavplan = function()
-	{
-		var navplanData = $scope.getNavplanExportData();
-		
-		sendPostForm('php/navplanExcel.php', '_blank', 'data', JSON.stringify(navplanData));
-	};
-
-
-	$scope.getNavplanExportData = function ()
-	{
-		var waypoints = [];
-
-		for (var i = 0; i < $scope.globalData.navplan.waypoints.length; i++)
-			waypoints.push(getWaypointData($scope.globalData.navplan.waypoints[i]));
-
-
-		return {
-			waypoints: waypoints,
-			alternate: $scope.globalData.navplan.alternate ? getWaypointData($scope.globalData.navplan.alternate) : undefined,
-			fuel: $scope.globalData.fuel,
-			pilot: $scope.globalData.pilot,
-			aircraft: $scope.globalData.aircraft
-		};
-
-
-		function getWaypointData(wp)
-		{
-			return {
-				freq: wp.freq,
-				callsign: wp.callsign,
-				checkpoint: wp.checkpoint,
-				mtText: wp.mtText,
-				distText: wp.distText,
-				alt: wp.alt,
-				isminalt: wp.isminalt,
-				ismaxalt: wp.ismaxalt,
-				eetText: wp.eetText,
-				remark: wp.remark
-			};
-		}
-	};
 
 
 	$scope.exportKml = function()
 	{
-        writeTempFileAndDownload($http, "php/navplanKml.php", "application/vnd.google-earth.kml+xml", "waypoints.kml", { navplan: $scope.globalData.navplan, track: $scope.globalData.track });
+        createTempFile($http, "php/navplanKml.php", "application/vnd.google-earth.kml+xml", "navplan.kml", { navplan: $scope.globalData.navplan, track: $scope.globalData.track }, $scope.onTempFileCreated);
 	};
 
 
     $scope.exportGpx = function()
     {
-        writeTempFileAndDownload($http, "php/navplanGpx.php", "application/gpx+xml", "waypoints.gpx", { navplan: $scope.globalData.navplan, track: $scope.globalData.track });
+        createTempFile($http, "php/navplanGpx.php", "application/gpx+xml", "navplan.gpx", { navplan: $scope.globalData.navplan, track: $scope.globalData.track }, $scope.onTempFileCreated);
     };
 
 
     $scope.exportFpl = function()
     {
-        writeTempFileAndDownload($http, "php/navplanFpl.php", "application/fpl+xml", "waypoints.fpl", { navplan: $scope.globalData.navplan });
+        createTempFile($http, "php/navplanFpl.php", "application/octet-stream", "navplan.fpl", { navplan: $scope.globalData.navplan }, $scope.onTempFileCreated);
+    };
+
+
+    // TODO: include in onShareClicked
+    $scope.createPdfNavplan = function()
+    {
+        createTempFile($http, "php/navplanPdf.php", "application/pdf", "navplan.pdf", $scope.getNavplanExportData(), $scope.onTempFileCreated);
+    };
+
+
+    // TODO: include in onShareClicked
+    $scope.createExcelNavplan = function()
+    {
+        createTempFile($http, "php/navplanExcel.php", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "navplan.xlsx", $scope.getNavplanExportData(), $scope.onTempFileCreated);
+    };
+
+
+    $scope.onTempFileCreated = function (tmpFile, mimeType, userFileName)
+    {
+        $scope.globalData.downloadLink = { href: tmpFile, text: userFileName, filename: userFileName, mimeType: mimeType };
+
+        $('#downloadLinkDialog').modal('show');
+    };
+
+
+    $scope.getNavplanExportData = function ()
+    {
+        var waypoints = [];
+
+        for (var i = 0; i < $scope.globalData.navplan.waypoints.length; i++)
+            waypoints.push(getWaypointData($scope.globalData.navplan.waypoints[i]));
+
+
+        return {
+            waypoints: waypoints,
+            alternate: $scope.globalData.navplan.alternate ? getWaypointData($scope.globalData.navplan.alternate) : undefined,
+            fuel: $scope.globalData.fuel,
+            pilot: $scope.globalData.pilot,
+            aircraft: $scope.globalData.aircraft
+        };
+
+
+        function getWaypointData(wp)
+        {
+            return {
+                freq: wp.freq,
+                callsign: wp.callsign,
+                checkpoint: wp.checkpoint,
+                mtText: wp.mtText,
+                distText: wp.distText,
+                alt: wp.alt,
+                isminalt: wp.isminalt,
+                ismaxalt: wp.ismaxalt,
+                eetText: wp.eetText,
+                remark: wp.remark
+            };
+        }
     };
 
 

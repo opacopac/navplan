@@ -85,59 +85,7 @@ function deleteCookie(cname)
 
 //region DOWNLOAD
 
-function sendPostForm(action, target, varName, varData)
-{
-	var form = document.createElement("form");
-	form.id = Math.round(Math.random() * 1000000);
-	form.target = target;
-	form.method = "POST";
-	form.action = action;
-
-	var input = document.createElement("input");
-	input.type = "hidden";
-	input.name = varName;
-	input.value = encodeURIComponent(varData);
-
-	form.appendChild(input);
-
-	document.body.appendChild(form);
-
-	form.submit();
-
-	//document.body.removeChild(form);
-}
-
-
-function sendGetForm(action, target, params) // TODO: merge with sendPostForm
-{
-    var form = document.createElement("form");
-    form.id = Math.round(Math.random() * 1000000);
-    form.method = "GET";
-    form.target = target;
-    form.action = action;
-
-    if (params)
-    {
-        for (var key in params)
-        {
-            var input = document.createElement("input");
-            input.type = "hidden";
-            input.name = key;
-            input.value = encodeURIComponent(params[key]);
-
-            form.appendChild(input);
-        }
-    }
-
-    document.body.appendChild(form);
-
-    form.submit();
-
-    //document.body.removeChild(form);
-}
-
-
-function writeTempFileAndDownload($http, url, mimeType, userFileName, data)
+function createTempFile($http, url, mimeType, userFileName, data, successCallback)
 {
     var postData = {
         userFileName: userFileName,
@@ -150,7 +98,11 @@ function writeTempFileAndDownload($http, url, mimeType, userFileName, data)
         function (response) // success
         {
             if (response && response.data && response.data.tmpFile)
-                createAndClickLink(TMP_DIR + response.data.tmpFile, "_blank", userFileName, mimeType);
+            {
+                if (successCallback)
+                    successCallback(TMP_DIR + response.data.tmpFile, mimeType, userFileName);
+                //startDownload(TMP_DIR + response.data.tmpFile, userFileName, mimeType);
+            }
             else
                 logResponseError("ERROR writing temp file", response);
         },
@@ -159,28 +111,6 @@ function writeTempFileAndDownload($http, url, mimeType, userFileName, data)
             logResponseError("ERROR writing temp file", response);
         }
     );
-}
-
-
-function createAndClickLink(href, target, userFileName, mimeType)
-{
-	var a = document.createElement("a");
-	a.setAttribute("href", href);
-	//a.target = target;
-
-    if (mimeType)
-        a.setAttribute("type", mimeType);
-
-	/*if (userFileName)
-	    a.setAttribute("download", userFileName);*/
-
-    a.style.display = "none";
-	document.body.appendChild(a);
-
-    a.click();
-
-    // doesn't work with firefox
-    //document.body.removeChild(a);
 }
 
 //endregion

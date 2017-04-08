@@ -221,16 +221,16 @@
 			</div>
 		</div>
 	</div>
-	<!-- share url dialog -->
-	<div class="modal fade" id="shareUrlDialog" tabindex="-1" role="dialog" aria-labelledby="shareUrlModeLabel">
+	<!-- download link dialog -->
+	<div class="modal fade" id="downloadLinkDialog" tabindex="-1" role="dialog" aria-labelledby="downloadLinkModeLabel">
 		<div class="modal-dialog" role="document">
 			<div class="modal-content">
 				<div class="modal-header">
 					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-					<h4 class="modal-title" id="shareUrlModeLabel">Share URL</h4>
+					<h4 class="modal-title" id="downloadLinkModeLabel">Download</h4>
 				</div>
 				<div class="modal-body">
-					URL: <input type="text" class="form-control" ng-model="globalData.shareUrl" />
+                    File: <a href="{{ globalData.downloadLink.href }}" type="{{ globalData.downloadLink.mimeType }}" download="{{ globalData.downloadLink.filename }}" target="_blank">{{ globalData.downloadLink.text }}</a> (click to download)
 				</div>
 				<div class="modal-footer">
 					<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
@@ -238,6 +238,23 @@
 			</div>
 		</div>
 	</div>
+    <!-- share url dialog -->
+    <div class="modal fade" id="shareUrlDialog" tabindex="-1" role="dialog" aria-labelledby="shareUrlModeLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="shareUrlModeLabel">Share URL</h4>
+                </div>
+                <div class="modal-body">
+                    URL: <input type="text" class="form-control" ng-model="globalData.shareUrl" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <iframe id='manifest_iframe_hack' style='display: none;' src='manifest_iframe.html'></iframe>
 </body>
 </html>

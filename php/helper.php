@@ -3,6 +3,8 @@
 //region CONSTANTS
 
 const TMP_DIR_BASE = '../tmp/';
+const TMP_DIR_PREFIX = 'tmpdl_';
+const TMP_DIR_TIMEOUT_SEC = 300;
 
 //endregion
 
@@ -27,10 +29,49 @@ function openDb()
 
 function createTempDir()
 {
-    $tmpDir = createRandomString(20);
+    cleanUpTempDirs();
+
+    $tmpDir = TMP_DIR_PREFIX . createRandomString(20);
     mkdir(TMP_DIR_BASE . $tmpDir);
 
     return $tmpDir;
+}
+
+
+function cleanUpTempDirs()
+{
+    $tmpDirEntries = scandir(TMP_DIR_BASE);
+
+    // iterate trough tmp dirs
+    foreach ($tmpDirEntries as $tmpDir)
+    {
+        $tmpDirPath = TMP_DIR_BASE . $tmpDir;
+
+        if (!is_dir($tmpDirPath) || strpos($tmpDir, TMP_DIR_PREFIX) !== 0)
+            continue;
+
+        // check if too old
+        if (filemtime($tmpDirPath) > time() - TMP_DIR_TIMEOUT_SEC)
+            continue;
+
+        // iterate trough files of temp dir
+        $innerDirEntries = scandir($tmpDirPath);
+
+        foreach ($innerDirEntries as $tmpFile)
+        {
+            if ($tmpFile == '.' || $tmpFile == '..')
+                continue;
+
+            $tmpFilePath = $tmpDirPath . "/" . $tmpFile;
+
+            if (!unlink($tmpFilePath))
+                die("ERROR: while deleting temp file '" . $tmpFilePath . "'");
+        }
+
+        // remove tmp dir
+        if (!rmdir($tmpDirPath))
+            die("ERROR: while deleting temp dir '" . $tmpDirPath . "'");
+    }
 }
 
 //endregion
@@ -75,13 +116,13 @@ function checkAlphaNumeric($string, $minlen, $maxlen)
 
 function checkFilename($string)
 {
-    $pattern = '/[a-zA-Z0-9_\-\.]/';
+    $pattern = '/^[a-zA-Z0-9]+[a-zA-Z0-9_\-]*\.[a-zA-Z0-9]+$/';
 
     if (!$string)
-        die("format error: string contains not allowed characters");
+        die("format error: empty string");
 
     if (!preg_match($pattern, $string))
-        die("format error: string '" . $string . "' is not alphanumeric");
+        die("format error: string '" . $string . "' is not a filename");
 
     return checkString($string, 1, 50);
 }
