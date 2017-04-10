@@ -9,8 +9,8 @@ trafficService.$inject = ['$http', '$sce'];
 
 function weatherService($http, $sce)
 {
-    const OVERSIZE_FACTOR = 1.3;
-    const MAXAGE = 5 * 60 * 1000; // 5 min
+    var OVERSIZE_FACTOR = 1.3;
+    var MAXAGE = 5 * 60 * 1000; // 5 min
     var weatherBaseUrl2 = 'https://www.aviationweather.gov/gis/scripts/MetarJSON.php?   taf=true&density=all&bbox='; //6.0,44.0,10.0,48.0';
 	var weatherInfoCache = { extent: undefined, timestamp: undefined, weatherInfos: undefined };
 

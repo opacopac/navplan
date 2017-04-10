@@ -3,10 +3,10 @@
  */
 
 navplanApp
-	.controller('mapCtrl', [ '$scope', '$sce', '$route', 'mapService', 'mapFeatureService', 'locationService', 'trafficService', 'geonameService', 'userService', 'weatherService', 'globalData', mapCtrl ]);
+	.controller('mapCtrl', [ '$scope', '$sce', '$route', 'mapService', 'mapFeatureService', 'locationService', 'trafficService', 'geonameService', 'userService', 'weatherService', 'terrainService', 'globalData', mapCtrl ]);
 
 
-function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationService, trafficService, geonameService, userService, weatherService, globalData)
+function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationService, trafficService, geonameService, userService, weatherService, terrainService, globalData)
 {
     //region INIT VARS
 
@@ -592,6 +592,19 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 	};
 
 	//endregion
+
+
+    //region TERRAIN
+
+    $scope.onTerrainClicked = function()
+    {
+        $scope.globalData.showTerrain = !$scope.globalData.showTerrain;
+
+        if ($scope.globalData.showTerrain)
+            terrainService.updateTerrain($scope.globalData.navplan.waypoints);
+    };
+
+    //endregion
 
 
     //region CACHING

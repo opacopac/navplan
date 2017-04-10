@@ -23,6 +23,10 @@
 <div class="mapbutton-traffic">
 	<button type="button" class="btn btn-primary btn-circle btn-lg" ng-class="{ 'btn-primary' : globalData.trafficStatus == 'off', 'btn-success' : globalData.trafficStatus == 'current', 'btn-warning' : globalData.trafficStatus == 'waiting', 'btn-danger' : globalData.trafficStatus == 'error' }" ng-class="{ 'active': globalData.showTraffic }" ng-click="onTrafficClicked();" title="show/hide traffic"><i class="fa fa-plane"></i></button>
 </div>
+<!-- terrain button -->
+<div class="mapbutton-terrain">
+    <button type="button" class="btn btn-primary btn-circle btn-lg"  ng-show="globalData.navplan.waypoints.length > 1" ng-class="{ 'btn-primary' : globalData.showTerrain == false, 'btn-success' : globalData.showTerrain == true }" ng-click="onTerrainClicked();" title="show/hide terrain"><i class="fa fa-area-chart"></i></button>
+</div>
 <!-- offline cache button -->
 <div class="mapbutton-offlinecache" ng-show="globalData.navplan.waypoints.length > 0 || globalData.cacheStatus != 'off'">
 	<button type="button" class="btn btn-primary btn-circle btn-lg" ng-class="{ 'btn-primary' : globalData.cacheStatus == 'off', 'btn-success' : globalData.cacheStatus == 'updated', 'btn-warning' : globalData.cacheStatus == 'updating', 'btn-danger' : globalData.cacheStatus == 'error' }" ng-class="{ 'active': globalData.offlineCache }" ng-click="onOfflineCacheClicked();" title="activate/deactivate offline cache"><span class="glyphicon glyphicon-cloud-download"></span></button>
@@ -251,3 +255,7 @@
 </div>
 <!-- map -->
 <div id="map" class="map"></div>
+<!-- terrain window -->
+<div class="map-terrain-outerwindow" ng-show="globalData.showTerrain">
+    <div id="terrainContainer" class="map-terrain-window"></div>
+</div>

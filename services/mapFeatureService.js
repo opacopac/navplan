@@ -8,7 +8,7 @@ navplanApp
 mapFeatureService.$inject = ['$http'];
 
 function mapFeatureService($http) {
-    const OVERSIZE_FACTOR = 1.2;
+    var OVERSIZE_FACTOR = 1.2;
     var featureCache = {extent: undefined, features: undefined};
     var airportsByIcao = {};
     var mapFeaturesBaseUrl = 'php/mapFeatures.php?v=' + navplanVersion;

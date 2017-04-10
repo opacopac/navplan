@@ -4,7 +4,7 @@
 
 //region CONSTANTS
 
-const TMP_DIR = 'tmp/';
+var TMP_DIR = 'tmp/';
 
 //endregion
 

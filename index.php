@@ -18,6 +18,8 @@
 <head>
 	<title>navplan.ch</title>
 	<meta charset="utf-8">
+    <!-- IE 11 (texts in svg) -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1">
     <meta name="description" content="VFR flight planning online. Open-source, non-commercial hobbyist project with a main focus on Switzerland." />
     <!-- twitter -->
@@ -75,6 +77,7 @@
 	<script src="services/fuelService.js?v=<?php echo $ver ?>"></script>
 	<script src="services/userService.js?v=<?php echo $ver ?>"></script>
 	<script src="services/weatherService.js?v=<?php echo $ver ?>"></script>
+    <script src="services/terrainService.js?v=<?php echo $ver ?>"></script>
 </head>
 <body>
 	<nav id="navbar" class="navbar navbar-default">
