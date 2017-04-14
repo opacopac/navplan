@@ -75,6 +75,7 @@
 	<script src="services/fuelService.js?v=<?php echo $ver ?>"></script>
 	<script src="services/userService.js?v=<?php echo $ver ?>"></script>
 	<script src="services/weatherService.js?v=<?php echo $ver ?>"></script>
+    <script src="services/terrainService.js?v=<?php echo $ver ?>"></script>
 </head>
 <body>
 	<nav id="navbar" class="navbar navbar-default">

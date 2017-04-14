@@ -3,10 +3,10 @@
  */
 
 navplanApp
-	.controller('mapCtrl', [ '$scope', '$sce', '$route', 'mapService', 'mapFeatureService', 'locationService', 'trafficService', 'geonameService', 'userService', 'weatherService', 'globalData', mapCtrl ]);
+	.controller('mapCtrl', [ '$scope', '$sce', '$route', 'mapService', 'mapFeatureService', 'locationService', 'trafficService', 'geonameService', 'userService', 'weatherService', 'terrainService', 'globalData', mapCtrl ]);
 
 
-function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationService, trafficService, geonameService, userService, weatherService, globalData)
+function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationService, trafficService, geonameService, userService, weatherService, terrainService, globalData)
 {
     //region INIT VARS
 
@@ -594,6 +594,19 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 	//endregion
 
 
+    //region TERRAIN
+
+    $scope.onTerrainClicked = function()
+    {
+        $scope.globalData.showTerrain = !$scope.globalData.showTerrain;
+
+        if ($scope.globalData.showTerrain)
+            terrainService.updateTerrain($scope.globalData.navplan.waypoints);
+    };
+
+    //endregion
+
+
     //region CACHING
 
     $scope.onOfflineCacheClicked = function()
@@ -796,7 +809,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
                 airport: feature.airport,
                 freq: getFrequency(feature.airport),
                 callsign: getCallsign(feature.airport),
-                checkpoint: feature.airport.icao,
+                checkpoint: feature.airport.icao ? feature.airport.icao : feature.airport.name,
                 airport_icao: feature.airport.icao,
                 latitude: feature.airport.latitude,
                 longitude: feature.airport.longitude,

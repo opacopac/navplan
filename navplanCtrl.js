@@ -5,9 +5,9 @@
 navplanApp
 	.controller('navplanCtrl', navplanCtrl);
 
-navplanCtrl.$inject = ['$scope', '$http', '$timeout', 'globalData', 'userService', 'mapService', 'waypointService', 'fuelService'];
+navplanCtrl.$inject = ['$scope', '$http', '$timeout', 'globalData', 'userService', 'mapService', 'waypointService', 'fuelService', 'terrainService'];
 
-function navplanCtrl($scope, $http, $timeout, globalData, userService, mapService, waypointService, fuelService)
+function navplanCtrl($scope, $http, $timeout, globalData, userService, mapService, waypointService, fuelService, terrainService)
 {
 	// init global data object
 	$scope.globalData = globalData;
@@ -38,6 +38,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 			$scope.globalData.trafficTimer = undefined;
 			$scope.globalData.showLocation = false; // data.showLocation;
 			$scope.globalData.showTraffic = false; // data.showTraffic;
+            $scope.globalData.showTerrain = false; // data.showTraffic;
 			$scope.globalData.cacheIsActive = data.cacheIsActive;
 			$scope.globalData.locationStatus = "off"; // data.locationStatus;
 			$scope.globalData.trafficStatus = "off"; // data.trafficStatus;
@@ -92,7 +93,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 			};
 			$scope.globalData.currentMapPos = 
 			{
-				center: ol.proj.fromLonLat([7.4971, 46.9141]), // LSZB, TODO => nearest ap
+				center: ol.proj.fromLonLat([7.4971, 46.9141]), // LSZB
 				zoom: 11
 			};
 			$scope.globalData.selectedWp = undefined;
@@ -101,6 +102,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 			$scope.globalData.clockTimer = undefined;
 			$scope.globalData.showLocation = false;
 			$scope.globalData.showTraffic = false;
+			$scope.globalData.showTerrain = false;
 			$scope.globalData.cacheIsActive = false;
 			$scope.globalData.locationStatus = "off"; // "off", "waiting", "current", "error"
 			$scope.globalData.trafficStatus = "off"; // "off", "waiting", "current", "error"
@@ -301,6 +303,14 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 		waypointService.recalcWaypoints($scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.settings.variation, $scope.globalData.aircraft.speed);
 		fuelService.updateFuelCalc($scope.globalData.fuel, $scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.aircraft);
 		mapService.drawWaypoints($scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.settings.variation);
+
+        if ($scope.globalData.showTerrain)
+        {
+            if ($scope.globalData.navplan.waypoints && $scope.globalData.navplan.waypoints.length >= 2)
+                terrainService.updateTerrain($scope.globalData.navplan.waypoints);
+            else
+                $scope.globalData.showTerrain = false;
+        }
 	};
 
 
@@ -405,6 +415,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
                 $scope.globalData.selectedWp = undefined;
                 $scope.globalData.track = { positions: [] };
                 $scope.globalData.clickHistory = [];
+                $scope.globalData.showTerrain = false;
 
                 $scope.updateWaypoints();
                 $scope.updateFlightTrack();

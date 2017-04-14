@@ -220,9 +220,13 @@ function mapService($http, mapFeatureService, weatherService)
 
             //return "https://tile.mapzen.com/mapzen/terrain/v1/normal/" + z + "/" + y + "/" + x + ".png?api_key=mapzen-ECzH36f";
             //return "https://api.mapbox.com/styles/v1/opacopac/cj0msmdwf00ad2snz48faknaq/tiles/256/" + z + "/" + y + "/" + x + "@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2owbXNsN3ltMDAwdjMyczZudmt0bGwwdiJ9.RG5N7U6VkoIQ44S-bB-aNg";
-            return "https://api.mapbox.com/styles/v1/opacopac/cj0mxdtd800bx2slaha4b0p68/tiles/256/" + z + "/" + y + "/" + x + "@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2owbXNsN3ltMDAwdjMyczZudmt0bGwwdiJ9.RG5N7U6VkoIQ44S-bB-aNg";
 
-            if (isLocalTile(z, y, x))
+            if (location.href.indexOf("branch") >= 0)
+                return "https://api.mapbox.com/styles/v1/opacopac/cj0mxdtd800bx2slaha4b0p68/tiles/256/" + z + "/" + y + "/" + x + "@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2oxYjZ6aDQxMDA1ejJ3cGUzbmZ1Zm81eiJ9.oFvbw05OkuQesxOghWqv_A";
+            else
+                return "https://api.mapbox.com/styles/v1/opacopac/cj0mxdtd800bx2slaha4b0p68/tiles/256/" + z + "/" + y + "/" + x + "@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2oxYjdkOXpzMDA2dTMycGV3ZDlkM3R2NyJ9.paBLy_T8QJLELJd8VAAEIw";
+
+            /*if (isLocalTile(z, y, x))
             {
                 return localBaseUrl + z + "/" + y + "/" + x + ".png";
             }
@@ -230,7 +234,7 @@ function mapService($http, mapFeatureService, weatherService)
             {
                 var n = (z + y + x) % otmBaseUrls.length;
                 return otmBaseUrls[n] + z + "/" + y + "/" + x + ".png";
-            }
+            }*/
         }
 
 
@@ -1292,8 +1296,8 @@ function mapService($http, mapFeatureService, weatherService)
 		if (geopoints.length > maxPoints)
 			geopoints = geopoints.splice(0, maxPoints);
 
-		// add clickpoint if less than 6 points found
-		if (clickPixel && geopoints.length < maxPoints)
+		// add clickpoint if no points found
+		if (clickPixel && geopoints.length == 0)
 			geopoints.push(getCoordinateGeopoint(clickLonLat));
 
 		var airspaceSelection = getAirspacesAtLatLon(clickLonLat);
