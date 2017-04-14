@@ -216,7 +216,7 @@ function terrainService($http)
             label.setAttribute("font-family", "Calibri,sans-serif");
             label.setAttribute("font-size", "10px");
             label.setAttribute("transform", "translate(3, -3)");
-            label.innerHTML = text;
+            label.textContent = text;
 
             svg.appendChild(label);
         }
@@ -317,7 +317,7 @@ function terrainService($http)
             labelGlow.setAttribute("font-weight", "bold");
             labelGlow.setAttribute("font-size", "15px");
             labelGlow.setAttribute("transform", "translate(" + transformX + ", -15)");
-            labelGlow.innerHTML = text;
+            labelGlow.textContent = text;
 
             svg.appendChild(labelGlow);
 
@@ -331,7 +331,7 @@ function terrainService($http)
             label.setAttribute("font-weight", "bold");
             label.setAttribute("font-size", "15px");
             label.setAttribute("transform", "translate(" + transformX + ", -15)");
-            label.innerHTML = text;
+            label.textContent = text;
 
             svg.appendChild(label);
         }

@@ -809,7 +809,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
                 airport: feature.airport,
                 freq: getFrequency(feature.airport),
                 callsign: getCallsign(feature.airport),
-                checkpoint: feature.airport.icao,
+                checkpoint: feature.airport.icao ? feature.airport.icao : feature.airport.name,
                 airport_icao: feature.airport.icao,
                 latitude: feature.airport.latitude,
                 longitude: feature.airport.longitude,

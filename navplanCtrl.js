@@ -93,7 +93,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 			};
 			$scope.globalData.currentMapPos = 
 			{
-				center: ol.proj.fromLonLat([7.4971, 46.9141]), // LSZB, TODO => nearest ap
+				center: ol.proj.fromLonLat([7.4971, 46.9141]), // LSZB
 				zoom: 11
 			};
 			$scope.globalData.selectedWp = undefined;

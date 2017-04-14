@@ -307,17 +307,19 @@ function trafficService($http)
 
             if (source == dataSources.adsbexchange) // overwrite ac info if data source is adsbexchange
             {
-                if (ac.actype != "DROP_PLANE") // don't overwrite drop plane type
-                    ac.actype = actype;
-                ac.registration = registration;
-                ac.callsign = callsign;
-                ac.opCallsign = opCallsign;
-                ac.aircraftModelType = aircraftModelType;
+                ac.actype = (actype != "UNKNOWN" && ac.actype != "DROP_PLANE") ? actype : ac.actype; // don't overwrite drop plane type
+                ac.registration = (registration && registration != "") ? registration : ac.registration;
+                ac.callsign = (callsign && callsign != "") ? callsign : ac.callsign;
+                ac.opCallsign = (opCallsign && opCallsign != "") ? opCallsign : ac.opCallsign;
+                ac.aircraftModelType = (aircraftModelType && aircraftModelType != "") ? aircraftModelType : ac.aircraftModelType;
             }
-            else if (source == dataSources.ogn)
+            else if (source == dataSources.ogn) // overwrite ac info by ogn data only if previously empty
             {
-                if (actype == "DROP_PLANE") // overwrite drop plane type
-                    ac.actype = actype;
+                ac.actype = (ac.actype == "UNKNOWN" || actype == "DROP_PLANE") ? actype : ac.actype; // overwrite drop plane type
+                ac.registration = (!ac.registration || ac.registration == "") ? registration : ac.registration;
+                ac.callsign = (!ac.registration || ac.registration == "") ? registration : ac.registration;
+                ac.opCallsign = (!ac.opCallsign || ac.opCallsign == "") ? registration : ac.opCallsign;
+                ac.aircraftModelType = (!ac.aircraftModelType || ac.aircraftModelType == "") ? registration : ac.aircraftModelType;
             }
         }
 

@@ -1296,8 +1296,8 @@ function mapService($http, mapFeatureService, weatherService)
 		if (geopoints.length > maxPoints)
 			geopoints = geopoints.splice(0, maxPoints);
 
-		// add clickpoint if less than 6 points found
-		if (clickPixel && geopoints.length < maxPoints)
+		// add clickpoint if no points found
+		if (clickPixel && geopoints.length == 0)
 			geopoints.push(getCoordinateGeopoint(clickLonLat));
 
 		var airspaceSelection = getAirspacesAtLatLon(clickLonLat);
