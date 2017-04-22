@@ -531,6 +531,7 @@ $tmpFile = $tmpDir . "/" . $userFileName;
 
 // output pdf
 $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel2007');
+$objWriter->setPreCalculateFormulas(true);
 $objWriter->save(TMP_DIR_BASE . $tmpFile);
 
 // return tempfile

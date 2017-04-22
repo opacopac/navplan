@@ -129,10 +129,40 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
             mapService.setMapPosition(null, null, zoom - 1);
     };
 
+
+    $scope.fitView = function()
+    {
+        if ($scope.globalData.fitViewLatLon)
+        {
+            mapService.fitViewLatLon($scope.globalData.fitViewLatLon);
+            $scope.globalData.fitViewLatLon = undefined;
+        }
+    };
+
+
     //endregion
 
 
     //region WAYPOINTS
+
+
+    $scope.updateWaypoints = function()
+    {
+        $scope.$parent.updateWaypoints();
+
+        // update waypoints
+        mapService.drawWaypoints($scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.settings.variation);
+
+        // update terrain
+        if ($scope.globalData.showTerrain)
+        {
+            if ($scope.globalData.navplan.waypoints && $scope.globalData.navplan.waypoints.length >= 2)
+                terrainService.updateTerrain($scope.globalData.navplan.waypoints, $scope.onTerrainWaypointClicked);
+            else
+                $scope.globalData.showTerrain = false;
+        }
+    };
+
 
 	$scope.onTrackModifyEnd = function(feature, latLon, idx, isInsert)
 	{
@@ -222,6 +252,17 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 	};
 
 	//endregion
+
+
+    //region TRACK
+
+    $scope.updateFlightTrack = function()
+    {
+        if ($scope.globalData.track && $scope.globalData.track.positions)
+            mapService.drawFlightTrack($scope.globalData.track.positions);
+    };
+
+    //endregion
 
 
     //region FEATURES N OVERLAYS
@@ -601,7 +642,14 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
         $scope.globalData.showTerrain = !$scope.globalData.showTerrain;
 
         if ($scope.globalData.showTerrain)
-            terrainService.updateTerrain($scope.globalData.navplan.waypoints);
+            terrainService.updateTerrain($scope.globalData.navplan.waypoints, $scope.onTerrainWaypointClicked);
+    };
+
+
+    $scope.onTerrainWaypointClicked = function(waypoint)
+    {
+        var mockFeature = { waypoint : waypoint };
+        $scope.onFeatureSelected(undefined, mockFeature);
     };
 
     //endregion
@@ -1072,6 +1120,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 
 		$scope.updateWaypoints();
 		$scope.updateFlightTrack();
+		$scope.fitView();
 		$scope.resizeMapToWindow();
 	}
 	catch(err)
@@ -1089,10 +1138,13 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 		writeServerErrLog(errLog);
 	}
 
+	$scope.$on("onTrashClicked", function() {
+        $scope.updateWaypoints();
+        $scope.updateFlightTrack();
+	});
 
     window.removeEventListener("keydown", $scope.onKeyDown);
     window.addEventListener("keydown", $scope.onKeyDown);
-	
 	window.removeEventListener("resize", $scope.resizeMapToWindow);
 	window.addEventListener("resize", $scope.resizeMapToWindow);
 

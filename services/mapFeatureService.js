@@ -22,6 +22,7 @@ function mapFeatureService($http) {
         getNavaidById: getNavaidById,
         getReportingPointById: getReportingPointById,
         getUserPointById: getUserPointById,
+        addFeatureByTypeAndId: addFeatureByTypeAndId,
         getAirspacesAtLatLon: getAirspacesAtLatLon,
         loadAllUserPoints: loadAllUserPoints
     };
@@ -168,6 +169,41 @@ function mapFeatureService($http) {
         {
             if (featureCache.features.userPoints[i].id == id)
                 return featureCache.features.userPoints[i];
+        }
+    }
+
+
+    function addFeatureByTypeAndId(type, id, parentObject)
+    {
+        switch (type) {
+            case 'airport':
+            {
+                var ap = getAirportById(id);
+                if (ap)
+                    parentObject.airport = ap;
+                break;
+            }
+            case 'navaid':
+            {
+                var nav = getNavaidById(id);
+                if (nav)
+                    parentObject.navaid = nav;
+                break;
+            }
+            case 'report':
+            {
+                var rp = getReportingPointById(id);
+                if (rp)
+                    parentObject.reportingpoint = rp;
+                break;
+            }
+            case 'user':
+            {
+                var uwp = getUserPointById(id);
+                if (uwp)
+                    parentObject.userWaypoint = uwp;
+                break;
+            }
         }
     }
 

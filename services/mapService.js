@@ -52,7 +52,7 @@ function mapService($http, mapFeatureService, weatherService)
         drawOwnPlane: drawOwnPlane,
         drawTraffic: drawTraffic,
         drawWaypoints: drawWaypoints,
-        fitView: fitView,
+        fitViewLatLon: fitViewLatLon,
 		getAirport: getAirport,
 		getBearing: getBearing,
 		getDistance: getDistance,
@@ -222,11 +222,17 @@ function mapService($http, mapFeatureService, weatherService)
             //return "https://api.mapbox.com/styles/v1/opacopac/cj0msmdwf00ad2snz48faknaq/tiles/256/" + z + "/" + y + "/" + x + "@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2owbXNsN3ltMDAwdjMyczZudmt0bGwwdiJ9.RG5N7U6VkoIQ44S-bB-aNg";
 
             if (location.href.indexOf("branch") >= 0)
-                return "https://api.mapbox.com/styles/v1/opacopac/cj0mxdtd800bx2slaha4b0p68/tiles/256/" + z + "/" + y + "/" + x + "@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2oxYjZ6aDQxMDA1ejJ3cGUzbmZ1Zm81eiJ9.oFvbw05OkuQesxOghWqv_A";
+            {
+                // TODO: temp for saving map views
+                var email = getCookie("email");
+
+                if (!(email && email == "armand@tschanz.com"))
+                    return "https://api.mapbox.com/styles/v1/opacopac/cj0mxdtd800bx2slaha4b0p68/tiles/256/" + z + "/" + y + "/" + x + "@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2oxYjZ6aDQxMDA1ejJ3cGUzbmZ1Zm81eiJ9.oFvbw05OkuQesxOghWqv_A";
+            }
             else
                 return "https://api.mapbox.com/styles/v1/opacopac/cj0mxdtd800bx2slaha4b0p68/tiles/256/" + z + "/" + y + "/" + x + "@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2oxYjdkOXpzMDA2dTMycGV3ZDlkM3R2NyJ9.paBLy_T8QJLELJd8VAAEIw";
 
-            /*if (isLocalTile(z, y, x))
+            if (isLocalTile(z, y, x))
             {
                 return localBaseUrl + z + "/" + y + "/" + x + ".png";
             }
@@ -234,7 +240,7 @@ function mapService($http, mapFeatureService, weatherService)
             {
                 var n = (z + y + x) % otmBaseUrls.length;
                 return otmBaseUrls[n] + z + "/" + y + "/" + x + ".png";
-            }*/
+            }
         }
 
 
@@ -1217,9 +1223,21 @@ function mapService($http, mapFeatureService, weatherService)
     }
 
 
-    function fitView(mercator_extent)
+    function fitViewLatLon(extentLatLon)
     {
-        if (!mercator_extent || !map || !map.getView || !map.getSize)
+        if (!extentLatLon || extentLatLon.length != 4)
+            return;
+
+        var minMercator = getMercatorCoordinates(extentLatLon[1], extentLatLon[0]);
+        var maxMercator = getMercatorCoordinates(extentLatLon[3], extentLatLon[2]);
+
+        fitViewMercator([minMercator[0], minMercator[1], maxMercator[0], maxMercator[1]]);
+    }
+
+
+    function fitViewMercator(extentMercator)
+    {
+        if (!extentMercator || !map || !map.getView || !map.getSize)
             return;
 
         var paddingFactor = 0.05;
@@ -1227,7 +1245,7 @@ function mapService($http, mapFeatureService, weatherService)
         var padX = Math.ceil(mapSize[0] * paddingFactor / 2);
         var padY = Math.ceil(mapSize[1] * paddingFactor / 2);
 
-        map.getView().fit(mercator_extent, { size: map.getSize(), padding: [ padX, padX, padY, padY], maxZoom: 15 });
+        map.getView().fit(extentMercator, { size: map.getSize(), padding: [ padX, padX, padY, padY], maxZoom: 15 });
     }
 
     //endregion
@@ -1340,7 +1358,8 @@ function mapService($http, mapFeatureService, weatherService)
 			layerSource.addFeature(lineFeature);
 
 			// add feature object
-			addFeatureObject(geopoints[i], geoPointFeature, labelFeature);
+            mapFeatureService.addFeatureByTypeAndId(geopoints[i].type, geopoints[i].id, geoPointFeature);
+            mapFeatureService.addFeatureByTypeAndId(geopoints[i].type, geopoints[i].id, labelFeature);
 		}
 
 		addAirspaceOverlay(geopoints, airspaceSelection, simpleAirspaceSelection);
@@ -1957,55 +1976,6 @@ function mapService($http, mapFeatureService, weatherService)
 				return '<span class="' + cssClass + '">' + text + '</span>';
 			}			
 		}
-
-
-		function addFeatureObject(geopoint, geoPointFeature, labelFeature)
-		{
-			switch (geopoint.type) {
-				case 'airport':
-				{
-                    var ap = mapFeatureService.getAirportById(geopoint.id);
-
-					if (ap) {
-						geoPointFeature.airport = ap;
-						labelFeature.airport = ap;
-					}
-					break;
-				}
-				case 'navaid':
-				{
-					var nav = mapFeatureService.getNavaidById(geopoint.id);
-
-					if (nav) {
-						geoPointFeature.navaid = nav;
-						labelFeature.navaid = nav;
-					}
-					break;
-				}
-				case 'report':
-				{
-					var rp = mapFeatureService.getReportingPointById(geopoint.id);
-
-					if (rp) {
-						geoPointFeature.reportingpoint = rp;
-						labelFeature.reportingpoint = rp;
-					}
-
-					break;
-				}
-				case 'user':
-				{
-					var uwp = mapFeatureService.getUserPointById(geopoint.id);
-
-					if (uwp) {
-						geoPointFeature.userWaypoint = uwp;
-						labelFeature.userWaypoint = uwp;
-					}
-
-					break;
-				}
-			}
-		}
 	}
 
 	//endregion
@@ -2334,7 +2304,7 @@ function mapService($http, mapFeatureService, weatherService)
 
     //region TRACK
 
-	function drawFlightTrack(positions, fitToView)
+	function drawFlightTrack(positions)
 	{
 		if (typeof flightTrackLayer === "undefined")
 			return;
@@ -2349,8 +2319,6 @@ function mapService($http, mapFeatureService, weatherService)
 			})
 		});
 
-
-        var minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
 
         for (var i = 0; i < positions.length - 1; i++)
 		{
@@ -2367,21 +2335,7 @@ function mapService($http, mapFeatureService, weatherService)
 
 			flightTrackFeature.setStyle(flightTrackStyle);
 			flightTrackSource.addFeature(flightTrackFeature);
-
-			if (fitToView)
-			{
-			    // find max extent
-                minLon = Math.min(minLon, pos1.longitude);
-                minLat = Math.min(minLat, pos1.latitude);
-                maxLon = Math.max(maxLon, pos1.longitude);
-                maxLat = Math.max(maxLat, pos1.latitude);
-            }
 		}
-
-		if (fitToView)
-        {
-            fitView(ol.proj.transformExtent([minLon, minLat, maxLon, maxLat], 'EPSG:4326', 'EPSG:3857')); // transform from lat/lon to web mercator
-        }
 	}
 
 	//endregion
@@ -2428,7 +2382,7 @@ function mapService($http, mapFeatureService, weatherService)
 
 						addChartCloseFeature(chartId, chartLayer, extent);
 
-						fitView(extent);
+						fitViewMercator(extent);
 					}
 				},
 				function(response) { // error

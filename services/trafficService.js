@@ -317,9 +317,9 @@ function trafficService($http)
             {
                 ac.actype = (ac.actype == "UNKNOWN" || actype == "DROP_PLANE") ? actype : ac.actype; // overwrite drop plane type
                 ac.registration = (!ac.registration || ac.registration == "") ? registration : ac.registration;
-                ac.callsign = (!ac.registration || ac.registration == "") ? registration : ac.registration;
-                ac.opCallsign = (!ac.opCallsign || ac.opCallsign == "") ? registration : ac.opCallsign;
-                ac.aircraftModelType = (!ac.aircraftModelType || ac.aircraftModelType == "") ? registration : ac.aircraftModelType;
+                ac.callsign = (!ac.callsign || ac.callsign == "") ? callsign : ac.callsign;
+                ac.opCallsign = (!ac.opCallsign || ac.opCallsign == "") ? opCallsign : ac.opCallsign;
+                ac.aircraftModelType = (!ac.aircraftModelType || ac.aircraftModelType == "") ? aircraftModelType : ac.aircraftModelType;
             }
         }
 

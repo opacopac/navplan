@@ -7,7 +7,7 @@ navplanApp
 
 navplanCtrl.$inject = ['$scope', '$http', '$timeout', 'globalData', 'userService', 'mapService', 'waypointService', 'fuelService', 'terrainService'];
 
-function navplanCtrl($scope, $http, $timeout, globalData, userService, mapService, waypointService, fuelService, terrainService)
+function navplanCtrl($scope, $http, $timeout, globalData, userService, mapService, waypointService, fuelService)
 {
 	// init global data object
 	$scope.globalData = globalData;
@@ -45,6 +45,8 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 			$scope.globalData.cacheStatus = data.cacheStatus;
 			$scope.globalData.cacheProgress = data.cacheProgress;
 			$scope.globalData.clickHistory = []; // internally used only
+            $scope.globalData.downloadLink = {}; // internally used only
+            $scope.globalData.fitViewLatLon = undefined; // internally used only
 		}
 		else // load default values
 		{
@@ -110,6 +112,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 			$scope.globalData.cacheProgress =  { loaded: 0, total: 100, percent: 0 };
 			$scope.globalData.clickHistory = []; // internally used only
             $scope.globalData.downloadLink = {}; // internally used only
+            $scope.globalData.fitViewLatLon = undefined; // internally used only
 		}
 	};
 
@@ -302,22 +305,6 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 	{
 		waypointService.recalcWaypoints($scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.settings.variation, $scope.globalData.aircraft.speed);
 		fuelService.updateFuelCalc($scope.globalData.fuel, $scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.aircraft);
-		mapService.drawWaypoints($scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.settings.variation);
-
-        if ($scope.globalData.showTerrain)
-        {
-            if ($scope.globalData.navplan.waypoints && $scope.globalData.navplan.waypoints.length >= 2)
-                terrainService.updateTerrain($scope.globalData.navplan.waypoints);
-            else
-                $scope.globalData.showTerrain = false;
-        }
-	};
-
-
-	$scope.updateFlightTrack = function()
-	{
-		if ($scope.globalData.track && $scope.globalData.track.positions)
-			mapService.drawFlightTrack($scope.globalData.track.positions);
 	};
 
 
@@ -418,10 +405,11 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
                 $scope.globalData.showTerrain = false;
 
                 $scope.updateWaypoints();
-                $scope.updateFlightTrack();
                 $scope.discardCache();
 
-                mapService.clearAllCharts();
+                $scope.$broadcast("onTrashClicked");
+
+                mapService.clearAllCharts(); // TODO
             }
         );
 	};
@@ -692,8 +680,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 		$scope.globalData.aircraft.speed = navplanData.aircraft_speed;
 		$scope.globalData.aircraft.consumption = navplanData.aircraft_consumption;
 		$scope.globalData.fuel.extraTime = navplanData.extra_fuel;
-		$scope.globalData.navplan.alternate = undefined; // TODO
-		
+
 		// waypoints
 		$scope.globalData.navplan.waypoints = [ ];
 		var wp;
@@ -717,7 +704,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 		}
 
         $scope.updateWaypoints();
-        mapService.fitView($scope.getNavplanExtentMercator());
+		$scope.globalData.fitViewLatLon = $scope.getNavplanExtentLatLon();
 		$scope.discardCache();
 	};
 	
@@ -752,7 +739,6 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 
     $scope.getNavplanExtentLatLon = function()
     {
-        var minLon, maxLon, minLat, maxLat;
         var navplan = $scope.globalData.navplan;
 
         if (!navplan || !navplan.waypoints)
@@ -767,44 +753,24 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
         if (navplan.alternate)
             allWps.push(navplan.alternate);
 
+        var minLon = 1000;
+        var minLat = 1000;
+        var maxLon = -1000;
+        var maxLat = -1000;
 
-        // find max values
+        // find min/max values
         for (i = 0; i < allWps.length; i++)
         {
-            if (!minLon || allWps[i].longitude < minLon)
-                minLon = allWps[i].longitude;
-
-            if (!minLat || allWps[i].latitude < minLat)
-                minLat = allWps[i].latitude;
-
-            if (!maxLon || allWps[i].longitude > maxLon)
-                maxLon = allWps[i].longitude;
-
-            if (!maxLat || allWps[i].latitude > maxLat)
-                maxLat = allWps[i].latitude;
+            minLon = Math.min(minLon, allWps[i].longitude);
+            maxLon = Math.max(maxLon, allWps[i].longitude);
+            minLat = Math.min(minLat, allWps[i].latitude);
+            maxLat = Math.max(maxLat, allWps[i].latitude);
         }
 
-        if (minLon && minLat && maxLon && maxLat)
-            return [minLon, minLat, maxLon, maxLat];
-        else
-            return undefined;
+        return [minLon, minLat, maxLon, maxLat];
     };
 
 
-	$scope.getNavplanExtentMercator = function()
-    {
-        var extentLatLon = $scope.getNavplanExtentLatLon();
-
-        if (!extentLatLon)
-            return undefined;
-
-        var minMercator = mapService.getMercatorCoordinates(extentLatLon[1], extentLatLon[0]);
-        var maxMercator = mapService.getMercatorCoordinates(extentLatLon[3], extentLatLon[2]);
-
-        return [minMercator[0], minMercator[1], maxMercator[0], maxMercator[1]];
-    };
-	
-	
 	// init stuff
 	$scope.initGlobalData();
 	$scope.initUser();
