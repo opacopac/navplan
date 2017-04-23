@@ -146,10 +146,8 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
     //region WAYPOINTS
 
 
-    $scope.updateWaypoints = function()
+    $scope.redrawWaypoints = function()
     {
-        $scope.$parent.updateWaypoints();
-
         // update waypoints
         mapService.drawWaypoints($scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.settings.variation);
 
@@ -256,7 +254,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 
     //region TRACK
 
-    $scope.updateFlightTrack = function()
+    $scope.redrawFlightTrack = function()
     {
         if ($scope.globalData.track && $scope.globalData.track.positions)
             mapService.drawFlightTrack($scope.globalData.track.positions);
@@ -1083,6 +1081,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 		$('#map').height($(window).height() - $('#navbarheader').height());
 		$('#map').width($(window).width());
 		mapService.updateMapSize();
+		$scope.updateWaypoints();
 	};
 
 
@@ -1118,8 +1117,8 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 			$scope.onTrackModifyEnd,
 			$scope.globalData.currentMapPos);
 
-		$scope.updateWaypoints();
-		$scope.updateFlightTrack();
+		$scope.redrawWaypoints();
+		$scope.redrawFlightTrack();
 		$scope.fitView();
 		$scope.resizeMapToWindow();
 	}
@@ -1138,9 +1137,12 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 		writeServerErrLog(errLog);
 	}
 
+	$scope.$on("redrawWaypoints", function () {
+        $scope.redrawWaypoints();
+    });
+
 	$scope.$on("onTrashClicked", function() {
-        $scope.updateWaypoints();
-        $scope.updateFlightTrack();
+        $scope.redrawFlightTrack();
 	});
 
     window.removeEventListener("keydown", $scope.onKeyDown);

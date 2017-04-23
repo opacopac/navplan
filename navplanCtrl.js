@@ -305,6 +305,8 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 	{
 		waypointService.recalcWaypoints($scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.settings.variation, $scope.globalData.aircraft.speed);
 		fuelService.updateFuelCalc($scope.globalData.fuel, $scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.aircraft);
+
+		$scope.$broadcast("redrawWaypoints");
 	};
 
 

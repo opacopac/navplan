@@ -153,7 +153,7 @@ function mapService($http, mapFeatureService, weatherService)
             {layer: webcamImageLayer, minZoom: 9},*/
             {layer: reportingpointLayer, minZoom: 11},
             {layer: userWpLayer, minZoom: 11},
-            {layer: webcamLayer, minZoom: 9},
+            {layer: webcamLayer, minZoom: 10},
             {layer: trafficLayer, minZoom: 7},
             /*{layer: weatherImageLayer, minZoom: 9}];*/
             {layer: weatherLayer, minZoom: 9}];

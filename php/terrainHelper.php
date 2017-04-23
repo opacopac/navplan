@@ -139,10 +139,7 @@ class TerrainHelper
                     foreach ($legAirspaceIsections[$airspace->id] as $point)
                     {
                         if (isWithinRectangle([$lon, $lat], [$nextLon, $nextLat], $point, 0.00000001))
-                        {
                             $legAirspaceIsWithin[$airspace->id] = !$legAirspaceIsWithin[$airspace->id];
-                            break;
-                        }
                     }
                 }
 
