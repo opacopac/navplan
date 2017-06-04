@@ -5,9 +5,9 @@
 navplanApp
 	.factory('mapService', mapService);
 
-mapService.$inject = ['$http', 'mapFeatureService', 'weatherService'];
+mapService.$inject = ['$http', 'mapFeatureService', 'metarTafNotamService'];
 
-function mapService($http, mapFeatureService, weatherService)
+function mapService($http, mapFeatureService, metarTafNotamService)
 {
     //region INIT
 
@@ -226,7 +226,7 @@ function mapService($http, mapFeatureService, weatherService)
                 // TODO: temp for saving map views
                 var email = getCookie("email");
 
-                if (!(email && email == "armand@tschanz.com"))
+                    if (!(email && email == "armand@tschanz.com"))
                     return "https://api.mapbox.com/styles/v1/opacopac/cj0mxdtd800bx2slaha4b0p68/tiles/256/" + z + "/" + y + "/" + x + "@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2oxYjZ6aDQxMDA1ejJ3cGUzbmZ1Zm81eiJ9.oFvbw05OkuQesxOghWqv_A";
             }
             else
@@ -295,7 +295,7 @@ function mapService($http, mapFeatureService, weatherService)
         drawUserPoints(mapFeatureList.userPoints);
         drawWebcams(mapFeatureList.webcams);
 
-        weatherService.getAreaWeatherInfos(getViewExtent(), drawWeatherInfo);
+        metarTafNotamService.getAreaWeatherInfos(getViewExtent(), drawWeatherInfo);
     }
 
 

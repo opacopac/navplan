@@ -136,7 +136,7 @@
 		echo "services/waypointService.js?v=" . $ver . "\n";
 		echo "services/fuelService.js?v=" . $ver . "\n";
 		echo "services/userService.js?v=" . $ver . "\n";
-		echo "services/weatherService.js?v=" . $ver . "\n";
+		echo "services/metarTafNotamService.js?v=" . $ver . "\n";
         echo "services/terrainService.js?v=" . $ver . "\n";
 		echo "\n";
 

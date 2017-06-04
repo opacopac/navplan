@@ -55,6 +55,7 @@
 	<script src="js/turf.min.js"></script>
     <!-- TODO: only for debugging -->
     <!--<script src="https://jsconsole.com/js/remote.js?b914597d-3480-46c1-a248-9794731187fc"></script>-->
+    <script src="js/WorldMagneticModel.js?v=<?php echo $ver ?>"></script>
     <script src="js/telephony.js?v=<?php echo $ver ?>"></script>
 	<script src="navplanHelper.js?v=<?php echo $ver ?>"></script>
 	<script src="navplanApp.js?v=<?php echo $ver ?>"></script>
@@ -74,7 +75,7 @@
 	<script src="services/waypointService.js?v=<?php echo $ver ?>"></script>
 	<script src="services/fuelService.js?v=<?php echo $ver ?>"></script>
 	<script src="services/userService.js?v=<?php echo $ver ?>"></script>
-	<script src="services/weatherService.js?v=<?php echo $ver ?>"></script>
+	<script src="services/metarTafNotamService.js?v=<?php echo $ver ?>"></script>
     <script src="services/terrainService.js?v=<?php echo $ver ?>"></script>
 </head>
 <body>
@@ -92,11 +93,11 @@
 			<div id="navbarcontent" class="collapse navbar-collapse">
 				<ul class="nav navbar-nav">
 					<li><a href="#/map" title="Map" data-toggle="collapse" data-target="#navbarcontent"><i class="fa fa-map-o"></i><span class="hidden-sm">&nbsp;  Map</span></a></li>
-					<li><a href="#/waypoints" title="Navigation Log & Fuel Calc" data-toggle="collapse" data-target="#navbarcontent"><i class="glyphicon glyphicon-list-alt"></i><span class="hidden-sm">&nbsp; Log &amp; Fuel</span></a></li>
+					<li><a href="#/waypoints" title="Route & Fuel Calc" data-toggle="collapse" data-target="#navbarcontent"><i class="glyphicon glyphicon-list-alt"></i><span class="hidden-sm">&nbsp; Route &amp; Fuel</span></a></li>
 					<li ng-show="isLoggedIn() || hasLastTrack()"><a href="#/tracks" title="Recorded Tracks" data-toggle="collapse" data-target="#navbarcontent"><i class="fa fa-paw"></i><span class="hidden-sm">&nbsp; Tracks</span></a></li>
-					<li><a href="#/map" title="Clear current Waypoints and Track" data-toggle="collapse" data-target="#navbarcontent" ng-click="onTrashClicked()"><i class="glyphicon glyphicon-erase"></i><span class="hidden-sm hidden-md">&nbsp; Clear</span></a></li>
+					<li><a href="#/map" title="Clear current Route and Track" data-toggle="collapse" data-target="#navbarcontent" ng-click="onTrashClicked()"><i class="glyphicon glyphicon-erase"></i><span class="hidden-sm hidden-md">&nbsp; Clear</span></a></li>
 					<li class="dropdown" ng-show="globalData.navplan.waypoints.length > 0 || (globalData.track && globalData.track.positions && globalData.track.positions.length > 0)">
-					    <a href="#" onclick="return false;" title="Share or Export" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><i class="glyphicon glyphicon-share-alt"></i><span class="hidden-sm hidden-md">&nbsp; Share</span></a>
+					    <a href="#" onclick="return false;" title="Export & Share Route" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><i class="glyphicon glyphicon-share-alt"></i><span class="hidden-sm hidden-md">&nbsp; Export</span></a>
 						<ul class="dropdown-menu">
 							<li><a href="#" onclick="return false;" ng-click="createPdfNavplan()"><i class="fa fa-file-pdf-o fa-fw"></i>&nbsp; PDF</a></li>
 							<li><a href="#" onclick="return false;" ng-click="createExcelNavplan()"><i class="fa fa-file-excel-o fa-fw"></i>&nbsp; Excel</a></li>
@@ -174,25 +175,40 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-					<h4 class="modal-title" id="selectedWaypointModalLabel">Selected Waypoint</h4>
+					<h4 class="modal-title" id="selectedWaypointModalLabel">Route Waypoint</h4>
 				</div>
 				<div class="modal-body">
-					Checkpoint:
-					<input type="text" class="form-control" ng-model="globalData.selectedWp.checkpoint" />
-					Frequency:
-					<input type="text" class="form-control" ng-model="globalData.selectedWp.freq" />
-					Callsign:
-					<input type="text" class="form-control" ng-model="globalData.selectedWp.callsign" />
-					Altitude:
-					<div class="input-group">
-						<input type="text" class="form-control" ng-model="globalData.selectedWp.alt" />
-						<div class="input-group-btn">
-							<button type="button" class="btn btn-default {{ globalData.selectedWp.isminalt ? 'active' : ''}}" ng-click="globalData.selectedWp.isminalt = !globalData.selectedWp.isminalt" >min</button>
-							<button type="button" class="btn btn-default {{ globalData.selectedWp.ismaxalt ? 'active' : ''}}" ng-click="globalData.selectedWp.ismaxalt = !globalData.selectedWp.ismaxalt" >max</button>
-						</div>
-					</div>
-					Remarks:
-					<input type="text" class="form-control" ng-model="globalData.selectedWp.remark" />
+                    <div class="form-group">
+                        <label for="editWpCheckpoint">Checkpoint:</label>
+                        <input type="text" class="form-control" id="editWpCheckpoint" ng-model="globalData.selectedWp.checkpoint" />
+                    </div>
+                    <div class="form-group">
+                        <label for="editWpFrequency">Frequency:</label>
+                        <input type="text" class="form-control" id="editWpFrequency" ng-model="globalData.selectedWp.freq" />
+                    </div>
+                    <div class="form-group">
+                        <label for="editWpCallsign">Callsign:</label>
+                        <input type="text" class="form-control" id="editWpCallsign" ng-model="globalData.selectedWp.callsign" />
+                    </div>
+                    <div class="form-group">
+                        <label for="editWpAltitude">Altitude:</label>
+                        <div class="form-inline">
+                            <input type="text" class="form-control" id="editWpAltitude" ng-model="globalData.selectedWp.alt" />
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-default {{ globalData.selectedWp.isminalt ? 'active' : ''}}" ng-click="globalData.selectedWp.isminalt = !globalData.selectedWp.isminalt" >min</button>
+                                <button type="button" class="btn btn-default {{ globalData.selectedWp.ismaxalt ? 'active' : ''}}" ng-click="globalData.selectedWp.ismaxalt = !globalData.selectedWp.ismaxalt" >max</button>
+                            </div>
+                            @
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-default {{ globalData.selectedWp.isaltatlegstart ? 'active' : ''}}" ng-click="globalData.selectedWp.isaltatlegstart = 1" >leg start</button>
+                                <button type="button" class="btn btn-default {{ !globalData.selectedWp.isaltatlegstart ? 'active' : ''}}" ng-click="globalData.selectedWp.isaltatlegstart = 0" >leg end</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="editWpRemarks">Remarks:</label>
+                        <input type="text" class="form-control" id="editWpRemarks" ng-model="globalData.selectedWp.remark" />
+                    </div>
 				</div>
 				<div class="modal-footer">
 					<button type="button" class="btn btn-default" data-dismiss="modal" ng-click="onCancelEditWpClicked()">Cancel</button>

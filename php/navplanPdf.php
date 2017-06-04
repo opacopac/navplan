@@ -215,6 +215,9 @@ function drawMinMaxLines($index, $pos_x0, $pos_y0, $pos_x1, $pos_y1)
 
     if ($waypoints[$index]["ismaxalt"])
         $pdf->Line($pos_x0 + 1, $pos_y0 + 0.75, $pos_x1 - 1, $pos_y1 + 0.75);
+
+    if ($waypoints[$index]["isaltatlegstart"])
+        $pdf->Line($pos_x0 + 0.5, $pos_y0 + 0.75, $pos_x0 + 0.5, $pos_y0 + 4.9);
 }
 
 

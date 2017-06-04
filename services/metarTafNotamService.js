@@ -1,17 +1,18 @@
 /**
- * Weather Service
+ * METAR, TAF, NOTAM Service
  */
 
 navplanApp
-	.factory('weatherService', weatherService );
+	.factory('metarTafNotamService', metarTafNotamService );
 
 trafficService.$inject = ['$http', '$sce'];
 
-function weatherService($http, $sce)
+function metarTafNotamService($http, $sce)
 {
     var OVERSIZE_FACTOR = 1.3;
     var MAXAGE = 5 * 60 * 1000; // 5 min
-    var weatherBaseUrl2 = 'https://www.aviationweather.gov/gis/scripts/MetarJSON.php?taf=true&density=all&bbox='; //6.0,44.0,10.0,48.0';
+    var metarTafBaseUrl = 'https://www.aviationweather.gov/gis/scripts/MetarJSON.php?taf=true&density=all&bbox='; //6.0,44.0,10.0,48.0';
+    var notamBaseUrl = 'https://v4p4sz5ijk.execute-api.us-east-1.amazonaws.com/anbdata/states/notams/notams-list?api_key=2a9daa70-2604-11e7-a2b8-e55a51cc8ef0&format=json&locations=';
 	var weatherInfoCache = { extent: undefined, timestamp: undefined, weatherInfos: undefined };
 
 
@@ -35,7 +36,7 @@ function weatherService($http, $sce)
 
     function loadAreaWeatherInfos(extent, successCallback, errorCallback)
     {
-        var url = weatherBaseUrl2 + extent[0] + "," + extent[1] + "," + extent[2] + "," + extent[3];
+        var url = metarTafBaseUrl + extent[0] + "," + extent[1] + "," + extent[2] + "," + extent[3];
 
         $sce.trustAsResourceUrl(url);
 
@@ -66,6 +67,15 @@ function weatherService($http, $sce)
                         errorCallback();
                 }
             );
+    }
+
+
+    function loadNotams(airportIcaos, successCallback, errorCallback)
+    {
+        if (!airportIcaos || !airportIcaos.length || !airportIcaos.length == 0)
+            return;
+
+        var url = notamBaseUrl + airportIcaos.join(",");
     }
 
 
@@ -117,5 +127,11 @@ function weatherService($http, $sce)
             return h + "h " + m + "min";
         else
             return m + "min";
+    }
+
+
+    function getNotamString()
+    {
+
     }
 }

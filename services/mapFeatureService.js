@@ -18,12 +18,9 @@ function mapFeatureService($http) {
     return {
         getMapFeatures: getMapFeatures,
         getAirportByIcao: getAirportByIcao,
-        getAirportById: getAirportById,
-        getNavaidById: getNavaidById,
-        getReportingPointById: getReportingPointById,
-        getUserPointById: getUserPointById,
-        addFeatureByTypeAndId: addFeatureByTypeAndId,
         getAirspacesAtLatLon: getAirspacesAtLatLon,
+        addFeatureByTypeAndId: addFeatureByTypeAndId,
+        addFeatureByTypeAndPos: addFeatureByTypeAndPos,
         loadAllUserPoints: loadAllUserPoints
     };
 
@@ -202,6 +199,56 @@ function mapFeatureService($http) {
                 var uwp = getUserPointById(id);
                 if (uwp)
                     parentObject.userWaypoint = uwp;
+                break;
+            }
+        }
+    }
+
+
+    function addFeatureByTypeAndPos(type, latitude, longitude, parentObject)
+    {
+        var features = undefined;
+
+        switch (type)
+        {
+            case "airport" :
+                features = featureCache.features.airports;
+                break;
+            case "navaid" :
+                features = featureCache.features.navaids;
+                break;
+            case "report" :
+                features = featureCache.features.reportingPoints;
+                break;
+            case "user" :
+                features = featureCache.features.userPoints;
+                break;
+        }
+
+        if (features == undefined)
+            return;
+
+        for (var key in features)
+        {
+            var feature = features[key];
+            if (feature.latitude == latitude && feature.longitude == longitude)
+            {
+                switch (type)
+                {
+                    case "airport" :
+                        parentObject.airport = feature;
+                        break;
+                    case "navaid" :
+                        parentObject.navaid = feature;
+                        break;
+                    case "report" :
+                        parentObject.reportingpoint = feature;
+                        break;
+                    case "user" :
+                        parentObject.userWaypoint = feature;
+                        break;
+                }
+
                 break;
             }
         }

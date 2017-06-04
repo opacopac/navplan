@@ -43,13 +43,13 @@ function searchByName($search, $email, $token)
     $query .= "   NULL AS country,";
     $query .= "   NULL AS admin1,";
     $query .= "   NULL AS admin2,";
-    $query .= "   NULL AS frequency,";
-    $query .= "   NULL AS callsign,";
+    $query .= "   (" . getFrequencySubquery("openaip_airports2.id") . ") AS frequency,";
+    $query .= "   (" . getCallsignSubquery("openaip_airports2.id", "openaip_airports2.country") . ") AS callsign,";
     $query .= "   icao AS airport_icao,";
     $query .= "   latitude,";
     $query .= "   longitude,";
     $query .= "   elevation";
-    $query .= " FROM openaip_airports2 ";
+    $query .= " FROM openaip_airports2";
     $query .= " WHERE";
     $query .= "   icao LIKE '" . $search . "%'";
     $query .= "   OR name LIKE '" . $search . "%'";
@@ -248,6 +248,44 @@ function searchByPosition($lat, $lon, $rad, $email, $token)
     echo buildReturnObject($result, false, [$lon, $lat]);
 
     $conn->close();
+}
+
+
+function getFrequencySubquery($airportIdFieldName)
+{
+    $query  = "SELECT frequency FROM openaip_radios2 AS rad";
+    $query .= " WHERE rad.airport_id = " . $airportIdFieldName . "";
+    $query .= " ORDER BY";
+    $query .= "  CASE WHEN rad.category = 'COMMUNICATION' THEN 1 WHEN rad.category = 'OTHER' THEN 2 ELSE 3 END,";
+    $query .= "  CASE WHEN rad.type = 'TOWER' THEN 1 WHEN rad.type = 'CTAF' THEN 2 WHEN rad.type = 'OTHER' THEN 3 ELSE 4 END";
+    $query .= " LIMIT 1";
+
+    return $query;
+}
+
+
+function getCallsignSubquery($airportIdFieldName, $airportCountryFieldName)
+{
+    $query  = "SELECT ";
+    $query .= " (CASE rad.type";
+    $query .= "   WHEN 'TOWER' THEN 'TWR'";
+    $query .= "   WHEN 'APPROACH' THEN 'APP'";
+    $query .= "   WHEN 'DEPARTURE' THEN 'DEP'";
+    $query .= "   WHEN 'GLIDING' THEN 'GLD'";
+    $query .= "   WHEN 'GROUND' THEN 'GND'";
+    $query .= "   WHEN 'AFIS' THEN 'AFIS'";
+    $query .= "   WHEN 'CTAF' THEN CASE WHEN " . $airportCountryFieldName . " = 'CH' THEN 'AD' ELSE 'CTAF' END";
+    $query .= "   WHEN 'OTHER' THEN CASE WHEN rad.description LIKE 'AD%' THEN 'AD' ELSE rad.typespec END";
+    $query .= "   ELSE ''";
+    $query .= " END) AS callsign";
+    $query .= " FROM openaip_radios2 AS rad";
+    $query .= " WHERE rad.airport_id = " . $airportIdFieldName . "";
+    $query .= " ORDER BY";
+    $query .= "  CASE WHEN rad.category = 'COMMUNICATION' THEN 1 WHEN rad.category = 'OTHER' THEN 2 ELSE 3 END,";
+    $query .= "  CASE WHEN rad.type = 'TOWER' THEN 1 WHEN rad.type = 'CTAF' THEN 2 WHEN rad.type = 'OTHER' THEN 3 ELSE 4 END";
+    $query .= " LIMIT 1";
+
+    return $query;
 }
 
 

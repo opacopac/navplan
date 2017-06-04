@@ -87,7 +87,7 @@
 						<th colspan="2">Frequency</th>
 					</tr>
 					<tr ng-repeat="radio in globalData.selectedWp.airport.radios">
-						<td>{{ radio.description }}</td>
+						<td>{{ radio.description ? radio.description : radio.type }}</td>
 						<td>{{ radio.frequency }}</td>
 					</tr>
 				</table>
@@ -111,7 +111,7 @@
                   class="btn btn-info btn-circle"><i class="fa fa-cloud" aria-hidden="true"></i></a> Weather Forecast</p>
             <p ng-repeat="webcam in globalData.selectedWp.airport.webcams"><a href="{{ webcam.url }}" target="_blank" class="btn btn-success btn-circle"><i class="glyphicon glyphicon-facetime-video"></i></a> {{ webcam.name }}</p>
 			<hr />
-			<p ng-show="globalData.selectedWp.isNew"><button type="button" class="btn btn-success btn-circle" ng-click="onAddSelectedWaypointClicked()"><i class="glyphicon glyphicon-plus"></i></button> Add as Waypoint</p>
+			<p ng-show="globalData.selectedWp.isNew"><button type="button" class="btn btn-success btn-circle" ng-click="onAddSelectedWaypointClicked()"><i class="glyphicon glyphicon-plus"></i></button> Add to Route</p>
 			<p ng-show="globalData.selectedWp.isNew"><button type="button" class="btn btn-warning btn-circle" ng-click="onSetAsAlternateClicked()"><i class="glyphicon glyphicon-plus"></i></button> Set as Alternate</p>
 			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-warning btn-circle" ng-click="onEditSelectedWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Edit Waypoint</p>
 			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-danger btn-circle" ng-click="onRemoveSelectedWaypointClicked()"><i class="glyphicon glyphicon-remove"></i></button> Remove Waypoint</p>
@@ -129,7 +129,7 @@
                     <i class="glyphicon glyphicon-info-sign info-button" title="openAIP login is required for editing"></i></em>
             </div>
 			<hr />
-			<p ng-show="globalData.selectedWp.isNew"><button type="button" class="btn btn-success btn-circle" ng-click="onAddSelectedWaypointClicked()"><i class="glyphicon glyphicon-plus"></i></button> Add as Waypoint</p>
+			<p ng-show="globalData.selectedWp.isNew"><button type="button" class="btn btn-success btn-circle" ng-click="onAddSelectedWaypointClicked()"><i class="glyphicon glyphicon-plus"></i></button> Add to Route</p>
 			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-warning btn-circle" ng-click="onEditSelectedWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Edit Waypoint</p>
 			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-danger btn-circle" ng-click="onRemoveSelectedWaypointClicked()"><i class="glyphicon glyphicon-remove"></i></button> Remove Waypoint</p>
 		</div>
@@ -150,7 +150,7 @@
 				{{ globalData.selectedWp.reportingpoint.outbd_comp ? "OUTBD" : "" }}
 			</p>
 			<hr />
-			<p ng-show="globalData.selectedWp.isNew"><button type="button" class="btn btn-success btn-circle" ng-click="onAddSelectedWaypointClicked()"><i class="glyphicon glyphicon-plus"></i></button> Add as Waypoint</p>
+			<p ng-show="globalData.selectedWp.isNew"><button type="button" class="btn btn-success btn-circle" ng-click="onAddSelectedWaypointClicked()"><i class="glyphicon glyphicon-plus"></i></button> Add to Route</p>
 			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-warning btn-circle" ng-click="onEditSelectedWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Edit Waypoint</p>
 			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-danger btn-circle" ng-click="onRemoveSelectedWaypointClicked()"><i class="glyphicon glyphicon-remove"></i></button> Remove Waypoint</p>
 		</div>
@@ -164,7 +164,7 @@
             <p><a href="#" ng-click="$event.preventDefault(); onShowWeather(globalData.selectedWp.userWaypoint.latitude, globalData.selectedWp.userWaypoint.longitude, globalData.selectedWp.userWaypoint.name);"
                   class="btn btn-info btn-circle"><i class="fa fa-cloud" aria-hidden="true"></i></a> Weather Forecast</p>
 			<hr />
-			<p ng-show="globalData.selectedWp.isNew"><button type="button" class="btn btn-success btn-circle" ng-click="onAddSelectedWaypointClicked()"><i class="glyphicon glyphicon-plus"></i></button> Add as Waypoint</p>
+			<p ng-show="globalData.selectedWp.isNew"><button type="button" class="btn btn-success btn-circle" ng-click="onAddSelectedWaypointClicked()"><i class="glyphicon glyphicon-plus"></i></button> Add to Route</p>
 			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-warning btn-circle" ng-click="onEditSelectedWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Edit Waypoint</p>
 			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-danger btn-circle" ng-click="onRemoveSelectedWaypointClicked()"><i class="glyphicon glyphicon-remove"></i></button> Remove Waypoint</p>
 			<p ng-show="isLoggedIn()"><button type="button" class="btn btn-primary btn-circle" ng-click="onEditUserWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Edit my User Point</p>
@@ -174,11 +174,13 @@
 			<h4>{{ globalData.selectedWp.geopoint.name }}</h4>
 			<p>{{ getPositionString(globalData.selectedWp.geopoint.latitude, globalData.selectedWp.geopoint.longitude) }}</p>
 			<p ng-show="globalData.selectedWp.geopoint.elevation">Elevation: {{ getElevationString(globalData.selectedWp.geopoint.elevation) }}</p>
+            <p ng-show="globalData.selectedWp.callsign">Callsign: {{ globalData.selectedWp.callsign}}</p>
+            <p ng-show="globalData.selectedWp.freq">Frequency: {{ globalData.selectedWp.freq }}</p>
             <hr />
             <p><a href="#" ng-click="$event.preventDefault(); onShowWeather(globalData.selectedWp.geopoint.latitude, globalData.selectedWp.geopoint.longitude, globalData.selectedWp.geopoint.name);"
                   class="btn btn-info btn-circle"><i class="fa fa-cloud" aria-hidden="true"></i></a> Weather Forecast</p>
 			<hr />
-			<p ng-show="globalData.selectedWp.isNew"><button type="button" class="btn btn-success btn-circle" ng-click="onAddSelectedWaypointClicked()"><i class="glyphicon glyphicon-plus"></i></button> Add Was aypoint</p>
+			<p ng-show="globalData.selectedWp.isNew"><button type="button" class="btn btn-success btn-circle" ng-click="onAddSelectedWaypointClicked()"><i class="glyphicon glyphicon-plus"></i></button> Add to Route</p>
 			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-warning btn-circle" ng-click="onEditSelectedWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Edit Waypoint</p>
 			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-danger btn-circle" ng-click="onRemoveSelectedWaypointClicked()"><i class="glyphicon glyphicon-remove"></i></button> Remove Waypoint</p>
 			<p ng-show="isLoggedIn()"><button type="button" class="btn btn-primary btn-circle" ng-click="onEditUserWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Save to my User Points</p>

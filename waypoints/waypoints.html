@@ -1,7 +1,7 @@
 <div class="container nonmapcontent">
 	<div class="form-horizontal">
 		<div class="form-group" ng-show="isLoggedIn()">
-			<label for="navplan_list" class="control-label col-sm-3">Saved NavLogs</label>
+			<label for="navplan_list" class="control-label col-sm-3">Saved Routes</label>
 			<div class="col-sm-6">
 				<div class="input-group">
 					<select id="navplan_list" class="form-control" ng-model="selectedNavplanId">
@@ -9,20 +9,20 @@
 						<option ng-repeat="navplan in globalData.user.navplanList" value="{{ navplan.id }}">{{ navplan.title }}</option>
 					</select>
 					<span class="input-group-btn">
-						<button type="button" class="btn btn-success" title="Load Navigation Log" ng-click="loadNavplan();" ng-disabled="!selectedNavplanId"><i class="glyphicon glyphicon-open"></i></button>
-						<button type="button" class="btn btn-danger" title="Delete Navigation Log" ng-click="deleteNavplan();" ng-disabled="!selectedNavplanId"><i class="glyphicon glyphicon-trash"></i></button>
+						<button type="button" class="btn btn-success" title="Load Route" ng-click="loadNavplan();" ng-disabled="!selectedNavplanId"><i class="glyphicon glyphicon-open"></i></button>
+						<button type="button" class="btn btn-danger" title="Delete Route" ng-click="deleteNavplan();" ng-disabled="!selectedNavplanId"><i class="glyphicon glyphicon-trash"></i></button>
 					</span>					
 				</div>
 			</div>
 		</div>	
 		<div class="form-group">
-			<label for="navplan_name" class="control-label col-sm-3">NavLog Name</label>
+			<label for="navplan_name" class="control-label col-sm-3">Route Name</label>
 			<div class="col-sm-6">
 				<div class="input-group">
 					<input id="navplan_name" type="text" class="form-control" placeholder="Enter Name" ng-model="globalData.navplan.title" />
 					<span class="input-group-btn">
-						<button type="button" class="btn btn-primary" title="Save Navigation Log (login required)" ng-click="saveNavplan();" ng-disabled="!globalData.navplan.title || !isLoggedIn()"><i class="glyphicon glyphicon-save"></i></button>
-						<button type="button" class="btn btn-primary" title="Save Copy of Navigation Log" ng-click="saveNavplanCopy();" ng-disabled="!globalData.navplan.id || !globalData.navplan.title || !isLoggedIn()"><i class="glyphicon glyphicon-duplicate"></i></button>
+						<button type="button" class="btn btn-primary" title="Save Route (login required)" ng-click="saveNavplan();" ng-disabled="!globalData.navplan.title || !isLoggedIn()"><i class="glyphicon glyphicon-save"></i></button>
+						<button type="button" class="btn btn-primary" title="Save Copy of Route" ng-click="saveNavplanCopy();" ng-disabled="!globalData.navplan.id || !globalData.navplan.title || !isLoggedIn()"><i class="glyphicon glyphicon-duplicate"></i></button>
 					</span>
 				</div>
 			</div>	
@@ -61,7 +61,7 @@
 					<td>{{ wp.freq }}</td>
 					<td>{{ wp.callsign }}</td>
 					<td>{{ wp.checkpoint }}</td>
-					<td><span ng-style="{ 'text-decoration': (wp.isminalt ? 'underline' : '') + (wp.ismaxalt ? ' overline' : '') }">{{ wp.alt }}</span></td>
+                    <td><span ng-show="wp.isaltatlegstart">&#8739;</span><span ng-style="{ 'text-decoration': (wp.isminalt ? 'underline' : '') + (wp.ismaxalt ? ' overline' : '') }">{{ wp.alt }}</span></td>
 					<td>{{ wp.mtText }}</td>
 					<td>{{ wp.distText }}</td>
 					<td>{{ wp.eetText }}</td>
@@ -99,7 +99,7 @@
 					<td>{{ globalData.navplan.alternate.freq }}</td>
 					<td>{{ globalData.navplan.alternate.callsign }}</td>
 					<td>{{ globalData.navplan.alternate.checkpoint }}</td>
-					<td><span ng-style="{ 'text-decoration': (globalData.navplan.alternate.isminalt ? 'underline' : '') + (globalData.navplan.alternate.ismaxalt ? ' overline' : '') }">{{ globalData.navplan.alternate.alt }}</span></td>
+					<td><span ng-show="globalData.navplan.alternate.isaltatlegstart">&#8739;</span><span ng-style="{ 'text-decoration': (globalData.navplan.alternate.isminalt ? 'underline' : '') + (globalData.navplan.alternate.ismaxalt ? ' overline' : '') }">{{ globalData.navplan.alternate.alt }}</span></td>
 					<td>{{ globalData.navplan.alternate.mtText }}</td>
 					<td>{{ globalData.navplan.alternate.distText }}</td>
 					<td>{{ globalData.navplan.alternate.eetText }}</td>
@@ -111,7 +111,7 @@
 				</tr>
 				<!-- empty list -->
 				<tr ng-if="results.length == 0">
-					<td colspan="9"><i>No Checkpoints, add checkpoints on the map.</i></td>
+					<td colspan="9"><i>Empty route, add waypoints on the map.</i></td>
 				</tr>
 			</tbody>			
 		</table>
@@ -166,8 +166,8 @@
 	</div>
 	<div class="form-inline">
 		<div class="form-group">
-			<a id="dlPdfLink" href="#" class="btn btn-danger" title="Print Navplan as PDF" ng-click="$event.preventDefault(); createPdfNavplan();"><i class="glyphicon glyphicon-print"></i> Print PDF</a>&nbsp;
-			<a id="dlExcelLink" href="#" class="btn btn-success" title="Save Navplan as Excel" ng-click="$event.preventDefault(); createExcelNavplan();"><i class="fa fa-file-excel-o"></i>&nbsp;Excel Export</a>&nbsp;
+			<a id="dlPdfLink" href="#" class="btn btn-danger" title="Print Navigation Log as PDF" ng-click="$event.preventDefault(); createPdfNavplan();"><i class="glyphicon glyphicon-print"></i> Print PDF</a>&nbsp;
+			<a id="dlExcelLink" href="#" class="btn btn-success" title="Export Navigation Log as Excel" ng-click="$event.preventDefault(); createExcelNavplan();"><i class="fa fa-file-excel-o"></i>&nbsp;Excel Export</a>&nbsp;
 		</div>
 	</div>
 </div>

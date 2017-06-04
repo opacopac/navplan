@@ -389,8 +389,8 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 	$scope.onTrashClicked = function()
 	{
         $scope.showRuSureMessage(
-            "Clear Map?",
-            "Do you really want to clear all waypoints, charts and tracks from the map? Unsaved changes will be lost!",
+            "Clear Route & Track?",
+            "Do you really want to clear all route waypoints, charts and track from the map? Unsaved changes will be lost!",
             function()
             {
                 $scope.globalData.navplan =
@@ -514,6 +514,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
                 alt: wp.alt,
                 isminalt: wp.isminalt,
                 ismaxalt: wp.ismaxalt,
+                isaltatlegstart: wp.isaltatlegstart,
                 eetText: wp.eetText,
                 remark: wp.remark
             };
@@ -556,7 +557,8 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 			callsign: $scope.globalData.selectedWp.callsign,
 			alt: $scope.globalData.selectedWp.alt,
 			isminalt:  $scope.globalData.selectedWp.isminalt,
-			ismaxalt:  $scope.globalData.selectedWp.ismaxalt
+			ismaxalt:  $scope.globalData.selectedWp.ismaxalt,
+            isaltatlegstart:  $scope.globalData.selectedWp.isaltatlegstart
 		}
 	};
 	
@@ -569,6 +571,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 		$scope.globalData.selectedWp.alt = $scope.globalData.wpBackup.alt;
 		$scope.globalData.selectedWp.isminalt = $scope.globalData.wpBackup.isminalt;
 		$scope.globalData.selectedWp.ismaxalt = $scope.globalData.wpBackup.ismaxalt;
+        $scope.globalData.selectedWp.isaltatlegstart = $scope.globalData.wpBackup.isaltatlegstart;
 	};
 
 
@@ -733,6 +736,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 			alt: wp_data.alt,
 			isminalt: wp_data.isminalt,
 			ismaxalt: wp_data.ismaxalt,
+            isaltatlegstart: wp_data.isaltatlegstart,
 			remark: wp_data.remark,
 			airport: ap
 		};

@@ -3,10 +3,10 @@
  */
 
 navplanApp
-	.controller('mapCtrl', [ '$scope', '$sce', '$route', 'mapService', 'mapFeatureService', 'locationService', 'trafficService', 'geonameService', 'userService', 'weatherService', 'terrainService', 'globalData', mapCtrl ]);
+	.controller('mapCtrl', [ '$scope', '$sce', '$route', 'mapService', 'mapFeatureService', 'locationService', 'trafficService', 'geonameService', 'userService', 'metarTafNotamService', 'terrainService', 'globalData', mapCtrl ]);
 
 
-function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationService, trafficService, geonameService, userService, weatherService, terrainService, globalData)
+function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationService, trafficService, geonameService, userService, metarTafNotamService, terrainService, globalData)
 {
     //region INIT VARS
 
@@ -278,7 +278,10 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
         else if (feature.waypoint)
         {
             $scope.globalData.selectedWp = feature.waypoint;
-            $scope.globalData.selectedWp.airport = feature.waypoint.airport; // if set, undefined otherwise
+            // try to add feature object from the cache on the fly
+            mapFeatureService.addFeatureByTypeAndPos(feature.waypoint.type, feature.waypoint.latitude, feature.waypoint.longitude, $scope.globalData.selectedWp);
+            //$scope.globalData.selectedWp.airport = feature.waypoint.airport; // if set, undefined otherwise
+
             $scope.$apply();
 
             $scope.openFeatureOverlay(feature.waypoint.latitude, feature.waypoint.longitude);
@@ -837,8 +840,8 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
                 type: feature.geopoint.type,
                 geopoint: feature.geopoint,
                 id: feature.geopoint.id,
-                freq: '',
-                callsign: '',
+                freq: feature.geopoint.frequency ? feature.geopoint.frequency : "",
+                callsign: feature.geopoint.callsign ? feature.geopoint.callsign : "",
                 checkpoint: feature.geopoint.wpname,
                 airport_icao: '',
                 latitude: feature.geopoint.latitude,
@@ -1021,13 +1024,13 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 
 	$scope.getAgeString = function(dateString)
     {
-        return weatherService.getAgeString(dateString)
+        return metarTafNotamService.getAgeString(dateString)
     };
 
 
     $scope.getTafAgeString = function(weatherInfo)
     {
-        return weatherService.getTafAgeString(weatherInfo)
+        return metarTafNotamService.getTafAgeString(weatherInfo)
     };
 
 

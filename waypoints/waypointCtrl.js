@@ -35,11 +35,11 @@ function waypointCtrl($scope, $http, geonameService, fuelService, userService, m
                     if (response && response.data && response.data.navplan)
                         $scope.loadNavplanToGlobalData(response.data.navplan);
                     else
-                        logResponseError("ERROR reading navplan", response);
+                        logResponseError("ERROR reading route", response);
                 },
 			    function(response) // error
                 {
-                    logResponseError("ERROR reading navplan", response);
+                    logResponseError("ERROR reading route", response);
                 }
             );
 	};
@@ -55,14 +55,14 @@ function waypointCtrl($scope, $http, geonameService, fuelService, userService, m
                     {
                         if (response && response.data && response.data.success == 1) {
                             $scope.readNavplanList();
-                            $scope.showSuccessMessage("Flight log successfully updated!");
+                            $scope.showSuccessMessage("Route successfully updated!");
                         }
                         else
-                            logResponseError("ERROR updating navplan", response);
+                            logResponseError("ERROR updating route", response);
                     },
                     function(response) // error
                     {
-                        logResponseError("ERROR updating navplan", response);
+                        logResponseError("ERROR updating route", response);
 		    		}
                 );
 		}
@@ -76,14 +76,14 @@ function waypointCtrl($scope, $http, geonameService, fuelService, userService, m
                         {
                             $scope.globalData.navplan.id = response.data.navplan_id;
                             $scope.readNavplanList();
-                            $scope.showSuccessMessage("Flight log successfully saved!");
+                            $scope.showSuccessMessage("Route successfully saved!");
                         }
                         else
-                            logResponseError("ERROR creating navplan", response);
+                            logResponseError("ERROR creating route", response);
     				},
                     function(response) // error
                     {
-                        logResponseError("ERROR creating navplan", response);
+                        logResponseError("ERROR creating route", response);
 	    			}
                 );
 		}
@@ -99,8 +99,8 @@ function waypointCtrl($scope, $http, geonameService, fuelService, userService, m
 	$scope.deleteNavplan = function()
 	{
         $scope.showRuSureMessage(
-            "Delete Flight Log?",
-            "Do you really want to delete this flight log?",
+            "Delete Route?",
+            "Do you really want to delete this route?",
             function()
             {
                 if ($scope.selectedNavplanId) {
@@ -110,14 +110,14 @@ function waypointCtrl($scope, $http, geonameService, fuelService, userService, m
                             {
                                 if (response && response.data && response.data.success == 1) {
                                     $scope.readNavplanList();
-                                    $scope.showSuccessMessage("Flight log successfully deleted!");
+                                    $scope.showSuccessMessage("Route successfully deleted!");
                                 }
                                 else
-                                    logResponseError("ERROR deleting navplan", response);
+                                    logResponseError("ERROR deleting route", response);
                             },
                             function (response) // error
                             {
-                                logResponseError("ERROR deleting navplan", response);
+                                logResponseError("ERROR deleting route", response);
                             }
                         );
                 }

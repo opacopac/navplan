@@ -195,12 +195,14 @@ function trafficService($http)
         {
             var pos = {};
             var positions = [];
+            var d = new Date();
+            var now = d.getTime();
 
             pos.latitude = ac.Lat;
             pos.longitude = ac.Long;
             pos.method = ac.Mlat ? positionMethod.mlat : positionMethod.adsb;
             pos.altitude = ac.Gnd ? undefined : ft2m(ac.GAlt);
-            pos.timestamp = ac.PosTime;
+            pos.timestamp = (ac.PosTime > now) ? now - 15000 : ac.PosTime; // 15sec penalty if time > now => TODO: better comp to last pos time
             pos.receiver = ac.Mlat ? "ADSBExchange (MLAT)" : "ADSBExchange (ADS-B)";
 
             positions.push(pos);

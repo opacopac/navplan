@@ -189,11 +189,14 @@
 			
 
 		// insert new chart
-		$query = "INSERT INTO ad_charts (airport_icao, source, type, filename, mercator_e, mercator_w, mercator_n, mercator_s) VALUES (";
+		$query = "INSERT INTO ad_charts (airport_icao, source, type, filename, orig_filename, orig_page, orig_rot_deg, mercator_e, mercator_w, mercator_n, mercator_s) VALUES (";
 		$query .= " '" . $icao . "', ";
 		$query .= " 'VFRM', ";
 		$query .= " '" . $chartname . "', ";
 		$query .= " '" . $output_filename . "', ";
+        $query .= " '" . $filename . "', ";
+        $query .= " '" . $page . "', ";
+        $query .= " '" . $rotation . "', ";
 		$query .= " '" . $mer_maxeast . "', ";
 		$query .= " '" . $mer_mineast . "', ";
 		$query .= " '" . $mer_maxnorth . "', ";

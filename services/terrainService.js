@@ -218,6 +218,7 @@ function terrainService($http)
             {
                 case "CTR":
                     polyline.setAttribute("style", "fill:rgba(152, 206, 235, 0.7); stroke:rgba(23, 128, 194, 0.8); stroke-width:3px");
+                    //polyline.setAttribute("style", "fill:rgba(23, 128, 194, 0.6); stroke:rgba(23, 128, 194, 0.8); stroke-width:3px");
                     polyline.setAttribute("stroke-dasharray", "10, 7");
                     break;
                 case "A" :
@@ -313,7 +314,7 @@ function terrainService($http)
                 textFg.setAttribute("x", Math.round(x + width / 2));
                 textFg.setAttribute("y", Math.round(y - height / 2));
                 textFg.setAttribute("text-anchor", "middle");
-                textFg.setAttribute("alignment-baseline", "central");
+                textFg.setAttribute("transform", "translate(0 4)");
                 textFg.setAttribute("style", "stroke:none; fill:#FFFFFF;");
                 textFg.setAttribute("font-family", "Calibri,sans-serif");
                 textFg.setAttribute("font-weight", "bold");

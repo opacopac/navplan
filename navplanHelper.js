@@ -196,6 +196,17 @@ function getIsoTimeString(timeMs)
 }
 
 
+function getDecimalYear()
+{
+    var d1 = new Date();
+    var d2 = new Date(d1.getFullYear(), 0, 0, 0, 0, 0, 0);
+    var d3 = new Date(d1.getFullYear() + 1, 0, 0, 0, 0, 0, 0);
+    var dec = (d1.getTime() - d2.getTime()) / (d3.getTime() - d2.getTime());
+
+    return d1.getFullYear() + dec;
+}
+
+
 function getDmsString(latitude, longitude)
 {
 	var latString = getCoordString(latitude);
