@@ -160,6 +160,30 @@ function removeFromArray(array, value)
 	return array;
 }
 
+
+function chunkUpList(itemList, chunkSize)
+{
+    var chunkList = [];
+    var currentChunk = [];
+
+    for (var i = 0; i < itemList.length; i++)
+    {
+        currentChunk.push(itemList[i]);
+
+        if (currentChunk.length >= chunkSize)
+        {
+            chunkList.push(currentChunk);
+            currentChunk = [];
+        }
+    }
+
+    if (currentChunk.length > 0 || chunkList.length == 0)
+        chunkList.push(currentChunk);
+
+    return chunkList;
+}
+
+
 //endregion
 
 
@@ -225,12 +249,35 @@ function getDmsString(latitude, longitude)
 
 	function getCoordString(coord)
 	{
+	    if (coord < 0)
+	        coord = -coord;
+
 		var d = Math.floor(coord);
 		var m = Math.floor((coord - d) * 60);
 		var s = Math.floor((coord - d - m/60) * 3600);
 
 		return d + "° " + zeroPad(m) + "' " + zeroPad(s) + '"';
 	}
+}
+
+
+function getLonLatFromGradMinSec(latGrad, latMin, latSec, latDir, lonGrad, lonMin, lonSec, lonDir)
+{
+    var latG = parseInt(latGrad);
+    var latM = parseInt(latMin);
+    var latS = parseFloat(latSec);
+    var lat = latG + latM / 60 + latS / 3600;
+    if (latDir.toUpperCase().indexOf("S") >= 0)
+        lat = -lat;
+
+    var lonG = parseInt(lonGrad);
+    var lonM = parseInt(lonMin);
+    var lonS = parseFloat(lonSec);
+    var lon = lonG + lonM / 60 + lonS / 3600;
+    if (lonDir.toUpperCase().indexOf("W") >= 0)
+        lon = -lon;
+
+    return [ lon, lat ];
 }
 
 
@@ -321,6 +368,12 @@ function m2ft(height_m)
 function ft2m(height_ft)
 {
 	return height_ft / 3.2808;
+}
+
+
+function nautmile2m(distance_nm)
+{
+    return distance_nm * 1852;
 }
 
 
@@ -437,6 +490,29 @@ function airspaceListToggle()
         asContainerFull.style.display = 'block';
         asContainerSimple.style.display = 'none';
     }
+}
+
+
+function regexMatchAll(regex, text)
+{
+    if (regex.constructor !== RegExp)
+        throw new Error('not RegExp');
+
+    var res = [];
+    var match = null;
+
+    if (regex.global) {
+        while (match = regex.exec(text)) {
+            res.push(match);
+        }
+    }
+    else {
+        if (match = regex.exec(text)) {
+            res.push(match);
+        }
+    }
+
+    return res;
 }
 
 //endregion

@@ -2,6 +2,8 @@
 include "config.php";
 include "helper.php";
 
+const MAX_BOTTOM_ALT_FL = 200;
+
 // open db connection
 $conn = openDb();
 
@@ -375,21 +377,12 @@ function getAirspaces($extent)
     $query .= "  air.alt_bottom_reference,";
     $query .= "  air.alt_bottom_height,";
     $query .= "  air.alt_bottom_unit,";
-    $query .= "  air.polygon,";
-    $query .= "  cor.type AS corr_type,";
-    $query .= "  cor.corr_cat AS corr_cat,";
-    $query .= "  cor.corr_alt_top_reference AS corr_alt_top_reference,";
-    $query .= "  cor.corr_alt_top_height AS corr_alt_top_height,";
-    $query .= "  cor.corr_alt_top_unit AS corr_alt_top_unit,";
-    $query .= "  cor.corr_alt_bottom_reference AS corr_alt_bottom_reference,";
-    $query .= "  cor.corr_alt_bottom_height AS corr_alt_bottom_height,";
-    $query .= "  cor.corr_alt_bottom_unit AS corr_alt_bottom_unit";
+    $query .= "  air.polygon";
     $query .= " FROM openaip_airspace2 AS air";
-    $query .= "   LEFT JOIN airspace_corr2 AS cor ON cor.aip_id = air.aip_id";
     $query .= " WHERE";
-    $query .= "  (cor.type IS NULL OR cor.type != 'HIDE')";
-    $query .= "    AND";
     $query .= "  MBRIntersects(extent, " . $extent . ")";
+    $query .= "    AND";
+    $query .= "  (air.alt_bottom_height < " . MAX_BOTTOM_ALT_FL . " OR air.alt_bottom_unit <> 'FL')";
 
 
     $result = $conn->query($query);
@@ -402,37 +395,27 @@ function getAirspaces($extent)
     while ($rs = $result->fetch_array(MYSQLI_ASSOC))
     {
         // prepare coordinates
-        $polygon = [];
-        $coord_pairs = explode(",", $rs["polygon"]);
-
-        foreach ($coord_pairs as $latlon)
-        {
-            $coords = explode(" ", trim($latlon));
-            $coords[0] = reduceDegAccuracy($coords[0], "AIRSPACE");
-            $coords[1] = reduceDegAccuracy($coords[1], "AIRSPACE");
-            $polygon[] = $coords;
-        }
+        $polygon = convertDbPolygonToArray($rs["polygon"]);
 
         // build airspace object
         $airspaces[$rs["aip_id"]] = array(
             id => (int)$rs["id"],
             aip_id => (int)$rs["aip_id"],
-            category => $rs["corr_cat"] ? $rs["corr_cat"] : $rs["category"],
+            category => $rs["category"],
             country => $rs["country"],
             name => $rs["name"],
             alt => array(
                 top => array(
-                    ref => $rs["corr_alt_top_reference"] ? $rs["corr_alt_top_reference"] : $rs["alt_top_reference"],
-                    height => $rs["corr_alt_top_height"] ? $rs["corr_alt_top_height"] : $rs["alt_top_height"],
-                    unit => $rs["corr_alt_top_unit"] ? $rs["corr_alt_top_unit"] : $rs["alt_top_unit"]
+                    ref => $rs["alt_top_reference"],
+                    height => $rs["alt_top_height"],
+                    unit => $rs["alt_top_unit"]
                 ),
                 bottom => array(
-                    ref => $rs["corr_alt_bottom_reference"] ? $rs["corr_alt_bottom_reference"] : $rs["alt_bottom_reference"],
-                    height => $rs["corr_alt_bottom_height"] ? $rs["corr_alt_bottom_height"] : $rs["alt_bottom_height"],
-                    unit => $rs["corr_alt_bottom_unit"] ? $rs["corr_alt_bottom_unit"] : $rs["alt_bottom_unit"]
+                    ref => $rs["alt_bottom_reference"],
+                    height => $rs["alt_bottom_height"],
+                    unit => $rs["alt_bottom_unit"]
                 )
             ),
-            exclude_aip_id => $rs["exclude_aip_id"] ? $rs["exclude_aip_id"] : NULL,
             polygon => $polygon
         );
     }

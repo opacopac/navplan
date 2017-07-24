@@ -2,6 +2,8 @@
 include "../php/config.php";
 include "../php/helper.php";
 
+const START_NUM_CORR_ADD_ENTRIES = 999000000;
+
 header('Content-type: text/html; charset=utf-8');
 
 $conn = openDb();
@@ -10,7 +12,7 @@ $conn = openDb();
 // clear table
 printLine("clearing old data...");
 
-$query = "DELETE FROM openaip_airspace2";
+$query = "TRUNCATE TABLE openaip_airspace2";
 $result = $conn->query($query);
 
 if ($result === FALSE)
@@ -34,10 +36,48 @@ while ($rs = $result->fetch_array(MYSQLI_ASSOC))
 {
     $corrLines[] = array(
         id => $rs["id"],
+        type => $rs["type"],
         aip_country => $rs["aip_country"],
         aip_cat => $rs["aip_cat"],
-        aip_name => $rs["aip_name"]
+        aip_name => $rs["aip_name"],
+        corr_cat => $rs["corr_cat"],
+        corr_alt_top_reference => $rs["corr_alt_top_reference"],
+        corr_alt_top_height => $rs["corr_alt_top_height"],
+        corr_alt_top_unit => $rs["corr_alt_top_unit"],
+        corr_alt_bottom_reference => $rs["corr_alt_bottom_reference"],
+        corr_alt_bottom_height => $rs["corr_alt_bottom_height"],
+        corr_alt_bottom_unit => $rs["corr_alt_bottom_unit"],
+        corr_polygon => $rs["corr_polygon"]
     );
+}
+
+printLine("ok");
+
+
+// add additional entries from correction table
+printLine("add additional entries from correction table...");
+
+$counter = 0;
+foreach ($corrLines as $corr)
+{
+    if ($corr["type"] != "ADD")
+        continue;
+
+    insertIntoDb(
+        $corr["aip_cat"],
+        START_NUM_CORR_ADD_ENTRIES + $counter,
+        $corr["aip_country"],
+        $corr["aip_name"],
+        $corr["corr_alt_top_reference"],
+        $corr["corr_alt_top_height"],
+        $corr["corr_alt_top_unit"],
+        $corr["corr_alt_bottom_reference"],
+        $corr["corr_alt_bottom_height"],
+        $corr["corr_alt_bottom_unit"],
+        $corr["corr_polygon"]
+    );
+
+    $counter++;
 }
 
 printLine("ok");
@@ -65,72 +105,100 @@ foreach ($dir_entries as $filename)
 
     foreach ($data_file->AIRSPACES->ASP as $airspace)
     {
-        $query = "INSERT INTO openaip_airspace2 (category, aip_id, country, name, alt_top_reference, alt_top_height, alt_top_unit, alt_bottom_reference, alt_bottom_height, alt_bottom_unit, polygon, extent) VALUES (";
-        $query .= " '" . $airspace['CATEGORY'] . "',";
-        $query .= " '" . $airspace->ID . "',";
-        $query .= " '" . $airspace->COUNTRY . "',";
-        $query .= " '" . mysqli_real_escape_string($conn, $airspace->NAME) . "',";
-        $query .= " '" . $airspace->ALTLIMIT_TOP['REFERENCE'] . "',";
-        $query .= " '" . $airspace->ALTLIMIT_TOP->ALT . "',";
-        $query .= " '" . $airspace->ALTLIMIT_TOP->ALT['UNIT'] . "',";
-        $query .= " '" . $airspace->ALTLIMIT_BOTTOM['REFERENCE'] . "',";
-        $query .= " '" . $airspace->ALTLIMIT_BOTTOM->ALT . "',";
-        $query .= " '" . $airspace->ALTLIMIT_BOTTOM->ALT['UNIT'] . "',";
-        $query .= " '" . $airspace->GEOMETRY->POLYGON . "',";
-        $query .= " GeomFromText('POLYGON((" . $airspace->GEOMETRY->POLYGON . "))')";
-        $query .= ")";
+        // get values
+        $category = $airspace['CATEGORY'];
+        $aip_id = $airspace->ID;
+        $country = $airspace->COUNTRY;
+        $name = $airspace->NAME;
+        $alt_top_reference = $airspace->ALTLIMIT_TOP['REFERENCE'];
+        $alt_top_height = $airspace->ALTLIMIT_TOP->ALT;
+        $alt_top_unit = $airspace->ALTLIMIT_TOP->ALT['UNIT'];
+        $alt_bottom_reference = $airspace->ALTLIMIT_BOTTOM['REFERENCE'];
+        $alt_bottom_height = $airspace->ALTLIMIT_BOTTOM->ALT;
+        $alt_bottom_unit = $airspace->ALTLIMIT_BOTTOM->ALT['UNIT'];
+        $polygon = $airspace->GEOMETRY->POLYGON;
 
-        $result = $conn->query($query);
 
-        if ($result === FALSE)
+        // check correction entries
+        $hide = false;
+        foreach ($corrLines as $corrLine)
         {
-            printLine("ERROR: " . $conn->error);
-            //printLine("query: " . $query);
-
-            continue;
-        }
-
-
-        // try to find airspace ids for correction table
-        foreach ($corrLines as &$corrLine)
-        {
-
-            if ($airspace->COUNTRY == $corrLine["aip_country"] && $airspace['CATEGORY'] == $corrLine["aip_cat"] && $airspace->NAME == $corrLine["aip_name"])
-            {
-                if (!$corrLine["aip_id"] || $corrLine["aip_id"] == $airspace->ID->__toString())
-                    $corrLine["aip_id"] = $airspace->ID->__toString();
-                else
-                    printLine("ERROR: duplicate aip_id " . $corrLine["aip_id"]);
-
+            if ($corrLine["type"] == 'ADD')
                 continue;
+
+            if ($country == $corrLine["aip_country"] && $category == $corrLine["aip_cat"] && $name == $corrLine["aip_name"])
+            {
+                // hide
+                if ($corrLine["type"] == "HIDE")
+                {
+                    $hide = true;
+                    break;
+                }
+
+                // corrections
+                if ($corrLine["corr_cat"])
+                    $category = $corrLine["corr_cat"];
+
+                if ($corrLine["corr_alt_top_reference"])
+                    $alt_top_reference = $corrLine["corr_alt_top_reference"];
+
+                if ($corrLine["corr_alt_top_height"])
+                    $alt_top_height = $corrLine["corr_alt_top_height"];
+
+                if ($corrLine["corr_alt_top_unit"])
+                    $alt_top_unit = $corrLine["corr_alt_top_unit"];
+
+                if ($corrLine["corr_alt_bottom_reference"])
+                    $alt_bottom_reference = $corrLine["corr_alt_bottom_reference"];
+
+                if ($corrLine["corr_alt_bottom_height"])
+                    $alt_bottom_height = $corrLine["corr_alt_bottom_height"];
+
+                if ($corrLine["corr_alt_bottom_unit"])
+                    $alt_bottom_unit = $corrLine["corr_alt_bottom_unit"];
+
+                if ($corrLine["polygon"])
+                    $polygon = $corrLine["polygon"];
             }
         }
+
+        if ($hide)
+            continue;
+
+        // save to db
+        insertIntoDb($category, $aip_id, $country, $name, $alt_top_reference, $alt_top_height, $alt_top_unit, $alt_bottom_reference, $alt_bottom_height, $alt_bottom_unit, $polygon);
     }
 
     printLine("ok");
 }
 
-// writing airspace ids to correction table
-printLine("updating correction table with aip-airspace-ids");
+printLine("finished.");
 
-foreach ($corrLines as &$corrLine)
+
+function insertIntoDb($category, $aip_id, $country, $name, $alt_top_reference, $alt_top_height, $alt_top_unit, $alt_bottom_reference, $alt_bottom_height, $alt_bottom_unit, $polygon)
 {
-    if ($corrLine["aip_id"])
+    global $conn;
+
+    $query = "INSERT INTO openaip_airspace2 (category, aip_id, country, name, alt_top_reference, alt_top_height, alt_top_unit, alt_bottom_reference, alt_bottom_height, alt_bottom_unit, polygon, extent) VALUES (";
+    $query .= " '" . $category . "',";
+    $query .= " '" . $aip_id . "',";
+    $query .= " '" . $country . "',";
+    $query .= " '" . mysqli_real_escape_string($conn, $name) . "',";
+    $query .= " '" . $alt_top_reference . "',";
+    $query .= " '" . $alt_top_height . "',";
+    $query .= " '" . $alt_top_unit . "',";
+    $query .= " '" . $alt_bottom_reference . "',";
+    $query .= " '" . $alt_bottom_height . "',";
+    $query .= " '" . $alt_bottom_unit . "',";
+    $query .= " '" . $polygon . "',";
+    $query .= " GeomFromText('POLYGON((" . $polygon  . "))')";
+    $query .= ")";
+
+    $result = $conn->query($query);
+
+    if ($result === FALSE)
     {
-        printLine("updating ID " . $corrLine["id"] . ": " . $corrLine["aip_name"] . "...");
-
-        $query = "UPDATE airspace_corr2 SET aip_id = '" . $corrLine["aip_id"] . "' WHERE id = '" . $corrLine["id"] . "'";
-        $result = $conn->query($query);
-
-        if ($result === FALSE)
-        {
-            printLine("ERROR: " . $conn->error);
-            //printLine("query: " . $query);
-
-            continue;
-        }
+        printLine("ERROR: " . $conn->error);
+        //printLine("query: " . $query);
     }
 }
-
-printLine("ok");
-printLine("finished.");

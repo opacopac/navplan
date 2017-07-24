@@ -183,6 +183,11 @@ html, body {
   width: auto !important;
 }
 
+.table-notam {
+    max-height: 600px;
+    overflow: auto;
+}
+
 .ui-sortable tr
 {
   cursor: pointer;
@@ -209,6 +214,11 @@ html, body {
 }
 
 .ol-popup-feature {
+}
+
+.ol-popup-notam {
+    width: 650px;
+    max-width: 95%;
 }
 
 .ol-popup-metartaf {

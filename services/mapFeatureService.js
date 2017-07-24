@@ -9,8 +9,8 @@ mapFeatureService.$inject = ['$http'];
 
 function mapFeatureService($http) {
     var OVERSIZE_FACTOR = 1.2;
-    var featureCache = {extent: undefined, features: undefined};
-    var airportsByIcao = {};
+    var featureCache = new FeatureCache(undefined, undefined);
+    var airportCache = new AirportCache();
     var mapFeaturesBaseUrl = 'php/mapFeatures.php?v=' + navplanVersion;
     var userWpBaseUrl = 'php/userWaypoint.php?v=' + navplanVersion;
 
@@ -23,6 +23,23 @@ function mapFeatureService($http) {
         addFeatureByTypeAndPos: addFeatureByTypeAndPos,
         loadAllUserPoints: loadAllUserPoints
     };
+
+
+    // region CLASSES
+
+    function FeatureCache(extent, features)
+    {
+        this.extent = extent;
+        this.features = features;
+    }
+
+
+    function AirportCache()
+    {
+        this.apByIcao = {};
+    }
+
+    // endregion
 
 
     function getMapFeatures(extent, successCallback, errorCallback) {
@@ -98,23 +115,22 @@ function mapFeatureService($http) {
         if (!featureList || !extent)
             return;
 
-        featureCache = {extent: extent, features: featureList};
-
-        airportsByIcao = {};
+        featureCache = new FeatureCache(extent, featureList);
+        airportCache = new AirportCache();
 
         for (var i = 0; i < featureList.airports.length; i++)
         {
             var ap = featureList.airports[i];
 
             if (ap.icao)
-                airportsByIcao[ap.icao] = ap;
+                airportCache.apByIcao[ap.icao] = ap;
         }
     }
 
 
     function getAirportByIcao(icao)
     {
-        return airportsByIcao[icao];
+        return airportCache.apByIcao[icao];
     }
 
 

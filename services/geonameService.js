@@ -14,7 +14,7 @@ function geonameService($http)
 	// return api reference
 	return {
 		searchGeonamesByValue: searchGeonamesByValue,
-		searchGeonamesByPosition: searchGeonamesByPosition
+		searchGeonamesByPosition: searchGeopointsByPosition
 	};
 
 
@@ -23,18 +23,21 @@ function geonameService($http)
 	{
 		var gradMinSecPattern = /^(\d+)\D+(\d+)\D+([\d\.]+)(\D+)(\d+)\D+(\d+)\D+([\d\.]+)(\D*)$/i;
 		var decGradPattern = /^([+-]?\d+\.\d+)[^\d\.+-]+([+-]?\d+\.\d+)$/i;
+		var notamPattern = /^(\d{2})(\d{2})(\d{2})([NS])\s?(\d{2,3})(\d{2})(\d{2})([EW])$/i; // 463447N0062121E, 341640N0992240W
 		var matchGradMinSec = gradMinSecPattern.exec(search);
 		var matchDecGrad = decGradPattern.exec(search);
-		
-		if (matchGradMinSec != null || matchDecGrad != null)
+		var matchNotam = notamPattern.exec(search);
+
+		if (matchGradMinSec != null || matchDecGrad != null || matchNotam != null)
 		{
 			var lonLat;
 
 			if (matchGradMinSec != null)
-				lonLat = getLonLatFromGradMinSec(matchGradMinSec);
-				
-			if (matchDecGrad != null)
+				lonLat = getLonLatFromGradMinSec(matchGradMinSec[1],matchGradMinSec[2],matchGradMinSec[3],matchGradMinSec[4],matchGradMinSec[5],matchGradMinSec[6],matchGradMinSec[7],matchGradMinSec[8]);
+			else if (matchDecGrad != null)
 				lonLat = getLonLatFromDecGrad(matchDecGrad);
+			else if (matchNotam != null)
+			    lonLat = getLonLatFromGradMinSec(matchNotam[1],matchNotam[2],matchNotam[3],matchNotam[4],matchNotam[5],matchNotam[6],matchNotam[7],matchNotam[8]);
 				
 			return getCoordinateGeoPoint(lonLat, search);
 		}
@@ -48,22 +51,19 @@ function geonameService($http)
 							return item;
 						});
 					}
-					else {
-						logResponseError("ERROR searchung geopoints", response);
-					}
 				},
 				function(response) // error
 				{
-                    logResponseError("ERROR searchung geopoints", response);
+                    logResponseError("ERROR searching geopoints", response);
 				}
 			);
 	}
 	
 
 	// search by pos
-	function searchGeonamesByPosition(lat, lon, rad)
+	function searchGeopointsByPosition(lat, lon, rad, minNotamTime, maxNotamTime)
 	{
-		return $http.get(baseUrl + "action=searchByPosition&lat=" + lat + "&lon=" + lon + "&rad=" + rad);
+		return $http.get(baseUrl + "action=searchByPosition&lat=" + lat + "&lon=" + lon + "&rad=" + rad + "&minnotamtime=" + minNotamTime + "&maxnotamtime=" + maxNotamTime);
 	}
 	
 	
@@ -81,28 +81,6 @@ function geonameService($http)
 		{
 			return item;
 		});	
-	}
-	
-	
-	function getLonLatFromGradMinSec(matchGradMinSec)
-	{
-		var latG = parseInt(matchGradMinSec[1]);
-		var latM = parseInt(matchGradMinSec[2]);
-		var latS = parseFloat(matchGradMinSec[3]);
-		var latDir = matchGradMinSec[4];
-		var lat = latG + latM / 60 + latS / 3600;
-		if (latDir.toUpperCase().indexOf("S") >= 0)
-			lat = -lat;
-		
-		var lonG = parseInt(matchGradMinSec[5]);
-		var lonM = parseInt(matchGradMinSec[6]);
-		var lonS = parseFloat(matchGradMinSec[7]);
-		var lonDir = matchGradMinSec[8];
-		var lon = lonG + lonM / 60 + lonS / 3600;
-		if (lonDir.toUpperCase().indexOf("W") >= 0)
-			lon = -lon;
-
-		return [ lon, lat ];
 	}
 
 	

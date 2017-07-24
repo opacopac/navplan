@@ -19,6 +19,8 @@ switch($_GET["action"])
             checkNumeric($_GET["lat"]),
             checkNumeric($_GET["lon"]),
             checkNumeric($_GET["rad"]),
+            checkNumeric($_GET["minnotamtime"]),
+            checkNumeric($_GET["maxnotamtime"]),
             $_COOKIE["email"] ? checkEscapeEmail($conn, $_COOKIE["email"]) : NULL,
             $_COOKIE["token"] ? checkEscapeToken($conn, $_COOKIE["token"]) : NULL
         );
@@ -163,13 +165,17 @@ function searchByName($search, $email, $token)
     if ($result === FALSE)
         die("error searching geoname: " . $conn->error . " query:" . $query);
 
-    echo buildReturnObject($result, true, null);
+    $geonamesList = buildGeonamesList($result, true, null);
+
+    // build return object
+    print json_encode(array("geonames" => $geonamesList, "notams" => []), JSON_NUMERIC_CHECK);
+
 
     $conn->close();
 }
 
 
-function searchByPosition($lat, $lon, $rad, $email, $token)
+function searchByPosition($lat, $lon, $rad, $minNotamTime, $maxNotamTime, $email, $token)
 {
     global $conn;
 
@@ -245,7 +251,16 @@ function searchByPosition($lat, $lon, $rad, $email, $token)
     if ($result === FALSE)
         die("error searching geoname: " . $conn->error . " query:" . $query);
 
-    echo buildReturnObject($result, false, [$lon, $lat]);
+    $geonamesList = buildGeonamesList($result, false, [$lon, $lat]);
+
+
+    // get notams
+    $notamList = loadNotamList($lon, $lat, $minNotamTime, $maxNotamTime);
+
+
+    // build return object
+    print json_encode(array("geonames" => $geonamesList, "notams" => $notamList), JSON_NUMERIC_CHECK);
+
 
     $conn->close();
 }
@@ -307,7 +322,7 @@ function getGeonamesFilterQuery()
 }
 
 
-function buildReturnObject($result, $renameDuplicates, $lonLat)
+function buildGeonamesList($result, $renameDuplicates, $lonLat)
 {
     $terrainHelper = new TerrainHelper();
 
@@ -372,7 +387,7 @@ function buildReturnObject($result, $renameDuplicates, $lonLat)
         $geonames[] = $clickPoint;
     }
 
-    return json_encode(array("geonames" => $geonames), JSON_NUMERIC_CHECK);
+    return $geonames;
 }
 
 
@@ -409,4 +424,46 @@ function findDuplicates($geonames)
     }
 
     return array("nameidx" => $duplicateNameIdx, "admin1idx" => $duplicateAdmin1Idx);
+}
+
+
+function loadNotamList($lon, $lat, $minNotamTime, $maxNotamTime)
+{
+    global $conn;
+
+
+    $query = "SELECT ntm.notam AS notam FROM icao_notam AS ntm"
+        . " INNER JOIN icao_notam_geometry geo ON geo.icao_notam_id = ntm.id "
+        . " LEFT JOIN icao_fir fir ON fir.icao = ntm.icao"
+        . " WHERE ST_INTERSECTS(geo.extent,". getDbPointStringFromLonLat([$lon, $lat]) . ") "
+        . "  AND ntm.startdate <= '" . getDbTimeString($maxNotamTime) . "'"
+        . "  AND ntm.enddate >= '" . getDbTimeString($minNotamTime) . "'"
+        . "  AND (ST_INTERSECTS(fir.polygon,". getDbPointStringFromLonLat([$lon, $lat]) . ") OR ntm.type = 'airport')"
+        . " ORDER BY ntm.startdate DESC";
+
+    $result = $conn->query($query);
+
+    if ($result === FALSE)
+        die("error searching notams: " . $conn->error . " query:" . $query);
+
+
+    $notamList = [];
+
+    while ($rs = $result->fetch_array(MYSQLI_ASSOC))
+    {
+        $notam = json_decode($rs["notam"], JSON_NUMERIC_CHECK);
+
+        // TODO: use same filters in notam.php
+        // filter by max FL195
+        if ($notam["geometry"] && $notam["geometry"]["bottom"] >= NOTAM_MAX_BOTTOM_FL)
+            continue;
+
+        // filter by notam type (no KKKK)
+        if ($notam["Qcode"] == "KKKK")
+            continue;
+
+        $notamList[] = $notam;
+    }
+
+    return $notamList;
 }

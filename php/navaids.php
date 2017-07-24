@@ -10,7 +10,7 @@
 	$result = $conn->query($query);
 
 	// build return object
-	$return_object = buildReturnObject($result);
+	$return_object = buildGeonamesList($result);
 
 	$conn->close();
 	

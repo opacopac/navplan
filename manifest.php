@@ -246,28 +246,28 @@
 	function getTileUrl($lat, $lon, $zoom)
 	{
 	    $localBaseUrl = "maptiles/";
-		/*$otmBaseUrl = array(
+		$otmBaseUrl = array(
 			"//a.tile.opentopomap.org/",
 			"//b.tile.opentopomap.org/",
 			"//c.tile.opentopomap.org/"
-		);*/
+		);
 
-		$otmBaseUrl = array(
+		/*$otmBaseUrl = array(
 			"//opentopomap.org/",
 			"//opentopomap.org/",
 			"//opentopomap.org/"
-		);
+		);*/
 
 		$ytile = floor((($lon + 180) / 360) * pow(2, $zoom));
 		$xtile = floor((1 - log(tan(deg2rad($lat)) + 1 / cos(deg2rad($lat))) / pi()) /2 * pow(2, $zoom));
 
 
-        if (strpos($_SERVER['REQUEST_URI'], "branch") === false)
+        /*if (strpos($_SERVER['REQUEST_URI'], "branch") === false)
             return '//api.mapbox.com/styles/v1/opacopac/cj0mxdtd800bx2slaha4b0p68/tiles/256/' . $zoom . '/' . $ytile . '/' . $xtile . '@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2oxYjc5dWVnMDA1eTJxbm41YmluaDBvYiJ9.6Kqm-by8OME1SqB15uEzKA';
         else
-            return '//api.mapbox.com/styles/v1/opacopac/cj0mxdtd800bx2slaha4b0p68/tiles/256/' . $zoom . '/' . $ytile . '/' . $xtile . '@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2oxYjc0MHFsMDAyaTMzcGVwdTY1aHlzZCJ9.ssqYvA4pbLYBIa87V7hLeQ';
+            return '//api.mapbox.com/styles/v1/opacopac/cj0mxdtd800bx2slaha4b0p68/tiles/256/' . $zoom . '/' . $ytile . '/' . $xtile . '@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2oxYjc0MHFsMDAyaTMzcGVwdTY1aHlzZCJ9.ssqYvA4pbLYBIa87V7hLeQ';*/
 
-        /*if (isLocalTile($zoom, $ytile, $xtile))
+        if (isLocalTile($zoom, $ytile, $xtile))
 		{
             return $localBaseUrl . $zoom . "/" . $ytile . "/" . $xtile . ".png";
 		}
@@ -275,7 +275,7 @@
 		{
             $n = ($zoom + $xtile + $ytile) % 3;
             return $otmBaseUrl[$n] . $zoom . "/" . $ytile . "/" . $xtile . ".png";
-        }*/
+        }
 	}
 
 

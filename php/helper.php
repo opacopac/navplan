@@ -22,6 +22,73 @@ function openDb()
     return $conn;
 }
 
+
+function getDbTimeString($timestamp)
+{
+    return date("Y-m-d H:i:s", $timestamp);
+}
+
+
+function getDbPolygonString($lonLatList)
+{
+    $lonLatStrings = [];
+
+    foreach ($lonLatList as $lonLat)
+        $lonLatStrings[] = join(" ", $lonLat);
+
+    if ($lonLatStrings[0] != $lonLatStrings[count($lonLatStrings) - 1]) // close polygon if necessary
+        $lonLatStrings[] = $lonLatStrings[0];
+
+    $polyString = "ST_GeomFromText('POLYGON((" . join(",", $lonLatStrings) . "))')";
+
+    return $polyString;
+}
+
+
+function getDbMultiPolygonString($polygonList)
+{
+    $polyStrings = [];
+    foreach ($polygonList as $polygon)
+    {
+        $lonLatStrings = [];
+        foreach ($polygon as $lonLat)
+            $lonLatStrings[] = join(" ", $lonLat);
+
+        if ($lonLatStrings[0] != $lonLatStrings[count($lonLatStrings) - 1]) // close polygon if necessary
+            $lonLatStrings[] = $lonLatStrings[0];
+
+        $polyStrings[] = "((" . join(",", $lonLatStrings) . "))";
+    }
+
+    $multiPolyString = "ST_GeomFromText('MULTIPOLYGON(" . join(",", $polyStrings) . ")')";
+
+    return $multiPolyString;
+}
+
+
+// retrieve lon lat from the format: POINT(-76.867 38.8108)
+function parseLonLatFromDbPoint($dbPointString)
+{
+    $decimalRegExpPart = '([\-\+]?\d+\.?\d*)';
+    $dbPointRegexp = '/POINT\(\s*' . $decimalRegExpPart . '\s+' . $decimalRegExpPart . '\s*\)/im';
+
+    $result = preg_match($dbPointRegexp, $dbPointString, $matches);
+
+    if (!$result)
+        return null;
+
+    $lonLat = [ floatval($matches[1]), floatval($matches[2]) ];
+
+    return $lonLat;
+}
+
+
+function getDbPointStringFromLonLat($lonLat)
+{
+    return "ST_GeomFromText('POINT(" . $lonLat[0]  . " " . $lonLat[1] . ")')";
+}
+
+
 //endregion
 
 
@@ -166,6 +233,12 @@ function checkEscapeString($conn, $string, $minlen, $maxlen)
 }
 
 
+function checkEscapeAlphaNumeric($conn, $string, $minlen, $maxlen)
+{
+    return mysqli_real_escape_string($conn, checkAlphaNumeric($string, $minlen, $maxlen));
+}
+
+
 function checkEscapeEmail($conn, $email)
 {
     return mysqli_real_escape_string($conn, checkEmail($email));
@@ -195,6 +268,57 @@ function getIsoTimeString($timestamp = null)
 
 //region GEO & TRIGO
 
+
+function getMeterFactor($unit)
+{
+    switch (trim(strtoupper($unit)))
+    {
+        case "NM" : return 1852;
+        case "KM" : return 1000;
+        case "M" : return 1;
+        default : return null;
+    }
+}
+
+
+function getLonLatFromGradMinSec($latGrad, $latMin, $latSec, $latDir, $lonGrad, $lonMin, $lonSec, $lonDir)
+{
+    $latG = intval($latGrad);
+    $latM = intval($latMin);
+    $latS = floatval($latSec);
+    $lat = $latG + $latM / 60 + $latS / 3600;
+    if (substr(strtoupper($latDir), 0, 1) == "S")
+        $lat = -$lat;
+
+    $lonG = intval($lonGrad);
+    $lonM = intval($lonMin);
+    $lonS = floatval($lonSec);
+    $lon = $lonG + $lonM / 60 + $lonS / 3600;
+    if (substr(strtoupper($lonDir), 0, 1) == "W")
+        $lon = -$lon;
+
+    return [ $lon, $lat ];
+}
+
+
+function convertDbPolygonToArray($polygonDbText)
+{
+    // prepare coordinates
+    $polygon = [];
+    $coord_pairs = explode(",", $polygonDbText);
+
+    foreach ($coord_pairs as $latlon)
+    {
+        $coords = explode(" ", trim($latlon));
+        $coords[0] = reduceDegAccuracy($coords[0], "AIRSPACE");
+        $coords[1] = reduceDegAccuracy($coords[1], "AIRSPACE");
+        $polygon[] = $coords;
+    }
+
+    return $polygon;
+}
+
+
 function reduceDegAccuracy($value, $type)
 {
     switch ($type)
@@ -220,6 +344,37 @@ function calcDistanceMeters($lat1, $lon1, $lat2, $lon2)
     $miles = $dist * 60 * 1.1515;
 
     return $miles * 1.609344 * 1000;
+}
+
+
+function moveBearDist($lat, $lon, $brngDeg, $distM)
+{
+    $lat1 = deg2rad($lat);
+    $lon1 = deg2rad($lon);
+    $distNm = $distM / 1000.0 / 1.852;
+    $angDist = ($distNm * 1.852) / 6378.1;
+
+    $lat2 = asin(sin($lat1) * cos($angDist) + cos($lat1) * sin($angDist) * cos(deg2rad($brngDeg)));
+    $lon2 = $lon1 + atan2(sin(deg2rad($brngDeg)) * sin($angDist) * cos($lat1), cos($angDist) - sin($lat1) * sin($lat2));
+
+    return array(rad2deg($lon2), rad2deg($lat2));
+}
+
+
+function getCircleExtent($lat, $lon, $radiusM)
+{
+    $dlat = (moveBearDist($lat, $lon, 0, $radiusM)[1] - $lat);
+    $dlon = (moveBearDist($lat, $lon, 90, $radiusM)[0] - $lon);
+
+    $extent = [
+        [$lon - $dlon, $lat - $dlat],
+        [$lon - $dlon, $lat + $dlat],
+        [$lon + $dlon, $lat + $dlat],
+        [$lon + $dlon, $lat - $dlat],
+        [$lon - $dlon, $lat - $dlat]
+    ];
+
+    return $extent;
 }
 
 
@@ -414,3 +569,4 @@ function printLine($text)
     print "<br>\n";
     ob_flush();
 }
+

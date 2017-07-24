@@ -776,7 +776,6 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
         return [minLon, minLat, maxLon, maxLat];
     };
 
-
 	// init stuff
 	$scope.initGlobalData();
 	$scope.initUser();

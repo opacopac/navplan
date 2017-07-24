@@ -35,7 +35,7 @@
 	<link rel="icon" type="image/png" href="icon/favicon.png" />
 	<!-- css -->
 	<link rel="stylesheet" href="bootstrap/3.3.7/bootstrap.min.css">
-	<link rel="stylesheet" href="openlayers/4.0.1/ol.css">
+	<link rel="stylesheet" href="openlayers/4.2.0/ol.css">
 	<link rel="stylesheet" href="css/arial-narrow.css" type="text/css" />
     <link rel="stylesheet" href="font-awesome/css/font-awesome.min.css">
 	<link rel="stylesheet" href="css/navplan.css?v=<?php echo $ver ?>">
@@ -50,8 +50,8 @@
 	<script src="angularjs/1.6.3/angular-resource.min.js"></script>
 	<script src="bootstrap/3.3.7/bootstrap.min.js"></script>
 	<script src="js/ui-bootstrap-tpls-1.3.2.min.js"></script>
-	<script src="openlayers/4.0.1/ol.js"></script>
-    <!--<script src="openlayers/4.0.1/ol-debug.js"></script>-->
+	<script src="openlayers/4.2.0/ol.js"></script>
+    <!--<script src="openlayers/4.2.0/ol-debug.js"></script>-->
 	<script src="js/turf.min.js"></script>
     <!-- TODO: only for debugging -->
     <!--<script src="https://jsconsole.com/js/remote.js?b914597d-3480-46c1-a248-9794731187fc"></script>-->
@@ -92,10 +92,10 @@
 			</div>
 			<div id="navbarcontent" class="collapse navbar-collapse">
 				<ul class="nav navbar-nav">
-					<li><a href="#/map" title="Map" data-toggle="collapse" data-target="#navbarcontent"><i class="fa fa-map-o"></i><span class="hidden-sm">&nbsp;  Map</span></a></li>
-					<li><a href="#/waypoints" title="Route & Fuel Calc" data-toggle="collapse" data-target="#navbarcontent"><i class="glyphicon glyphicon-list-alt"></i><span class="hidden-sm">&nbsp; Route &amp; Fuel</span></a></li>
-					<li ng-show="isLoggedIn() || hasLastTrack()"><a href="#/tracks" title="Recorded Tracks" data-toggle="collapse" data-target="#navbarcontent"><i class="fa fa-paw"></i><span class="hidden-sm">&nbsp; Tracks</span></a></li>
-					<li><a href="#/map" title="Clear current Route and Track" data-toggle="collapse" data-target="#navbarcontent" ng-click="onTrashClicked()"><i class="glyphicon glyphicon-erase"></i><span class="hidden-sm hidden-md">&nbsp; Clear</span></a></li>
+					<li><a href="#/map" title="Map"><i class="fa fa-map-o"></i><span class="hidden-sm">&nbsp;  Map</span></a></li>
+					<li><a href="#/waypoints" title="Route & Fuel Calc"><i class="glyphicon glyphicon-list-alt"></i><span class="hidden-sm">&nbsp; Route &amp; Fuel</span></a></li>
+					<li ng-show="isLoggedIn() || hasLastTrack()"><a href="#/tracks" title="Recorded Tracks"><i class="fa fa-paw"></i><span class="hidden-sm">&nbsp; Tracks</span></a></li>
+					<li><a href="#/map" title="Clear current Route and Track" ng-click="onTrashClicked()"><i class="glyphicon glyphicon-erase"></i><span class="hidden-sm hidden-md">&nbsp; Clear</span></a></li>
 					<li class="dropdown" ng-show="globalData.navplan.waypoints.length > 0 || (globalData.track && globalData.track.positions && globalData.track.positions.length > 0)">
 					    <a href="#" onclick="return false;" title="Export & Share Route" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><i class="glyphicon glyphicon-share-alt"></i><span class="hidden-sm hidden-md">&nbsp; Export</span></a>
 						<ul class="dropdown-menu">
@@ -109,19 +109,25 @@
 							<li><a href="#" onclick="return false;" ng-click="onShareClicked('twitter')"><i class="fa fa-twitter fa-fw"></i>&nbsp;  Twitter</a></li>
 							<li><a href="#" onclick="return false;" ng-click="onShareClicked('google')"><i class="fa fa-google-plus fa-fw"></i>&nbsp;  Google+</a></li>
 							<li><a href="#" onclick="return false;" ng-click="onShareClicked('mail')"><i class="fa fa-envelope fa-fw"></i>&nbsp;  E-Mail</a></li>-->
-							<li><a href="#" ng-show="globalData.navplan.waypoints.length > 0" onclick="return false;" ng-click="onShareClicked('url')"><i class="fa fa-link fa-fw"></i>&nbsp;  URL</a></li>
+							<li><a href="#" ng-show="globalData.navplan.waypoints.length > 0" onclick="return false;" ng-click="onShareClicked('url')"><i class="fa fa-link fa-fw"></i>&nbsp;  Share URL</a></li>
 						</ul>
 					</li>
 				</ul>
 				<ul class="nav navbar-nav navbar-right">
-					<li ng-hide="isLoggedIn()"><a href="#/login" title="Login or Register" data-toggle="collapse" data-target="#navbarcontent"><i class="glyphicon glyphicon-user"></i><span class="hidden-sm">&nbsp; Login</span></a></li>
-					<li ng-show="isLoggedIn()"><a href="#/edituser" title="Edit User" data-toggle="collapse" data-target="#navbarcontent"><i class="glyphicon glyphicon-user"></i><span class="hidden-sm hidden-md">&nbsp; {{ globalData.user.email }}</span></a></li>
-					<li><a href="#/settings" title="Edit Settings" data-toggle="collapse" data-target="#navbarcontent"><i class="glyphicon glyphicon-cog"></i><span class="hidden-md hidden-sm">&nbsp; Settings</span></a></li>
-					<li><a href="#/about" data-toggle="collapse" data-target="#navbarcontent"><i class="glyphicon glyphicon-info-sign"></i><span class="hidden-md hidden-sm">&nbsp; About</span></a></li>
+					<li ng-hide="isLoggedIn()"><a href="#/login" title="Login or Register"><i class="glyphicon glyphicon-user"></i><span class="hidden-sm">&nbsp; Login</span></a></li>
+					<li ng-show="isLoggedIn()"><a href="#/edituser" title="Edit User"><i class="glyphicon glyphicon-user"></i><span class="hidden-sm hidden-md">&nbsp; {{ globalData.user.email }}</span></a></li>
+					<li><a href="#/settings" title="Edit Settings"><i class="glyphicon glyphicon-cog"></i><span class="hidden-md hidden-sm">&nbsp; Settings</span></a></li>
+					<li><a href="#/about"><i class="glyphicon glyphicon-info-sign"></i><span class="hidden-md hidden-sm">&nbsp; About</span></a></li>
 				</ul>
 			</div>
 		</div>
 	</nav>
+    <!-- collapsing navbar -->
+    <script>
+        $(document).on("click","#navbarcontent.in",function(e) {
+            $("#navbarcontent").removeClass('in');
+        });
+    </script>
 	<!-- success messages -->
 	<div class="container messages">
 		<div id="success_alert_box" class="alert alert-success ng-cloak" role="alert" ng-show="success_alert_message">{{ success_alert_message }}</div>
