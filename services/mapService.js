@@ -14,10 +14,10 @@ function mapService($http, mapFeatureService, metarTafNotamService)
 	var MAX_ZOOMLEVEL = 17;
 
 	var map = undefined;
-	var mapLayer, wpTrackLayer, closeIconLayer, airportLayer, navaidLayer, airspaceLayer, reportingpointLayer, userWpLayer, flightTrackLayer, geopointLayer, trafficLayer, locationLayer, weatherLayer, webcamLayer;
-    var airspaceImageLayer; //, airportImageLayer, navaidImageLayer, reportingpointImageLayer, userWpImageLayer, weatherImageLayer, webcamImageLayer;
-	var chartLayers = [];
-	var wpTrackCache = { wps: undefined, alternate: undefined, variation: undefined };
+	var mapLayer, wpTrackLayer, closeIconLayer, airportLayer, navaidLayer, airspaceLayer, reportingpointLayer, userWpLayer, flightTrackLayer, geopointLayer, trafficLayer, locationLayer, weatherLayer, webcamLayer, notamPolyLayer, notamTextLayer;
+    var airspaceImageLayer;
+	var chartLayerCache = new ChartLayerCache();
+	var wpCache = new WaypointCache(undefined, undefined, undefined);
 	var currentOverlay = undefined;
 	var modifySnapInteractions = [];
     var onFeatureSelectCallback = undefined;
@@ -58,9 +58,10 @@ function mapService($http, mapFeatureService, metarTafNotamService)
 		getDistance: getDistance,
 		getLatLonCoordinates: getLatLonCoordinates,
 		getLatLonFromPixel: getLatLonFromPixel,
+        getMercatorFromPixel: getMercatorFromPixel,
 		getMapPosition: getMapPosition,
 		getMercatorCoordinates: getMercatorCoordinates,
-		getViewExtent: getViewExtent,
+		getViewExtentLatLon: getViewExtentLatLon,
 		init: init,
         loadAndDrawUserPoints: loadAndDrawUserPoints,
 		setMapPosition: setMapPosition,
@@ -70,13 +71,42 @@ function mapService($http, mapFeatureService, metarTafNotamService)
 	//endregion
 
 
+    // region CLASSES
+
+    function WaypointCache(wps, alternate, variation)
+    {
+        this.wps = wps;
+        this.alternate = alternate;
+        this.variation = variation;
+    }
+
+
+    function ChartLayerCache()
+    {
+        this.chartLayers = [];
+    }
+
+    // endregion
+
+
     //region INIT MAP
 	
 	// init map
 	function init(mapClickCallback, featureSelectCallback, moveEndCallback, trackModEndCallback, mapPos)
     {
-        if (map)
-            map.setTarget(null); // detach map if already exists
+        // set callbacks
+        onFeatureSelectCallback = featureSelectCallback;
+        onTrackModifyEndCallback = trackModEndCallback;
+        onMapClickCallback = mapClickCallback;
+        onMoveEndCallback = moveEndCallback;
+
+
+        if (map) // re-attach map if it already exists (e.g. from switching views)
+        {
+            map.setTarget(null);
+            map.setTarget("map");
+            return;
+        }
 
         // init layers
         mapLayer = createMapLayer();
@@ -93,6 +123,8 @@ function mapService($http, mapFeatureService, metarTafNotamService)
         webcamLayer = createEmptyVectorLayer();
         weatherLayer = createEmptyVectorLayer();
         geopointLayer = createEmptyVectorLayer();
+        notamPolyLayer = createEmptyVectorLayer();
+        notamTextLayer = createEmptyVectorLayer();
         airspaceImageLayer = createImageVectorLayerFromVectorLayer(airspaceLayer);
 
         // init map
@@ -105,6 +137,7 @@ function mapService($http, mapFeatureService, metarTafNotamService)
             layers: [
                 mapLayer,
                 airspaceImageLayer,
+                notamPolyLayer,
                 webcamLayer,
                 closeIconLayer,
                 reportingpointLayer,
@@ -112,6 +145,7 @@ function mapService($http, mapFeatureService, metarTafNotamService)
                 navaidLayer,
                 airportLayer,
                 weatherLayer,
+                notamTextLayer,
                 wpTrackLayer,
                 flightTrackLayer,
                 geopointLayer,
@@ -131,35 +165,22 @@ function mapService($http, mapFeatureService, metarTafNotamService)
         map.on('moveend', onMoveEnd);
         map.getView().on('change:rotation', onViewRotation);
 
-        onFeatureSelectCallback = featureSelectCallback;
-        onTrackModifyEndCallback = trackModEndCallback;
-        onMapClickCallback = mapClickCallback;
-        onMoveEndCallback = moveEndCallback;
-
-
-        // restore chart layers
-        for (var i = 0; i < chartLayers.length; i++)
-            map.getLayers().insertAt(i + 1, chartLayers[i]);
-
         minZoomLevel = [
             {layer: closeIconLayer, minZoom: 9},
-            /*{layer: airportImageLayer, minZoom: 9},
-            {layer: navaidImageLayer, minZoom: 9},*/
             {layer: airportLayer, minZoom: 9},
             {layer: navaidLayer, minZoom: 9},
             {layer: airspaceImageLayer, minZoom: 9},
-            /*{layer: reportingpointImageLayer, minZoom: 11},
-            {layer: userWpImageLayer, minZoom: 11},
-            {layer: webcamImageLayer, minZoom: 9},*/
+            {layer: notamPolyLayer, minZoom: 9},
+            {layer: notamTextLayer, minZoom: 9},
             {layer: reportingpointLayer, minZoom: 11},
             {layer: userWpLayer, minZoom: 11},
             {layer: webcamLayer, minZoom: 10},
             {layer: trafficLayer, minZoom: 7},
-            /*{layer: weatherImageLayer, minZoom: 9}];*/
             {layer: weatherLayer, minZoom: 9}];
 
         setLayerVisibility();
     }
+
 
     //endregion
 
@@ -196,12 +217,13 @@ function mapService($http, mapFeatureService, metarTafNotamService)
                     [
                         new ol.Attribution({ html: 'Map Data: &copy; <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors <a href="https://creativecommons.org/licenses/by-sa/2.0/" target="_blank">(CC-BY-SA)</a>' }),
                         new ol.Attribution({ html: 'Elevation Data: <a href="https://lta.cr.usgs.gov/SRTM" target="_blank">SRTM</a>' }),
-                        //new ol.Attribution({ html: 'Map Visualization: <a href="http://www.opentopomap.org/" target="_blank">OpenTopoMap</a> <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank">(CC-BY-SA)</a>' }),
-                        new ol.Attribution({ html: 'Map Visualization: <a href="https://www.mapbox.com/about/maps/" target="_blank">&copy; Mapbox</a>, <a href="https://www.mapbox.com/map-feedback/" target="_blank">Improve this map</a>' }),
+                        new ol.Attribution({ html: 'Map Visualization #1: <a href="https://www.mapbox.com/about/maps/" target="_blank">&copy; Mapbox</a>, <a href="https://www.mapbox.com/map-feedback/" target="_blank">Improve this map</a>' }),
+                        new ol.Attribution({ html: 'Map Visualization #2: <a href="http://www.opentopomap.org/" target="_blank">OpenTopoMap</a> <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank">(CC-BY-SA)</a>' }),
                         new ol.Attribution({ html: 'Aviation Data: <a href="http://www.openaip.net/" target="_blank">openAIP</a> <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/" target="_blank">(BY-NC-SA)</a>' }),
                         new ol.Attribution({ html: 'Traffic Data: <a href="http://wiki.glidernet.org/about" target="_blank">Open Glider Network</a> | <a href="http://www.ADSBexchange.com/" target="_blank">ADSBexchange</a>' }),
                         new ol.Attribution({ html: 'Aerodrome Charts: <a href="http://www.avare.ch/" target="_blank">Avare.ch</a>' }),
                         new ol.Attribution({ html: 'Weather Data: <a href="https://www.aviationweather.gov/" target="_blank">NOAA - Aviation Weather Center</a>' }),
+                        new ol.Attribution({ html: 'NOTAM Data: <a href="https://www.icao.int/safety/iStars/pages/intro.aspx" target="_blank">ICAO - iSTARS API Data Service</a>' }),
                         new ol.Attribution({ html: 'Geographical Data: <a href="http://www.geonames.org/" target="_blank">GeoNames</a> <a href="http://creativecommons.org/licenses/by/3.0/" target="_blank">(CC-BY)</a>' }),
                         new ol.Attribution({ html: 'Links to Webcams: all images are digital property of the webcam owners. check the reference for details.' })
                     ]
@@ -211,8 +233,8 @@ function mapService($http, mapFeatureService, metarTafNotamService)
 
         function getTileUrl(coordinate)
         {
-            //var otmBaseUrls = [ "//a.tile.opentopomap.org/", "//b.tile.opentopomap.org/", "//c.tile.opentopomap.org/" ];
-            var otmBaseUrls = [ "//opentopomap.org/", "//opentopomap.org/", "//opentopomap.org/" ];
+            var otmBaseUrls = [ "//a.tile.opentopomap.org/", "//b.tile.opentopomap.org/", "//c.tile.opentopomap.org/" ];
+            //var otmBaseUrls = [ "//opentopomap.org/", "//opentopomap.org/", "//opentopomap.org/" ];
             var localBaseUrl = "maptiles/";
             var z = coordinate[0];
             var y = coordinate[1];
@@ -221,7 +243,7 @@ function mapService($http, mapFeatureService, metarTafNotamService)
             //return "https://tile.mapzen.com/mapzen/terrain/v1/normal/" + z + "/" + y + "/" + x + ".png?api_key=mapzen-ECzH36f";
             //return "https://api.mapbox.com/styles/v1/opacopac/cj0msmdwf00ad2snz48faknaq/tiles/256/" + z + "/" + y + "/" + x + "@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2owbXNsN3ltMDAwdjMyczZudmt0bGwwdiJ9.RG5N7U6VkoIQ44S-bB-aNg";
 
-            if (location.href.indexOf("branch") >= 0)
+            /*if (location.href.indexOf("branch") >= 0)
             {
                 // TODO: temp for saving map views
                 var email = getCookie("email");
@@ -230,7 +252,7 @@ function mapService($http, mapFeatureService, metarTafNotamService)
                     return "https://api.mapbox.com/styles/v1/opacopac/cj0mxdtd800bx2slaha4b0p68/tiles/256/" + z + "/" + y + "/" + x + "@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2oxYjZ6aDQxMDA1ejJ3cGUzbmZ1Zm81eiJ9.oFvbw05OkuQesxOghWqv_A";
             }
             else
-                return "https://api.mapbox.com/styles/v1/opacopac/cj0mxdtd800bx2slaha4b0p68/tiles/256/" + z + "/" + y + "/" + x + "@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2oxYjdkOXpzMDA2dTMycGV3ZDlkM3R2NyJ9.paBLy_T8QJLELJd8VAAEIw";
+                return "https://api.mapbox.com/styles/v1/opacopac/cj0mxdtd800bx2slaha4b0p68/tiles/256/" + z + "/" + y + "/" + x + "@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2oxYjdkOXpzMDA2dTMycGV3ZDlkM3R2NyJ9.paBLy_T8QJLELJd8VAAEIw";*/
 
             if (isLocalTile(z, y, x))
             {
@@ -285,19 +307,6 @@ function mapService($http, mapFeatureService, metarTafNotamService)
 
 
     //region DRAW MAP FEATURES
-
-    function drawAllFeatures(mapFeatureList)
-    {
-        drawAirports(mapFeatureList.airports);
-        drawNavaids(mapFeatureList.navaids);
-        drawAirspaces(mapFeatureList.airspaces);
-        drawReportingPoints(mapFeatureList.reportingPoints);
-        drawUserPoints(mapFeatureList.userPoints);
-        drawWebcams(mapFeatureList.webcams);
-
-        metarTafNotamService.getAreaWeatherInfos(getViewExtent(), drawWeatherInfo);
-    }
-
 
     function drawAirports(airportList)
     {
@@ -604,6 +613,125 @@ function mapService($http, mapFeatureService, metarTafNotamService)
                     rotateWithView: true,
                     src: src
                 }))
+            });
+        }
+    }
+
+
+    function drawAreaNotams(notamList)
+    {
+        if (!notamList)
+            return;
+
+        var notamBoundariesMer;
+
+        notamPolyLayer.getSource().clear();
+        notamTextLayer.getSource().clear();
+
+        for (var i = 0; i < notamList.length; i++)
+        {
+            var notamPolyFeature, notamTextFeature;
+            var notamGeometry = notamList[i].geometry;
+
+            if (!notamGeometry)
+            {
+                continue;
+            }
+            else if (notamGeometry.polygon)
+            {
+                notamBoundariesMer = new ol.geom.Polygon([convertPolygonToMercator(notamGeometry.polygon)]);
+                if (!ol.extent.intersects(getViewExtentMercator(), notamBoundariesMer.getExtent()))
+                    continue;
+
+                // polygon
+                notamPolyFeature = new ol.Feature();
+                notamPolyFeature.setGeometry(notamBoundariesMer);
+                notamPolyFeature.setStyle(createNotamPolyStyle(notamList[i].id));
+                notamPolyLayer.getSource().addFeature(notamPolyFeature);
+
+                // text
+                notamTextFeature = new ol.Feature();
+                notamTextFeature.setGeometry(notamBoundariesMer.getInteriorPoint());
+                notamTextFeature.setStyle(createNotamTextStyle(notamList[i].id));
+                notamTextFeature.notam = notamList[i];
+                notamTextLayer.getSource().addFeature(notamTextFeature);
+            }
+            else if (notamGeometry.multipolygon)
+            {
+                for (var j = 0; j < notamGeometry.multipolygon.length; j++)
+                {
+                    notamBoundariesMer = new ol.geom.Polygon([convertPolygonToMercator(notamGeometry.multipolygon[j])]);
+                    if (!ol.extent.intersects(getViewExtentMercator(), notamBoundariesMer.getExtent()))
+                        continue;
+
+                    // polygon
+                    notamPolyFeature = new ol.Feature();
+                    notamPolyFeature.setGeometry(notamBoundariesMer);
+                    notamPolyFeature.setStyle(createNotamPolyStyle(notamList[i].id));
+                    notamPolyLayer.getSource().addFeature(notamPolyFeature);
+
+                    // text
+                    notamTextFeature = new ol.Feature();
+                    notamTextFeature.setGeometry(notamBoundariesMer.getInteriorPoint());
+                    notamTextFeature.setStyle(createNotamTextStyle(notamList[i].id));
+                    notamTextFeature.notam = notamList[i];
+                    notamTextLayer.getSource().addFeature(notamTextFeature);
+                }
+            }
+            else if (notamGeometry.center)
+            {
+                if (notamGeometry.radius > nautmile2m(50)) // TODO: hide if radius > 50NM => temp hack
+                    notamGeometry.radius = 1;
+
+                var centerMer = getMercatorCoordinates(notamGeometry.center[1], notamGeometry.center[0]);
+                var circle = new ol.geom.Circle(centerMer, notamGeometry.radius);
+                if (!ol.extent.intersects(getViewExtentMercator(), circle.getExtent()))
+                    continue;
+
+                // polygon
+                notamPolyFeature = new ol.Feature();
+                notamPolyFeature.setGeometry(circle);
+                notamPolyFeature.setStyle(createNotamPolyStyle(notamList[i].id));
+                notamPolyLayer.getSource().addFeature(notamPolyFeature);
+
+
+                // text
+                notamTextFeature = new ol.Feature();
+                notamTextFeature.setGeometry(new ol.geom.Point(centerMer));
+                notamTextFeature.setStyle(createNotamTextStyle(notamList[i].id));
+                notamTextFeature.notam = notamList[i];
+                notamTextLayer.getSource().addFeature(notamTextFeature);
+            }
+        }
+
+
+        function createNotamPolyStyle()
+        {
+            return new ol.style.Style({
+                fill: new ol.style.Fill({
+                    color: 'rgba(255, 0, 0, 0.15)'}),
+                stroke: new ol.style.Stroke({
+                    color: 'rgba(255, 0, 0, 0.8)',
+                    width: 3
+                })
+            });
+        }
+
+
+        function createNotamTextStyle(name)
+        {
+            return new ol.style.Style({
+                fill: new ol.style.Fill({
+                    color: 'rgba(0, 0, 0, 0.0)'}),
+                stroke: new ol.style.Stroke({
+                    color: 'rgba(0, 0, 0, 0.0)',
+                    width: 0}),
+                text: new ol.style.Text({
+                    font: 'bold 14px Calibri,sans-serif',
+                    text: name,
+                    fill: new ol.style.Fill({color: 'rgba(255, 0, 0, 1.0)'}),
+                    stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2}),
+                })
             });
         }
     }
@@ -1034,6 +1162,8 @@ function mapService($http, mapFeatureService, metarTafNotamService)
 
                 // specific feature clicked
                 if (feature.geopoint ||
+                    feature.notam ||
+                    feature.notamList ||
                     feature.airport ||
                     feature.navaid ||
                     feature.waypoint ||
@@ -1041,12 +1171,12 @@ function mapService($http, mapFeatureService, metarTafNotamService)
                     feature.reportingpoint ||
                     feature.webcam ||
                     feature.weatherInfo ||
-                    feature.closeLayer)
+                    feature.closeChartId)
                 {
                     closeOverlay();
                     clearGeopointSelection();
 
-                    if (feature.closeLayer)
+                    if (feature.closeChartId)
                         removeChart(feature);
                     else
                         onFeatureSelectCallback(event, feature);
@@ -1059,6 +1189,7 @@ function mapService($http, mapFeatureService, metarTafNotamService)
                 {
                     return (layer === geopointLayer ||
                         layer === closeIconLayer ||
+                        layer === notamTextLayer ||
                         layer === airportLayer ||
                         layer === navaidLayer ||
                         layer === reportingpointLayer ||
@@ -1124,6 +1255,7 @@ function mapService($http, mapFeatureService, metarTafNotamService)
                 {
                     return (layer === geopointLayer ||
                     layer === closeIconLayer ||
+                    layer === notamTextLayer ||
                     layer === airportLayer ||
                     layer === navaidLayer ||
                     layer === reportingpointLayer ||
@@ -1150,18 +1282,32 @@ function mapService($http, mapFeatureService, metarTafNotamService)
 
         // update map features
         if (map.getView().getZoom() >= 9) // TODO: variable zoom level
-            mapFeatureService.getMapFeatures(getViewExtent(), drawAllFeatures);
+            mapFeatureService.getMapFeatures(getViewExtentLatLon(), onMapFeaturesLoaded);
 
         onMoveEndCallback(event);
+
+
+        function onMapFeaturesLoaded(mapFeatureList)
+        {
+            drawAirports(mapFeatureList.airports);
+            drawNavaids(mapFeatureList.navaids);
+            drawAirspaces(mapFeatureList.airspaces);
+            drawReportingPoints(mapFeatureList.reportingPoints);
+            drawUserPoints(mapFeatureList.userPoints);
+            drawWebcams(mapFeatureList.webcams);
+
+            metarTafNotamService.getAreaWeatherInfos(getViewExtentLatLon(), drawWeatherInfo);
+            metarTafNotamService.getNotams(getViewExtentLatLon(), mapFeatureList.airports, drawAreaNotams);
+        }
     }
 
 
     // rotate event
     function onViewRotation(event)
     {
-        if (wpTrackCache && wpTrackCache.wps)
+        if (wpCache && wpCache.wps)
         {
-            drawWaypoints(wpTrackCache.wps, wpTrackCache.alternate, wpTrackCache.variation);
+            drawWaypoints(wpCache.wps, wpCache.alternate, wpCache.variation);
             wpTrackLayer.getSource().changed();
         }
     }
@@ -1195,6 +1341,9 @@ function mapService($http, mapFeatureService, metarTafNotamService)
 
     function setMapPosition(lat, lon, zoom, forceRender)
     {
+        if (!map || !map.getView())
+            return;
+
         if (lat && lon)
         {
             var pos = ol.proj.fromLonLat([lon, lat]);
@@ -1215,7 +1364,13 @@ function mapService($http, mapFeatureService, metarTafNotamService)
     }
 
 
-    function getViewExtent()
+    function getViewExtentMercator()
+    {
+        return map.getView().calculateExtent(map.getSize());
+    }
+
+
+    function getViewExtentLatLon()
     {
         var extent = map.getView().calculateExtent(map.getSize());
 
@@ -1255,8 +1410,6 @@ function mapService($http, mapFeatureService, metarTafNotamService)
 
 	function addOverlay(coordinates, container, autopan)
 	{
-
-
 		if (currentOverlay)
 			closeOverlay();
 
@@ -1279,8 +1432,8 @@ function mapService($http, mapFeatureService, metarTafNotamService)
 	{
 		if (!currentOverlay)
 			return;
-		else
-			map.removeOverlay(currentOverlay);
+
+        map.removeOverlay(currentOverlay);
 
 		currentOverlay = undefined;
 	}
@@ -1297,7 +1450,7 @@ function mapService($http, mapFeatureService, metarTafNotamService)
 	}
 	
 	
-	function drawGeopointSelection(geopoints, clickPixel)
+	function drawGeopointSelection(geopoints, notams, clickPixel)
 	{
 		var layerSource = geopointLayer.getSource();
 		layerSource.clear();
@@ -1362,6 +1515,16 @@ function mapService($http, mapFeatureService, metarTafNotamService)
             mapFeatureService.addFeatureByTypeAndId(geopoints[i].type, geopoints[i].id, labelFeature);
 		}
 
+
+		// notams
+        if (notams && notams.length > 0)
+        {
+            var notamFeature = createNotamFeature(geopoints, notams);
+            layerSource.addFeature(notamFeature);
+        }
+
+
+		// airspaces
 		addAirspaceOverlay(geopoints, airspaceSelection, simpleAirspaceSelection);
 
 
@@ -1377,7 +1540,7 @@ function mapService($http, mapFeatureService, metarTafNotamService)
 			}
 
 			// check exclusions
-			for (i = 0; i < asList.length; i++)
+			/*for (i = 0; i < asList.length; i++)
 			{
 				if (asList[i].exclude_aip_id)
 				{
@@ -1397,7 +1560,7 @@ function mapService($http, mapFeatureService, metarTafNotamService)
 						}
 					}
 				}
-			}
+			}*/
 
 
 			// sort airspaces top to bottom
@@ -1753,9 +1916,9 @@ function mapService($http, mapFeatureService, metarTafNotamService)
 		}
 
 
-		function addAirspaceOverlay(geopoints, airspaceSelection, simpleAirspaceSelection)
+        // determine top left coordinate in bottom right quadrant
+		function getTLCoordInBRQuad(geopoints)
         {
-            // determine top left coordinate
             var minLat, maxLon;
 
             for (var i = 0; i < geopoints.length; i++) {
@@ -1766,10 +1929,54 @@ function mapService($http, mapFeatureService, metarTafNotamService)
                     maxLon = geopoints[i].longitude;
             }
 
-            var pixelTopLeft = map.getPixelFromCoordinate(ol.proj.fromLonLat([maxLon, minLat]));
+            return [maxLon, minLat];
+        }
+
+
+        function createNotamFeature(geopoints, notams)
+        {
+            // find position
+            var topLeftCoord = getTLCoordInBRQuad(geopoints);
+            var pixelTopLeft = map.getPixelFromCoordinate(ol.proj.fromLonLat(topLeftCoord));
+            pixelTopLeft[0] += 50;
+
+
+            var notamText = "NOTAM: " + notams.length + "x";
+
+            var notamFeature = new ol.Feature({
+                geometry: new ol.geom.Point(ol.proj.fromLonLat(topLeftCoord))
+            });
+
+            notamFeature.notamList = notams;
+
+            notamFeature.setStyle(
+                new ol.style.Style({
+                    text: new ol.style.Text({
+                        textAlign: 'left',
+                        font: 'bold 14px Calibri,sans-serif',
+                        text: notamText,
+                        fill: new ol.style.Fill( { color: '#660066' } ),
+                        stroke: new ol.style.Stroke( {color: '#FFFFFF', width: 10 } ),
+                        offsetX: 45,
+                        offsetY: -15
+                    })
+                })
+            );
+
+            return notamFeature;
+        }
+
+
+		function addAirspaceOverlay(geopoints, airspaceSelection, simpleAirspaceSelection)
+        {
+            // find position
+            var topLeftCoord = getTLCoordInBRQuad(geopoints);
+            var pixelTopLeft = map.getPixelFromCoordinate(ol.proj.fromLonLat(topLeftCoord));
             pixelTopLeft[0] += 50;
             //pixelTopLeft[1] += 10;
 
+
+            // build airspaces table
             var asTableHtml;
 
             if (airspaceSelection.length > simpleAirspaceSelection.length)
@@ -1989,7 +2196,7 @@ function mapService($http, mapFeatureService, metarTafNotamService)
 			return;
 
 		// cache parameters for updates after view rotation
-		wpTrackCache = { wps: wps, alternate: alternate, variation: variation};
+		wpCache = new WaypointCache(wps, alternate, variation);
 
 		// remove features
 		var trackSource = wpTrackLayer.getSource();
@@ -2376,11 +2583,12 @@ function mapService($http, mapFeatureService, metarTafNotamService)
 							opacity: 0.9
 						});
 
-						chartLayers.push(chartLayer);
+                        chartLayer.chartId = chartId;
+                        chartLayerCache.chartLayers.push(chartLayer);
 
-						map.getLayers().insertAt(chartLayers.length, chartLayer);
+						map.getLayers().insertAt(chartLayerCache.chartLayers.length, chartLayer);
 
-						addChartCloseFeature(chartId, chartLayer, extent);
+						addChartCloseFeature(chartId, extent);
 
 						fitViewMercator(extent);
 					}
@@ -2391,7 +2599,7 @@ function mapService($http, mapFeatureService, metarTafNotamService)
 			);
 
 
-		function addChartCloseFeature(chartId, chartLayer, extent)
+		function addChartCloseFeature(chartId, extent)
 		{
 			var closerFeature = new ol.Feature({
 				geometry: new ol.geom.Point([extent[2], extent[3]])
@@ -2409,7 +2617,7 @@ function mapService($http, mapFeatureService, metarTafNotamService)
 			});
 
 			closerFeature.setStyle(closerStyle);
-			closerFeature.closeLayer = chartLayer;
+			closerFeature.closeChartId = chartId;
 
 			closeIconLayer.getSource().addFeature(closerFeature);
 		}
@@ -2418,28 +2626,37 @@ function mapService($http, mapFeatureService, metarTafNotamService)
 
 	function removeChart(closerFeature)
     {
-        map.removeLayer(closerFeature.closeLayer);
-        closeIconLayer.getSource().removeFeature(closerFeature);
-        removeFromArray(chartLayers, closerFeature.closeLayer);
+        for (var i = 0; i < chartLayerCache.chartLayers.length; i++)
+        {
+            if (chartLayerCache.chartLayers[i].chartId == closerFeature.closeChartId)
+            {
+                var closingChartLayer = chartLayerCache.chartLayers[i];
+
+                map.removeLayer(closingChartLayer);
+                closeIconLayer.getSource().removeFeature(closerFeature);
+                removeFromArray(chartLayerCache.chartLayers, closingChartLayer);
+
+                break;
+            }
+        }
     }
 
 
 	function clearAllCharts()
 	{
-		for (var i = 0; i < chartLayers.length; i++)
-			map.removeLayer(chartLayers[i]);
+		for (var i = 0; i < chartLayerCache.chartLayers.length; i++)
+            map.removeLayer(chartLayerCache.chartLayers[i]);
 
 
 		var iconFeatures = closeIconLayer.getSource().getFeatures();
 
-
 		for (var j = 0; j < iconFeatures.length; j++)
 		{
-			if (iconFeatures[j].closeLayer)
+			if (iconFeatures[j].closeChartId)
 				closeIconLayer.getSource().removeFeature(iconFeatures[j]);
 		}
 
-		chartLayers = [];
+        chartLayerCache.chartLayers = [];
 	}
 
 	//endregion
@@ -2464,7 +2681,7 @@ function mapService($http, mapFeatureService, metarTafNotamService)
 
 		if (acList)
 		{
-			var extent = getViewExtent();
+			var extent = getViewExtentLatLon();
 			var acListVisible = [];
 
 			// filter by visibility
@@ -2474,15 +2691,18 @@ function mapService($http, mapFeatureService, metarTafNotamService)
 				var lastPos = ac.positions[ac.positions.length - 1];
 				ac.receiver = lastPos.receiver;
 
+				// hide traffic higher than max alt
 				if (lastPos.altitude && m2ft(lastPos.altitude) > maxTrafficAltitudeFt)
 				    continue;
 
+				// hide traffic outside map extent
 				if (lastPos.longitude < extent[0] || lastPos.latitude < extent[1] || lastPos.longitude > extent[2] || lastPos.latitude > extent[3])
 				    continue;
 
 				acListVisible.push(ac);
 			}
 
+			// hide trails if there's too much traffic on the screen
 			var showTrails = acListVisible.length <= maxTrafficForTrails;
 
 			for (var i = 0; i < acListVisible.length; i++)
@@ -2523,6 +2743,7 @@ function mapService($http, mapFeatureService, metarTafNotamService)
 					0);
 			}
 
+			// plane icon
 			var planeFeature = createTrafficFeature(
                 ac.positions[maxIdx],
 				rotation,
@@ -2530,6 +2751,7 @@ function mapService($http, mapFeatureService, metarTafNotamService)
 
 			layerSource.addFeature(planeFeature);
 
+			// registration or callsign text
 			if (ac.registration || ac.callsign)
 			{
 				var csFeature = createRegistrationCallsignFeature(ac);
@@ -2709,6 +2931,8 @@ function mapService($http, mapFeatureService, metarTafNotamService)
 				})
 			);
 
+			csFeature.acInfo = ac;
+
 			return csFeature;
 		}
 
@@ -2740,13 +2964,19 @@ function mapService($http, mapFeatureService, metarTafNotamService)
 	}
 
 
-	function getLatLonFromPixel(x, y)
+	function getMercatorFromPixel(x, y)
 	{
-		return getLatLonCoordinates((map.getCoordinateFromPixel([x, y])));
+		return map.getCoordinateFromPixel([x, y]);
 	}
 
 
-	function getDistance(lat1, lon1, lat2, lon2)
+    function getLatLonFromPixel(x, y)
+    {
+        return getLatLonCoordinates((map.getCoordinateFromPixel([x, y])));
+    }
+
+
+    function getDistance(lat1, lon1, lat2, lon2)
 	{
 		return (wgs84Sphere.haversineDistance([lon1,lat1],[lon2,lat2]) * 0.000539957);
 	}
@@ -2789,5 +3019,22 @@ function mapService($http, mapFeatureService, metarTafNotamService)
 		return clickPoint;
 	}
 
-	//endregion
+
+    function convertPolygonToMercator(latLonPolygon)
+    {
+        var merCoords, lonLat;
+        var merPoly = [];
+
+        for (var i = 0; i < latLonPolygon.length; i++)
+        {
+            lonLat = latLonPolygon[i];
+            merCoords = ol.proj.fromLonLat(lonLat);
+            merPoly.push(merCoords);
+        }
+
+        return merPoly;
+    }
+
+
+    //endregion
 }

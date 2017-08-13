@@ -24,4 +24,18 @@ function settingsCtrl($scope, globalData)
 
 		return history;
 	};
+
+
+    $scope.getRoutePolygonString = function()
+    {
+        var polyCoordList = [];
+
+        for (var i = 0; i < $scope.globalData.navplan.waypoints.length; i++)
+        {
+            var wp = $scope.globalData.navplan.waypoints[i];
+            polyCoordList.push(wp.longitude + " " + wp.latitude);
+        }
+
+        return polyCoordList.join(",");
+    }
 }

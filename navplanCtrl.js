@@ -582,6 +582,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 		deleteCookie("cachewaypoints");
 		deleteCookie("cachecharts");
         window.sessionStorage.removeItem("mapFeatureCache");
+        window.sessionStorage.removeItem("notamCache");
 
 		if ($scope.appCache.status == $scope.appCache.DOWNLOADING)
 		{
@@ -775,7 +776,6 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 
         return [minLon, minLat, maxLon, maxLat];
     };
-
 
 	// init stuff
 	$scope.initGlobalData();

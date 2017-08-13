@@ -2,6 +2,8 @@
 include "config.php";
 include "helper.php";
 
+const MAX_BOTTOM_ALT_FL = 200;
+
 // open db connection
 $conn = openDb();
 
@@ -45,7 +47,7 @@ function getNavaids($extent)
 {
     global $conn;
 
-    $query = "SELECT * FROM openaip_navaids2 WHERE MBRIntersects(lonlat, " . $extent . ")";
+    $query = "SELECT * FROM openaip_navaids WHERE MBRIntersects(lonlat, " . $extent . ")";
 
     $result = $conn->query($query);
 
@@ -85,7 +87,7 @@ function getAirports($extent)
     global $conn;
 
     // load airports
-    $query  = "SELECT * FROM openaip_airports2 WHERE MBRIntersects(lonlat, " . $extent . ")";
+    $query  = "SELECT * FROM openaip_airports WHERE MBRIntersects(lonlat, " . $extent . ")";
 
     $result = $conn->query($query);
 
@@ -148,7 +150,7 @@ function getAirports($extent)
     $query .= "  rwy.lda2,";
     $query .= "  rwy.papi1,";
     $query .= "  rwy.papi2";
-    $query .= " FROM openaip_runways2 AS rwy ";
+    $query .= " FROM openaip_runways AS rwy ";
     $query .= " WHERE rwy.operations = 'ACTIVE' AND airport_id IN (" . $apIdList . ")";
     $query .= " ORDER BY rwy.length DESC, rwy.surface ASC, rwy.id ASC";
 
@@ -196,7 +198,7 @@ function getAirports($extent)
     $query .= "  rad.description,";
     $query .= "  (CASE WHEN rad.category = 'COMMUNICATION' THEN 1 WHEN rad.category = 'OTHER' THEN 2 ELSE 3 END) AS sortorder1,";
     $query .= "  (CASE WHEN rad.type = 'TOWER' THEN 1 WHEN rad.type = 'CTAF' THEN 2 WHEN rad.type = 'OTHER' THEN 3 ELSE 4 END) AS sortorder2";
-    $query .= " FROM openaip_radios2 AS rad ";
+    $query .= " FROM openaip_radios AS rad ";
     $query .= " WHERE airport_id IN (" . $apIdList . ")";
     $query .= " ORDER BY";
     $query .= "   sortorder1 ASC,";
@@ -375,21 +377,12 @@ function getAirspaces($extent)
     $query .= "  air.alt_bottom_reference,";
     $query .= "  air.alt_bottom_height,";
     $query .= "  air.alt_bottom_unit,";
-    $query .= "  air.polygon,";
-    $query .= "  cor.type AS corr_type,";
-    $query .= "  cor.corr_cat AS corr_cat,";
-    $query .= "  cor.corr_alt_top_reference AS corr_alt_top_reference,";
-    $query .= "  cor.corr_alt_top_height AS corr_alt_top_height,";
-    $query .= "  cor.corr_alt_top_unit AS corr_alt_top_unit,";
-    $query .= "  cor.corr_alt_bottom_reference AS corr_alt_bottom_reference,";
-    $query .= "  cor.corr_alt_bottom_height AS corr_alt_bottom_height,";
-    $query .= "  cor.corr_alt_bottom_unit AS corr_alt_bottom_unit";
-    $query .= " FROM openaip_airspace2 AS air";
-    $query .= "   LEFT JOIN airspace_corr2 AS cor ON cor.aip_id = air.aip_id";
+    $query .= "  air.polygon";
+    $query .= " FROM openaip_airspace AS air";
     $query .= " WHERE";
-    $query .= "  (cor.type IS NULL OR cor.type != 'HIDE')";
-    $query .= "    AND";
     $query .= "  MBRIntersects(extent, " . $extent . ")";
+    $query .= "    AND";
+    $query .= "  (air.alt_bottom_height < " . MAX_BOTTOM_ALT_FL . " OR air.alt_bottom_unit <> 'FL')";
 
 
     $result = $conn->query($query);
@@ -402,37 +395,27 @@ function getAirspaces($extent)
     while ($rs = $result->fetch_array(MYSQLI_ASSOC))
     {
         // prepare coordinates
-        $polygon = [];
-        $coord_pairs = explode(",", $rs["polygon"]);
-
-        foreach ($coord_pairs as $latlon)
-        {
-            $coords = explode(" ", trim($latlon));
-            $coords[0] = reduceDegAccuracy($coords[0], "AIRSPACE");
-            $coords[1] = reduceDegAccuracy($coords[1], "AIRSPACE");
-            $polygon[] = $coords;
-        }
+        $polygon = convertDbPolygonToArray($rs["polygon"]);
 
         // build airspace object
         $airspaces[$rs["aip_id"]] = array(
             id => (int)$rs["id"],
             aip_id => (int)$rs["aip_id"],
-            category => $rs["corr_cat"] ? $rs["corr_cat"] : $rs["category"],
+            category => $rs["category"],
             country => $rs["country"],
             name => $rs["name"],
             alt => array(
                 top => array(
-                    ref => $rs["corr_alt_top_reference"] ? $rs["corr_alt_top_reference"] : $rs["alt_top_reference"],
-                    height => $rs["corr_alt_top_height"] ? $rs["corr_alt_top_height"] : $rs["alt_top_height"],
-                    unit => $rs["corr_alt_top_unit"] ? $rs["corr_alt_top_unit"] : $rs["alt_top_unit"]
+                    ref => $rs["alt_top_reference"],
+                    height => $rs["alt_top_height"],
+                    unit => $rs["alt_top_unit"]
                 ),
                 bottom => array(
-                    ref => $rs["corr_alt_bottom_reference"] ? $rs["corr_alt_bottom_reference"] : $rs["alt_bottom_reference"],
-                    height => $rs["corr_alt_bottom_height"] ? $rs["corr_alt_bottom_height"] : $rs["alt_bottom_height"],
-                    unit => $rs["corr_alt_bottom_unit"] ? $rs["corr_alt_bottom_unit"] : $rs["alt_bottom_unit"]
+                    ref => $rs["alt_bottom_reference"],
+                    height => $rs["alt_bottom_height"],
+                    unit => $rs["alt_bottom_unit"]
                 )
             ),
-            exclude_aip_id => $rs["exclude_aip_id"] ? $rs["exclude_aip_id"] : NULL,
             polygon => $polygon
         );
     }
@@ -480,7 +463,7 @@ function getReportingPoints($extent)
 {
     global $conn;
 
-    $query = "SELECT * FROM reporting_points2 WHERE MBRIntersects(extent, " . $extent . ")";
+    $query = "SELECT * FROM reporting_points WHERE MBRIntersects(extent, " . $extent . ")";
 
     $result = $conn->query($query);
     if ($result === FALSE)
@@ -559,11 +542,11 @@ function getUserPoints($email, $token, $minLon, $minLat, $maxLon, $maxLat)
 }
 
 /* copy-convert point / polygon rows:
- * UPDATE reporting_points2 AS repA, (SELECT id, polygon FROM reporting_points2) AS repB
+ * UPDATE reporting_points AS repA, (SELECT id, polygon FROM reporting_points) AS repB
  * SET repA.polygon2 = GeomFromText(CONCAT('POLYGON((', repB.polygon , '))'))
  * WHERE repA.id = repB.id AND repA.type = 'SECTOR'
  *
- * UPDATE reporting_points2 AS repA, (SELECT id, latitude, longitude FROM reporting_points2) AS repB
+ * UPDATE reporting_points AS repA, (SELECT id, latitude, longitude FROM reporting_points) AS repB
  * SET repA.polygon2 = GeomFromText(CONCAT('POLYGON((', repB.longitude, ' ', repB.latitude, '))'))
  * WHERE repA.id = repB.id AND repA.type = 'POINT'
  *

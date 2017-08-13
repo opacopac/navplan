@@ -5,9 +5,9 @@
 navplanApp
 	.controller('waypointCtrl', waypointCtrl);
 	
-waypointCtrl.$inject = ['$scope', '$http', 'geonameService', 'fuelService', 'userService', 'mapService', 'globalData'];
+waypointCtrl.$inject = ['$scope', '$http', 'geopointService', 'fuelService', 'userService', 'mapService', 'globalData'];
 
-function waypointCtrl($scope, $http, geonameService, fuelService, userService, mapService, globalData) {
+function waypointCtrl($scope, $http, geopointService, fuelService, userService, mapService, globalData) {
 	$scope.globalData = globalData;
 	$scope.newWp = undefined;
 
@@ -128,7 +128,7 @@ function waypointCtrl($scope, $http, geonameService, fuelService, userService, m
 
 	$scope.searchGeonamesByValue = function(val)
 	{
-		return geonameService.searchGeonamesByValue($http, val);
+		return geopointService.searchGeonamesByValue($http, val);
 	};
 	
 	

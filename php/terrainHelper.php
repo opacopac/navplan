@@ -260,8 +260,8 @@ class TerrainHelper
     private function getLegAirspaces($pos1, $pos2)
     {
         $query = "SELECT air.* ";
-        $query .= " FROM openaip_airspace2 AS air";
-        $query .= "   LEFT JOIN airspace_corr2 AS cor ON cor.aip_id = air.aip_id";
+        $query .= " FROM openaip_airspace AS air";
+        $query .= "   LEFT JOIN airspace_corr AS cor ON cor.aip_id = air.aip_id";
         $query .= " WHERE";
         $query .= "  (cor.type IS NULL OR cor.type != 'HIDE') ";
         $query .= "    AND ";

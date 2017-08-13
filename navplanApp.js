@@ -74,7 +74,8 @@ navplanApp.config(function($sceDelegateProvider) {
         // Allow same origin resource loads.
         'self',
         'https://www.aviationweather.gov/gis/scripts/**',
-        'https://public-api.adsbexchange.com/VirtualRadar/**'
+        'https://public-api.adsbexchange.com/VirtualRadar/**',
+        'https://v4p4sz5ijk.execute-api.us-east-1.amazonaws.com/anbdata/states/notams/**'
         // Allow loading from our assets domain.  Notice the difference between * and **.
         //'http://srv*.assets.example.com/**'
     ]);

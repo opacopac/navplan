@@ -19,6 +19,8 @@ switch($_GET["action"])
             checkNumeric($_GET["lat"]),
             checkNumeric($_GET["lon"]),
             checkNumeric($_GET["rad"]),
+            checkNumeric($_GET["minnotamtime"]),
+            checkNumeric($_GET["maxnotamtime"]),
             $_COOKIE["email"] ? checkEscapeEmail($conn, $_COOKIE["email"]) : NULL,
             $_COOKIE["token"] ? checkEscapeToken($conn, $_COOKIE["token"]) : NULL
         );
@@ -43,13 +45,13 @@ function searchByName($search, $email, $token)
     $query .= "   NULL AS country,";
     $query .= "   NULL AS admin1,";
     $query .= "   NULL AS admin2,";
-    $query .= "   (" . getFrequencySubquery("openaip_airports2.id") . ") AS frequency,";
-    $query .= "   (" . getCallsignSubquery("openaip_airports2.id", "openaip_airports2.country") . ") AS callsign,";
+    $query .= "   (" . getFrequencySubquery("openaip_airports.id") . ") AS frequency,";
+    $query .= "   (" . getCallsignSubquery("openaip_airports.id", "openaip_airports.country") . ") AS callsign,";
     $query .= "   icao AS airport_icao,";
     $query .= "   latitude,";
     $query .= "   longitude,";
     $query .= "   elevation";
-    $query .= " FROM openaip_airports2";
+    $query .= " FROM openaip_airports";
     $query .= " WHERE";
     $query .= "   icao LIKE '" . $search . "%'";
     $query .= "   OR name LIKE '" . $search . "%'";
@@ -75,7 +77,7 @@ function searchByName($search, $email, $token)
     $query .= "   latitude,";
     $query .= "   longitude,";
     $query .= "   elevation";
-    $query .= " FROM openaip_navaids2";
+    $query .= " FROM openaip_navaids";
     $query .= " WHERE";
     $query .= "   kuerzel LIKE '" . $search . "%'";
     $query .= "   OR name LIKE '" . $search . "%'";
@@ -98,7 +100,7 @@ function searchByName($search, $email, $token)
     $query .= "   latitude,";
     $query .= "   longitude,";
     $query .= "   NULL AS elevation";
-    $query .= " FROM reporting_points2";
+    $query .= " FROM reporting_points";
     $query .= " WHERE";
     $query .= "   airport_icao LIKE '" . $search . "%'";
     $query .= " ORDER BY airport_icao ASC, name ASC";
@@ -163,20 +165,24 @@ function searchByName($search, $email, $token)
     if ($result === FALSE)
         die("error searching geoname: " . $conn->error . " query:" . $query);
 
-    echo buildReturnObject($result, true, null);
+    $geonamesList = buildGeonamesList($result, true, null);
+
+    // build return object
+    print json_encode(array("geonames" => $geonamesList, "notams" => []), JSON_NUMERIC_CHECK);
+
 
     $conn->close();
 }
 
 
-function searchByPosition($lat, $lon, $rad, $email, $token)
+function searchByPosition($lat, $lon, $rad, $minNotamTime, $maxNotamTime, $email, $token)
 {
     global $conn;
 
 
     // cols: sortorder, type, id, name, frequency, callsign, latitude, longitude, elevation
 
-    //$query .= "SELECT 1 AS sortOrder, 'airport' AS type, id, CONCAT(name, ' (', icao ,')') AS name, icao as wpname, NULL AS frequency, NULL AS callsign, icao AS airport_icao, latitude, longitude, elevation FROM openaip_airports2 WHERE";
+    //$query .= "SELECT 1 AS sortOrder, 'airport' AS type, id, CONCAT(name, ' (', icao ,')') AS name, icao as wpname, NULL AS frequency, NULL AS callsign, icao AS airport_icao, latitude, longitude, elevation FROM openaip_airports WHERE";
 
     $query =  "SELECT";
     $query .= "   1 AS sortOrder,";
@@ -190,7 +196,7 @@ function searchByPosition($lat, $lon, $rad, $email, $token)
     $query .= "   latitude,";
     $query .= "   longitude,";
     $query .= "   elevation";
-    $query .= " FROM openaip_airports2 WHERE";
+    $query .= " FROM openaip_airports WHERE";
     $query .= "   latitude > " . ($lat - $rad);
     $query .= "   AND latitude < " . ($lat + $rad);
     $query .= "   AND longitude > " . ($lon - $rad);
@@ -198,7 +204,7 @@ function searchByPosition($lat, $lon, $rad, $email, $token)
 
     $query .= " UNION ";
 
-    $query .= "SELECT 2 AS sortOrder, 'navaid' AS type, id, CONCAT(name, ' (', type, ')') AS name, CONCAT(kuerzel, ' ', type) AS wpname, frequency, kuerzel AS callsign, NULL AS airport_icao, latitude, longitude, elevation FROM openaip_navaids2 WHERE";
+    $query .= "SELECT 2 AS sortOrder, 'navaid' AS type, id, CONCAT(name, ' (', type, ')') AS name, CONCAT(kuerzel, ' ', type) AS wpname, frequency, kuerzel AS callsign, NULL AS airport_icao, latitude, longitude, elevation FROM openaip_navaids WHERE";
     $query .= " latitude > " . ($lat - $rad);
     $query .= " AND latitude < " . ($lat + $rad);
     $query .= " AND longitude > " . ($lon - $rad);
@@ -206,7 +212,7 @@ function searchByPosition($lat, $lon, $rad, $email, $token)
 
     $query .= " UNION ";
 
-    $query .= "SELECT 3 AS sortOrder, 'report' AS type, id, CONCAT(name , ' (', airport_icao, ')') AS name, name AS wpname, NULL AS frequency, NULL AS callsign, airport_icao AS airport_icao, latitude, longitude, NULL AS elevation FROM reporting_points2 WHERE";
+    $query .= "SELECT 3 AS sortOrder, 'report' AS type, id, CONCAT(name , ' (', airport_icao, ')') AS name, name AS wpname, NULL AS frequency, NULL AS callsign, airport_icao AS airport_icao, latitude, longitude, NULL AS elevation FROM reporting_points WHERE";
     $query .= " latitude > " . ($lat - $rad);
     $query .= " AND latitude < " . ($lat + $rad);
     $query .= " AND longitude > " . ($lon - $rad);
@@ -245,7 +251,16 @@ function searchByPosition($lat, $lon, $rad, $email, $token)
     if ($result === FALSE)
         die("error searching geoname: " . $conn->error . " query:" . $query);
 
-    echo buildReturnObject($result, false, [$lon, $lat]);
+    $geonamesList = buildGeonamesList($result, false, [$lon, $lat]);
+
+
+    // get notams
+    $notamList = loadNotamList($lon, $lat, $minNotamTime, $maxNotamTime);
+
+
+    // build return object
+    print json_encode(array("geonames" => $geonamesList, "notams" => $notamList), JSON_NUMERIC_CHECK);
+
 
     $conn->close();
 }
@@ -253,7 +268,7 @@ function searchByPosition($lat, $lon, $rad, $email, $token)
 
 function getFrequencySubquery($airportIdFieldName)
 {
-    $query  = "SELECT frequency FROM openaip_radios2 AS rad";
+    $query  = "SELECT frequency FROM openaip_radios AS rad";
     $query .= " WHERE rad.airport_id = " . $airportIdFieldName . "";
     $query .= " ORDER BY";
     $query .= "  CASE WHEN rad.category = 'COMMUNICATION' THEN 1 WHEN rad.category = 'OTHER' THEN 2 ELSE 3 END,";
@@ -278,7 +293,7 @@ function getCallsignSubquery($airportIdFieldName, $airportCountryFieldName)
     $query .= "   WHEN 'OTHER' THEN CASE WHEN rad.description LIKE 'AD%' THEN 'AD' ELSE rad.typespec END";
     $query .= "   ELSE ''";
     $query .= " END) AS callsign";
-    $query .= " FROM openaip_radios2 AS rad";
+    $query .= " FROM openaip_radios AS rad";
     $query .= " WHERE rad.airport_id = " . $airportIdFieldName . "";
     $query .= " ORDER BY";
     $query .= "  CASE WHEN rad.category = 'COMMUNICATION' THEN 1 WHEN rad.category = 'OTHER' THEN 2 ELSE 3 END,";
@@ -307,7 +322,7 @@ function getGeonamesFilterQuery()
 }
 
 
-function buildReturnObject($result, $renameDuplicates, $lonLat)
+function buildGeonamesList($result, $renameDuplicates, $lonLat)
 {
     $terrainHelper = new TerrainHelper();
 
@@ -372,7 +387,7 @@ function buildReturnObject($result, $renameDuplicates, $lonLat)
         $geonames[] = $clickPoint;
     }
 
-    return json_encode(array("geonames" => $geonames), JSON_NUMERIC_CHECK);
+    return $geonames;
 }
 
 
@@ -409,4 +424,47 @@ function findDuplicates($geonames)
     }
 
     return array("nameidx" => $duplicateNameIdx, "admin1idx" => $duplicateAdmin1Idx);
+}
+
+
+function loadNotamList($lon, $lat, $minNotamTime, $maxNotamTime)
+{
+    global $conn;
+
+
+    $query = "SELECT ntm.notam AS notam FROM icao_notam AS ntm"
+        . " INNER JOIN icao_notam_geometry geo ON geo.icao_notam_id = ntm.id "
+        . " INNER JOIN icao_fir fir ON fir.statecode = ntm.country"
+        . " LEFT JOIN icao_fir fir2 ON fir2.icao = ntm.icao"
+        . " WHERE ST_INTERSECTS(geo.extent,". getDbPointStringFromLonLat([$lon, $lat]) . ")"
+        . "  AND ntm.startdate <= '" . getDbTimeString($maxNotamTime) . "'"
+        . "  AND ntm.enddate >= '" . getDbTimeString($minNotamTime) . "'"
+        . "  AND (ST_INTERSECTS(fir.polygon,". getDbPointStringFromLonLat([$lon, $lat]) . "))" //" OR (fir2.icao IS NULL AND geo.geometry IS NOT NULL))"
+        . " ORDER BY ntm.startdate DESC";
+
+    $result = $conn->query($query);
+
+    if ($result === FALSE)
+        die("error searching notams: " . $conn->error . " query:" . $query);
+
+
+    $notamList = [];
+
+    while ($rs = $result->fetch_array(MYSQLI_ASSOC))
+    {
+        $notam = json_decode($rs["notam"], JSON_NUMERIC_CHECK);
+
+        // TODO: use same filters in notam.php
+        // filter by max FL195
+        if ($notam["geometry"] && $notam["geometry"]["bottom"] >= NOTAM_MAX_BOTTOM_FL)
+            continue;
+
+        // filter by notam type (no KKKK)
+        if ($notam["Qcode"] == "KKKK")
+            continue;
+
+        $notamList[] = $notam;
+    }
+
+    return $notamList;
 }

@@ -3,10 +3,10 @@
  */
 
 navplanApp
-	.controller('mapCtrl', [ '$scope', '$sce', '$route', 'mapService', 'mapFeatureService', 'locationService', 'trafficService', 'geonameService', 'userService', 'metarTafNotamService', 'terrainService', 'globalData', mapCtrl ]);
+	.controller('mapCtrl', [ '$scope', '$sce', '$route', 'mapService', 'mapFeatureService', 'locationService', 'trafficService', 'geopointService', 'userService', 'metarTafNotamService', 'terrainService', 'globalData', mapCtrl ]);
 
 
-function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationService, trafficService, geonameService, userService, metarTafNotamService, terrainService, globalData)
+function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationService, trafficService, geopointService, userService, metarTafNotamService, terrainService, globalData)
 {
     //region INIT VARS
 
@@ -18,11 +18,11 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 	$scope.selectedTraffic = {};
 	$scope.followTrafficAddress = undefined;
 	$scope.followTrafficLastPosition = undefined;
-
-	var featureContainer = document.getElementById('feature-popup');
-	var trafficContainer = document.getElementById('traffic-popup');
-	var metarTafContainer = document.getElementById('metartaf-popup');
-    var weatherContainer = document.getElementById('weather-popup');
+	$scope.featureContainer = document.getElementById('feature-popup');
+	$scope.trafficContainer = document.getElementById('traffic-popup');
+    $scope.notamContainer = document.getElementById('notam-popup');
+	$scope.metarTafContainer = document.getElementById('metartaf-popup');
+    $scope.weatherContainer = document.getElementById('weather-popup');
 
 	//endregion
 
@@ -31,7 +31,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 
     $scope.onSearchGeonamesByName = function(search)
 	{
-		return geonameService.searchGeonamesByValue(search);
+		return geopointService.searchGeonamesByValue(search);
 	};
 
 
@@ -48,7 +48,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 		};
 
 		mapService.setMapPosition($item.latitude, $item.longitude, 11, true);
-		mapService.drawGeopointSelection([ $item ], undefined);
+		mapService.drawGeopointSelection([ $item ], [], undefined);
 	};
 
 
@@ -78,14 +78,16 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 	{
 		$scope.globalData.clickHistory.push(clickCoordinates); // used internally only
 
-		geonameService.searchGeonamesByPosition(clickCoordinates[1], clickCoordinates[0], maxRadius)
+        var minMaxTimes = metarTafNotamService.getDefaultNotamTimeslot();
+
+		geopointService.searchGeonamesByPosition(clickCoordinates[1], clickCoordinates[0], maxRadius, minMaxTimes[0], minMaxTimes[1])
 			.then(
 			    function(response)
                 {
                     if (response.data.geonames)
                     {
                         $scope.closeFeatureOverlay();
-                        mapService.drawGeopointSelection(response.data.geonames, event.pixel);
+                        mapService.drawGeopointSelection(response.data.geonames, response.data.notams, event.pixel);
                     }
                     else
                         logResponseError("ERROR searching geonames", response);
@@ -94,8 +96,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
                 {
                     logResponseError("ERROR searching geonames", response);
 
-                    var geonames = [];
-                    mapService.drawGeopointSelection(geonames, event.pixel);
+                    mapService.drawGeopointSelection([], [], event.pixel); // draw with empty set (client data only)
     			}
             );
 	};
@@ -313,7 +314,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
                 receiver: feature.acInfo.receiver
             };
 
-            mapService.addOverlay(feature.getGeometry().getCoordinates(), trafficContainer, true);
+            mapService.addOverlay(feature.getGeometry().getCoordinates(), $scope.trafficContainer, true);
             $scope.$apply();
         }
         else if (feature.webcam)
@@ -323,7 +324,29 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
         else if (feature.weatherInfo)
         {
             $scope.selectedMetarTaf = feature.weatherInfo;
-            mapService.addOverlay(feature.getGeometry().getCoordinates(), metarTafContainer, true);
+            mapService.addOverlay(feature.getGeometry().getCoordinates(), $scope.metarTafContainer, true);
+            $scope.$apply();
+        }
+        else if (feature.notam)
+        {
+            $scope.selectedNotam = {
+                id: feature.notam.id,
+                title: metarTafNotamService.getNotamTitle(feature.notam),
+                notams: [ feature.notam ],
+                airport_icao: undefined
+            };
+            mapService.addOverlay(mapService.getMercatorFromPixel(event.pixel[0], event.pixel[1]), $scope.notamContainer, true);
+            $scope.$apply();
+        }
+        else if (feature.notamList)
+        {
+            $scope.selectedNotam = {
+                id: undefined,
+                title: undefined,
+                notams: feature.notamList,
+                airport_icao: undefined
+            };
+            mapService.addOverlay(mapService.getMercatorFromPixel(event.pixel[0], event.pixel[1]), $scope.notamContainer, true);
             $scope.$apply();
         }
     };
@@ -336,12 +359,39 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 	};
 
 
+    $scope.onShowAirportNotams = function()
+    {
+        $scope.selectedNotam = {
+            id: undefined,
+            title: undefined,
+            airport_icao: $scope.globalData.selectedWp.airport.icao,
+            notams: globalData.selectedWp.airport.notams
+        };
+
+        var coords = mapService.getMercatorCoordinates($scope.globalData.selectedWp.airport.latitude, $scope.globalData.selectedWp.airport.longitude);
+        mapService.addOverlay(coords, $scope.notamContainer, true);
+    };
+
+
+    $scope.getFormatedNotamHtml = function(notam)
+    {
+        var subTitle = "<b>" + metarTafNotamService.getNotamTitle(notam) + "</b> ";
+
+        var fromTill = metarTafNotamService.getNotamValidityLt(notam);
+        var validText = "<i>(" + fromTill[0] + " - " + fromTill[1] + ")</i><br />";
+
+        var notamText = notam.all.replace(/\n/g, "<br />");
+
+        return $sce.trustAsHtml(subTitle + validText + notamText);
+    };
+
+
 	$scope.onShowMetarTaf = function()
 	{
 		$scope.selectedMetarTaf = $scope.globalData.selectedWp.airport.weatherInfo;
 		$scope.selectedMetarTaf.airport_icao = $scope.globalData.selectedWp.airport.icao;
 		var coords = mapService.getMercatorCoordinates($scope.globalData.selectedWp.airport.latitude, $scope.globalData.selectedWp.airport.longitude);
-		mapService.addOverlay(coords, metarTafContainer, true);
+		mapService.addOverlay(coords, $scope.metarTafContainer, true);
 	};
 
 
@@ -353,7 +403,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
             $scope.selectedLocationName = undefined;
 
         var coords = mapService.getMercatorCoordinates(latitude, longitude);
-        mapService.addOverlay(coords, weatherContainer, true);
+        mapService.addOverlay(coords, $scope.weatherContainer, true);
 
         var span = document.getElementById("windytviframe");
         while (span.firstChild)
@@ -361,9 +411,10 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 
         //<iframe width="800" height="220" src="https://embed.windytv.com/embed2.html?lat=46.9458&lon=7.4713&type=forecast&metricWind=kt&metricTemp=%C2%B0C" frameborder="0"></iframe>
         var iframe = document.createElement('iframe');
-        iframe.src = "https://embed.windytv.com/embed2.html?lat=" + latitude + "&lon=" + longitude + "&type=forecast&metricWind=kt&metricTemp=%C2%B0C";
-        iframe.width = weatherContainer.clientWidth - 2 * 16;
-        iframe.height = 220;
+        //iframe.src = "https://embed.windytv.com/embed2.html?lat=" + latitude + "&lon=" + longitude + "&type=forecast&display=meteogram&metricWind=kt&metricTemp=%C2%B0C";
+        iframe.src = "https://embed.windy.com/embed2.html?lat=" + latitude + "&lon=" + longitude + "&type=forecast&display=meteogram&metricWind=kt&metricTemp=%C2%B0C";
+        iframe.width = $scope.weatherContainer.clientWidth - 2 * 16;
+        iframe.height = 280;
         iframe.frameborder = 0;
 
         span.appendChild(iframe);
@@ -373,8 +424,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
     $scope.openFeatureOverlay = function(latitude, longitude)
 	{
 		var coordinates = mapService.getMercatorCoordinates(latitude, longitude);
-
-		mapService.addOverlay(coordinates, featureContainer, true);
+		mapService.addOverlay(coordinates, $scope.featureContainer, true);
 
 		$('#ad_details').hide();
 		$('#ad_charts').hide();
@@ -558,7 +608,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
             return;
         }
 
-		var extent = mapService.getViewExtent();
+		var extent = mapService.getViewExtentLatLon();
 
 		trafficService.requestTraffic(extent, $scope.trafficMaxAgeSec, $scope.globalData.settings.maxTrafficAltitudeFt + 1000, $scope.globalData.sessionId, successCallback, errorCallback);
 
@@ -675,6 +725,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
             setWaypointCacheCookie();
             setChartCacheCookie();
             cacheMapFeatures();
+            cacheNotams();
             updateAppCache();
         }
         else
@@ -799,6 +850,24 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 
 
             function cacheMapFeaturesError()
+            {
+                // TODO: cache status => error
+            }
+        }
+
+
+        function cacheNotams()
+        {
+            metarTafNotamService.getNotams($scope.getNavplanExtentLatLon(), [], cacheNotamsSuccess, cacheNotamsError);
+
+
+            function cacheNotamsSuccess(notamList)
+            {
+                window.sessionStorage.setItem("notamCache", obj2json(notamList));
+            }
+
+
+            function cacheNotamsError()
             {
                 // TODO: cache status => error
             }

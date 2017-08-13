@@ -16,7 +16,6 @@
 		addStaticUrls();
 		addTileUrls(json_decode($_COOKIE["cachewaypoints"]), true);
 		addChartUrls(json_decode($_COOKIE["cachecharts"]), true);
-        //addMapFeaturesUrls(json_decode($_COOKIE["cachemaxextent"]), true);
 	}
 	else // don't cache anything
 	{
@@ -43,13 +42,6 @@
 		echo "settings/settings.html?v=" . $ver . "\n";
 		echo "waypoints/waypoints.html?v=" . $ver . "\n";
 		echo "tracks/tracks.html?v=" . $ver . "\n";
-
-		// php
-		/*echo "php/airports.php?v=" . $ver . "\n";
-		echo "php/airspace.php?v=" . $ver . "\n";
-		echo "php/navaids.php?v=" . $ver . "\n";
-		echo "php/webcams.php?v=" . $ver . "\n";
-		echo "php/reportingPoints.php?v=" . $ver . "\n";*/
 
 		// angular
         echo "angularjs/1.6.3/angular.min.js\n";
@@ -132,7 +124,7 @@
         echo "services/mapFeatureService.js?v=" . $ver . "\n";
 		echo "services/locationService.js?v=" . $ver . "\n";
 		echo "services/trafficService.js?v=" . $ver . "\n";
-		echo "services/geonameService.js?v=" . $ver . "\n";
+		echo "services/geopointService.js?v=" . $ver . "\n";
 		echo "services/waypointService.js?v=" . $ver . "\n";
 		echo "services/fuelService.js?v=" . $ver . "\n";
 		echo "services/userService.js?v=" . $ver . "\n";
@@ -152,23 +144,6 @@
 		echo "login/login.html?v=" . $ver . " offline.html?v=" . $ver . "\n";
 		echo "\n";
 	}
-
-
-/*function addMapFeaturesUrls($maxextent)
-    {
-        global $ver;
-
-        if (!$maxextent)
-            return;
-
-        $url = "php/mapFeatures.php?v=" . $ver . "&minlon=" . $maxextent[0] . "&minlat=" . $maxextent[1] . "&maxlon=" . $maxextent[2] . "&maxlat=" . $maxextent[3];
-
-        echo "# map features\n";
-        echo "CACHE:\n";
-        echo $url . "\n";
-        echo "\n";
-    }*/
-
 
 
     function addChartUrls($charturls)
@@ -246,28 +221,28 @@
 	function getTileUrl($lat, $lon, $zoom)
 	{
 	    $localBaseUrl = "maptiles/";
-		/*$otmBaseUrl = array(
+		$otmBaseUrl = array(
 			"//a.tile.opentopomap.org/",
 			"//b.tile.opentopomap.org/",
 			"//c.tile.opentopomap.org/"
-		);*/
+		);
 
-		$otmBaseUrl = array(
+		/*$otmBaseUrl = array(
 			"//opentopomap.org/",
 			"//opentopomap.org/",
 			"//opentopomap.org/"
-		);
+		);*/
 
 		$ytile = floor((($lon + 180) / 360) * pow(2, $zoom));
 		$xtile = floor((1 - log(tan(deg2rad($lat)) + 1 / cos(deg2rad($lat))) / pi()) /2 * pow(2, $zoom));
 
 
-        if (strpos($_SERVER['REQUEST_URI'], "branch") === false)
+        /*if (strpos($_SERVER['REQUEST_URI'], "branch") === false)
             return '//api.mapbox.com/styles/v1/opacopac/cj0mxdtd800bx2slaha4b0p68/tiles/256/' . $zoom . '/' . $ytile . '/' . $xtile . '@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2oxYjc5dWVnMDA1eTJxbm41YmluaDBvYiJ9.6Kqm-by8OME1SqB15uEzKA';
         else
-            return '//api.mapbox.com/styles/v1/opacopac/cj0mxdtd800bx2slaha4b0p68/tiles/256/' . $zoom . '/' . $ytile . '/' . $xtile . '@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2oxYjc0MHFsMDAyaTMzcGVwdTY1aHlzZCJ9.ssqYvA4pbLYBIa87V7hLeQ';
+            return '//api.mapbox.com/styles/v1/opacopac/cj0mxdtd800bx2slaha4b0p68/tiles/256/' . $zoom . '/' . $ytile . '/' . $xtile . '@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2oxYjc0MHFsMDAyaTMzcGVwdTY1aHlzZCJ9.ssqYvA4pbLYBIa87V7hLeQ';*/
 
-        /*if (isLocalTile($zoom, $ytile, $xtile))
+        if (isLocalTile($zoom, $ytile, $xtile))
 		{
             return $localBaseUrl . $zoom . "/" . $ytile . "/" . $xtile . ".png";
 		}
@@ -275,7 +250,7 @@
 		{
             $n = ($zoom + $xtile + $ytile) % 3;
             return $otmBaseUrl[$n] . $zoom . "/" . $ytile . "/" . $xtile . ".png";
-        }*/
+        }
 	}
 
 
