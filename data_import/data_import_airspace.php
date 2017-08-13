@@ -12,7 +12,11 @@ $conn = openDb();
 // clear table
 printLine("clearing old data...");
 
+<<<<<<< HEAD
 $query = "TRUNCATE TABLE openaip_airspace";
+=======
+$query = "TRUNCATE TABLE openaip_airspace2";
+>>>>>>> origin/v1.5
 $result = $conn->query($query);
 
 if ($result === FALSE)
@@ -179,7 +183,11 @@ function insertIntoDb($category, $aip_id, $country, $name, $alt_top_reference, $
 {
     global $conn;
 
+<<<<<<< HEAD
     $query = "INSERT INTO openaip_airspace (category, aip_id, country, name, alt_top_reference, alt_top_height, alt_top_unit, alt_bottom_reference, alt_bottom_height, alt_bottom_unit, polygon, extent) VALUES (";
+=======
+    $query = "INSERT INTO openaip_airspace2 (category, aip_id, country, name, alt_top_reference, alt_top_height, alt_top_unit, alt_bottom_reference, alt_bottom_height, alt_bottom_unit, polygon, extent) VALUES (";
+>>>>>>> origin/v1.5
     $query .= " '" . $category . "',";
     $query .= " '" . $aip_id . "',";
     $query .= " '" . $country . "',";
