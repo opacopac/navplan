@@ -434,20 +434,12 @@ function loadNotamList($lon, $lat, $minNotamTime, $maxNotamTime)
 
     $query = "SELECT ntm.notam AS notam FROM icao_notam AS ntm"
         . " INNER JOIN icao_notam_geometry geo ON geo.icao_notam_id = ntm.id "
-<<<<<<< HEAD:php/geopoint.php
         . " INNER JOIN icao_fir fir ON fir.statecode = ntm.country"
         . " LEFT JOIN icao_fir fir2 ON fir2.icao = ntm.icao"
         . " WHERE ST_INTERSECTS(geo.extent,". getDbPointStringFromLonLat([$lon, $lat]) . ")"
         . "  AND ntm.startdate <= '" . getDbTimeString($maxNotamTime) . "'"
         . "  AND ntm.enddate >= '" . getDbTimeString($minNotamTime) . "'"
         . "  AND (ST_INTERSECTS(fir.polygon,". getDbPointStringFromLonLat([$lon, $lat]) . "))" //" OR (fir2.icao IS NULL AND geo.geometry IS NOT NULL))"
-=======
-        . " LEFT JOIN icao_fir fir ON fir.icao = ntm.icao"
-        . " WHERE ST_INTERSECTS(geo.extent,". getDbPointStringFromLonLat([$lon, $lat]) . ") "
-        . "  AND ntm.startdate <= '" . getDbTimeString($maxNotamTime) . "'"
-        . "  AND ntm.enddate >= '" . getDbTimeString($minNotamTime) . "'"
-        . "  AND (ST_INTERSECTS(fir.polygon,". getDbPointStringFromLonLat([$lon, $lat]) . ") OR ntm.type = 'airport')"
->>>>>>> origin/v1.5:php/geoname.php
         . " ORDER BY ntm.startdate DESC";
 
     $result = $conn->query($query);

@@ -378,11 +378,7 @@ function getAirspaces($extent)
     $query .= "  air.alt_bottom_height,";
     $query .= "  air.alt_bottom_unit,";
     $query .= "  air.polygon";
-<<<<<<< HEAD
     $query .= " FROM openaip_airspace AS air";
-=======
-    $query .= " FROM openaip_airspace2 AS air";
->>>>>>> origin/v1.5
     $query .= " WHERE";
     $query .= "  MBRIntersects(extent, " . $extent . ")";
     $query .= "    AND";
