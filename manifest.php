@@ -130,6 +130,7 @@
 		echo "services/userService.js?v=" . $ver . "\n";
 		echo "services/metarTafNotamService.js?v=" . $ver . "\n";
         echo "services/terrainService.js?v=" . $ver . "\n";
+        echo "services/meteoService.js?v=" . $ver . "\n";
 		echo "\n";
 
 		

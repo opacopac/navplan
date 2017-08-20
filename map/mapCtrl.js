@@ -686,6 +686,19 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 	//endregion
 
 
+    //region METEO
+
+    $scope.onMeteoClicked = function()
+    {
+        $scope.globalData.showMeteo = !$scope.globalData.showMeteo;
+        mapService.showMeteo($scope.globalData.showMeteo);
+
+        mapService.updateMeteo();
+    };
+
+    //endregion
+
+
     //region TERRAIN
 
     $scope.onTerrainClicked = function()

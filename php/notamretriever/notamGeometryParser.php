@@ -498,7 +498,7 @@ class NotamGeometryParser
     private function tryFindMatchingAirspace(&$notamList)
     {
         // load intersecting airspaces from db
-        $typeCatDict = array("RP" => "PROHIBITED", "RR" => "RESTRICTED", "RT" => "RESTRICTED", "RD" => "DANGER", "RM" => "DANGER");
+        $typeCatDict = array("RP" => ["PROHIBITED"], "RR" => ["RESTRICTED"], "RT" => ["RESTRICTED"], "RD" => ["DANGER"], "RM" => ["DANGER", "RESTRICTED", "PROHIBITED"]);
 
         $queryParts = [];
         foreach ($notamList as $index=>$notam)
@@ -510,7 +510,7 @@ class NotamGeometryParser
             {
                 $query = "SELECT '" . $index . "' AS notamindex, asp.name AS name, asp.polygon AS polygon FROM openaip_airspace AS asp"
                     . " LEFT JOIN icao_fir AS fir ON fir.icao = '" . $notam["icao"] . "'"
-                    . " WHERE ST_INTERSECTS(" . $notam["dbExtent"] . ", asp.extent) AND asp.category = '" . $typeCatDict[$notamType] . "'"
+                    . " WHERE ST_INTERSECTS(" . $notam["dbExtent"] . ", asp.extent) AND asp.category IN('" . join("','", $typeCatDict[$notamType]) . "')"
                     . " AND (ST_INTERSECTS(asp.extent, fir.polygon) OR fir.icao IS NULL)";
 
                 $queryParts[] = $query;

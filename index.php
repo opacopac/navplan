@@ -77,6 +77,7 @@
 	<script src="services/userService.js?v=<?php echo $ver ?>"></script>
 	<script src="services/metarTafNotamService.js?v=<?php echo $ver ?>"></script>
     <script src="services/terrainService.js?v=<?php echo $ver ?>"></script>
+    <script src="services/meteoService.js?v=<?php echo $ver ?>"></script>
 </head>
 <body>
 	<nav id="navbar" class="navbar navbar-default">

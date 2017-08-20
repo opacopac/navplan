@@ -13,7 +13,7 @@ $maxLon = checkNumeric($_GET["maxlon"]);
 
 // load data
 $extent = "ST_GEOMFROMTEXT('POLYGON((" . $minLon . " " . $minLat . "," . $maxLon . " " . $minLat . "," . $maxLon . " " . $maxLat . "," . $minLon . " " . $maxLat . "," . $minLon . " " . $minLat . "))')";
-$firList = getFirList($extent);
+$firList = getMeasurementList($extent);
 
 // close db
 $conn->close();

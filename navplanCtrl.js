@@ -38,7 +38,8 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 			$scope.globalData.trafficTimer = undefined;
 			$scope.globalData.showLocation = false; // data.showLocation;
 			$scope.globalData.showTraffic = false; // data.showTraffic;
-            $scope.globalData.showTerrain = false; // data.showTraffic;
+            $scope.globalData.showMeteo = false;
+            $scope.globalData.showTerrain = false;
 			$scope.globalData.cacheIsActive = data.cacheIsActive;
 			$scope.globalData.locationStatus = "off"; // data.locationStatus;
 			$scope.globalData.trafficStatus = "off"; // data.trafficStatus;
@@ -104,6 +105,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 			$scope.globalData.clockTimer = undefined;
 			$scope.globalData.showLocation = false;
 			$scope.globalData.showTraffic = false;
+            $scope.globalData.showMeteo = false;
 			$scope.globalData.showTerrain = false;
 			$scope.globalData.cacheIsActive = false;
 			$scope.globalData.locationStatus = "off"; // "off", "waiting", "current", "error"

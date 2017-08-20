@@ -73,6 +73,13 @@ html, body {
   z-index: 20;
 }
 
+.mapbutton-meteo {
+    position: fixed;
+    bottom: 100px;
+    left: 10px;
+    z-index: 25;
+}
+
 .mapbutton-terrain {
     position: fixed;
     bottom: 40px;

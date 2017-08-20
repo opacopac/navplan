@@ -1,7 +1,7 @@
 <?php
 	include "../php/config.php";
 	include "../php/helper.php";
-	include "wgs84_ch1903.php";
+	include "../php/wgs84_ch1903.php";
 
 	$php_self = "data_import_vfrm_charts.php";
 	$temp_image = "vftemp_chart_image.png";
