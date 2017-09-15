@@ -50,6 +50,7 @@
 	<script src="angularjs/1.6.3/angular-resource.min.js"></script>
 	<script src="bootstrap/3.3.7/bootstrap.min.js"></script>
 	<script src="js/ui-bootstrap-tpls-1.3.2.min.js"></script>
+    <script src="js/sortable.js"></script>
 	<script src="openlayers/4.2.0/ol.js"></script>
     <!--<script src="openlayers/4.2.0/ol-debug.js"></script>-->
 	<script src="js/turf.min.js"></script>
@@ -187,20 +188,20 @@
 				<div class="modal-body">
                     <div class="form-group">
                         <label for="editWpCheckpoint">Checkpoint:</label>
-                        <input type="text" class="form-control" id="editWpCheckpoint" ng-model="globalData.selectedWp.checkpoint" />
+                        <input type="text" class="form-control" id="editWpCheckpoint" ng-model="globalData.selectedWp.checkpoint" maxlength="30" />
                     </div>
                     <div class="form-group">
                         <label for="editWpFrequency">Frequency:</label>
-                        <input type="text" class="form-control" id="editWpFrequency" ng-model="globalData.selectedWp.freq" />
+                        <input type="text" class="form-control" id="editWpFrequency" ng-model="globalData.selectedWp.freq" maxlength="7" />
                     </div>
                     <div class="form-group">
                         <label for="editWpCallsign">Callsign:</label>
-                        <input type="text" class="form-control" id="editWpCallsign" ng-model="globalData.selectedWp.callsign" />
+                        <input type="text" class="form-control" id="editWpCallsign" ng-model="globalData.selectedWp.callsign" maxlength="10" />
                     </div>
                     <div class="form-group">
                         <label for="editWpAltitude">Altitude:</label>
                         <div class="form-inline">
-                            <input type="text" class="form-control" id="editWpAltitude" ng-model="globalData.selectedWp.alt" />
+                            <input type="text" class="form-control" id="editWpAltitude" ng-model="globalData.selectedWp.alt" maxlength="5" />
                             <div class="btn-group" role="group">
                                 <button type="button" class="btn btn-default {{ globalData.selectedWp.isminalt ? 'active' : ''}}" ng-click="globalData.selectedWp.isminalt = !globalData.selectedWp.isminalt" >min</button>
                                 <button type="button" class="btn btn-default {{ globalData.selectedWp.ismaxalt ? 'active' : ''}}" ng-click="globalData.selectedWp.ismaxalt = !globalData.selectedWp.ismaxalt" >max</button>
@@ -214,7 +215,17 @@
                     </div>
                     <div class="form-group">
                         <label for="editWpRemarks">Remarks:</label>
-                        <input type="text" class="form-control" id="editWpRemarks" ng-model="globalData.selectedWp.remark" />
+                        <input type="text" class="form-control" id="editWpRemarks" ng-model="globalData.selectedWp.remark" maxlength="50" />
+                    </div>
+                    <div class="form-group">
+                        <label for="editWpSuppInfo">Supplemental Info (separate line):</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="editWpSuppInfo" ng-model="globalData.selectedWp.supp_info" maxlength="255" />
+                            <span class="input-group-btn">
+                                <button class="btn btn-default" type="button" ng-click="globalData.selectedWp.supp_info = ''" title="delete supplemental info"><span class="glyphicon glyphicon-erase" aria-hidden="true"></span></button>
+                            </span>
+                        </div>
+                        <!--<input type="text" class="form-control" id="editWpSuppInfo" ng-model="globalData.selectedWp.supp_info" maxlength="255" />-->
                     </div>
 				</div>
 				<div class="modal-footer">
@@ -233,8 +244,18 @@
 					<h4 class="modal-title" id="userWpModalLabel">User Point</h4>
 				</div>
 				<div class="modal-body">
-					Checkpoint: <input type="text" class="form-control" ng-model="globalData.selectedWp.checkpoint" />
-					Remarks: <input type="text" class="form-control" ng-model="globalData.selectedWp.remark" />
+                    <div class="form-group">
+                        <label for="userWpCheckpoint">Checkpoint:</label>
+                        <input type="text" class="form-control" id="WpCheckpoint" ng-model="globalData.selectedWp.checkpoint" maxlength="30" />
+                    </div>
+                    <div class="form-group">
+                        <label for="userWpRemarks">Remarks:</label>
+                        <input type="text" class="form-control" id="userWpRemarks" ng-model="globalData.selectedWp.remark" maxlength="50" />
+                    </div>
+                    <div class="form-group">
+                        <label for="userWpSuppInfo">Supplemental Info (separate line):</label>
+                        <input type="text" class="form-control" id="userWpSuppInfo" ng-model="globalData.selectedWp.supp_info" maxlength="255" />
+                    </div>
 					<hr />
 					<p><button type="button" class="btn btn-primary btn-circle" data-dismiss="modal" ng-click="onSaveUserWaypointClicked()"><i class="glyphicon glyphicon-save"></i></button> Save User Point</p>
 					<p ng-show="globalData.selectedWp.type == 'user' && globalData.selectedWp.id > 0"><button type="button" class="btn btn-danger btn-circle" data-dismiss="modal" ng-click="onDeleteUserWaypointClicked()"><i class="glyphicon glyphicon-remove"></i></button> Delete User Point</p>

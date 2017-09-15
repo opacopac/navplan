@@ -208,35 +208,42 @@ class NotamGeometryParser
                 $geometry["top"] = $bottomTop[1];
             }
 
+            $isMixedPolyCircle = false;
             $polygon = $this->tryParsePolygon($notam["message"]);
             if ($polygon)
             {
-                $geometry["polygon"] = $polygon;
-                return $geometry;
+                if (strpos($notam["message"], "CIRCLE") === FALSE)
+                {
+                    $geometry["polygon"] = $polygon;
+                    return $geometry;
+                }
+                else
+                {
+                    $isMixedPolyCircle = true;
+                }
             }
 
-            $circle = $this->tryParseCircleVariant1($notam["message"]);
-            if ($circle)
-            {
-                $geometry["center"] = $circle["center"];
-                $geometry["radius"] = $circle["radius"];
-                return $geometry;
-            }
+            if (!$isMixedPolyCircle) {
+                $circle = $this->tryParseCircleVariant1($notam["message"]);
+                if ($circle) {
+                    $geometry["center"] = $circle["center"];
+                    $geometry["radius"] = $circle["radius"];
+                    return $geometry;
+                }
 
-            $circle = $this->tryParseCircleVariant2($notam["message"]);
-            if ($circle)
-            {
-                $geometry["center"] = $circle["center"];
-                $geometry["radius"] = $circle["radius"];
-                return $geometry;
-            }
+                $circle = $this->tryParseCircleVariant2($notam["message"]);
+                if ($circle) {
+                    $geometry["center"] = $circle["center"];
+                    $geometry["radius"] = $circle["radius"];
+                    return $geometry;
+                }
 
-            $circle = $this->tryParseCircleVariant3($notam["message"]);
-            if ($circle)
-            {
-                $geometry["center"] = $circle["center"];
-                $geometry["radius"] = $circle["radius"];
-                return $geometry;
+                $circle = $this->tryParseCircleVariant3($notam["message"]);
+                if ($circle) {
+                    $geometry["center"] = $circle["center"];
+                    $geometry["radius"] = $circle["radius"];
+                    return $geometry;
+                }
             }
 
             $circle = $this->tryParseQlineCircle($notam["all"]);

@@ -1,5 +1,5 @@
 // version
-var navplanVersion = "1.5f"; // must be the same as in version.txt
+var navplanVersion = "1.5g"; // must be the same as in version.txt
 
 
 // js error handler
@@ -41,7 +41,7 @@ $.get("version.txt?q=" + Math.random(),
 
 
 // init app
-var navplanApp = angular.module('navplanApp', [ 'ngRoute', 'ngResource', 'ui.bootstrap' ]);
+var navplanApp = angular.module('navplanApp', [ 'ngRoute', 'ngResource', 'ui.bootstrap', 'ui.sortable' ]);
 
 
 // no hash prefix (!)

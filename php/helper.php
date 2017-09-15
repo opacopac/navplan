@@ -570,3 +570,14 @@ function printLine($text)
     ob_flush();
 }
 
+
+function isBranch()
+{
+    return (strpos($_SERVER['REQUEST_URI'], "branch") !== false);
+}
+
+
+function isSelf($email)
+{
+    return ($email == "armand@tschanz.com");
+}

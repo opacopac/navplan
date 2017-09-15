@@ -14,6 +14,7 @@ $alternate = $data["alternate"];
 $fuel = $data["fuel"];
 $pilot = $data["pilot"];
 $aircraft = $data["aircraft"];
+$comments = $data["comments"];
 
 
 $x0 = 8;
@@ -40,6 +41,7 @@ $fuelRowTitle = [ "Trip", "Alternate", "Reserve", "Minimum", "Extra fuel", "Bloc
 $pdf = new PDF_Rotate('L', 'mm', 'A4');
 $pdf->SetTitle($planTitle);
 $pdf->AddFont('Arial-Narrow', '', 'arial-narrow.php');
+$pdf->AddFont('ArialNarrow-Italic', 'I', 'ARIALNI.php');
 $pdf->AddPage();
 $pdf->SetAutoPageBreak(false);
 $pdf->SetMargins($x0, $y0);
@@ -85,8 +87,9 @@ $pdf->SetY($pdf->GetY() + $rowHeight); // new line
 // checkpoints
 $pdf->SetLineWidth(0.1);
 $pdf->SetFont('Arial-Narrow', '', 10);
+$suppInfoCount = 0;
 
-for ($j = 0; $j < $ckpNum; $j++)
+for ($j = 0; $j + $suppInfoCount < $ckpNum; $j++)
 {
     for ($i = 0; $i < count($ckpColWidth); $i++)
     {
@@ -108,6 +111,22 @@ for ($j = 0; $j < $ckpNum; $j++)
             if ($ckpKeys[$i] == "alt")
                 drawMinMaxLines($j, $pos_x0, $pos_y0, $pos_x1, $pos_y1);
         }
+    }
+
+    // opt. line for supp info string
+    $suppInfoString = getSuppInfoString($j);
+    if (strlen($suppInfoString) > 0)
+    {
+        $identWidth = 4;
+        $pdf->SetFont('ArialNarrow-Italic', 'I', 10);
+        $pdf->SetY($pdf->GetY() + $rowHeight); // new line
+        //$pdf->Cell($identWidth, $rowHeight, "", "LTRB", 0, "L"); // empty cell
+        $pdf->Cell($identWidth, $rowHeight, "", "LTRB", 0, "L", true);
+        //$pdf->SetX($pdf->GetX() + $identWidth);
+        $pdf->Cell($planWidth - $identWidth, $rowHeight, $suppInfoString, "LTRB", 0, "L"); // supp info
+        $pdf->SetFont('Arial-Narrow', '', 10);
+
+        $suppInfoCount++;
     }
 
     $pdf->SetY($pdf->GetY() + $rowHeight); // new line
@@ -149,6 +168,12 @@ $fuelTop = $pdf->GetY();
 // comments lines
 for ($i = 0; $i < $cmtNum; $i++)
     $pdf->Cell($cmtColWidth, $rowHeight, "", "LTRB", 2);
+
+if ($comments)
+{
+    $pdf->SetY($fuelTop);
+    $pdf->MultiCell($cmtColWidth, $rowHeight, $comments, "0", "L", false);
+}
 
 
 // fuel title
@@ -235,6 +260,23 @@ function getWaypointString($index, $key)
         return "";
 
     return utf8_decode($waypoints[$index][$key]);
+}
+
+
+function getSuppInfoString($index)
+{
+    global $waypoints;
+
+    if (!isset($waypoints))
+        return "";
+
+    if (!isset($waypoints[$index]))
+        return "";
+
+    if (!isset($waypoints[$index]["supp_info"]))
+        return "";
+
+    return utf8_decode($waypoints[$index]["supp_info"]);
 }
 
 

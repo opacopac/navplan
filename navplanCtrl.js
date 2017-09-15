@@ -81,6 +81,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 			{
 				id: undefined,
 				name: '',
+                comments: '',
 				waypoints: [ ],
 				alternate: undefined,
 				selectedWaypoint: undefined
@@ -281,6 +282,18 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 	{
 		return ($scope.globalData.user.email && $scope.globalData.user.token);
 	};
+
+
+    $scope.isBranch = function()
+    {
+        return (location.href.indexOf("branch") >= 0);
+    };
+
+
+    $scope.isSelf = function(email)
+    {
+        return (email == "armand@tschanz.com");
+    };
 
 
 	$scope.hasLastTrack = function()
@@ -501,7 +514,8 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
             alternate: $scope.globalData.navplan.alternate ? getWaypointData($scope.globalData.navplan.alternate) : undefined,
             fuel: $scope.globalData.fuel,
             pilot: $scope.globalData.pilot,
-            aircraft: $scope.globalData.aircraft
+            aircraft: $scope.globalData.aircraft,
+            comments: $scope.globalData.navplan.comments
         };
 
 
@@ -518,7 +532,8 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
                 ismaxalt: wp.ismaxalt,
                 isaltatlegstart: wp.isaltatlegstart,
                 eetText: wp.eetText,
-                remark: wp.remark
+                remark: wp.remark,
+                supp_info: wp.supp_info
             };
         }
     };
@@ -560,7 +575,9 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 			alt: $scope.globalData.selectedWp.alt,
 			isminalt:  $scope.globalData.selectedWp.isminalt,
 			ismaxalt:  $scope.globalData.selectedWp.ismaxalt,
-            isaltatlegstart:  $scope.globalData.selectedWp.isaltatlegstart
+            isaltatlegstart:  $scope.globalData.selectedWp.isaltatlegstart,
+            remark: $scope.globalData.selectedWp.remark,
+            supp_info: $scope.globalData.selectedWp.supp_info
 		}
 	};
 	
@@ -574,6 +591,8 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 		$scope.globalData.selectedWp.isminalt = $scope.globalData.wpBackup.isminalt;
 		$scope.globalData.selectedWp.ismaxalt = $scope.globalData.wpBackup.ismaxalt;
         $scope.globalData.selectedWp.isaltatlegstart = $scope.globalData.wpBackup.isaltatlegstart;
+        $scope.globalData.selectedWp.remark = $scope.globalData.wpBackup.remark;
+        $scope.globalData.selectedWp.supp_info = $scope.globalData.wpBackup.supp_info;
 	};
 
 
@@ -688,6 +707,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 		$scope.globalData.aircraft.speed = navplanData.aircraft_speed;
 		$scope.globalData.aircraft.consumption = navplanData.aircraft_consumption;
 		$scope.globalData.fuel.extraTime = navplanData.extra_fuel;
+		$scope.globalData.navplan.comments = navplanData.comments;
 
 		// waypoints
 		$scope.globalData.navplan.waypoints = [ ];
@@ -741,6 +761,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 			ismaxalt: wp_data.ismaxalt,
             isaltatlegstart: wp_data.isaltatlegstart,
 			remark: wp_data.remark,
+            supp_info: wp_data.supp_info,
 			airport: ap
 		};
 	};

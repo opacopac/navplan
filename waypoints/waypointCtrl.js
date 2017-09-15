@@ -5,28 +5,23 @@
 navplanApp
 	.controller('waypointCtrl', waypointCtrl);
 	
-waypointCtrl.$inject = ['$scope', '$http', 'geopointService', 'fuelService', 'userService', 'mapService', 'globalData'];
+waypointCtrl.$inject = ['$scope', '$http', 'geopointService', 'fuelService', 'userService', 'globalData'];
 
-function waypointCtrl($scope, $http, geopointService, fuelService, userService, mapService, globalData) {
+function waypointCtrl($scope, $http, geopointService, fuelService, userService, globalData) {
 	$scope.globalData = globalData;
 	$scope.newWp = undefined;
-
-	
-	$scope.updateOrderCallback = function(startIndex, endIndex)
-	{
-		var movedElement = $scope.globalData.navplan.waypoints[startIndex];
-		$scope.globalData.navplan.waypoints.splice(startIndex, 1);
-		$scope.globalData.navplan.waypoints.splice(endIndex, 0, movedElement);
-		
-		$scope.updateWaypoints();
-		$scope.discardCache();
-		$scope.$apply();
-	};
-
-	makeWaypointsSortable($scope.updateOrderCallback);
+    $scope.sortableOptions = {
+        //'ui-floating': true,
+        axis: 'y',
+        stop: function(e, ui) {
+            $scope.updateWaypoints();
+            $scope.discardCache();
+            $scope.$apply();
+        }
+    };
 
 
-	$scope.loadNavplan = function()
+    $scope.loadNavplan = function()
 	{
 		userService.readNavplan($scope.selectedNavplanId)
 			.then(
@@ -209,31 +204,4 @@ function waypointCtrl($scope, $http, geopointService, fuelService, userService, 
 		else
 			return "" + num;
 	};
-}
-
-
-function makeWaypointsSortable(updateOrderCallback)
-{
-	//Helper function to keep table row from collapsing when being sorted
-	var fixHelperModified = function(e, tr) {
-		var $originals = tr.children();
-		var $helper = tr.clone();
-		$helper.children().each(function(index)
-		{
-		  $(this).width($originals.eq(index).width())
-		});
-		return $helper;
-	};
-
-	//Make diagnosis table sortable
-	$('#waypoint_list tbody').sortable({
-		items: '.tr_sortable',
-    	helper: fixHelperModified,
-		start: function(event, ui) {
-			ui.item.startPos = ui.item.index();
-		},
-		stop: function(event,ui) {
-			updateOrderCallback(ui.item.startPos, ui.item.index());
-		}
-	}).disableSelection();	
 }

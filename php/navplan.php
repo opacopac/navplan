@@ -102,7 +102,7 @@ function readNavplan($navplan_id, $email, $token)
     global $conn;
 
     // get navplan details
-    $query = "SELECT nav.id AS id, nav.title AS title, nav.aircraft_speed AS aircraft_speed, nav.aircraft_consumption AS aircraft_consumption, nav.extra_fuel AS extra_fuel FROM navplan AS nav";
+    $query = "SELECT nav.id AS id, nav.title AS title, nav.aircraft_speed AS aircraft_speed, nav.aircraft_consumption AS aircraft_consumption, nav.extra_fuel AS extra_fuel, nav.comments AS comments FROM navplan AS nav";
     $query .= " INNER JOIN users AS usr ON nav.user_id = usr.id";
     $query .= " WHERE nav.id = '" . $navplan_id . "' AND usr.email = '" . $email . "' AND usr.token = '" . $token . "'";
 
@@ -119,6 +119,7 @@ function readNavplan($navplan_id, $email, $token)
         $navplan["aircraft_speed"] = $row["aircraft_speed"];
         $navplan["aircraft_consumption"] = $row["aircraft_consumption"];
         $navplan["extra_fuel"] = $row["extra_fuel"];
+        $navplan["comments"] = $row["comments"];
     }
     else
         die("no navplan with id: '" . $navplan_id . "' of current user found");
@@ -138,7 +139,7 @@ function readSharedNavplan($share_id)
     global $conn;
 
     // get navplan details
-    $query = "SELECT id, title, aircraft_speed, aircraft_consumption, extra_fuel FROM navplan";
+    $query = "SELECT id, title, aircraft_speed, aircraft_consumption, extra_fuel, comments FROM navplan";
     $query .= " WHERE share_id = '" . $share_id . "'";
 
     $result = $conn->query($query);
@@ -154,6 +155,7 @@ function readSharedNavplan($share_id)
         $navplan["aircraft_speed"] = $row["aircraft_speed"];
         $navplan["aircraft_consumption"] = $row["aircraft_consumption"];
         $navplan["extra_fuel"] = $row["extra_fuel"];
+        $navplan["comments"] = $row["comments"];
     }
     else
         die("no navplan with share-id: '" . $share_id . "' found");
@@ -175,7 +177,7 @@ function readNavplanWaypoints($navplanId)
     global $conn;
 
     // get navplan waypoints
-    $query = "SELECT wp.type, wp.freq, wp.callsign, wp.checkpoint, wp.alt, wp.isminalt, wp.ismaxalt, wp.isaltatlegstart, wp.remark, wp.latitude, wp.longitude, wp.airport_icao, wp.is_alternate FROM navplan_waypoints AS wp";
+    $query = "SELECT wp.type, wp.freq, wp.callsign, wp.checkpoint, wp.alt, wp.isminalt, wp.ismaxalt, wp.isaltatlegstart, wp.remark, wp.supp_info, wp.latitude, wp.longitude, wp.airport_icao, wp.is_alternate FROM navplan_waypoints AS wp";
     $query .= " WHERE wp.navplan_id = '" . $navplanId . "'";
     $query .= " ORDER BY wp.sortorder ASC";
 
@@ -199,7 +201,8 @@ function readNavplanWaypoints($navplanId)
             isminalt => $row["isminalt"],
             ismaxalt => $row["ismaxalt"],
             isaltatlegstart => $row["isaltatlegstart"],
-            remark => $row["remark"]
+            remark => $row["remark"],
+            supp_info => $row["supp_info"]
         );
 
         if ($row["is_alternate"] == 1)
@@ -234,7 +237,8 @@ function updateNavplan($navplan, $email, $token)
     $query .= " title = '" . $navplan["title"] . "',";
     $query .= " aircraft_speed = '" . $navplan["aircraft_speed"] . "',";
     $query .= " aircraft_consumption = '" . $navplan["aircraft_consumption"] . "',";
-    $query .= " extra_fuel = '" . $navplan["extra_fuel"] . "' ";
+    $query .= " extra_fuel = '" . $navplan["extra_fuel"] . "',";
+    $query .= " comments = '" . $navplan["comments"] . "' ";
     $query .= " WHERE id = '" . $navplan["id"] . "'";
 
     $result = $conn->query($query);
@@ -278,12 +282,13 @@ function createNavplan($navplan, $email, $token)
         die("no valid user found");
 
     // create navplan
-    $query = "INSERT INTO navplan (user_id, title, aircraft_speed, aircraft_consumption, extra_fuel) VALUES (";
+    $query = "INSERT INTO navplan (user_id, title, aircraft_speed, aircraft_consumption, extra_fuel, comments) VALUES (";
     $query .= "'" . $user_id . "',";
     $query .= "'" . $navplan["title"] . "',";
     $query .= "'" . $navplan["aircraft_speed"] . "',";
     $query .= "'" . $navplan["aircraft_consumption"] . "',";
-    $query .= "'" . $navplan["extra_fuel"] . "')";
+    $query .= "'" . $navplan["extra_fuel"] . "',";
+    $query .= "'" . $navplan["comments"] . "')";
 
     $result = $conn->query($query);
 
@@ -326,13 +331,14 @@ function createSharedNavplan($navplan)
         $share_id = createRandomString(10);
 
         // create navplan
-        $query = "INSERT INTO navplan (share_id, md5_hash, title, aircraft_speed, aircraft_consumption, extra_fuel) VALUES (";
+        $query = "INSERT INTO navplan (share_id, md5_hash, title, aircraft_speed, aircraft_consumption, extra_fuel, comments) VALUES (";
         $query .= "'" . $share_id . "',";
         $query .= "'" . $navplanHash . "',";
         $query .= "'" . $navplan["title"] . "',";
         $query .= "'" . $navplan["aircraft_speed"] . "',";
         $query .= "'" . $navplan["aircraft_consumption"] . "',";
-        $query .= "'" . $navplan["extra_fuel"] . "')";
+        $query .= "'" . $navplan["extra_fuel"] . "',";
+        $query .= "'" . $navplan["comments"] . "')";
 
         $result = $conn->query($query);
 
@@ -388,6 +394,7 @@ function escapeNavplanData($conn, $globalData)
     $nav["aircraft_speed"] = mysqli_real_escape_string($conn, $globalData["aircraft"]["speed"]);
     $nav["aircraft_consumption"] = mysqli_real_escape_string($conn, $globalData["aircraft"]["consumption"]);
     $nav["extra_fuel"] = mysqli_real_escape_string($conn, $globalData["fuel"]["extraTime"]);
+    $nav["comments"] = mysqli_real_escape_string($conn, $globalData["navplan"]["comments"]);
 
     foreach ($globalData["navplan"]["waypoints"] as $waypoint)
         $nav["waypoints"][] =  escapeWaypointData($conn, $waypoint);
@@ -413,6 +420,7 @@ function escapeWaypointData($conn, $waypoint)
     $wp["ismaxalt"] = $waypoint["ismaxalt"] ? '1' : '0';
     $wp["isaltatlegstart"] = $waypoint["isaltatlegstart"] ? '1' : '0';
     $wp["remark"] = mysqli_real_escape_string($conn, $waypoint["remark"]);
+    $wp["supp_info"] = mysqli_real_escape_string($conn, $waypoint["supp_info"]);
 
     return $wp;
 }
@@ -442,7 +450,7 @@ function createWaypoints($conn, $waypoints, $alternate, $navplan_id)
 
 function createInsertWaypointQuery($waypoint, $sortorder, $navplan_id, $is_alternate)
 {
-    $query = "INSERT INTO navplan_waypoints (navplan_id, sortorder, type, freq, callsign, checkpoint, airport_icao, latitude, longitude, alt, isminalt, ismaxalt, isaltatlegstart, remark, is_alternate) VALUES (";
+    $query = "INSERT INTO navplan_waypoints (navplan_id, sortorder, type, freq, callsign, checkpoint, airport_icao, latitude, longitude, alt, isminalt, ismaxalt, isaltatlegstart, remark, supp_info, is_alternate) VALUES (";
     $query .= "'" . $navplan_id . "',";
     $query .= "'" . $sortorder . "',";
     $query .= "'" . $waypoint["type"] . "',";
@@ -457,6 +465,7 @@ function createInsertWaypointQuery($waypoint, $sortorder, $navplan_id, $is_alter
     $query .= "'" . $waypoint["ismaxalt"] . "',";
     $query .= "'" . $waypoint["isaltatlegstart"] . "',";
     $query .= "'" . $waypoint["remark"] . "',";
+    $query .= "'" . $waypoint["supp_info"] . "',";
     $query .= "'" . $is_alternate . "')";
 
     return $query;

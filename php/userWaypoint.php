@@ -20,7 +20,8 @@
                 checkEscapeString($conn, $input["wp"]["checkpoint"], 1, 100),
 		        checkNumeric($input["wp"]["latitude"]),
 		        checkNumeric($input["wp"]["longitude"]),
-		        checkEscapeString($conn, $input["wp"]["remark"], 0, 100)
+		        checkEscapeString($conn, $input["wp"]["remark"], 0, 100),
+		        checkEscapeString($conn, $input["wp"]["supp_info"], 0, 255)
             );
             break;
         case 'PUT':
@@ -32,7 +33,8 @@
                 checkEscapeString($conn, $input["wp"]["checkpoint"], 1, 100),
 		        checkNumeric($input["wp"]["latitude"]),
 		        checkNumeric($input["wp"]["longitude"]),
-		        checkEscapeString($conn, $input["wp"]["remark"], 0, 100)
+		        checkEscapeString($conn, $input["wp"]["remark"], 0, 100),
+		        checkEscapeString($conn, $input["wp"]["supp_info"], 0, 255)
             );
             break;
         case 'DELETE':
@@ -74,7 +76,8 @@
                     name => $rs["name"],
                     latitude => $rs["latitude"],
                     longitude => $rs["longitude"],
-                    remark => $rs["remark"]
+                    remark => $rs["remark"],
+                    supp_info => $rs["supp_info"]
                 );
             }
         }
@@ -83,7 +86,7 @@
 	}
 		
 		
-	function createUserWaypoint($email, $token, $name, $latitude, $longitude, $remark)
+	function createUserWaypoint($email, $token, $name, $latitude, $longitude, $remark, $supp_info)
 	{
 		global $conn;
 
@@ -105,8 +108,8 @@
 
 		// create wp
 		$query =  "INSERT INTO user_waypoints";
-		$query .= " (user_id, type, name, latitude, longitude, remark)";
-		$query .= " VALUES ('" . $user_id . "', 'user', '" . $name . "', '" . $latitude . "', '" . $longitude . "', '" . $remark . "')";
+		$query .= " (user_id, type, name, latitude, longitude, remark, supp_info)";
+		$query .= " VALUES ('" . $user_id . "', 'user', '" . $name . "', '" . $latitude . "', '" . $longitude . "', '" . $remark . "', '" . $supp_info . "')";
 
 		$result = $conn->query($query);
 
@@ -117,7 +120,7 @@
 	}
 
 
-	function updateUserWaypoint($email, $token, $wp_id, $name, $latitude, $longitude, $remark)
+	function updateUserWaypoint($email, $token, $wp_id, $name, $latitude, $longitude, $remark, $supp_info)
 	{
 		global $conn;
 
@@ -145,7 +148,8 @@
 		$query .= " name = '" . $name . "',";
 		$query .= " latitude = '" . $latitude . "',";
 		$query .= " longitude = '" . $longitude . "',";
-		$query .= " remark = '" . $remark . "'";
+		$query .= " remark = '" . $remark . "',";
+        $query .= " supp_info = '" . $supp_info . "'";
 		$query .= " WHERE id = " . $wp_id . "";
 
 		$result = $conn->query($query);

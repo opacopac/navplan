@@ -313,12 +313,17 @@ function unshrinkPositions(positions)
 }
 
 
-function zeroPad(number)
+function zeroPad(number, digits)
 {
-    if (number < 10)
-        return "0" + number;
-    else
-        return "" + number;
+    if (!digits)
+        digits = 2;
+
+    var text = number.toString();
+
+    while (text.length < digits)
+        text = "0" + text;
+
+    return text;
 }
 
 
@@ -374,6 +379,12 @@ function ft2m(height_ft)
 function nautmile2m(distance_nm)
 {
     return distance_nm * 1852;
+}
+
+
+function kmh2kt(speed_kmh)
+{
+    return speed_kmh / 1.852;
 }
 
 
@@ -447,6 +458,7 @@ function rad2deg(rad)
 
 
 //region MISC
+
 
 function getMorseString(text)
 {

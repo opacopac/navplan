@@ -195,21 +195,31 @@ html, body {
     overflow: auto;
 }
 
-.ui-sortable tr
+.grabbable
 {
-  cursor: pointer;
+    cursor: move; /* fallback if grab cursor is unsupported */
+    cursor: grab;
+    cursor: -moz-grab;
+    cursor: -webkit-grab;
 }
 
-.waypoint-entry {
-  padding: 5px
+.grabbable:active
+{
+    cursor: grabbing;
+    cursor: -moz-grabbing;
+    cursor: -webkit-grabbing;
 }
 
-.waypoint-entry:nth-child(odd) {
-  background-color: lightgrey; /*#ffffff;*/
+.ui-sortable-helper {
+    display: table;
 }
 
-.waypoint-entry:nth-child(even) {
-  background-color: #f1f1f1;
+.waypoint222-entry-odd {
+    background-color: #FFFFFF;
+}
+
+.waypoint222-entry-even {
+    background-color: #FFFFFF;
 }
 
 .ol-touch .kml-export {

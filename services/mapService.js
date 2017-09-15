@@ -14,8 +14,25 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 	var MAX_ZOOMLEVEL = 17;
 
 	var map = undefined;
-	var mapLayer, wpTrackLayer, closeIconLayer, airportLayer, navaidLayer, airspaceLayer, reportingpointLayer, userWpLayer, flightTrackLayer, geopointLayer, trafficLayer, locationLayer, weatherLayer, webcamLayer, notamPolyLayer, notamTextLayer, meteoSmaLayer;
-    var airspaceImageLayer;
+	var mapLayer,
+        wpTrackLayer,
+        closeIconLayer,
+        airportLayer,
+        navaidLayer,
+        airspaceLayer,
+        reportingpointLayer,
+        userWpLayer,
+        flightTrackLayer,
+        geopointLayer,
+        trafficLayer,
+        locationLayer,
+        weatherLayer,
+        webcamLayer,
+        notamPolyLayer,
+        notamTextLayer,
+        meteoBgLayer,
+        meteoSmaLayer;
+    var airspaceImageLayer, meteoSmaImageLayer;
 	var chartLayerCache = new ChartLayerCache();
 	var wpCache = new WaypointCache(undefined, undefined, undefined);
 	var currentOverlay = undefined;
@@ -25,7 +42,6 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
     var onMoveEndCallback = undefined;
 	var onTrackModifyEndCallback = undefined;
 	var isGeopointSelectionActive = false;
-	var isMeteoVisible = false;
 	var wgs84Sphere = new ol.Sphere(6378137);
 	var minZoomLevel = [];
 	var maxAgeSecTrackDots = 120;
@@ -51,6 +67,8 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
         drawFlightTrack: drawFlightTrack,
         drawGeopointSelection: drawGeopointSelection,
         drawOwnPlane: drawOwnPlane,
+        drawMeteoBg: drawMeteoBg,
+        drawSmaMeasurements: drawSmaMeasurements,
         drawTraffic: drawTraffic,
         drawWaypoints: drawWaypoints,
         fitViewLatLon: fitViewLatLon,
@@ -66,9 +84,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 		init: init,
         loadAndDrawUserPoints: loadAndDrawUserPoints,
 		setMapPosition: setMapPosition,
-        updateMapSize: updateMapSize,
-        updateMeteo: updateMeteo,
-        showMeteo: showMeteo
+        updateMapSize: updateMapSize
 	};
 
 	//endregion
@@ -128,8 +144,10 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
         geopointLayer = createEmptyVectorLayer();
         notamPolyLayer = createEmptyVectorLayer();
         notamTextLayer = createEmptyVectorLayer();
+        meteoBgLayer = createEmptyVectorLayer();
         meteoSmaLayer = createEmptyVectorLayer();
         airspaceImageLayer = createImageVectorLayerFromVectorLayer(airspaceLayer);
+        //meteoSmaImageLayer = createImageVectorLayerFromVectorLayer(meteoSmaLayer);
 
         // init map
         map = new ol.Map({
@@ -150,11 +168,12 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
                 airportLayer,
                 weatherLayer,
                 notamTextLayer,
+                meteoBgLayer,
                 wpTrackLayer,
                 flightTrackLayer,
-                geopointLayer,
                 trafficLayer,
                 meteoSmaLayer,
+                geopointLayer,
                 locationLayer
             ],
             view: new ol.View(
@@ -181,7 +200,8 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
             {layer: userWpLayer, minZoom: 11},
             {layer: webcamLayer, minZoom: 10},
             {layer: trafficLayer, minZoom: 7},
-            {layer: meteoSmaLayer, minZoom: 7},
+            {layer: meteoBgLayer, minZoom: 9},
+            {layer: meteoSmaLayer, minZoom: 9},
             {layer: weatherLayer, minZoom: 9}];
 
         setLayerVisibility();
@@ -249,12 +269,12 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
             //return "https://tile.mapzen.com/mapzen/terrain/v1/normal/" + z + "/" + y + "/" + x + ".png?api_key=mapzen-ECzH36f";
             //return "https://api.mapbox.com/styles/v1/opacopac/cj0msmdwf00ad2snz48faknaq/tiles/256/" + z + "/" + y + "/" + x + "@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2owbXNsN3ltMDAwdjMyczZudmt0bGwwdiJ9.RG5N7U6VkoIQ44S-bB-aNg";
 
-            /*if (location.href.indexOf("branch") >= 0)
+            /*if (isBranch())
             {
                 // TODO: temp for saving map views
                 var email = getCookie("email");
 
-                    if (!(email && email == "armand@tschanz.com"))
+                    if (!(email && isSelf(email)))
                     return "https://api.mapbox.com/styles/v1/opacopac/cj0mxdtd800bx2slaha4b0p68/tiles/256/" + z + "/" + y + "/" + x + "@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2oxYjZ6aDQxMDA1ejJ3cGUzbmZ1Zm81eiJ9.oFvbw05OkuQesxOghWqv_A";
             }
             else
@@ -1149,26 +1169,98 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
     }
 
 
+    function drawMeteoBg(showBg)
+    {
+        meteoBgLayer.getSource().clear();
+
+        if (!showBg)
+            return;
+
+        var mer_coordinates = [[
+            getMercatorCoordinates(-85, -180),
+            getMercatorCoordinates(85, -180),
+            getMercatorCoordinates(85, 180),
+            getMercatorCoordinates(-85, 180),
+            getMercatorCoordinates(-85, -180)
+        ]];
+
+        var bgFeature = new ol.Feature({
+            geometry: new ol.geom.Polygon(mer_coordinates)
+        });
+
+        var bgStyle = new ol.style.Style({
+            fill: new ol.style.Fill({
+                color: 'rgba(0, 0, 0, 0.5)'
+            })
+        });
+
+        bgFeature.setStyle(bgStyle);
+
+        meteoBgLayer.getSource().addFeature(bgFeature);
+    }
+
+
     function drawSmaMeasurements(measurementList)
     {
         meteoSmaLayer.getSource().clear();
 
+        if (!measurementList)
+            return;
 
         for (var i = 0; i < measurementList.length; i++)
         {
             var measurement = measurementList[i];
 
+            drawLocationDot(measurement);
+            drawWindArrow(measurement);
+
+            if (map.getView().getZoom() > 10)
+                drawDetailBox(measurement);
+            else
+                drawSmallBox(measurement);
+        }
+
+
+        function drawLocationDot(measurement)
+        {
+            var dotFeature = new ol.Feature({
+                geometry: new ol.geom.Point(ol.proj.fromLonLat([measurement.station_lon, measurement.station_lat]))
+            });
+
+            var dotStyle = new ol.style.Style({
+                image: new ol.style.Circle({
+                    radius: 4,
+                    fill: new ol.style.Fill({
+                        color: '#FFFFFF'
+                    }),
+                    stroke: new ol.style.Stroke({
+                        color: '#000000',
+                        width: 2
+                    })
+                })
+            });
+
+            dotFeature.setStyle(dotStyle);
+            meteoSmaLayer.getSource().addFeature(dotFeature);
+        }
+
+
+        function drawWindArrow(measurement)
+        {
             var windArrowFeature = new ol.Feature({
-                geometry: new ol.geom.Point(ol.proj.fromLonLat([measurement.station_lon, measurement.station_lat])),
+                geometry: new ol.geom.Point(ol.proj.fromLonLat([measurement.station_lon, measurement.station_lat]))
             });
 
             var windArrowSvg = meteoService.getWindArrowSvg(measurement);
+            //var windArrowImage = meteoService.getWindArrowImage(measurement);
 
             var windArrowStyle = new ol.style.Style({
                 image: new ol.style.Icon({
                     anchor: [0.5, 0.0],
                     opacity: 1.0,
-                    src: 'data:image/svg+xml;utf8,' + windArrowSvg,
+                    /*img: windArrowImage,
+                    imgSize : [100, 100],*/
+                    src: 'data:image/svg+xml;utf8,' + encodeURIComponent(windArrowSvg),
                     scale: 1.0,
                     rotation: deg2rad(measurement.wind_dir)
                 })
@@ -1179,7 +1271,73 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
             windArrowFeature.measurement = measurement;
             meteoSmaLayer.getSource().addFeature(windArrowFeature);
         }
+
+
+        function drawDetailBox(measurement)
+        {
+            var boxFeature = new ol.Feature({
+                geometry: new ol.geom.Point(ol.proj.fromLonLat([measurement.station_lon, measurement.station_lat]))
+            });
+
+            var boxSvg = meteoService.getDetailBoxSvg(measurement);
+
+            var anchor;
+            if (measurement.wind_dir >= 0 && measurement.wind_dir < 90)
+                anchor = [0.5, 1.2]; //anchor = [-0.1, 1.1];
+            else if (measurement.wind_dir >= 90 && measurement.wind_dir < 180)
+                anchor = [0.5, -0.2]; //anchor = [-0.1, -0.1];
+            else if (measurement.wind_dir >= 180 && measurement.wind_dir < 270)
+                anchor = [0.5, -0.2]; // anchor = [1.1, -0.1];
+            else
+                anchor = [0.5, 1.2]; // anchor = [1.1, 1.1];
+
+
+            var boxStyle = new ol.style.Style({
+                image: new ol.style.Icon({
+                    anchor: anchor,
+                    opacity: 0.9,
+                    src: 'data:image/svg+xml;utf8,' + encodeURIComponent(boxSvg),
+                    scale: 1.0
+                })
+            });
+
+
+            boxFeature.setStyle(boxStyle);
+            boxFeature.measurement = measurement;
+            meteoSmaLayer.getSource().addFeature(boxFeature);
+        }
     }
+
+
+    function drawSmallBox(measurement)
+    {
+        var boxFeature = new ol.Feature({
+            geometry: new ol.geom.Point(ol.proj.fromLonLat([measurement.station_lon, measurement.station_lat]))
+        });
+
+        var boxSvg = meteoService.getSmallBoxSvg(measurement);
+
+        var offsetPixel = 18;
+        var rot = measurement.wind_dir ? deg2rad(measurement.wind_dir) : 0.0;
+        var anchor = [-offsetPixel * Math.sin(rot) + 7, offsetPixel * Math.cos(rot) + 7];
+
+        var boxStyle = new ol.style.Style({
+            image: new ol.style.Icon({
+                anchor: anchor,
+                anchorXUnits: 'pixels',
+                anchorYUnits: 'pixels',
+                opacity: 0.9,
+                src: 'data:image/svg+xml;utf8,' + encodeURIComponent(boxSvg),
+                scale: 1.0
+            })
+        });
+
+
+        boxFeature.setStyle(boxStyle);
+        boxFeature.measurement = measurement;
+        meteoSmaLayer.getSource().addFeature(boxFeature);
+    }
+
 
     //endregion
 
@@ -1224,6 +1382,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
                 }
             },
             {
+                hitTolerance: 10,
                 layerFilter : function (layer) // layers to search for features
                 {
                     return (layer === geopointLayer ||
@@ -1324,9 +1483,6 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
         {
             var extent = getViewExtentLatLon();
             mapFeatureService.getMapFeatures(extent, onMapFeaturesLoaded);
-
-            if (isMeteoVisible)
-                meteoService.getSmaMeasurements(extent, onSmaMeasurementsLoaded);
         }
 
         onMoveEndCallback(event);
@@ -1343,12 +1499,6 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 
             metarTafNotamService.getAreaWeatherInfos(getViewExtentLatLon(), drawWeatherInfo);
             metarTafNotamService.getNotams(getViewExtentLatLon(), mapFeatureList.airports, drawAreaNotams);
-        }
-
-
-        function onSmaMeasurementsLoaded(measurementList)
-        {
-            drawSmaMeasurements(measurementList);
         }
     }
 
@@ -1412,21 +1562,6 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
     function updateMapSize()
     {
         map.updateSize();
-    }
-
-
-    function updateMeteo()
-    {
-        if (isMeteoVisible)
-            meteoService.getSmaMeasurements(getViewExtentLatLon(), drawSmaMeasurements);
-        else
-            meteoSmaLayer.getSource().clear();
-    }
-
-
-    function showMeteo(isVisible)
-    {
-        isMeteoVisible = isVisible;
     }
 
 

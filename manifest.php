@@ -238,7 +238,7 @@
 		$xtile = floor((1 - log(tan(deg2rad($lat)) + 1 / cos(deg2rad($lat))) / pi()) /2 * pow(2, $zoom));
 
 
-        /*if (strpos($_SERVER['REQUEST_URI'], "branch") === false)
+        /*if (isBranch())
             return '//api.mapbox.com/styles/v1/opacopac/cj0mxdtd800bx2slaha4b0p68/tiles/256/' . $zoom . '/' . $ytile . '/' . $xtile . '@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2oxYjc5dWVnMDA1eTJxbm41YmluaDBvYiJ9.6Kqm-by8OME1SqB15uEzKA';
         else
             return '//api.mapbox.com/styles/v1/opacopac/cj0mxdtd800bx2slaha4b0p68/tiles/256/' . $zoom . '/' . $ytile . '/' . $xtile . '@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2oxYjc0MHFsMDAyaTMzcGVwdTY1aHlzZCJ9.ssqYvA4pbLYBIa87V7hLeQ';*/

@@ -3,10 +3,10 @@
  */
 
 navplanApp
-	.controller('mapCtrl', [ '$scope', '$sce', '$route', 'mapService', 'mapFeatureService', 'locationService', 'trafficService', 'geopointService', 'userService', 'metarTafNotamService', 'terrainService', 'globalData', mapCtrl ]);
+	.controller('mapCtrl', [ '$scope', '$sce', '$route', 'mapService', 'mapFeatureService', 'locationService', 'trafficService', 'geopointService', 'userService', 'metarTafNotamService', 'terrainService', 'meteoService', 'globalData', mapCtrl ]);
 
 
-function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationService, trafficService, geopointService, userService, metarTafNotamService, terrainService, globalData)
+function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationService, trafficService, geopointService, userService, metarTafNotamService, terrainService, meteoService, globalData)
 {
     //region INIT VARS
 
@@ -110,6 +110,8 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
             center: view.getCenter(),
             zoom: view.getZoom()
         };
+
+        $scope.updateMeteo();
     };
 
 
@@ -691,9 +693,22 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
     $scope.onMeteoClicked = function()
     {
         $scope.globalData.showMeteo = !$scope.globalData.showMeteo;
-        mapService.showMeteo($scope.globalData.showMeteo);
+        $scope.updateMeteo();
+    };
 
-        mapService.updateMeteo();
+
+    $scope.updateMeteo = function()
+    {
+        if ($scope.globalData.showMeteo)
+        {
+            mapService.drawMeteoBg(true);
+            meteoService.getSmaMeasurements(mapService.getViewExtentLatLon(), mapService.drawSmaMeasurements);
+        }
+        else
+        {
+            mapService.drawMeteoBg(false);
+            mapService.drawSmaMeasurements(undefined);
+        }
     };
 
     //endregion
@@ -719,7 +734,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
     //endregion
 
 
-    //region CACHING
+    //region OFFLINE CACHE
 
     $scope.onOfflineCacheClicked = function()
     {
@@ -931,15 +946,16 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
                 mt: '',
                 dist: '',
                 alt: '',
-                remark: ''
+                remark: '',
+                supp_info: feature.geopoint.supp_info
             };
         }
         else if (feature.airport) {
             return {
                 type: 'airport',
                 airport: feature.airport,
-                freq: getFrequency(feature.airport),
-                callsign: getCallsign(feature.airport),
+                freq: getMainFrequency(feature.airport),
+                callsign: getMainCallsign(feature.airport),
                 checkpoint: feature.airport.icao ? feature.airport.icao : feature.airport.name,
                 airport_icao: feature.airport.icao,
                 latitude: feature.airport.latitude,
@@ -947,7 +963,8 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
                 mt: '',
                 dist: '',
                 alt: '',
-                remark: ''
+                remark: '',
+                supp_info: getAirportSuppInfoString(feature.airport)
             };
         }
         else if (feature.navaid) {
@@ -962,7 +979,8 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
                 mt: '',
                 dist: '',
                 alt: '',
-                remark: ''
+                remark: '',
+                supp_info: ''
             };
         }
         else if (feature.reportingpoint) {
@@ -999,7 +1017,8 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
                 alt: alt ? alt : '',
                 ismaxalt: ismaxalt,
                 isminalt: isminalt,
-                remark: feature.reportingpoint.remark
+                remark: feature.reportingpoint.remark,
+                supp_info: feature.reportingpoint.supp_info
             };
         }
         else if (feature.userWaypoint) {
@@ -1015,14 +1034,15 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
                 mt: '',
                 dist: '',
                 alt: '',
-                remark: feature.userWaypoint.remark
+                remark: feature.userWaypoint.remark,
+                supp_info: feature.userWaypoint.supp_info
             };
         }
         else
             return undefined;
 
 
-        function getFrequency(airport)
+        function getMainFrequency(airport)
         {
             if (!airport || !airport.radios || airport.radios.length == 0)
                 return '';
@@ -1031,13 +1051,17 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
         }
 
 
-        function getCallsign(airport)
+        function getMainCallsign(airport)
         {
             if (!airport || !airport.radios || airport.radios.length == 0)
                 return '';
 
-            var radio = airport.radios[0];
+            return getCallsign(airport.radios[0], airport.country);
+        }
 
+
+        function getCallsign(radio, country)
+        {
             switch (radio.type)
             {
                 case "TOWER" : return "TWR";
@@ -1046,8 +1070,9 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
                 case "DEPARTURE" : return "DEP";
                 case "GLIDING" : return "GLD";
                 case "GROUND" : return "GND";
+                case "DELIVERY" : return "DEL";
                 case "CTAF" :
-                    if (airport.country == "CH") // spezialregel nur für country = CH
+                    if (country == "CH") // spezialregel nur für country = CH
                         return "AD";
                     else
                         return "CTAF";
@@ -1061,6 +1086,51 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
                 }
                 default : return radio.type;
             }
+        }
+
+
+        function getAirportSuppInfoString(airport)
+        {
+            var i;
+            var suppInfoPart = [];
+
+            // altitude
+            if (airport.elevation)
+                suppInfoPart.push("ELEV:" + $scope.getElevationString(airport.elevation));
+
+            // runways
+            if (airport.runways && airport.runways.length > 0)
+            {
+                var runwayStringList = [];
+
+                for (i = 0; i < airport.runways.length; i++)
+                {
+                    var rwy = airport.runways[i];
+
+                    if (rwy.name.toString().indexOf("GLD") == -1 || airport.runways.length == 1) // skip GLD strip unless it's the only rwy
+                        runwayStringList.push(rwy.name);
+                }
+
+                suppInfoPart.push("RWY:" + runwayStringList.join(","));
+            }
+
+            // frequencies
+            if (airport.radios && airport.radios.length > 0)
+            {
+                var radioStringList = [];
+
+                for (i = 0; i < airport.radios.length; i++)
+                {
+                    var radio = airport.radios[i];
+                    var callsign = getCallsign(radio, airport.country);
+                    if ((radio.type != "GLIDING" && radio.type != "INFO" && radio.type != "FIS" && callsign != "VDF") || airport.radios.length == 1) // skip GLD, FIS, VDF freq unless it's the only frequency
+                        radioStringList.push(callsign + ":" + radio.frequency);
+                }
+
+                suppInfoPart.push(radioStringList.join(" "));
+            }
+
+            return suppInfoPart.join(" ");
         }
     };
 

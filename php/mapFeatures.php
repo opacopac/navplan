@@ -18,7 +18,7 @@ $token = $_COOKIE["token"] ? checkEscapeToken($conn, $_COOKIE["token"]) : NULL;
 // load data
 $extent = "GeomFromText('POLYGON((" . $minLon . " " . $minLat . "," . $maxLon . " " . $minLat . "," . $maxLon . " " . $maxLat . "," . $minLon . " " . $maxLat . "," . $minLon . " " . $minLat . "))')";
 $navaids = getNavaids($extent);
-$airports = getAirports($extent);
+$airports = getAirports($extent, $email);
 $airspaces = getAirspaces($extent);
 $webcams = getWebcams($minLon, $minLat, $maxLon, $maxLat);
 $reportingPoints = getReportingPoints($extent);
@@ -82,7 +82,7 @@ function getNavaids($extent)
 }
 
 
-function getAirports($extent)
+function getAirports($extent, $email)
 {
     global $conn;
 
@@ -196,7 +196,7 @@ function getAirports($extent)
     $query .= "  rad.type,";
     $query .= "  rad.typespec,";
     $query .= "  rad.description,";
-    $query .= "  (CASE WHEN rad.category = 'COMMUNICATION' THEN 1 WHEN rad.category = 'OTHER' THEN 2 ELSE 3 END) AS sortorder1,";
+    $query .= "  (CASE WHEN rad.category = 'COMMUNICATION' THEN 1 WHEN rad.category = 'OTHER' THEN 2 WHEN rad.category = 'INFORMATION' THEN 3 ELSE 4 END) AS sortorder1,";
     $query .= "  (CASE WHEN rad.type = 'TOWER' THEN 1 WHEN rad.type = 'CTAF' THEN 2 WHEN rad.type = 'OTHER' THEN 3 ELSE 4 END) AS sortorder2";
     $query .= " FROM openaip_radios AS rad ";
     $query .= " WHERE airport_id IN (" . $apIdList . ")";
@@ -249,7 +249,7 @@ function getAirports($extent)
 
 
     // hack: show VFRM charts only in branch
-    if (strpos($_SERVER['REQUEST_URI'], "branch") === false)
+    if (!$email && !isBranch())
         $query .= " AND source != 'VFRM' ";
 
     $query .= " ORDER BY";
@@ -532,7 +532,8 @@ function getUserPoints($email, $token, $minLon, $minLat, $maxLon, $maxLat)
                 name => $rs["name"],
                 latitude => $rs["latitude"],
                 longitude => $rs["longitude"],
-                remark => $rs["remark"]
+                remark => $rs["remark"],
+                supp_info => $rs["supp_info"]
             );
         }
     }
