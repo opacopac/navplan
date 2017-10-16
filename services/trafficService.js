@@ -52,6 +52,7 @@ function trafficService($http)
         this.timestamp = undefined;
         this.method = undefined;
         this.receiver = undefined;
+        this.receivedTimestamp = undefined;
     }
 
     // endregion
@@ -117,6 +118,7 @@ function trafficService($http)
         function parseOgnPositions(ac)
         {
             var positionList = [];
+            var now = new Date().getTime();
 
             for (var i = 0; i < ac.positions.length; i++)
             {
@@ -124,7 +126,8 @@ function trafficService($http)
                 position.latitude = ac.positions[i].latitude;
                 position.longitude = ac.positions[i].longitude;
                 position.altitude = ac.positions[i].altitude;
-                position.timestamp = getMs(ac.positions[i].time);
+                position.timestamp = Math.min(getMs(ac.positions[i].time), now);
+                position.receivedTimestamp = new Date().getTime();
                 position.receiver = "Open Glider Network (" + ac.positions[i].receiver + ")";
                 position.method = positionMethod.flarm;
                 positionList.push(position);
@@ -242,14 +245,14 @@ function trafficService($http)
         {
             var pos = new AircraftPosition();
             var positionList = []; // will contain only one entry
-            var d = new Date();
-            var now = d.getTime();
+            var now = new Date().getTime();
 
             pos.latitude = ac.Lat;
             pos.longitude = ac.Long;
             pos.method = ac.Mlat ? positionMethod.mlat : positionMethod.adsb;
             pos.altitude = ac.Gnd ? undefined : ft2m(ac.GAlt);
-            pos.timestamp = (ac.PosTime > now) ? now - 15000 : ac.PosTime; // 15sec penalty if time > now => TODO: better comp to last pos time
+            pos.timestamp = Math.min(ac.PosTime, now);
+            pos.receivedTimestamp = now;
             pos.receiver = ac.Mlat ? "ADSBExchange (MLAT)" : "ADSBExchange (ADS-B)";
 
             positionList.push(pos);
@@ -380,6 +383,7 @@ function trafficService($http)
 
     function compactAcList(maxagesec)
     {
+        var lastWp;
         var d = new Date();
         var oldestTimestamp = d.getTime() - maxagesec * 1000;
 
@@ -395,6 +399,7 @@ function trafficService($http)
 
             // remove expired or identical entries
             var newPositions = [];
+            var lastWp = undefined;
 
             for (var i = 0; i < ac.positions.length; i++)
             {
@@ -402,25 +407,24 @@ function trafficService($http)
                 if (ac.positions[i].timestamp < oldestTimestamp)
                     continue;
 
-                // mark identical positions (lat/lon and/or time)
-                if (i > 0)
+                // check for points to skip
+                if (lastWp)
                 {
-                    if (ac.positions[i].latitude == ac.positions[i - 1].latitude && ac.positions[i].longitude == ac.positions[i - 1].longitude)
+                    // skip identical positions
+                    if (ac.positions[i].latitude == lastWp.latitude && ac.positions[i].longitude == lastWp.longitude)
                         continue;
 
-                    if (ac.positions[i].timestamp == ac.positions[i - 1].timestamp)
+                    // skip identical timestamps
+                    if (ac.positions[i].timestamp == lastWp.timestamp)
                         continue;
 
-                    // skip mlat-positions within 30 sec after more accurate ogn/adsb position
-                    if (ac.positions[i].method == positionMethod.mlat && ac.positions[i - 1].method != positionMethod.mlat && ac.positions[i].timestamp < ac.positions[i - 1].timestamp + 30000)
-                        continue;
-
-                    // skip adsb positions within 15 sec after more reliable ogn position
-                    if (ac.positions[i].method == positionMethod.adsb && ac.positions[i - 1].method == positionMethod.ogn && ac.positions[i].timestamp < ac.positions[i - 1].timestamp + 15000)
+                    // skip adsb-exchange positions within 30 sec after more reliable ogn position
+                    if (lastWp.method == positionMethod.flarm && ac.positions[i].method != positionMethod.flarm && ac.positions[i].timestamp < lastWp.timestamp + 30000)
                         continue;
                 }
 
-                newPositions.push(ac.positions[i]);
+                lastWp =ac.positions[i];
+                newPositions.push(lastWp);
             }
 
 

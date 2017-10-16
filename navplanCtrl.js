@@ -48,6 +48,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 			$scope.globalData.clickHistory = []; // internally used only
             $scope.globalData.downloadLink = {}; // internally used only
             $scope.globalData.fitViewLatLon = undefined; // internally used only
+            $scope.globalData.lastActivity = undefined;
 		}
 		else // load default values
 		{
@@ -116,7 +117,10 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 			$scope.globalData.clickHistory = []; // internally used only
             $scope.globalData.downloadLink = {}; // internally used only
             $scope.globalData.fitViewLatLon = undefined; // internally used only
+            $scope.globalData.lastActivity = undefined;
 		}
+
+		$scope.updateLastActivity();
 	};
 
 
@@ -286,13 +290,13 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 
     $scope.isBranch = function()
     {
-        return (location.href.indexOf("branch") >= 0);
+        return isBranch2();
     };
 
 
     $scope.isSelf = function(email)
     {
-        return (email == "armand@tschanz.com");
+        return isSelf2(email);
     };
 
 
@@ -302,7 +306,14 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 	};
 
 
-	$scope.onDisclaimerOKClicked = function()
+    $scope.updateLastActivity = function()
+    {
+        $scope.globalData.lastActivity = Date.now();
+        //console.log("MEEP");
+    };
+
+
+    $scope.onDisclaimerOKClicked = function()
 	{
 		if ($scope.hideDisclaimer)
 			window.localStorage.setItem("hideDisclaimer", "true");
@@ -678,6 +689,18 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
     };
 
 
+	$scope.onCollapseNavbarTriggered = function()
+    {
+        $("#navbarcontent").collapse("toggle");
+    };
+
+
+	$scope.onNavbarCollapsed = function()
+    {
+        $scope.$broadcast("onNavbarCollapsed");
+    };
+
+
 	$scope.onClockTimer = function()
 	{
 		var timer = $scope.globalData.timer;
@@ -810,6 +833,13 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 	window.addEventListener("beforeunload", $scope.onLeaving);
 	window.addEventListener("pagehide", $scope.onLeaving);
 	window.addEventListener("visibilitychange", $scope.onVisibilityChange);
+    window.addEventListener("mousemove", $scope.updateLastActivity);
+    document.addEventListener("click", $scope.updateLastActivity);
+    window.addEventListener("keypress", $scope.updateLastActivity);
+
+	// init collapse handlers
+    $(document).on("click","#navbarcontent.in", $scope.onCollapseNavbarTriggered);
+    $("#navbarcontent").on('hidden.bs.collapse', $scope.onNavbarCollapsed);
 
 	// init application cache
 	window.frames[0].onload = function()

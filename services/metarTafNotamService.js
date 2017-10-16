@@ -186,14 +186,7 @@ function metarTafNotamService($http, $sce)
         if (!datestring)
             return;
 
-        var ms = Date.now() - Date.parse(datestring);
-        var h = Math.floor(ms / 1000 / 3600);
-        var m = Math.floor(ms / 1000 / 60 - h * 60);
-
-        if (h > 0)
-            return h + "h " + m + "min";
-        else
-            return m + "min";
+        return getHourMinAgeString(Date.parse(datestring));
     }
 
 

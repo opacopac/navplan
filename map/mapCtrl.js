@@ -5,11 +5,18 @@
 navplanApp
 	.controller('mapCtrl', [ '$scope', '$sce', '$route', 'mapService', 'mapFeatureService', 'locationService', 'trafficService', 'geopointService', 'userService', 'metarTafNotamService', 'terrainService', 'meteoService', 'globalData', mapCtrl ]);
 
+navplanApp
+    .directive('addToRouteDirective', addToRouteDirective);
+
+function addToRouteDirective()
+{
+    return { templateUrl: 'map/add-to-route-directive.html' };
+}
+
 
 function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationService, trafficService, geopointService, userService, metarTafNotamService, terrainService, meteoService, globalData)
 {
     //region INIT VARS
-
 	$scope.$route = $route;
 	$scope.globalData = globalData;
 	$scope.trafficTimerIntervallMs = 5000;
@@ -115,24 +122,6 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
     };
 
 
-    $scope.onZoomInClicked = function()
-    {
-        var zoom = mapService.getMapPosition().zoom;
-
-        if (zoom < mapService.MAX_ZOOMLEVEL)
-            mapService.setMapPosition(null, null, zoom + 1);
-    };
-
-
-    $scope.onZoomOutClicked = function()
-    {
-        var zoom = mapService.getMapPosition().zoom;
-
-        if (zoom > 1)
-            mapService.setMapPosition(null, null, zoom - 1);
-    };
-
-
     $scope.fitView = function()
     {
         if ($scope.globalData.fitViewLatLon)
@@ -181,6 +170,12 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 	};
 
 
+	$scope.onMapActivityOccured = function()
+    {
+        $scope.updateLastActivity();
+    };
+
+
 	$scope.onAddSelectedWaypointClicked = function()
 	{
 		$scope.globalData.selectedWp.isNew = false;
@@ -191,7 +186,17 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 	};
 
 
-	$scope.onSetAsAlternateClicked = function()
+    $scope.onAddSelectedWaypointClicked2 = function()
+    {
+        $scope.globalData.selectedWp.isNew = false;
+        $scope.insertWaypoint($scope.globalData.selectedWp, parseInt($scope.addToRouteAfterWp));
+        $scope.globalData.selectedWp = undefined;
+
+        $scope.closeFeatureOverlay();
+    };
+
+
+    $scope.onSetAsAlternateClicked = function()
 	{
 		$scope.globalData.selectedWp.isNew = false;
 		$scope.setAlternate($scope.globalData.selectedWp);
@@ -226,8 +231,8 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 	{
 		$scope.editUserWaypoint();
 	};
-	
-	
+
+
 	$scope.addWaypoint = function(newWp)
 	{
 		var wps = $scope.globalData.navplan.waypoints;
@@ -242,9 +247,31 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 		$scope.updateWaypoints();
 		$scope.discardCache();
 	};
-	
-	
-	$scope.setAlternate = function(altWp)
+
+
+    $scope.insertWaypoint = function(newWp, newWpIdx)
+    {
+        /*var wps = $scope.globalData.navplan.waypoints;
+        var numWp = wps.length;
+
+        // skip if same coordinates as last waypoint
+        if (numWp > 1 && wps[numWp - 1].latitude == newWp.latitude && wps[numWp - 1].longitude == newWp.longitude)
+            return;
+
+        $scope.globalData.navplan.waypoints.push(newWp);*/
+
+        if (newWpIdx < 0 || newWpIdx > $scope.globalData.navplan.waypoints.length)
+            newWpIdx = $scope.globalData.navplan.waypoints.length; // default: append
+
+        $scope.globalData.navplan.waypoints.splice(newWpIdx, 0, newWp);
+
+
+        $scope.updateWaypoints();
+        $scope.discardCache();
+    };
+
+
+    $scope.setAlternate = function(altWp)
 	{
 		$scope.globalData.navplan.alternate = altWp;
 		
@@ -274,6 +301,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
         {
             $scope.globalData.selectedWp = $scope.getWpFromFeature(feature, mapService.getLatLonFromPixel(event.pixel[0], event.pixel[1]));
             $scope.globalData.selectedWp.isNew = true;
+            $scope.addToRouteAfterWp = "" + ($scope.globalData.navplan.waypoints.length + 1); // TODO
 
             $scope.$apply();
             $scope.openFeatureOverlay($scope.globalData.selectedWp.latitude, $scope.globalData.selectedWp.longitude);
@@ -322,6 +350,12 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
         else if (feature.webcam)
         {
             window.open(feature.webcam.url);
+        }
+        else if (feature.smaMeasurement)
+        {
+            //var baseUrl = "http://www.meteoswiss.admin.ch/home/measurement-and-forecasting-systems/land-based-stations/automatisches-messnetz.html?station=";
+            var baseUrl = "http://www.meteoswiss.admin.ch/product/input/smn-stations/docs/";
+            window.open(baseUrl + feature.smaMeasurement.station_id + ".pdf");
         }
         else if (feature.weatherInfo)
         {
@@ -571,7 +605,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 		$scope.stopFollowTraffic();
 
 		if ($scope.globalData.showTraffic)
-		{				
+		{
 			$scope.globalData.trafficStatus = "waiting";
 
 			if (!$scope.globalData.trafficTimer)
@@ -581,20 +615,35 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 		}
 		else
 		{
-			window.clearInterval($scope.globalData.trafficTimer);
-			$scope.globalData.trafficTimer = undefined;
-			$scope.stopFollowTraffic();
-			mapService.drawTraffic(undefined);
-			$scope.globalData.trafficStatus = "off";
+            $scope.stopTrafficUpdates();
 		}
 	};
 
 
 	$scope.onTrafficTimer = function()
 	{
-	    if ($scope.$route.current.controller == "mapCtrl")
+	    if (!$scope.globalData.showLocation && Date.now() > $scope.globalData.lastActivity + 10 * 60 * 1000)
+        {
+            $scope.stopTrafficUpdates();
+            $scope.showErrorMessage("Traffic updates automatically turned off after 10 minutes of inactivity");
+            $scope.$apply();
+        }
+        else if ($scope.$route.current.controller == "mapCtrl")
+        {
             $scope.updateTraffic();
+        }
 	};
+
+
+	$scope.stopTrafficUpdates = function()
+    {
+        window.clearInterval($scope.globalData.trafficTimer);
+        $scope.globalData.showTraffic = false;
+        $scope.globalData.trafficTimer = undefined;
+        $scope.stopFollowTraffic();
+        mapService.drawTraffic(undefined);
+        $scope.globalData.trafficStatus = "off";
+    };
 
 
 	$scope.updateTraffic = function()
@@ -657,8 +706,8 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 
 		$scope.followTrafficLastPosition = currentAcPosition;
 	};
-	
-	
+
+
 	$scope.onFollowSelectedTraffic = function()
 	{
 		if ($scope.globalData.showLocation)
@@ -923,6 +972,27 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
                 $scope.appCache.update();
             }
         }
+    };
+
+    //endregion
+
+
+    //region FULL SCREEN
+
+    $scope.isInFullScreenMode = function()
+    {
+        return isInFullScreenMode();
+    };
+
+
+    $scope.onFullScreenModeClicked = function()
+    {
+        var fsElement = document.getElementById("fullScreenContent");
+
+        if (isInFullScreenMode())
+            stopFullScreenMode();
+        else
+            startFullScreenMode(fsElement);
     };
 
     //endregion
@@ -1231,9 +1301,32 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 	};
 
 
+	$scope.isInFullScreenMode = function()
+    {
+        return (document.fullscreenElement != null
+            || document.webkitFullscreenElement != null
+            || document.mozFullScreenElement != null
+            || document.msFullscreenElement != null
+            || document.fullscreen
+            || document.webkitIsFullScreen
+            || document.mozFullScreen
+            || document.webkitIsFullScreen);
+    };
+
+
 	$scope.resizeMapToWindow = function(event)
 	{
-		$('#map').height($(window).height() - $('#navbarheader').height());
+        if ($scope.isInFullScreenMode())
+        {
+            $('#map').offset({top: 0, left: 0});
+            $('#map').height($(window).height());
+        }
+        else
+        {
+            $('#map').offset({top: $('#navbarheader').height(), left: 0});
+            $('#map').height($(window).height() - $('#navbarheader').height());
+        }
+
 		$('#map').width($(window).width());
 		mapService.updateMapSize();
 		$scope.updateWaypoints();
@@ -1266,11 +1359,14 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
     try
 	{
 		mapService.init(
+            $scope.globalData.currentMapPos,
 			$scope.onMapClicked,
 			$scope.onFeatureSelected,
 			$scope.onMapMoveEnd,
 			$scope.onTrackModifyEnd,
-			$scope.globalData.currentMapPos);
+            $scope.onMapActivityOccured,
+            $scope.onFullScreenModeClicked
+        );
 
 		$scope.redrawWaypoints();
 		$scope.redrawFlightTrack();
@@ -1290,24 +1386,36 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
         };
 
 		writeServerErrLog(errLog);
+		logError(errLog);
 	}
 
-	$scope.$on("redrawWaypoints", function () {
-        $scope.redrawWaypoints();
-    });
+	// navplan broadcast events
+	$scope.$on("redrawWaypoints", $scope.redrawWaypoints);
+	$scope.$on("onTrashClicked", $scope.redrawFlightTrack);
+	$scope.$on("onNavbarCollapsed", $scope.resizeMapToWindow);
 
-	$scope.$on("onTrashClicked", function() {
-        $scope.redrawFlightTrack();
-	});
-
-    window.removeEventListener("keydown", $scope.onKeyDown);
+	// other event listeners
     window.addEventListener("keydown", $scope.onKeyDown);
-	window.removeEventListener("resize", $scope.resizeMapToWindow);
-	window.addEventListener("resize", $scope.resizeMapToWindow);
+    window.addEventListener("resize", $scope.resizeMapToWindow);
+    document.addEventListener("fullscreenchange", $scope.resizeMapToWindow);
+    document.addEventListener("webkitfullscreenchange", $scope.resizeMapToWindow);
+    document.addEventListener("mozfullscreenchange", $scope.resizeMapToWindow);
+    document.addEventListener("MSFullscreenChange", $scope.resizeMapToWindow);
+
+
+    $scope.$on('$destroy', function()
+    {
+        window.removeEventListener("keydown", $scope.onKeyDown);
+        window.removeEventListener("resize", $scope.resizeMapToWindow);
+        document.removeEventListener("fullscreenchange", $scope.resizeMapToWindow);
+        document.removeEventListener("webkitfullscreenchange", $scope.resizeMapToWindow);
+        document.removeEventListener("mozfullscreenchange", $scope.resizeMapToWindow);
+        document.removeEventListener("MSFullscreenChange", $scope.resizeMapToWindow);
+    });
 
 	if ($route.current.$$route.showtraffic && !$scope.globalData.showTraffic)
 		$scope.onTrafficClicked();
-		
+
 	if ($route.current.params.shareid)
 		$scope.loadSharedNavplan($route.current.params.shareid);
 

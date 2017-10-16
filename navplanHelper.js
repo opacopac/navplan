@@ -213,6 +213,19 @@ function getYearMonthDayString(date)
 }
 
 
+function getHourMinAgeString(timeMs)
+{
+    var ms = Date.now() - timeMs;
+    var h = Math.floor(ms / 1000 / 3600);
+    var m = Math.floor(ms / 1000 / 60 - h * 60);
+
+    if (h > 0)
+        return h + "h " + m + "min";
+    else
+        return m + "min";
+}
+
+
 function getIsoTimeString(timeMs)
 {
     var date = new Date(timeMs);
@@ -457,7 +470,148 @@ function rad2deg(rad)
 //endregion
 
 
+//region HTML CANVAS
+
+
+function createCanvas(widthPx, heightPx)
+{
+    var canvas = document.createElement('canvas');
+    canvas.width = widthPx;
+    canvas.height = heightPx;
+    canvas.displayScale = 1.0;
+
+    var ctx = getCanvasContext(canvas);
+
+    // determine pixel ratio
+    var devicePixelRatio = window.devicePixelRatio || 1;
+    var backingStoreRatio =
+        ctx.webkitBackingStorePixelRatio ||
+        ctx.mozBackingStorePixelRatio ||
+        ctx.msBackingStorePixelRatio ||
+        ctx.oBackingStorePixelRatio ||
+        ctx.backingStorePixelRatio || 1;
+
+    // upscale the canvas if the two ratios don't match
+    if (devicePixelRatio !== backingStoreRatio)
+    {
+        var ratio = devicePixelRatio / backingStoreRatio;
+
+        canvas.width = widthPx * ratio;
+        canvas.height = heightPx * ratio;
+        canvas.displayScale = 1 / ratio;
+
+        // now scale the context to counter
+        // the fact that we've manually scaled
+        // our canvas element
+        ctx.scale(ratio, ratio);
+    }
+
+    return canvas;
+}
+
+
+function getCanvasContext(canvas)
+{
+    return canvas.getContext("2d");
+}
+
+
+function drawText(canvasContext, x, y, text, fillColor, borderColor, borderWidth)
+{
+    if (borderColor && borderWidth && borderWidth > 0)
+    {
+        canvasContext.strokeStyle = borderColor;
+        canvasContext.lineWidth = borderWidth;
+        canvasContext.strokeText(text, x, y);
+    }
+
+    canvasContext.fillStyle = fillColor;
+    canvasContext.fillText(text, x, y);
+}
+
+
+function drawRectangle(canvasContext, x, y, widthPx, heightPx, fillColor, borderColor, borderWidth)
+{
+    canvasContext.fillStyle = fillColor;
+    canvasContext.fillRect(x, y, widthPx, heightPx);
+
+    if (borderColor && borderWidth && borderWidth > 0)
+    {
+        canvasContext.strokeStyle = borderColor;
+        canvasContext.lineWidth = borderWidth;
+        canvasContext.strokeRect(x, y, widthPx, heightPx);
+    }
+}
+
+
+function drawFillBox(canvasContext, x, y, width, height, borderWidth, color, levelFactor)
+{
+    canvasContext.lineWidth = borderWidth;
+    canvasContext.strokeStyle = color;
+    canvasContext.fillStyle = color;
+    canvasContext.strokeRect(x, y, width, height);
+    canvasContext.fillRect(x, y + height - height * levelFactor, width, height * levelFactor);
+}
+
+
+//endregion
+
+
+//region HTML FULL SCREEN
+
+function startFullScreenMode(element)
+{
+    if (element.requestFullScreen)
+        element.requestFullScreen();
+    else if (element.mozRequestFullScreen)
+        element.mozRequestFullScreen();
+    else if (element.webkitRequestFullScreen)
+        element.webkitRequestFullScreen();
+    else if (element.msRequestFullscreen)
+        element.msRequestFullscreen();
+}
+
+
+function stopFullScreenMode()
+{
+    if (document.cancelFullScreen)
+        document.cancelFullScreen();
+    else if (document.mozCancelFullScreen)
+        document.mozCancelFullScreen();
+    else if (document.webkitCancelFullScreen)
+        document.webkitCancelFullScreen();
+    else if (document.msExitFullscreen)
+        document.msExitFullscreen();
+}
+
+
+function isInFullScreenMode()
+{
+    return document.fullscreen || document.mozFullScreen || document.webkitIsFullScreen;
+}
+
+
+function isFullScreenEnabled2()
+{
+    return document.fullscreenEnabled || document.webkitFullscreenEnabled || document.mozFullScreenEnabled || document.msFullscreenEnabled;
+}
+
+//endregion
+
+
 //region MISC
+
+
+function isBranch2()
+{
+    return (location.href.indexOf("branch") >= 0);
+}
+
+
+function isSelf(email)
+{
+    return (email == "armand@tschanz.com");
+}
 
 
 function getMorseString(text)

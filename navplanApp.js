@@ -1,5 +1,5 @@
 // version
-var navplanVersion = "1.5g"; // must be the same as in version.txt
+var navplanVersion = "1.5l"; // must be the same as in version.txt
 
 
 // js error handler
@@ -21,6 +21,7 @@ window.onerror = function(message, url, linenum, colnum, error)
 		};
 
 		writeServerErrLog(errLog);
+		logError(errLog);
 	}
 	
 	displayGenericError();
@@ -97,6 +98,7 @@ navplanApp.config(function($provide) {
 			};
 
 			writeServerErrLog(errLog);
+			logError(errLog);
 		};
 	}]);
 });

@@ -32,7 +32,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
         notamTextLayer,
         meteoBgLayer,
         meteoSmaLayer;
-    var airspaceImageLayer, meteoSmaImageLayer;
+    var airspaceImageLayer;
 	var chartLayerCache = new ChartLayerCache();
 	var wpCache = new WaypointCache(undefined, undefined, undefined);
 	var currentOverlay = undefined;
@@ -41,6 +41,8 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
     var onMapClickCallback = undefined;
     var onMoveEndCallback = undefined;
 	var onTrackModifyEndCallback = undefined;
+	var onMapActivityCallback = undefined;
+	var onFullScreenCallback = undefined;
 	var isGeopointSelectionActive = false;
 	var wgs84Sphere = new ol.Sphere(6378137);
 	var minZoomLevel = [];
@@ -59,7 +61,6 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 
     // return api reference
 	return {
-		MAX_ZOOMLEVEL: MAX_ZOOMLEVEL,
 		addOverlay: addOverlay,
 		clearAllCharts: clearAllCharts,
 		closeOverlay: closeOverlay,
@@ -111,13 +112,15 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
     //region INIT MAP
 	
 	// init map
-	function init(mapClickCallback, featureSelectCallback, moveEndCallback, trackModEndCallback, mapPos)
+	function init(mapPos, mapClickCallback, featureSelectCallback, moveEndCallback, trackModEndCallback, mapActivityCallback, toggleFullScreenCallback)
     {
         // set callbacks
-        onFeatureSelectCallback = featureSelectCallback;
-        onTrackModifyEndCallback = trackModEndCallback;
         onMapClickCallback = mapClickCallback;
+        onFeatureSelectCallback = featureSelectCallback;
         onMoveEndCallback = moveEndCallback;
+        onTrackModifyEndCallback = trackModEndCallback;
+        onMapActivityCallback = mapActivityCallback;
+        onFullScreenCallback = toggleFullScreenCallback;
 
 
         if (map) // re-attach map if it already exists (e.g. from switching views)
@@ -147,14 +150,24 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
         meteoBgLayer = createEmptyVectorLayer();
         meteoSmaLayer = createEmptyVectorLayer();
         airspaceImageLayer = createImageVectorLayerFromVectorLayer(airspaceLayer);
-        //meteoSmaImageLayer = createImageVectorLayerFromVectorLayer(meteoSmaLayer);
+
+        // buttons
+        ol.inherits(ZoomButtonsControl, ol.control.Control);
+        var zoomButtonsControl =new ZoomButtonsControl();
+
+        ol.inherits(FullScreenButtonControl, ol.control.Control);
+        var fsButtonControl = new FullScreenButtonControl();
+
 
         // init map
         map = new ol.Map({
             target: 'map',
             controls: [
-                new ol.control.ScaleLine({units: 'nautical'}),
-                new ol.control.Attribution()
+                new ol.control.ScaleLine({ units: 'nautical' }),
+                fsButtonControl,
+                new ol.control.Rotate(),
+                new ol.control.Attribution(),
+                zoomButtonsControl
             ],
             layers: [
                 mapLayer,
@@ -182,6 +195,9 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
                     zoom: mapPos.zoom
                 })
         });
+
+        // add rotate interaction
+        map.addInteraction(new ol.interaction.DragRotateAndZoom());
 
         // register map events
         map.on('singleclick', onSingleClick);
@@ -583,7 +599,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
                     src: src
                 })),
                 text: new ol.style.Text({
-                    textAlign: "start",
+                    textAlign: "end",
                     textBaseline: "baseline",
                     font: '13px Calibri,sans-serif',
                     text: wx_cond,
@@ -1251,24 +1267,34 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
                 geometry: new ol.geom.Point(ol.proj.fromLonLat([measurement.station_lon, measurement.station_lat]))
             });
 
-            var windArrowSvg = meteoService.getWindArrowSvg(measurement);
-            //var windArrowImage = meteoService.getWindArrowImage(measurement);
+            var windArrowImage = meteoService.getWindArrowImage(measurement);
+            var rotRad = deg2rad(measurement.wind_dir);
 
             var windArrowStyle = new ol.style.Style({
                 image: new ol.style.Icon({
                     anchor: [0.5, 0.0],
                     opacity: 1.0,
-                    /*img: windArrowImage,
-                    imgSize : [100, 100],*/
-                    src: 'data:image/svg+xml;utf8,' + encodeURIComponent(windArrowSvg),
-                    scale: 1.0,
-                    rotation: deg2rad(measurement.wind_dir)
+                    img: windArrowImage,
+                    imgSize : [windArrowImage.width, windArrowImage.height],
+                    scale: windArrowImage.displayScale,
+                    rotation: rotRad,
+                    rotateWithView: true
+                }),
+                text: new ol.style.Text({
+                    //textAlign: align,
+                    //textBaseline: baseline,
+                    font: 'bold 15px Calibri,sans-serif',
+                    text: Math.round(kmh2kt(measurement.wind_speed_kmh)) + "kt",
+                    fill: new ol.style.Fill({color: "#FFFFFF"}),
+                    stroke: new ol.style.Stroke({color: "#000000", width: 2}),
+                    offsetX: -windArrowImage.height / 2 * windArrowImage.displayScale * Math.sin(rotRad + map.getView().getRotation()),
+                    offsetY: windArrowImage.height / 2 * windArrowImage.displayScale * Math.cos(rotRad  + map.getView().getRotation())
                 })
             });
 
 
             windArrowFeature.setStyle(windArrowStyle);
-            windArrowFeature.measurement = measurement;
+            windArrowFeature.smaMeasurement = measurement;
             meteoSmaLayer.getSource().addFeature(windArrowFeature);
         }
 
@@ -1279,31 +1305,39 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
                 geometry: new ol.geom.Point(ol.proj.fromLonLat([measurement.station_lon, measurement.station_lat]))
             });
 
-            var boxSvg = meteoService.getDetailBoxSvg(measurement);
+            var boxImage = meteoService.getDetailBoxImage(measurement);
+            var rotDeg = measurement.wind_dir + rad2deg(map.getView().getRotation())
 
             var anchor;
-            if (measurement.wind_dir >= 0 && measurement.wind_dir < 90)
+            if (rotDeg >= 90 && rotDeg < 270)
+                anchor = [0.5, -0.2];
+            else
+                anchor = [0.5, 1.2];
+
+            /*
+            if (rotDeg >= 0 && rotDeg < 90)
                 anchor = [0.5, 1.2]; //anchor = [-0.1, 1.1];
-            else if (measurement.wind_dir >= 90 && measurement.wind_dir < 180)
+            else if (rotDeg >= 90 && rotDeg < 180)
                 anchor = [0.5, -0.2]; //anchor = [-0.1, -0.1];
-            else if (measurement.wind_dir >= 180 && measurement.wind_dir < 270)
+            else if (rotDeg >= 180 && rotDeg < 270)
                 anchor = [0.5, -0.2]; // anchor = [1.1, -0.1];
             else
-                anchor = [0.5, 1.2]; // anchor = [1.1, 1.1];
+                anchor = [0.5, 1.2]; // anchor = [1.1, 1.1];*/
 
 
             var boxStyle = new ol.style.Style({
                 image: new ol.style.Icon({
                     anchor: anchor,
                     opacity: 0.9,
-                    src: 'data:image/svg+xml;utf8,' + encodeURIComponent(boxSvg),
-                    scale: 1.0
+                    img: boxImage,
+                    imgSize : [boxImage.width, boxImage.height],
+                    scale: boxImage.displayScale
                 })
             });
 
 
             boxFeature.setStyle(boxStyle);
-            boxFeature.measurement = measurement;
+            boxFeature.smaMeasurement = measurement;
             meteoSmaLayer.getSource().addFeature(boxFeature);
         }
     }
@@ -1315,9 +1349,9 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
             geometry: new ol.geom.Point(ol.proj.fromLonLat([measurement.station_lon, measurement.station_lat]))
         });
 
-        var boxSvg = meteoService.getSmallBoxSvg(measurement);
+        var smallBoxImage = meteoService.getSmallBoxImage(measurement);
 
-        var offsetPixel = 18;
+        var offsetPixel = 18 / smallBoxImage.displayScale;
         var rot = measurement.wind_dir ? deg2rad(measurement.wind_dir) : 0.0;
         var anchor = [-offsetPixel * Math.sin(rot) + 7, offsetPixel * Math.cos(rot) + 7];
 
@@ -1327,14 +1361,15 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
                 anchorXUnits: 'pixels',
                 anchorYUnits: 'pixels',
                 opacity: 0.9,
-                src: 'data:image/svg+xml;utf8,' + encodeURIComponent(boxSvg),
-                scale: 1.0
+                img: smallBoxImage,
+                imgSize : [smallBoxImage.width, smallBoxImage.height],
+                scale: smallBoxImage.displayScale
             })
         });
 
 
         boxFeature.setStyle(boxStyle);
-        boxFeature.measurement = measurement;
+        boxFeature.smaMeasurement = measurement;
         meteoSmaLayer.getSource().addFeature(boxFeature);
     }
 
@@ -1343,6 +1378,38 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 
 
     //region USER EVENTS
+
+
+    function onZoomInClicked()
+    {
+        onMapActivityOccuring();
+
+        var view = map.getView();
+        var zoom = view.getZoom();
+
+        if (zoom < MAX_ZOOMLEVEL)
+            view.setZoom(zoom + 1);
+    }
+
+
+    function onZoomOutClicked()
+    {
+        onMapActivityOccuring();
+
+        var view = map.getView();
+        var zoom = view.getZoom();
+
+        if (zoom > 1)
+            view.setZoom(zoom - 1);
+    }
+
+
+    function onMapActivityOccuring()
+    {
+        if (onMapActivityCallback)
+            onMapActivityCallback();
+    }
+
 
     // click event
     function onSingleClick(event)
@@ -1368,6 +1435,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
                     feature.reportingpoint ||
                     feature.webcam ||
                     feature.weatherInfo ||
+                    feature.smaMeasurement ||
                     feature.closeChartId)
                 {
                     closeOverlay();
@@ -1394,7 +1462,8 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
                         layer === userWpLayer ||
                         layer === wpTrackLayer ||
                         layer === webcamLayer ||
-                        layer === weatherLayer);
+                        layer === weatherLayer ||
+                        layer === meteoSmaLayer);
                 }
             }
         );
@@ -1461,7 +1530,8 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
                     layer === wpTrackLayer ||
                     layer === trafficLayer ||
                     layer === webcamLayer ||
-                    layer === weatherLayer);
+                    layer === weatherLayer ||
+                    layer === meteoSmaLayer);
                 }
             }
         );
@@ -1476,7 +1546,11 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
     // moveend event (pan / zoom)
     function onMoveEnd(event)
     {
+        onMapActivityOccuring();
+
         setLayerVisibility();
+
+        map.getView().setRotation((map.getView().getRotation() + 2 * Math.PI) % (2 * Math.PI));
 
         // update map features
         if (map.getView().getZoom() >= 9) // TODO: variable zoom level
@@ -1603,6 +1677,87 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 
         map.getView().fit(extentMercator, { size: map.getSize(), padding: [ padX, padX, padY, padY], maxZoom: 15 });
     }
+
+    //endregion
+
+
+    //region CONTROLS & BUTTONS
+
+
+    function ZoomButtonsControl(opt_options)
+    {
+        var options = opt_options || {};
+
+        var img1 = document.createElement('span');
+        img1.className = "glyphicon glyphicon-plus";
+
+        var img2 = document.createElement('span');
+        img2.className = "glyphicon glyphicon-minus";
+
+        var button1 = document.createElement('button');
+        button1.className = "btn btn-primary btn-circle btn-lg";
+        button1.setAttribute("type", "button");
+        button1.setAttribute("title", "zoom in");
+        button1.setAttribute("style", "border-top-left-radius: 25px; border-top-right-radius: 25px");
+        button1.addEventListener('click', onZoomInClicked, false);
+        button1.appendChild(img1);
+
+        var button2 = document.createElement('button');
+        button2.className = "btn btn-primary btn-circle btn-lg";
+        button2.setAttribute("type", "button");
+        button2.setAttribute("title", "zoom out");
+        button2.setAttribute("style", "border-bottom-left-radius: 25px; border-bottom-right-radius: 25px");
+        button2.addEventListener('click', onZoomOutClicked, false);
+        button2.appendChild(img2);
+
+        var div = document.createElement('div');
+        div.className = 'btn-group-vertical mapbutton-zoom';
+        div.appendChild(button1);
+        div.appendChild(button2);
+
+        ol.control.Control.call(this, {
+            element: div,
+            target: options.target
+        });
+    }
+
+
+    function FullScreenButtonControl(opt_options)
+    {
+        var options = opt_options || {};
+
+        var img = document.createElement('i');
+        img.className = "glyphicon glyphicon-fullscreen";
+
+        var img2 = document.createElement('i');
+        img2.className = "glyphicon glyphicon-resize-small";
+
+        var button = document.createElement('button');
+        button.setAttribute("title", "toggle full screen mode");
+        button.addEventListener('click', onFullScreenButtonClicked, false);
+        button.appendChild(img);
+        button.appendChild(img2);
+
+        var div = document.createElement('div');
+        div.className = 'ol-full-screen ol-unselectable ol-control';
+        div.appendChild(button);
+
+        if (!isFullScreenEnabled2())
+            div.setAttribute("style", "display:none");
+
+        ol.control.Control.call(this, {
+            element: div,
+            target: options.target
+        });
+
+
+        function onFullScreenButtonClicked()
+        {
+            if (onFullScreenCallback)
+                onFullScreenCallback();
+        }
+    }
+
 
     //endregion
 
@@ -2637,9 +2792,9 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 				throw "invalid waypoints";
 
 			if (!rotateWithView || (rotDeg + maprotDeg) % 360 < 180)
-				align = "start";
-			else
 				align = "end";
+			else
+				align = "start";
 
 			if (rotateWithView)
 				rotRad = deg2rad(rotDeg + maprotDeg);
@@ -2677,19 +2832,19 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 			if (!wp)
 			{
 				rotRad = 0;
-				align = "start";
+				align = "end";
 				text = '';
 			}
-			else if ((wp.mt + maprotDeg) % 360 < 180)
+			else if ((wp.mt + maprotDeg + 360) % 360 < 180)
 			{
 				rotRad = deg2rad(wp.mt - 90);
-				align = "start";
+				align = "end";
 				text = '   ' + wp.mt + '° ' + wp.dist + 'NM >';
 			}
 			else
 			{
 				rotRad = deg2rad(wp.mt - 270);
-				align = "end";
+				align = "start";
 				text = '< ' + wp.mt + '° ' + wp.dist + 'NM   ';
 			}
 

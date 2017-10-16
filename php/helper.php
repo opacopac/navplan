@@ -558,6 +558,24 @@ function zeroPad($number, $digits)
     return $numstr;
 }
 
+
+function array_implode($glue, $separator, $array)
+{
+    if (!is_array($array))
+        return $array;
+
+    $string = array();
+    foreach ($array as $key => $val)
+    {
+        if (is_array($val))
+            $val = implode(',', $val);
+
+        $string[] = "{$key}{$glue}{$val}";
+    }
+
+    return implode($separator, $string);
+}
+
 //endregion
 
 

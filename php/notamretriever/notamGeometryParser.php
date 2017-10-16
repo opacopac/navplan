@@ -5,7 +5,11 @@ include_once "../logger.php";
 
 // TODO
 $parser = new NotamGeometryParser();
-$parser->go();
+
+if ($_GET["testnotamid"])
+    $parser->test($_GET["testnotamid"]);
+else
+    $parser->go();
 
 
 class NotamGeometryParser
@@ -45,6 +49,74 @@ class NotamGeometryParser
     // region PUBLIC METHODS
 
 
+    public function test($testNotamId)
+    {
+        $this->logger->addOutputLogLevel("DEBUG");
+
+        $testNotamId = checkEscapeString($this->conn, $testNotamId, 1, 20);
+        $this->logger->writelog("INFO", "loading test notam '" . $testNotamId . "'...");
+        $notamList = $this->loadNotams($testNotamId);
+
+        if (count($notamList) == 0)
+        {
+            $this->logger->writelog("WARNING", "notam not found, exiting.");
+            return;
+        }
+
+
+        $this->logger->writelog("DEBUG", count($notamList) . " notams found");
+
+        foreach ($notamList as $notam)
+        {
+            $this->logger->writelog("DEBUG", "id: " . $notam["id"]);
+            $this->logger->writelog("DEBUG", "icao: " . $notam["icao"]);
+            $this->logger->writelog("DEBUG", "notam: " . $notam["notam"]);
+
+            $this->logger->writelog("INFO", "loading extent list...");
+        }
+
+        $extentList = $this->loadExtentList($notamList);
+
+
+        $this->logger->writelog("INFO", "parse geometry from notam texts...");
+        foreach ($notamList as &$notam)
+        {
+            $this->logger->writelog("DEBUG", "notam id:" . $notam["id"]);
+            $notamContent = json_decode($notam["notam"], JSON_NUMERIC_CHECK);
+            $notam["geometry"] = $this->parseNotamGeometry($notamContent);
+            $notam["dbExtent"] = $this->getNotamDbExtent($notamContent, $extentList[$notam["icao"]]);
+        }
+
+        // try match with airspace name
+        $this->logger->writelog("INFO", "try to find matching airspace...");
+        $this->tryFindMatchingAirspace($notamList);
+
+        foreach ($notamList as $notam)
+        {
+            // print notam geometries
+            if ($notam["geometry"]["center"])
+                $this->logger->writelog("DEBUG", "geometry.center:" . implode(",", $notam["geometry"]["center"]));
+
+            if ($notam["geometry"]["radius"])
+                $this->logger->writelog("DEBUG", "geometry.radius:" . $notam["geometry"]["radius"]);
+
+            if ($notam["geometry"]["polygon"])
+                $this->logger->writelog("DEBUG", "geometry.polygon:" . array_implode(",", " ", $notam["geometry"]["polygon"]));
+
+            if ($notam["geometry"]["top"])
+                $this->logger->writelog("DEBUG", "geometry.top:" . $notam["geometry"]["top"]);
+
+            if ($notam["geometry"]["bottom"])
+                $this->logger->writelog("DEBUG", "geometry.bottom:" . $notam["geometry"]["bottom"]);
+
+            if ($notam["geometry"]["dbExtent"])
+                $this->logger->writelog("DEBUG", "dbExtent:" . $notam["dbExtent"]);
+        }
+
+        $this->logger->writelog("INFO", "done.");
+    }
+
+
     public function go()
     {
         $this->logger->writelog("INFO", "loading notams...");
@@ -52,7 +124,7 @@ class NotamGeometryParser
 
         if (count($notamList) == 0)
         {
-            $this->logger->writelog("INFO", "notam list empty, exiting.");
+            $this->logger->writelog("WARNING", "notam list empty, exiting.");
             return;
         }
 
@@ -93,9 +165,12 @@ class NotamGeometryParser
 
     // region PRIVATE METHODS
 
-    private function loadNotams()
+    private function loadNotams($notamId = NULL) // id optional (returns all notams if empty)
     {
         $query = "SELECT id, icao, notam FROM icao_notam";
+
+        if ($notamId)
+            $query .= " WHERE notam_id='" . $notamId . "'";
 
         $result = $this->conn->query($query);
 
@@ -201,45 +276,63 @@ class NotamGeometryParser
 
         if ($notam["isICAO"])
         {
+            $this->logger->writelog("DEBUG", "notam format: icao");
+
             $bottomTop = $this->tryParseQlineAlt($notam["all"]);
             if ($bottomTop)
             {
+                $this->logger->writelog("DEBUG", "qline top/bottom found: " . $bottomTop[0] . ", " . $bottomTop[1]);
+
                 $geometry["bottom"] = $bottomTop[0];
                 $geometry["top"] = $bottomTop[1];
             }
 
             $isMixedPolyCircle = false;
-            $polygon = $this->tryParsePolygon($notam["message"]);
+            $polygon = $this->tryParsePolygon2($notam["message"]);
             if ($polygon)
             {
                 if (strpos($notam["message"], "CIRCLE") === FALSE)
                 {
+                    $this->logger->writelog("DEBUG", "pure polygon geometry in message found: " . array_implode(",", " ", $polygon));
+
                     $geometry["polygon"] = $polygon;
                     return $geometry;
                 }
                 else
                 {
+                    $this->logger->writelog("DEBUG", "mixed polygon+circle geometry in message found");
+
                     $isMixedPolyCircle = true;
                 }
             }
 
-            if (!$isMixedPolyCircle) {
+            if (!$isMixedPolyCircle)
+            {
                 $circle = $this->tryParseCircleVariant1($notam["message"]);
-                if ($circle) {
+                if ($circle)
+                {
+                    $this->logger->writelog("DEBUG", "circle geometry v1 in message found: " . implode(",", $circle["center"]) . " radius: " . $circle["radius"]);
+
                     $geometry["center"] = $circle["center"];
                     $geometry["radius"] = $circle["radius"];
                     return $geometry;
                 }
 
                 $circle = $this->tryParseCircleVariant2($notam["message"]);
-                if ($circle) {
+                if ($circle)
+                {
+                    $this->logger->writelog("DEBUG", "circle geometry v2 in message found: " . implode(",", $circle["center"]) . " radius: " . $circle["radius"]);
+
                     $geometry["center"] = $circle["center"];
                     $geometry["radius"] = $circle["radius"];
                     return $geometry;
                 }
 
                 $circle = $this->tryParseCircleVariant3($notam["message"]);
-                if ($circle) {
+                if ($circle)
+                {
+                    $this->logger->writelog("DEBUG", "circle geometry v3 in message found: " . implode(",", $circle["center"]) . " radius: " . $circle["radius"]);
+
                     $geometry["center"] = $circle["center"];
                     $geometry["radius"] = $circle["radius"];
                     return $geometry;
@@ -249,6 +342,8 @@ class NotamGeometryParser
             $circle = $this->tryParseQlineCircle($notam["all"]);
             if ($circle)
             {
+                $this->logger->writelog("DEBUG", "circle geometry in qline found: " . implode(",", $circle["center"]) . " radius: " . $circle["radius"]);
+
                 $geometry["center"] = $circle["center"];
                 $geometry["radius"] = $circle["radius"];
                 return $geometry;
@@ -256,9 +351,13 @@ class NotamGeometryParser
         }
         else
         {
-            $polygon = $this->tryParsePolygon($notam["all"]);
+            $this->logger->writelog("DEBUG", "notam format: non-icao");
+
+            $polygon = $this->tryParsePolygon2($notam["all"]);
             if ($polygon)
             {
+                $this->logger->writelog("DEBUG", "pure polygon geometry in message found: " . implode(",", $polygon));
+
                 $geometry["polygon"] = $polygon;
                 return $geometry;
             }
@@ -266,6 +365,8 @@ class NotamGeometryParser
             $circle = $this->tryParseCircleVariant1($notam["all"]);
             if ($circle)
             {
+                $this->logger->writelog("DEBUG", "circle geometry v1 in message found: " . implode(",", $circle["center"]) . " radius: " . $circle["radius"]);
+
                 $geometry["center"] = $circle["center"];
                 $geometry["radius"] = $circle["radius"];
                 return $geometry;
@@ -274,6 +375,8 @@ class NotamGeometryParser
             $circle = $this->tryParseCircleVariant2($notam["all"]);
             if ($circle)
             {
+                $this->logger->writelog("DEBUG", "circle geometry v2 in message found: " . implode(",", $circle["center"]) . " radius: " . $circle["radius"]);
+
                 $geometry["center"] = $circle["center"];
                 $geometry["radius"] = $circle["radius"];
                 return $geometry;
@@ -282,6 +385,8 @@ class NotamGeometryParser
             $circle = $this->tryParseCircleVariant3($notam["all"]);
             if ($circle)
             {
+                $this->logger->writelog("DEBUG", "circle geometry v3 in message found: " . implode(",", $circle["center"]) . " radius: " . $circle["radius"]);
+
                 $geometry["center"] = $circle["center"];
                 $geometry["radius"] = $circle["radius"];
                 return $geometry;
@@ -297,11 +402,18 @@ class NotamGeometryParser
     {
         // polygon geometry
         if ($notam["geometry"] && $notam["geometry"]["polygon"])
+        {
+            $this->logger->writelog("DEBUG", "using polygon geometry as db extent");
+
             return getDbPolygonString($notam["geometry"]["polygon"]);
+        }
 
 
         // circle geometry
-        if ($notam["geometry"] && $notam["geometry"]["center"]) {
+        if ($notam["geometry"] && $notam["geometry"]["center"])
+        {
+            $this->logger->writelog("DEBUG", "using circle geometry as db extent");
+
             $center = $notam["geometry"]["center"];
             $radius = $notam["geometry"]["radius"];
             $polygon = getCircleExtent($center[1], $center[0], $radius);
@@ -317,6 +429,8 @@ class NotamGeometryParser
 
             if ($geometry)
             {
+                $this->logger->writelog("DEBUG", "using q-line circle geometry as db extent");
+
                 $polygon = getCircleExtent($geometry["center"][1], $geometry["center"][0], $geometry["radius"]);
                 return getDbPolygonString($polygon);
             }
@@ -326,6 +440,8 @@ class NotamGeometryParser
         // ad notam
         if ($locationExtent["type"] == "ad")
         {
+            $this->logger->writelog("DEBUG", "using ad coordinates + 5nm as db extent");
+
             $lonLat = parseLonLatFromDbPoint($locationExtent["lonlat"]);
             $polygon = getCircleExtent($lonLat[1], $lonLat[0], 1852 * 5);
 
@@ -335,10 +451,16 @@ class NotamGeometryParser
 
         // fir notam
         if ($locationExtent["type"] == "fir")
+        {
+            $this->logger->writelog("DEBUG", "using fir polygon geometry as db extent");
+
             return "ST_GeomFromText('" . $locationExtent["polygon"] . "')";
+        }
 
 
         // no extent found
+        $this->logger->writelog("DEBUG", "no geometry found as db extent");
+
         return null;
     }
 
@@ -356,6 +478,52 @@ class NotamGeometryParser
             foreach ($matches as $match)
             {
                 $coord = getLonLatFromGradMinSec($match[3], $match[4], $match[5], $match[6], $match[7], $match[8], $match[9], $match[10]);
+                $polygon[] = $coord;
+            }
+
+            return $polygon;
+        }
+
+        // no match
+        return null;
+    }
+
+
+    // detect polygon in notam text: 463447N0062121E, 341640N0992240W, 1st: without coordinates in brackets, 2nd: including coordinates in brackets
+    // e.g. ... 472401N0083320E 472315N0082918E 471935N0083439E 472103N0083855E 472119N0083657E 472137N0083602E 472215N0083450E (CENTER POINT 472209N0083406E RADIUS 3.5 NM) ...
+    private function tryParsePolygon2($text)
+    {
+        $regExp = "/" . NotamGeometryParser::REGEXP_PART_COORDPAIR . "/im";
+
+        // try without text in brackets
+        $textNoBrackets = $this->getNonBracketText($text);
+        $this->logger->writelog("DEBUG", "text: " . $text);
+        $this->logger->writelog("DEBUG", "non bracket text: " . $textNoBrackets);
+
+        $result = preg_match_all($regExp, $textNoBrackets, $matches, PREG_SET_ORDER);
+
+        if ($result && count($matches) >= 3)
+        {
+            $polygon = [];
+
+            foreach ($matches as $match)
+            {
+                $coord = getLonLatFromGradMinSec($match[1], $match[2], $match[3], $match[4], $match[5], $match[6], $match[7], $match[8]);
+                $polygon[] = $coord;
+            }
+
+            return $polygon;
+        }
+
+        // try with text in brackets
+        $result = preg_match_all($regExp, $text, $matches, PREG_SET_ORDER);
+        if ($result && count($matches) >= 3)
+        {
+            $polygon = [];
+
+            foreach ($matches as $match)
+            {
+                $coord = getLonLatFromGradMinSec($match[1], $match[2], $match[3], $match[4], $match[5], $match[6], $match[7], $match[8]);
                 $polygon[] = $coord;
             }
 
@@ -505,7 +673,7 @@ class NotamGeometryParser
     private function tryFindMatchingAirspace(&$notamList)
     {
         // load intersecting airspaces from db
-        $typeCatDict = array("RP" => ["PROHIBITED"], "RR" => ["RESTRICTED"], "RT" => ["RESTRICTED"], "RD" => ["DANGER"], "RM" => ["DANGER", "RESTRICTED", "PROHIBITED"]);
+        $typeCatDict = array("RP" => ["PROHIBITED"], "RR" => ["RESTRICTED"], "RT" => ["RESTRICTED"], "RD" => ["DANGER", "PROHIBITED"], "RM" => ["DANGER", "RESTRICTED", "PROHIBITED"]);
 
         $queryParts = [];
         foreach ($notamList as $index=>$notam)
@@ -522,10 +690,16 @@ class NotamGeometryParser
 
                 $queryParts[] = $query;
             }
+            else {
+                $this->logger->writelog("DEBUG", "no matching airspace type for notam type '" . $notamType . "'");
+                $this->logger->writelog("DEBUG", "or db extent is null: '" . $notam["dbExtent"] . "'");
+            }
         }
 
         if (count($queryParts) == 0)
+        {
             return;
+        }
 
         $query = join(" UNION ", $queryParts);
         $result = $this->conn->query($query);
@@ -534,7 +708,13 @@ class NotamGeometryParser
             die("error searching airspace: " . $this->conn->error . " query:" . $query);
 
         if ($result->num_rows == 0)
+        {
+            $this->logger->writelog("DEBUG", "no intersecting airspaces found");
             return;
+        }
+        else
+            $this->logger->writelog("DEBUG", $result->num_rows . " intersecting airspaces found");
+
 
 
         // try to find name of airspace in notam text
@@ -600,8 +780,15 @@ class NotamGeometryParser
             $areaName = $this->simplifyText($matches[1] . $matches[2]);
             $simpleNotamText = $this->simplifyText($notamText);
 
+            $this->logger->writelog("DEBUG", "numeric airspace id found, search for '" . $areaName . "' in simplifyed notam text...");
+
             if (strpos($simpleNotamText, $areaName) !== false)
+            {
+                $this->logger->writelog("DEBUG", "...found");
                 return true;
+            }
+            else
+                $this->logger->writelog("DEBUG", "...not found");
         }
 
 
@@ -614,8 +801,16 @@ class NotamGeometryParser
         {
             $areaName = $this->simplifyText($matches[1]);
             $simpleNotamText = $this->simplifyText($notamText);
+
+            $this->logger->writelog("DEBUG", "text airspace name found, search for '" . $areaName . "' in simplifyed notam text...");
+
             if (strpos($simpleNotamText, $areaName) !== false)
+            {
+                $this->logger->writelog("DEBUG", "...found");
                 return true;
+            }
+            else
+                $this->logger->writelog("DEBUG", "...not found");
         }
 
         return false;
@@ -625,8 +820,44 @@ class NotamGeometryParser
     // simplyfy text (remove all non-word and non-digits
     private function simplifyText($text)
     {
-        return strtoupper(preg_replace("/[^\w\d]/im", "", $text));
+        $pattern = "/[^\w\d]/im";
+        return strtoupper(preg_replace($pattern, "", $text));
     }
+
+
+    private function getNonBracketText($text)
+    {
+        $pattern = "/\(.+?\)/ims";
+        //$pattern = '/\(.*\)/im';
+        return preg_replace($pattern, "", $text);
+    }
+
+
+    private function normalizeCoordinates($text)
+    {
+        //TODO
+
+        // switzerland, holland, sweden, finland, russia, turkey, greece, egypt, saudi arabia:
+        // 465214N0090638E
+
+        // germany, france, england, ukraine, iran, irak
+        // 462600N 0022630E, 483441N 101110E
+
+        // uae
+        // 255002.25N 0535024.74E
+
+        // oman
+        // 1850.85N05217.50E (= 185085N 0521750E)
+
+        // austria:
+        // N475145.00 E0141828.00
+
+        // brasil:
+        // 033617N/0502606W or 335928S/0514745W
+
+        //const REGEXP_PART_COORDPAIR = '(\d{2})\D?(\d{2})\D?(\d{2}|\d{2}\.\d+)\D?(N|S)\s?(\d{2,3})\D?(\d{2})\D?(\d{2}|\d{2}\.\d+)\D?(E|W)';
+    }
+
 
     // endregion
 }

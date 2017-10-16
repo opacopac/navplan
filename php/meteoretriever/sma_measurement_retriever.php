@@ -11,8 +11,29 @@ $logger = new Logger(NULL);
 $conn = openDb();
 
 
-// TODO: delete old data
-$logger->writelog("INFO", "clear old data...");
+// load csv from SMA
+$logger->writelog("INFO", "reading measurements from SMA");
+$smaMeasurements = file_get_contents($smaMeasurementsUrl);
+
+if ($smaMeasurements === FALSE)
+{
+    $logger->writelog("ERROR", "error reading measurements");
+    die;
+}
+
+
+// split csv data into lines
+$measurementList = explode("\n", $smaMeasurements);
+
+if (count($measurementList) <= 3)
+{
+    $logger->writelog("ERROR", "measurement data is empty/invalid");
+    die;
+}
+
+
+// delete old data from db
+$logger->writelog("INFO", "clear old data from db");
 
 $query = "TRUNCATE TABLE meteo_sma_measurements";
 $result = $conn->query($query);
@@ -21,20 +42,8 @@ if ($result === FALSE)
     die("error truncating meteo measurements: " . $this->conn->error . " query:" . $query);
 
 
-// load csv from SMA
-$logger->writelog("INFO", "reading file from SMA...");
-$smaMeasurements = file_get_contents($smaMeasurementsUrl);
-$logger->writelog("INFO", "done");
-
-
-// parse line by line
-$measurementList = explode("\n", $smaMeasurements);
-
-if (count($measurementList) <= 3)
-{
-    $logger->writelog("ERROR", "file is empty");
-    die;
-}
+// process measurement lines
+$logger->writelog("INFO", "processing measurement lines");
 
 for ($lineNum = 3; $lineNum < count($measurementList); $lineNum++)
 {

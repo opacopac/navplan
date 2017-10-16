@@ -36,10 +36,16 @@ html, body {
   box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.4);
 }
 
-#map {
-  height: 95%;
+#fullScreenContent:-webkit-full-screen {
+    width: 100%;
+    height: 100%;
+}
+
+.map {
+  height: 100%;
   width: 100%;
-  position: fixed;
+  /*position: fixed;*/
+  position: absolute;
   z-index: 10;
 }
 
@@ -51,6 +57,23 @@ html, body {
   opacity: 0.9;
   max-width: 90%;
 }
+
+#fullScreenContent:fullscreen .mapsearch {
+    display: none;
+}
+
+#fullScreenContent:-webkit-full-screen .mapsearch {
+    display: none;
+}
+
+#fullScreenContent:-moz-full-screen .mapsearch {
+    display: none;
+}
+
+#fullScreenContent:-ms-fullscreen .mapsearch {
+    display: none;
+}
+
 
 .mapbutton-zoom {
   position: absolute;
@@ -128,11 +151,43 @@ html, body {
   z-index: 20;
 }
 
+#fullScreenContent:fullscreen .mapbutton-offlinecache {
+    display: none;
+}
+
+#fullScreenContent:-webkit-full-screen .mapbutton-offlinecache {
+    display: none;
+}
+
+#fullScreenContent:-moz-full-screen .mapbutton-offlinecache {
+    display: none;
+}
+
+#fullScreenContent:-ms-fullscreen .mapbutton-offlinecache {
+    display: none;
+}
+
 .mapbutton-timer {
   position: absolute;
   top: 50px;
   left: 70px;
   z-index: 20;
+}
+
+#fullScreenContent:fullscreen .mapbutton-timer {
+    top: 10px;
+}
+
+#fullScreenContent:-webkit-full-screen .mapbutton-timer {
+    top: 10px;
+}
+
+#fullScreenContent:-moz-full-screen .mapbutton-timer {
+    top: 10px;
+}
+
+#fullScreenContent:-ms-fullscreen .mapbutton-timer {
+    top: 10px;
 }
 
 .map-currenttime {
@@ -299,6 +354,58 @@ html, body {
 
 .ol-popup-closer:after {
   content: "X";
+}
+
+.ol-rotate {
+    top: auto;
+    right: .5em;
+    bottom: 6.5em;
+}
+
+.ol-full-screen {
+    top: auto;
+    right: .5em;
+    bottom: 3.5em;
+}
+
+.ol-full-screen .glyphicon-fullscreen {
+    display: block;
+}
+
+.ol-full-screen .glyphicon-resize-small {
+    display: none;
+}
+
+#fullScreenContent:fullscreen .ol-full-screen .glyphicon-resize-small {
+    display: block;
+}
+
+#fullScreenContent:-webkit-full-screen .ol-full-screen .glyphicon-resize-small {
+    display: block;
+}
+
+#fullScreenContent:-moz-full-screen .ol-full-screen .glyphicon-resize-small {
+    display: block;
+}
+
+#fullScreenContent:-ms-fullscreen .ol-full-screen .glyphicon-resize-small {
+    display: block;
+}
+
+#fullScreenContent:fullscreen .ol-full-screen .glyphicon-fullscreen {
+    display: none;
+}
+
+#fullScreenContent:-webkit-full-screen .ol-full-screen .glyphicon-fullscreen {
+    display: none;
+}
+
+#fullScreenContent:-moz-full-screen .ol-full-screen .glyphicon-fullscreen {
+    display: none;
+}
+
+#fullScreenContent:-ms-fullscreen .ol-full-screen .glyphicon-fullscreen {
+    display: none;
 }
 
 .ol-attribution {
