@@ -2931,7 +2931,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 
 						var chartLayer = new ol.layer.Image({
 							source: new ol.source.ImageStatic({
-								url: 'charts/' + response.data.chart.filename,
+								url: 'charts/' + response.data.chart.filename + '?v=' + navplanVersion,
 								projection: projection,
 								imageExtent: extent
 							}),

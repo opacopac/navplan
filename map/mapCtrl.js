@@ -910,7 +910,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 
             function getChartUrl(filename)
             {
-                return 'charts/' + filename;
+                return 'charts/' + filename + '?v=' + navplanVersion;
             }
         }
 
