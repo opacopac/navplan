@@ -119,6 +119,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
         };
 
         $scope.updateMeteo();
+        $scope.$applyAsync();
     };
 
 
@@ -738,6 +739,28 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 
 
     //region METEO
+
+
+    $scope.isMeteoButtonVisible = function()
+    {
+        if ($scope.globalData.showMeteo)
+            return true;
+        else if ($scope.globalData.currentMapPos.zoom < 9)
+            return false;
+        else {
+            var meteoMinLon = 5.8;
+            var meteoMinLat = 45.8;
+            var meteoMaxLon = 10.5;
+            var meteoMaxLat = 47.9;
+            var extent = mapService.getViewExtentLatLon();
+
+            if (extent[0] > meteoMaxLon || extent[1] > meteoMaxLat || extent[2] < meteoMinLon || extent[3] < meteoMinLat)
+                return false;
+            else
+                return true;
+        }
+    };
+
 
     $scope.onMeteoClicked = function()
     {

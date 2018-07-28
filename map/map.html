@@ -19,7 +19,7 @@
     <button type="button" class="btn btn-primary btn-circle btn-lg" ng-class="{ 'btn-primary' : globalData.trafficStatus == 'off', 'btn-success' : globalData.trafficStatus == 'current', 'btn-warning' : globalData.trafficStatus == 'waiting', 'btn-danger' : globalData.trafficStatus == 'error' }" ng-class="{ 'active': globalData.showTraffic }" ng-click="onTrafficClicked();" title="show/hide traffic"><i class="fa fa-plane"></i></button>
 </div>
 <!-- meteo button -->
-<div id="mapbutton-meteo" class="mapbutton-meteo">
+<div id="mapbutton-meteo" class="mapbutton-meteo" ng-show="isMeteoButtonVisible();">
     <button type="button" class="btn btn-primary btn-circle btn-lg" ng-class="{ 'btn-primary' : globalData.showMeteo == false, 'btn-success' : globalData.showMeteo == true }" ng-click="onMeteoClicked();" title="show/hide wind arrows"><img src="icon/windsock.svg" height="25" width="25" /></button>
 </div>
 <!-- terrain button -->
