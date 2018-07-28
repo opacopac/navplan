@@ -361,15 +361,25 @@ function containsExtent(outerExtent, innerExtent)
 
 function calcOversizeExtent(extent, factor)
 {
+    var minHalfDiffDeg = 0.1;
+    var maxDigits = 7;
+
     var halfDiffLon = (extent[2] - extent[0]) / 2;
     var halfDiffLat = (extent[3] - extent[1]) / 2;
+
+    if (halfDiffLon < minHalfDiffDeg)
+        halfDiffLon = minHalfDiffDeg;
+
+    if (halfDiffLat < minHalfDiffDeg)
+        halfDiffLat = minHalfDiffDeg;
+
     var centerLon = extent[0] + halfDiffLon;
     var centerLat = extent[1] + halfDiffLat;
 
-    return [centerLon - halfDiffLon * factor,
-        centerLat - halfDiffLat * factor,
-        centerLon + halfDiffLon * factor,
-        centerLat + halfDiffLat * factor];
+    return [roundPrecision(centerLon - halfDiffLon * factor, maxDigits),
+        roundPrecision(centerLat - halfDiffLat * factor, maxDigits),
+        roundPrecision(centerLon + halfDiffLon * factor, maxDigits),
+        roundPrecision(centerLat + halfDiffLat * factor, maxDigits)];
 }
 
 //endregion
@@ -410,6 +420,16 @@ function deg2rad(deg)
 function rad2deg(rad)
 {
 	return rad / (2 * Math.PI) * 360;
+}
+
+
+function roundPrecision(value, decimals)
+{
+    value = value * Math.pow(10, decimals);
+    value = Math.round(value);
+    value = value / Math.pow(10, decimals);
+
+    return value;
 }
 
 
@@ -608,7 +628,7 @@ function isBranch2()
 }
 
 
-function isSelf(email)
+function isSelf2(email)
 {
     return (email == "armand@tschanz.com");
 }

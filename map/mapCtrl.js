@@ -10,7 +10,7 @@ navplanApp
 
 function addToRouteDirective()
 {
-    return { templateUrl: 'map/add-to-route-directive.html' };
+    return { templateUrl: 'map/add-to-route-directive.html?v=' + navplanVersion };
 }
 
 
@@ -917,19 +917,10 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 
         function cacheMapFeatures()
         {
-            mapFeatureService.getMapFeatures($scope.getNavplanExtentLatLon(), cacheMapFeaturesSuccess, cacheMapFeaturesError);
+            var extent = $scope.getNavplanExtentLatLon();
+            var oversizeExtent = calcOversizeExtent(extent, mapFeatureService.OVERSIZE_FACTOR);
 
-
-            function cacheMapFeaturesSuccess(mapFeatureList)
-            {
-                window.sessionStorage.setItem("mapFeatureCache", obj2json(mapFeatureList));
-            }
-
-
-            function cacheMapFeaturesError()
-            {
-                // TODO: cache status => error
-            }
+            setCookie("mapfeaturesextent", obj2json(oversizeExtent));
         }
 
 
@@ -1340,7 +1331,10 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
                 function(response)
                 {
                     if (response.data.navplan)
+                    {
                         $scope.loadNavplanToGlobalData(response.data.navplan);
+                        $scope.fitView();
+                    }
                     else
                         logResponseError("ERROR loading shared navplan", response);
                 },
@@ -1355,6 +1349,22 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 
 
     //region INIT MAP & EVENT LISTENERS
+
+
+    $scope.initPosition = function()
+    {
+        if (!$scope.globalData.initialPositionHasBeenSet && navigator.geolocation)
+            navigator.geolocation.getCurrentPosition(setInitialPosition);
+
+
+        function setInitialPosition(position)
+        {
+            mapService.setMapPosition(position.coords.latitude, position.coords.longitude, 11);
+            $scope.globalData.currentMapPos = mapService.getMapPosition();
+            $scope.globalData.initialPositionHasBeenSet = true;
+        }
+    };
+
 
     try
 	{
@@ -1372,6 +1382,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 		$scope.redrawFlightTrack();
 		$scope.fitView();
 		$scope.resizeMapToWindow();
+        $scope.initPosition();
 	}
 	catch(err)
 	{

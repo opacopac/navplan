@@ -16,6 +16,7 @@ function mapFeatureService($http) {
 
     // return api reference
     return {
+        OVERSIZE_FACTOR: OVERSIZE_FACTOR,
         getMapFeatures: getMapFeatures,
         getAirportByIcao: getAirportByIcao,
         getAirspacesAtLatLon: getAirspacesAtLatLon,
@@ -46,7 +47,18 @@ function mapFeatureService($http) {
         if (containsExtent(featureCache.extent, extent))
             successCallback(featureCache.features); // return from cache
         else
-            loadMapFeatures(calcOversizeExtent(extent, OVERSIZE_FACTOR), successCallback, errorCallback); // load from server
+            loadMapFeatures(calcOversizeExtent(extent, OVERSIZE_FACTOR), successCallback, tryLoadAppCachedFeatures); // load from server
+
+
+        function tryLoadAppCachedFeatures()
+        {
+            var mfCookie = getCookie("mapfeaturesextent");
+            if (mfCookie)
+            {
+                var extent = json2obj(mfCookie);
+                loadMapFeatures(extent, successCallback, errorCallback); // try to load from app cache
+            }
+        }
     }
 
 

@@ -346,7 +346,8 @@
 
     function getAcType($details)
     {
-        //UNKNOWN(0), GLIDER(1), TOW_PLANE(2), HELICOPTER_ROTORCRAFT(3), PARACHUTE(4), DROP_PLANE(5), HANG_GLIDER(6), PARA_GLIDER(7), POWERED_AIRCRAFT(8), JET_AIRCRAFT(9), UFO(10), BALLOON(11), AIRSHIP(12), UAV(13), STATIC_OBJECT(15);
+        //UNKNOWN(0), GLIDER(1), TOW_PLANE(2), HELICOPTER_ROTORCRAFT(3), PARACHUTE(4), DROP_PLANE(5), HANG_GLIDER(6), PARA_GLIDER(7),
+        //POWERED_AIRCRAFT(8), JET_AIRCRAFT(9), UFO(10), BALLOON(11), AIRSHIP(12), UAV(13), STATIC_OBJECT(15);
         $ac_mask = 0b00111100;
         $ac_type = array(
             "UNKNOWN" => 0b000000,
@@ -361,8 +362,8 @@
             "JET_AIRCRAFT" => 0b100100,
             "UFO" => 0b101000,
             "BALLOON" => 0b101100,
-            "AIRSHIP" => 0b110100,
-            "UAV" => 0b111000,
+            "AIRSHIP" => 0b110000,
+            "UAV" => 0b110100,
             "STATIC_OBJECT" => 0b111100
         );
 

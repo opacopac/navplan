@@ -14,6 +14,7 @@
 	if(isset($_COOKIE["cachewaypoints"]))
 	{
 		addStaticUrls();
+        addMapFeatureUrls(json_decode($_COOKIE["mapfeaturesextent"]), true);
 		addTileUrls(json_decode($_COOKIE["cachewaypoints"]), true);
 		addChartUrls(json_decode($_COOKIE["cachecharts"]), true);
 	}
@@ -36,14 +37,21 @@
 		echo "CACHE:\n";
 
 		// html
+        echo "./\n";
 		echo "./?v=" . $ver . "\n";
 		echo "about/about.html?v=" . $ver . "\n";
 		echo "map/map.html?v=" . $ver . "\n";
 		echo "settings/settings.html?v=" . $ver . "\n";
 		echo "waypoints/waypoints.html?v=" . $ver . "\n";
 		echo "tracks/tracks.html?v=" . $ver . "\n";
+        echo "map/add-to-route-directive.html?v=" . $ver . "\n";
 
-		// angular
+        // php
+        echo "php/navplan.php?v=" . $ver . "\n";
+        echo "php/userTrack.php?v=" . $ver . "\n";
+        echo "\n";
+
+        // angular
         echo "angularjs/1.6.3/angular.min.js\n";
         echo "angularjs/1.6.3/angular-route.min.js\n";
         echo "angularjs/1.6.3/angular-resource.min.js\n";
@@ -58,8 +66,8 @@
         echo "bootstrap/fonts/glyphicons-halflings-regular.svg\n";
 
         // openlayers
-        echo "openlayers/4.0.1/ol.css\n";
-        echo "openlayers/4.0.1/ol.js\n";
+        echo "openlayers/4.4.0/ol.css\n";
+        echo "openlayers/4.4.0/ol.js\n";
 
 		// css
 		echo "css/navplan.css?v=" . $ver . "\n";
@@ -71,11 +79,11 @@
 
         // font-awesome
         echo "font-awesome/css/font-awesome.min.css\n";
-        echo "font-awesome/fonts/fontawesome-webfont.eot\n";
-        echo "font-awesome/fonts/fontawesome-webfont.svg\n";
-        echo "font-awesome/fonts/fontawesome-webfont.ttf\n";
-        echo "font-awesome/fonts/fontawesome-webfont.woff\n";
-        echo "font-awesome/fonts/fontawesome-webfont.woff2\n";
+        echo "font-awesome/fonts/fontawesome-webfont.eot?v=4.7.0\n";
+        echo "font-awesome/fonts/fontawesome-webfont.svg?v=4.7.0\n";
+        echo "font-awesome/fonts/fontawesome-webfont.ttf?v=4.7.0\n";
+        echo "font-awesome/fonts/fontawesome-webfont.woff?v=4.7.0\n";
+        echo "font-awesome/fonts/fontawesome-webfont.woff2?v=4.7.0\n";
 
 		// images
 		echo "icon/ad_civ.png\n";
@@ -103,6 +111,7 @@
 		echo "icon/rwy_mil.png\n";
 		echo "icon/webcam.png\n";
 		echo "icon/wp_user.png\n";
+        echo "icon/windsock.svg\n";
 
 		// js
 	    echo "js/jquery-1.12.3.min.js\n";
@@ -110,6 +119,9 @@
         echo "js/jquery.ui.touch-punch.min.js\n";
         echo "js/turf.min.js\n";
         echo "js/ui-bootstrap-tpls-1.3.2.min.js\n";
+        echo "js/sortable.min.js\n";
+		echo "js/WorldMagneticModel.js?v=" . $ver . "\n";
+		echo "js/telephony.js?v=" . $ver . "\n";
 		echo "navplanHelper.js?v=" . $ver . "\n";
 		echo "navplanApp.js?v=" . $ver . "\n";
 		echo "navplanCtrl.js?v=" . $ver . "\n";
@@ -133,7 +145,6 @@
         echo "services/meteoService.js?v=" . $ver . "\n";
 		echo "\n";
 
-		
 		echo "NETWORK:\n";
 		echo "*\n";
 		echo "\n";
@@ -159,6 +170,54 @@
 	        echo $url . "\n";
 
 	    echo "\n";
+    }
+
+
+    function addMapFeatureUrls($extent)
+    {
+        global $ver;
+
+        //$extent = getMapFeatureExtent($waypoints);
+
+        echo "# map features\n";
+        echo "CACHE:\n";
+        echo "php/mapFeatures.php?v=" . $ver . "&minlon=" . $extent[0] . "&minlat=" . $extent[1] . "&maxlon=" . $extent[2] . "&maxlat=" . $extent[3] . "\n";
+        echo "\n";
+    }
+
+
+    function getMapFeatureExtent($waypoints)
+    {
+        $toleranceDeg = 1.0;
+        $minlon = null;
+        $minlat = null;
+        $maxlon = null;
+        $maxlat = null;
+
+        foreach ($waypoints as $waypoint)
+        {
+            $lat = floatval($waypoint->lat);
+            $lon = floatval($waypoint->lon);
+
+            if (!$minlon || $minlon > $lon)
+                $minlon = $lon;
+
+            if (!$minlat || $minlat > $lat)
+                $minlat = $lat;
+
+            if (!$maxlon || $maxlon < $lon)
+                $maxlon = $lon;
+
+            if (!$maxlat || $maxlat < $lat)
+                $maxlat = $lat;
+        }
+
+        $minlat -= $toleranceDeg;
+        $minlon -= $toleranceDeg;
+        $maxlon += $toleranceDeg;
+        $maxlat += $toleranceDeg;
+
+        return [ $minlon, $minlat, $maxlon, $maxlat ];
     }
 
 	

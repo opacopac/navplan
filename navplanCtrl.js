@@ -23,7 +23,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 		{
 			var data = json2obj(storedGlobalData);
 
-			$scope.globalData.initialData = false;
+			$scope.globalData.initialPositionHasBeenSet = true;
 			$scope.globalData.sessionId = $scope.createSessionId();
 			$scope.globalData.user = data.user;
 			$scope.globalData.pilot = data.pilot;
@@ -52,7 +52,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 		}
 		else // load default values
 		{
-			$scope.globalData.initialData = true;
+			$scope.globalData.initialPositionHasBeenSet = false;
 			$scope.globalData.sessionId = $scope.createSessionId();
 			$scope.globalData.user =
 			{
@@ -192,20 +192,6 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 
 		if (storedHideDisclaimer != "true")
 			$('#disclaimerDialog').modal('show');
-	};
-
-
-	$scope.initPosition = function()
-	{
-		if ($scope.globalData.initialData && navigator.geolocation)
-			navigator.geolocation.getCurrentPosition($scope.setPosition);
-	};
-
-
-	$scope.setPosition = function(position)
-	{
-		mapService.setMapPosition(position.coords.latitude, position.coords.longitude, 11);
-		$scope.globalData.currentMapPos = mapService.getMapPosition();
 	};
 
 
@@ -613,7 +599,8 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 
 		deleteCookie("cachewaypoints");
 		deleteCookie("cachecharts");
-        window.sessionStorage.removeItem("mapFeatureCache");
+        deleteCookie("mapfeaturesextent");
+
         window.sessionStorage.removeItem("notamCache");
 
 		if ($scope.appCache.status == $scope.appCache.DOWNLOADING)
@@ -827,7 +814,6 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 	$scope.initGlobalData();
 	$scope.initUser();
 	$scope.initDisclaimer();
-	$scope.initPosition();
 
 	// event listeners
 	window.addEventListener("beforeunload", $scope.onLeaving);

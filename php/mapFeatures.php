@@ -197,7 +197,7 @@ function getAirports($extent, $email)
     $query .= "  rad.typespec,";
     $query .= "  rad.description,";
     $query .= "  (CASE WHEN rad.category = 'COMMUNICATION' THEN 1 WHEN rad.category = 'OTHER' THEN 2 WHEN rad.category = 'INFORMATION' THEN 3 ELSE 4 END) AS sortorder1,";
-    $query .= "  (CASE WHEN rad.type = 'TOWER' THEN 1 WHEN rad.type = 'CTAF' THEN 2 WHEN rad.type = 'OTHER' THEN 3 ELSE 4 END) AS sortorder2";
+    $query .= "  (CASE WHEN rad.type = 'TOWER' THEN 1 WHEN rad.type = 'CTAF' THEN 2 WHEN rad.type = 'INFO' THEN 3 WHEN rad.type = 'OTHER' THEN 4 ELSE 5 END) AS sortorder2";
     $query .= " FROM openaip_radios AS rad ";
     $query .= " WHERE airport_id IN (" . $apIdList . ")";
     $query .= " ORDER BY";

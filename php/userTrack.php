@@ -1,6 +1,8 @@
 <?php
 	include "config.php";
 	include "helper.php";
+		
+	//header("Access-Control-Allow-Origin: *");
 
     // open db connection
 	$conn = openDb();

@@ -4,6 +4,8 @@
 
 	$input = json_decode(file_get_contents('php://input'), true);
 	
+	//header("Access-Control-Allow-Origin: *");
+	
 	switch($input["action"])
 	{
 		case "login":

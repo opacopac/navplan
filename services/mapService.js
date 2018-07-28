@@ -652,7 +652,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
                     //anchorYUnits: 'fraction',
                     scale: 1,
                     rotation: rot,
-                    rotateWithView: true,
+                    rotateWithView: false,
                     src: src
                 }))
             });
@@ -724,15 +724,18 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
             {
                 if (notamGeometry.radius > nautmile2m(50)) // TODO: hide if radius > 50NM => temp hack
                     notamGeometry.radius = 1;
-
+					
+				var polycirc = new ol.geom.Polygon.circular(new ol.Sphere(6378137), notamGeometry.center, notamGeometry.radius);
+				var polycirc_mer = convertPolygonToMercator(polycirc.getCoordinates()[0]);
+				var polycirc_geom = new ol.geom.Polygon([polycirc_mer]);
+				
                 var centerMer = getMercatorCoordinates(notamGeometry.center[1], notamGeometry.center[0]);
-                var circle = new ol.geom.Circle(centerMer, notamGeometry.radius);
-                if (!ol.extent.intersects(getViewExtentMercator(), circle.getExtent()))
+                if (!ol.extent.intersects(getViewExtentMercator(), polycirc_geom.getExtent()))
                     continue;
 
                 // polygon
                 notamPolyFeature = new ol.Feature();
-                notamPolyFeature.setGeometry(circle);
+                notamPolyFeature.setGeometry(polycirc_geom);
                 notamPolyFeature.setStyle(createNotamPolyStyle(notamList[i].id));
                 notamPolyLayer.getSource().addFeature(notamPolyFeature);
 
@@ -1556,7 +1559,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
         if (map.getView().getZoom() >= 9) // TODO: variable zoom level
         {
             var extent = getViewExtentLatLon();
-            mapFeatureService.getMapFeatures(extent, onMapFeaturesLoaded);
+            mapFeatureService.getMapFeatures(extent, onMapFeaturesLoaded, onMapFeatureError);
         }
 
         onMoveEndCallback(event);
@@ -1573,6 +1576,12 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 
             metarTafNotamService.getAreaWeatherInfos(getViewExtentLatLon(), drawWeatherInfo);
             metarTafNotamService.getNotams(getViewExtentLatLon(), mapFeatureList.airports, drawAreaNotams);
+        }
+
+
+        function onMapFeatureError()
+        {
+            // TODO
         }
     }
 
@@ -3209,8 +3218,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 					icon += "traffic_plane" + iconSuffix + ".png";
 					break;
 				case "UAV":
-					typetext = " - UAV";
-					icon += "traffic_plane" + iconSuffix + ".png";
+					icon += "traffic_uav" + iconSuffix + ".png";
 					break;
                 case "JET_AIRCRAFT":
                     icon += "traffic_jetplane" + iconSuffix + ".png";

@@ -20,7 +20,7 @@ class NotamGeometryParser
     const REGEXP_PART_RADIUS = '(RADIUS|AROUND|CENTERED)';
     const REGEXP_PART_RADVAL = '(\d+[\.\,]?\d*)\s?(NM|KM|M)(?=\W)';
     const REGEXP_PART_NOBRACKETS_NUMS = '[^\(\)0-9]+?';
-    const PROCESS_CHUNK_SIZE = 2000;
+    const PROCESS_CHUNK_SIZE = 100;
 
     private $conn;
     private $logger;
@@ -137,7 +137,7 @@ class NotamGeometryParser
         {
             $notamContent = json_decode($notam["notam"], JSON_NUMERIC_CHECK);
             $notam["geometry"] = $this->parseNotamGeometry($notamContent);
-            $notam["dbExtent"] = $this->getNotamDbExtent($notamContent, $extentList[$notam["icao"]]);
+            $notam["dbExtent"] = $this->getNotamDbExtent($notam, $extentList[$notam["icao"]]);
         }
 
         $this->clearNotamGeometries();
@@ -835,8 +835,6 @@ class NotamGeometryParser
 
     private function normalizeCoordinates($text)
     {
-        //TODO
-
         // switzerland, holland, sweden, finland, russia, turkey, greece, egypt, saudi arabia:
         // 465214N0090638E
 
@@ -856,6 +854,7 @@ class NotamGeometryParser
         // 033617N/0502606W or 335928S/0514745W
 
         //const REGEXP_PART_COORDPAIR = '(\d{2})\D?(\d{2})\D?(\d{2}|\d{2}\.\d+)\D?(N|S)\s?(\d{2,3})\D?(\d{2})\D?(\d{2}|\d{2}\.\d+)\D?(E|W)';
+        //TODO
     }
 
 
