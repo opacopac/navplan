@@ -446,12 +446,17 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
         while (span.firstChild)
             span.removeChild(span.firstChild);
 
-        //<iframe width="800" height="220" src="https://embed.windytv.com/embed2.html?lat=46.9458&lon=7.4713&type=forecast&metricWind=kt&metricTemp=%C2%B0C" frameborder="0"></iframe>
+        // old: <iframe width="800" height="220" src="https://embed.windytv.com/embed2.html?lat=46.9458&lon=7.4713&type=forecast&metricWind=kt&metricTemp=%C2%B0C" frameborder="0"></iframe>
+        // new: <iframe width="650" height="450" src="https://embed.windy.com/embed2.html?lat=45.813&lon=9.844&zoom=6&level=surface&overlay=wind&menu=&message=&marker=&calendar=&pressure=true&type=map&location=coordinates&detail=true&detailLat=46.770&detailLon=8.657&metricWind=kt&metricTemp=%C2%B0C&radarRange=-1" frameborder="0"></iframe>
+
         var iframe = document.createElement('iframe');
         //iframe.src = "https://embed.windytv.com/embed2.html?lat=" + latitude + "&lon=" + longitude + "&type=forecast&display=meteogram&metricWind=kt&metricTemp=%C2%B0C";
-        iframe.src = "https://embed.windy.com/embed2.html?lat=" + latitude + "&lon=" + longitude + "&type=forecast&display=meteogram&metricWind=kt&metricTemp=%C2%B0C";
+        //iframe.src = "https://embed.windy.com/embed2.html?lat=" + latitude + "&lon=" + longitude + "&type=forecast&display=meteogram&metricWind=kt&metricTemp=%C2%B0C";
+        iframe.src = "https://embed.windy.com/embed2.html?lat=" + latitude + "&lon=" + longitude + "&zoom=6";
+        iframe.src += "&level=surface&overlay=wind&menu=&message=&marker=&calendar=&pressure=true&type=map&location=coordinates&detail=true&detailLat=" + latitude + "&detailLon=" + longitude + "&metricWind=kt&metricTemp=%C2%B0C&radarRange=-1";
         iframe.width = $scope.weatherContainer.clientWidth - 2 * 16;
-        iframe.height = 280;
+        //iframe.height = 280;
+        iframe.height = 480;
         iframe.frameborder = 0;
 
         span.appendChild(iframe);
