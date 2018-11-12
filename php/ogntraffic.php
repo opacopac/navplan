@@ -103,7 +103,10 @@
     $aclist = getAircraftDetails($aclist);
 
     // create json response
-    echo json_encode(array("aclist" => $aclist), JSON_NUMERIC_CHECK);
+    echo json_encode(array(
+        "timestamp" => time(),
+        "aclist" => $aclist
+    ), JSON_NUMERIC_CHECK);
 
     // close db
     $conn->close();

@@ -3035,11 +3035,11 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 		layerSource.clear();
 
 		if (lastPositions)
-			drawTrafficTrack({ actype: "OWN", positions: lastPositions }, layerSource, false);
+			drawTrafficTrack({ actype: "OWN", positions: lastPositions }, layerSource, false, Date.now());
 	}
 
 
-	function drawTraffic(acList, maxTrafficAltitudeFt)
+	function drawTraffic(acList, maxTrafficAltitudeFt, currentTimestamp)
 	{
 		var layerSource = trafficLayer.getSource();
 		layerSource.clear();
@@ -3071,12 +3071,12 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 			var showTrails = acListVisible.length <= maxTrafficForTrails;
 
 			for (var i = 0; i < acListVisible.length; i++)
-                drawTrafficTrack(acListVisible[i], layerSource, showTrails);
+                drawTrafficTrack(acListVisible[i], layerSource, showTrails, currentTimestamp);
         }
 	}
 
 
-	function drawTrafficTrack(ac, layerSource, showTrails)
+	function drawTrafficTrack(ac, layerSource, showTrails, currentTimestamp)
 	{
 		if (!ac || !ac.positions)
 			return;
@@ -3086,7 +3086,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 		// draw track dots
 		if (showTrails) {
 			for (var i = maxIdx; i >= 0; i--) {
-				if (Date.now() - ac.positions[i].timestamp < maxAgeSecTrackDots * 1000) {
+				if (currentTimestamp - ac.positions[i].timestamp < maxAgeSecTrackDots * 1000) {
 					var trackDotFeature = createTrackDotFeature(ac.positions[i], ac.actype);
 					layerSource.addFeature(trackDotFeature);
 				}
@@ -3112,7 +3112,8 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 			var planeFeature = createTrafficFeature(
                 ac.positions[maxIdx],
 				rotation,
-				ac);
+				ac,
+                currentTimestamp);
 
 			layerSource.addFeature(planeFeature);
 
@@ -3155,7 +3156,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 		}
 
 
-		function createTrafficFeature(position, rotation, ac)
+		function createTrafficFeature(position, rotation, ac, currentTimestamp)
 		{
 			var icon = "icon/";
 			var color = "#FF0000";
@@ -3169,7 +3170,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 				heighttext = Math.round(m2ft(position.altitude)).toString() + " ft"; // TODO: einstellbar
 
 			var iconSuffix = "";
-			if (position.timestamp && (Date.now() - position.timestamp > maxAgeSecInactive * 1000))
+			if (position.timestamp && (currentTimestamp - position.timestamp > maxAgeSecInactive * 1000))
 				iconSuffix = "_inactive";
 
 			var rotWithView = true;

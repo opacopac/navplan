@@ -672,25 +672,25 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 		if ($scope.globalData.trafficStatus != "current")
             $scope.globalData.trafficStatus = "waiting";
 
-		function successCallback(acList)
+		function successCallback(acList, currentTimestamp)
         {
             if (!$scope.globalData.showTraffic)
                 return;
 
             $scope.globalData.trafficStatus = "current";
-            mapService.drawTraffic(acList, $scope.globalData.settings.maxTrafficAltitudeFt);
+            mapService.drawTraffic(acList, $scope.globalData.settings.maxTrafficAltitudeFt, currentTimestamp);
 
             if ($scope.followTrafficAddress)
                 $scope.followTraffic(acList);
         }
 
-        function errorCallback(acList)
+        function errorCallback(acList, currentTimestamp)
         {
             if (!$scope.globalData.showTraffic)
                 return;
 
             $scope.globalData.trafficStatus = "error";
-            mapService.drawTraffic(acList, $scope.globalData.settings.maxTrafficAltitudeFt);
+            mapService.drawTraffic(acList, $scope.globalData.settings.maxTrafficAltitudeFt, currentTimestamp);
         }
 	};
 

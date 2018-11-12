@@ -82,6 +82,7 @@ function trafficService($http)
                     if (response && response.data && response.data.aclist)
                     {
                         var acListOgn = response.data.aclist;
+                        var receivedTimestampMs = response.data.timestamp * 1000;
 
                         for (var acAddress in acListOgn)
                         {
@@ -96,13 +97,13 @@ function trafficService($http)
                                 null, // callsign
                                 null, // operator callsign
                                 ac.aircraftModelType,
-                                parseOgnPositions(ac));
+                                parseOgnPositions(ac, receivedTimestampMs));
                         }
 
-                        compactAcList(maxagesec);
+                        compactAcList(maxagesec, receivedTimestampMs);
 
                         if (successCallback)
-                            successCallback(acCache.acList);
+                            successCallback(acCache.acList, receivedTimestampMs);
                     }
                 },
                 function (response) // error
@@ -110,15 +111,14 @@ function trafficService($http)
                     logResponseError("ERROR reading ac traffic from ognlistener", response);
                     
                     if (errorCallback)
-                        errorCallback(acCache.acList);
+                        errorCallback(acCache.acList, Date.now()); // TODO
                 }
             );
 
 
-        function parseOgnPositions(ac)
+        function parseOgnPositions(ac, receivedTimestamp)
         {
             var positionList = [];
-            var now = new Date().getTime();
 
             for (var i = 0; i < ac.positions.length; i++)
             {
@@ -126,8 +126,8 @@ function trafficService($http)
                 position.latitude = ac.positions[i].latitude;
                 position.longitude = ac.positions[i].longitude;
                 position.altitude = ac.positions[i].altitude;
-                position.timestamp = Math.min(getMs(ac.positions[i].time), now);
-                position.receivedTimestamp = new Date().getTime();
+                position.timestamp = Math.min(getMs(ac.positions[i].time), receivedTimestamp);
+                position.receivedTimestamp = receivedTimestamp;
                 position.receiver = "Open Glider Network (" + ac.positions[i].receiver + ")";
                 position.method = positionMethod.flarm;
                 positionList.push(position);
@@ -159,6 +159,7 @@ function trafficService($http)
                     if (response && response.data && response.data.acList)
                     {
                         var acListAx = response.data.acList;
+                        var receivedTimestampMs = response.data.stm;
 
                         for (var i = 0; i < acListAx.length; i++)
                             addOrUpdateAc(
@@ -170,12 +171,12 @@ function trafficService($http)
                                 getCallsign(acListAx[i]),
                                 getOperatorCallsign(acListAx[i]),
                                 acListAx[i].Mdl,
-                                parseAdsbExchangePositions(acListAx[i]));
+                                parseAdsbExchangePositions(acListAx[i], receivedTimestampMs));
 
-                        compactAcList(maxagesec);
+                        compactAcList(maxagesec, receivedTimestampMs);
 
                         if (successCallback)
-                            successCallback(acCache.acList);
+                            successCallback(acCache.acList, receivedTimestampMs);
                     }
                 },
                 function (response) // error
@@ -183,7 +184,7 @@ function trafficService($http)
                     logResponseError("ERROR reading ac traffic from ADSBExchange", response);
                     
                     if (errorCallback)
-                        errorCallback(acCache.acList);
+                        errorCallback(acCache.acList, Date.now()); // TODO
                 }
             );
 
@@ -241,18 +242,17 @@ function trafficService($http)
         }
 
 
-        function parseAdsbExchangePositions(ac)
+        function parseAdsbExchangePositions(ac, receivedTimestamp)
         {
             var pos = new AircraftPosition();
             var positionList = []; // will contain only one entry
-            var now = new Date().getTime();
 
             pos.latitude = ac.Lat;
             pos.longitude = ac.Long;
             pos.method = ac.Mlat ? positionMethod.mlat : positionMethod.adsb;
             pos.altitude = ac.Gnd ? undefined : ft2m(ac.GAlt);
-            pos.timestamp = Math.min(ac.PosTime, now);
-            pos.receivedTimestamp = now;
+            pos.timestamp = Math.min(ac.PosTime, receivedTimestamp);
+            pos.receivedTimestamp = receivedTimestamp;
             pos.receiver = ac.Mlat ? "ADSBExchange (MLAT)" : "ADSBExchange (ADS-B)";
 
             positionList.push(pos);
@@ -381,11 +381,9 @@ function trafficService($http)
     }
 
 
-    function compactAcList(maxagesec)
+    function compactAcList(maxagesec, currentTimestamp)
     {
         var lastWp;
-        var d = new Date();
-        var oldestTimestamp = d.getTime() - maxagesec * 1000;
 
         for (var acAddress in acCache.acList)
         {
@@ -404,7 +402,7 @@ function trafficService($http)
             for (var i = 0; i < ac.positions.length; i++)
             {
                 // mark expired entries
-                if (ac.positions[i].timestamp < oldestTimestamp)
+                if (ac.positions[i].timestamp < currentTimestamp - maxagesec * 1000)
                     continue;
 
                 // check for points to skip
