@@ -20,7 +20,7 @@ class NotamGeometryParser
     const REGEXP_PART_RADIUS = '(RADIUS|AROUND|CENTERED)';
     const REGEXP_PART_RADVAL = '(\d+[\.\,]?\d*)\s?(NM|KM|M)(?=\W)';
     const REGEXP_PART_NOBRACKETS_NUMS = '[^\(\)0-9]+?';
-    const PROCESS_CHUNK_SIZE = 100;
+    const PROCESS_CHUNK_SIZE = 1000;
 
     private $conn;
     private $logger;
@@ -55,7 +55,7 @@ class NotamGeometryParser
 
         $testNotamId = checkEscapeString($this->conn, $testNotamId, 1, 20);
         $this->logger->writelog("INFO", "loading test notam '" . $testNotamId . "'...");
-        $notamList = $this->loadNotams($testNotamId);
+        $notamList = $this->loadNotamByKey($testNotamId);
 
         if (count($notamList) == 0)
         {
@@ -119,42 +119,35 @@ class NotamGeometryParser
 
     public function go()
     {
-        $this->logger->writelog("INFO", "loading notams...");
-        $notamList = $this->loadNotams();
-
-        if (count($notamList) == 0)
-        {
-            $this->logger->writelog("WARNING", "notam list empty, exiting.");
-            return;
-        }
-
-        $this->logger->writelog("INFO", "loading extent list...");
-        $extentList = $this->loadExtentList($notamList);
-
-        // parse geometry from notam text
-        $this->logger->writelog("INFO", "parse geometry from notam texts...");
-        foreach ($notamList as &$notam)
-        {
-            $notamContent = json_decode($notam["notam"], JSON_NUMERIC_CHECK);
-            $notam["geometry"] = $this->parseNotamGeometry($notamContent);
-            $notam["dbExtent"] = $this->getNotamDbExtent($notam, $extentList[$notam["icao"]]);
-        }
-
         $this->clearNotamGeometries();
 
-        $notamChunkList = array_chunk($notamList, NotamGeometryParser::PROCESS_CHUNK_SIZE);
-        $chunkCount = 0;
-        foreach ($notamChunkList as $notamChunk)
-        {
-            $chunkCount++;
-            $this->logger->writelog("INFO", "processing chunk " . $chunkCount . "...");
+        $lastNotamId = 0;
+        do {
+            $this->logger->writelog("INFO", "loading notams starting after id " . $lastNotamId . "...");
+            $notamChunk = $this->loadNotams($lastNotamId, self::PROCESS_CHUNK_SIZE);
+            $this->logger->writelog("INFO", count($notamChunk) . " notams found");
+
+            $this->logger->writelog("INFO", "loading extent list...");
+            $extentList = $this->loadExtentList($notamChunk);
+
+            // parse geometry from notam text
+            $this->logger->writelog("INFO", "parse geometry from notam texts...");
+            foreach ($notamChunk as &$notam) {
+                $notamContent = json_decode($notam["notam"], JSON_NUMERIC_CHECK);
+                $notam["geometry"] = $this->parseNotamGeometry($notamContent);
+                $notam["dbExtent"] = $this->getNotamDbExtent($notam, $extentList[$notam["icao"]]);
+            }
 
             $this->logger->writelog("INFO", "try to find matching airspace...");
             $this->tryFindMatchingAirspace($notamChunk);
 
             $this->logger->writelog("INFO", "save geometries to db...");
             $this->saveNotamGeometries($notamChunk);
-        }
+
+            if (count($notamChunk) > 0)
+                $lastNotamId = $notamChunk[count($notamChunk) - 1]["id"];
+
+        } while(count($notamChunk) > 0);
 
         $this->logger->writelog("INFO", "done.");
     }
@@ -165,23 +158,34 @@ class NotamGeometryParser
 
     // region PRIVATE METHODS
 
-    private function loadNotams($notamId = NULL) // id optional (returns all notams if empty)
-    {
+
+    private function loadNotams($lastNotamId, $maxCount) {
         $query = "SELECT id, icao, notam FROM icao_notam";
-
-        if ($notamId)
-            $query .= " WHERE notam_id='" . $notamId . "'";
-
+        $query .= " WHERE id > '" . $lastNotamId . "'";
+        $query .= " ORDER BY id ASC";
+        $query .= " LIMIT " . $maxCount;
         $result = $this->conn->query($query);
 
-        if ($result === FALSE)
-            die("error reading notams: " . $this->conn->error . " query:" . $query);
+        $notamList = array();
+        while ($rs = $result->fetch_assoc()) {
+            $notamList[] = array(
+                "id" => $rs["id"],
+                "icao" => $rs["icao"],
+                "notam" => $rs["notam"]
+            );
+        }
 
+        return $notamList;
+    }
+
+
+    private function loadNotamByKey($notamKey) {
+        $query = "SELECT id, icao, notam FROM icao_notam";
+        $query .= " WHERE notam_id = '" . $notamKey . "'";
+        $result = $this->conn->query($query);
 
         $notamList = array();
-
-        while ($rs = $result->fetch_array(MYSQLI_ASSOC))
-        {
+        while ($rs = $result->fetch_assoc()) {
             $notamList[] = array(
                 "id" => $rs["id"],
                 "icao" => $rs["icao"],

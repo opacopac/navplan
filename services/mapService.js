@@ -2568,8 +2568,10 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 		trackSource.clear();
 
 		// remove interactions
-		for (var j = 0; j < modifySnapInteractions.length; j++)
-			 map.removeInteraction(modifySnapInteractions[j]);
+		for (var j = 0; j < modifySnapInteractions.length; j++) {
+		    modifySnapInteractions[j].un('modifyend', onTrackModifyEnd);
+            map.removeInteraction(modifySnapInteractions[j]);
+        }
 		modifySnapInteractions = [];
 
 
