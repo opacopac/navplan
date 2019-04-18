@@ -14,9 +14,9 @@
 	if(isset($_COOKIE["cachewaypoints"]))
 	{
 		addStaticUrls();
+        addMapFeatureUrls(json_decode($_COOKIE["mapfeaturesextent"]), true);
 		addTileUrls(json_decode($_COOKIE["cachewaypoints"]), true);
 		addChartUrls(json_decode($_COOKIE["cachecharts"]), true);
-        //addMapFeaturesUrls(json_decode($_COOKIE["cachemaxextent"]), true);
 	}
 	else // don't cache anything
 	{
@@ -37,21 +37,21 @@
 		echo "CACHE:\n";
 
 		// html
+        echo "./\n";
 		echo "./?v=" . $ver . "\n";
 		echo "about/about.html?v=" . $ver . "\n";
 		echo "map/map.html?v=" . $ver . "\n";
 		echo "settings/settings.html?v=" . $ver . "\n";
 		echo "waypoints/waypoints.html?v=" . $ver . "\n";
 		echo "tracks/tracks.html?v=" . $ver . "\n";
+        echo "map/add-to-route-directive.html?v=" . $ver . "\n";
 
-		// php
-		/*echo "php/airports.php?v=" . $ver . "\n";
-		echo "php/airspace.php?v=" . $ver . "\n";
-		echo "php/navaids.php?v=" . $ver . "\n";
-		echo "php/webcams.php?v=" . $ver . "\n";
-		echo "php/reportingPoints.php?v=" . $ver . "\n";*/
+        // php
+        echo "php/navplan.php?v=" . $ver . "\n";
+        echo "php/userTrack.php?v=" . $ver . "\n";
+        echo "\n";
 
-		// angular
+        // angular
         echo "angularjs/1.6.3/angular.min.js\n";
         echo "angularjs/1.6.3/angular-route.min.js\n";
         echo "angularjs/1.6.3/angular-resource.min.js\n";
@@ -66,8 +66,8 @@
         echo "bootstrap/fonts/glyphicons-halflings-regular.svg\n";
 
         // openlayers
-        echo "openlayers/4.0.1/ol.css\n";
-        echo "openlayers/4.0.1/ol.js\n";
+        echo "openlayers/4.4.0/ol.css\n";
+        echo "openlayers/4.4.0/ol.js\n";
 
 		// css
 		echo "css/navplan.css?v=" . $ver . "\n";
@@ -79,11 +79,11 @@
 
         // font-awesome
         echo "font-awesome/css/font-awesome.min.css\n";
-        echo "font-awesome/fonts/fontawesome-webfont.eot\n";
-        echo "font-awesome/fonts/fontawesome-webfont.svg\n";
-        echo "font-awesome/fonts/fontawesome-webfont.ttf\n";
-        echo "font-awesome/fonts/fontawesome-webfont.woff\n";
-        echo "font-awesome/fonts/fontawesome-webfont.woff2\n";
+        echo "font-awesome/fonts/fontawesome-webfont.eot?v=4.7.0\n";
+        echo "font-awesome/fonts/fontawesome-webfont.svg?v=4.7.0\n";
+        echo "font-awesome/fonts/fontawesome-webfont.ttf?v=4.7.0\n";
+        echo "font-awesome/fonts/fontawesome-webfont.woff?v=4.7.0\n";
+        echo "font-awesome/fonts/fontawesome-webfont.woff2?v=4.7.0\n";
 
 		// images
 		echo "icon/ad_civ.png\n";
@@ -111,6 +111,7 @@
 		echo "icon/rwy_mil.png\n";
 		echo "icon/webcam.png\n";
 		echo "icon/wp_user.png\n";
+        echo "icon/windsock.svg\n";
 
 		// js
 	    echo "js/jquery-1.12.3.min.js\n";
@@ -118,6 +119,9 @@
         echo "js/jquery.ui.touch-punch.min.js\n";
         echo "js/turf.min.js\n";
         echo "js/ui-bootstrap-tpls-1.3.2.min.js\n";
+        echo "js/sortable.min.js\n";
+		echo "js/WorldMagneticModel.js?v=" . $ver . "\n";
+		echo "js/telephony.js?v=" . $ver . "\n";
 		echo "navplanHelper.js?v=" . $ver . "\n";
 		echo "navplanApp.js?v=" . $ver . "\n";
 		echo "navplanCtrl.js?v=" . $ver . "\n";
@@ -132,15 +136,15 @@
         echo "services/mapFeatureService.js?v=" . $ver . "\n";
 		echo "services/locationService.js?v=" . $ver . "\n";
 		echo "services/trafficService.js?v=" . $ver . "\n";
-		echo "services/geonameService.js?v=" . $ver . "\n";
+		echo "services/geopointService.js?v=" . $ver . "\n";
 		echo "services/waypointService.js?v=" . $ver . "\n";
 		echo "services/fuelService.js?v=" . $ver . "\n";
 		echo "services/userService.js?v=" . $ver . "\n";
-		echo "services/weatherService.js?v=" . $ver . "\n";
+		echo "services/metarTafNotamService.js?v=" . $ver . "\n";
         echo "services/terrainService.js?v=" . $ver . "\n";
+        echo "services/meteoService.js?v=" . $ver . "\n";
 		echo "\n";
 
-		
 		echo "NETWORK:\n";
 		echo "*\n";
 		echo "\n";
@@ -152,23 +156,6 @@
 		echo "login/login.html?v=" . $ver . " offline.html?v=" . $ver . "\n";
 		echo "\n";
 	}
-
-
-/*function addMapFeaturesUrls($maxextent)
-    {
-        global $ver;
-
-        if (!$maxextent)
-            return;
-
-        $url = "php/mapFeatures.php?v=" . $ver . "&minlon=" . $maxextent[0] . "&minlat=" . $maxextent[1] . "&maxlon=" . $maxextent[2] . "&maxlat=" . $maxextent[3];
-
-        echo "# map features\n";
-        echo "CACHE:\n";
-        echo $url . "\n";
-        echo "\n";
-    }*/
-
 
 
     function addChartUrls($charturls)
@@ -183,6 +170,54 @@
 	        echo $url . "\n";
 
 	    echo "\n";
+    }
+
+
+    function addMapFeatureUrls($extent)
+    {
+        global $ver;
+
+        //$extent = getMapFeatureExtent($waypoints);
+
+        echo "# map features\n";
+        echo "CACHE:\n";
+        echo "php/mapFeatures.php?v=" . $ver . "&minlon=" . $extent[0] . "&minlat=" . $extent[1] . "&maxlon=" . $extent[2] . "&maxlat=" . $extent[3] . "\n";
+        echo "\n";
+    }
+
+
+    function getMapFeatureExtent($waypoints)
+    {
+        $toleranceDeg = 1.0;
+        $minlon = null;
+        $minlat = null;
+        $maxlon = null;
+        $maxlat = null;
+
+        foreach ($waypoints as $waypoint)
+        {
+            $lat = floatval($waypoint->lat);
+            $lon = floatval($waypoint->lon);
+
+            if (!$minlon || $minlon > $lon)
+                $minlon = $lon;
+
+            if (!$minlat || $minlat > $lat)
+                $minlat = $lat;
+
+            if (!$maxlon || $maxlon < $lon)
+                $maxlon = $lon;
+
+            if (!$maxlat || $maxlat < $lat)
+                $maxlat = $lat;
+        }
+
+        $minlat -= $toleranceDeg;
+        $minlon -= $toleranceDeg;
+        $maxlon += $toleranceDeg;
+        $maxlat += $toleranceDeg;
+
+        return [ $minlon, $minlat, $maxlon, $maxlat ];
     }
 
 	
@@ -246,28 +281,28 @@
 	function getTileUrl($lat, $lon, $zoom)
 	{
 	    $localBaseUrl = "maptiles/";
-		/*$otmBaseUrl = array(
+		$otmBaseUrl = array(
 			"//a.tile.opentopomap.org/",
 			"//b.tile.opentopomap.org/",
 			"//c.tile.opentopomap.org/"
-		);*/
+		);
 
-		$otmBaseUrl = array(
+		/*$otmBaseUrl = array(
 			"//opentopomap.org/",
 			"//opentopomap.org/",
 			"//opentopomap.org/"
-		);
+		);*/
 
 		$ytile = floor((($lon + 180) / 360) * pow(2, $zoom));
 		$xtile = floor((1 - log(tan(deg2rad($lat)) + 1 / cos(deg2rad($lat))) / pi()) /2 * pow(2, $zoom));
 
 
-        if (strpos($_SERVER['REQUEST_URI'], "branch") === false)
+        /*if (isBranch())
             return '//api.mapbox.com/styles/v1/opacopac/cj0mxdtd800bx2slaha4b0p68/tiles/256/' . $zoom . '/' . $ytile . '/' . $xtile . '@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2oxYjc5dWVnMDA1eTJxbm41YmluaDBvYiJ9.6Kqm-by8OME1SqB15uEzKA';
         else
-            return '//api.mapbox.com/styles/v1/opacopac/cj0mxdtd800bx2slaha4b0p68/tiles/256/' . $zoom . '/' . $ytile . '/' . $xtile . '@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2oxYjc0MHFsMDAyaTMzcGVwdTY1aHlzZCJ9.ssqYvA4pbLYBIa87V7hLeQ';
+            return '//api.mapbox.com/styles/v1/opacopac/cj0mxdtd800bx2slaha4b0p68/tiles/256/' . $zoom . '/' . $ytile . '/' . $xtile . '@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2oxYjc0MHFsMDAyaTMzcGVwdTY1aHlzZCJ9.ssqYvA4pbLYBIa87V7hLeQ';*/
 
-        /*if (isLocalTile($zoom, $ytile, $xtile))
+        if (isLocalTile($zoom, $ytile, $xtile))
 		{
             return $localBaseUrl . $zoom . "/" . $ytile . "/" . $xtile . ".png";
 		}
@@ -275,7 +310,7 @@
 		{
             $n = ($zoom + $xtile + $ytile) % 3;
             return $otmBaseUrl[$n] . $zoom . "/" . $ytile . "/" . $xtile . ".png";
-        }*/
+        }
 	}
 
 

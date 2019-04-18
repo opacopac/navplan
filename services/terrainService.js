@@ -11,34 +11,20 @@ function terrainService($http)
 {
     var BASE_URL = "php/terrain.php";
     var SVG_NS = "http://www.w3.org/2000/svg";
+    var IMAGE_HEIGHT_PX = 200;
     var GRID_ELEVATION_MAIN_STEP_FT = 5000;
     var GRID_ELEVATION_MINOR_STEP_FT = 1000;
+    var ID_TEXTBG_BLUE = "textBgBlue";
+    var ID_TEXTBG_RED = "textBgRed";
+    var ID_TEXTBG_GREEN = "textBgGreeen";
 
     // return api reference
     return {
-        getElevation: getElevation,
-        getElevations: getElevations,
         updateTerrain: updateTerrain
     };
 
 
-    function getElevation(lat, lon, successCallback, errorCallback)
-    {
-        loadTerrain([[lon, lat]], successCallback, errorCallback);
-    }
-
-
-    function getElevations(waypoints, successCallback, errorCallback)
-    {
-        var positions = [];
-        for (var i = 0; i < waypoints.length; i++)
-            positions.push([waypoints[i].longitude, waypoints[i].latitude]);
-
-        loadTerrain(positions, successCallback, errorCallback);
-    }
-
-
-    function updateTerrain(waypoints, successCallback, errorCallback)
+    function updateTerrain(waypoints, wpClickCallback, successCallback, errorCallback)
     {
         getElevations(waypoints, showTerrain, errorCallback);
 
@@ -49,8 +35,8 @@ function terrainService($http)
             if (!container)
                 return;
 
-            var polyLineStyle = "fill:lime; stroke:darkgreen; stroke-width:3px";
-            var svg = getTerrainSvg(waypoints, terrain, terrain.maxelevation_m + 1000, "200", "100%", polyLineStyle);
+            var imageWitdhPx = container.clientWidth;
+            var svg = getTerrainSvg(waypoints, terrain, terrain.maxelevation_m + 1000, imageWitdhPx, IMAGE_HEIGHT_PX, wpClickCallback);
 
             while (container.firstChild)
                 container.removeChild(container.firstChild);
@@ -60,6 +46,16 @@ function terrainService($http)
             if (successCallback)
                 successCallback();
         }
+    }
+
+
+    function getElevations(waypoints, successCallback, errorCallback)
+    {
+        var positions = [];
+        for (var i = 0; i < waypoints.length; i++)
+            positions.push([waypoints[i].longitude, waypoints[i].latitude]);
+
+        loadTerrain(positions, successCallback, errorCallback);
     }
 
 
@@ -93,63 +89,243 @@ function terrainService($http)
     }
 
 
-    function getTerrainSvg(waypoints, terrain, maxelevation_m, height, width, polyLineStyle)
+    function getTerrainSvg(waypoints, terrain, maxelevation_m, imageWidthPx, imageHeightPx, wpClickCallback)
     {
-        var outerSvg = document.createElementNS(SVG_NS, "svg");
-        outerSvg.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
-        outerSvg.setAttribute('width', width);
-        outerSvg.setAttribute('height', height);
-        outerSvg.setAttribute('preserveAspectRatio', 'none');
+        var svg = document.createElementNS(SVG_NS, "svg");
+        svg.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
+        svg.setAttribute('width', imageWidthPx);
+        svg.setAttribute('height', imageHeightPx);
+        svg.setAttribute('preserveAspectRatio', 'none');
+        svg.setAttribute('class', 'map-terrain-svg');
 
-        var viewBoxSvg = document.createElementNS(SVG_NS, "svg");
-        viewBoxSvg.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
-        viewBoxSvg.setAttribute('width', "100%");
-        viewBoxSvg.setAttribute('height', "100%");
-        viewBoxSvg.setAttribute('preserveAspectRatio', 'none');
-        viewBoxSvg.setAttribute("viewBox", "0 0 " + terrain.totaldistance_m + " " + maxelevation_m);
+        addFilterDefs(svg);
+        addElevationPolygon(svg, terrain, maxelevation_m, imageWidthPx, imageHeightPx);
+        addAirspacePolygons(svg, terrain, maxelevation_m, imageWidthPx, imageHeightPx);
+        addSvgGrid(svg, maxelevation_m);
+        addRoute(svg, terrain, waypoints, wpClickCallback);
 
-        outerSvg.appendChild(viewBoxSvg);
-
-        addSvgPolyline(viewBoxSvg, terrain, maxelevation_m, polyLineStyle);
-        addSvgGrid(outerSvg, maxelevation_m, terrain.totaldistance_m);
-        addRoute(outerSvg, terrain, waypoints, height);
-
-        return outerSvg;
+        return svg;
     }
 
 
-    function addSvgPolyline(svg, terrain, maxelevation_m, polyLineStyle)
+    function addFilterDefs(svg)
     {
-        var points =  "0," + Math.round(maxelevation_m) + " ";
-        var currentDist = 0;
+        var defs = document.createElementNS(SVG_NS, "defs");
+        svg.appendChild(defs);
 
-        // legs
-        for (var i = 0; i < terrain.legs.length; i++)
+        addColorFilter(defs, ID_TEXTBG_BLUE, "#1780C2");
+        addColorFilter(defs, ID_TEXTBG_RED, "#AE1E22");
+        addColorFilter(defs, ID_TEXTBG_GREEN, "#009640");
+
+
+        function addColorFilter(defs, id, color)
         {
-            var leg = terrain.legs[i];
-            var deltaDist = leg.distance_m / leg.elevations_m.length;
+            var filter = document.createElementNS(SVG_NS, "filter");
+            filter.setAttribute("id", id);
+            filter.setAttribute("x", "0");
+            filter.setAttribute("y", "0");
+            filter.setAttribute("width", "1");
+            filter.setAttribute("height", "1");
+            defs.appendChild(filter);
 
-            // elevations
-            for (var j = 0; j < leg.elevations_m.length; j++)
+            var feFlood = document.createElementNS(SVG_NS, "feFlood");
+            feFlood.setAttribute("flood-color", color);
+            filter.appendChild(feFlood);
+
+            var feComp = document.createElementNS(SVG_NS, "feComposite");
+            feComp.setAttribute("in", "SourceGraphic");
+            //feComp.setAttribute("operator", "xor");
+            filter.appendChild(feComp);
+        }
+
+        /*
+         <defs>
+         <filter x="0" y="0" width="1" height="1" id="solid">
+         <feFlood flood-color="yellow"/>
+         <feComposite in="SourceGraphic" operator="xor"/>
+         </filter>
+         </defs>
+         <text filter="url(#solid)" x="20" y="50" font-size="50"> solid background </text>
+         <text x="20" y="50" font-size="50">solid background</text>
+         */
+    }
+
+
+    function addElevationPolygon(svg, terrain, maxelevation_m, imageWidthPx, imageHeightPx)
+    {
+        var points = getPointString(0, 0, terrain.totaldistance_m, maxelevation_m, imageWidthPx, imageHeightPx);
+
+        for (var i = 0; i < terrain.elevations_m.length; i++)
+        {
+            var dist = terrain.elevations_m[i][0];
+            var elevation = terrain.elevations_m[i][1];
+
+            points += getPointString(dist, elevation, terrain.totaldistance_m, maxelevation_m, imageWidthPx, imageHeightPx);
+        }
+
+        points += getPointString(terrain.totaldistance_m, terrain.elevations_m[terrain.elevations_m.length - 1][1], terrain.totaldistance_m, maxelevation_m, imageWidthPx, imageHeightPx);
+        points += getPointString(terrain.totaldistance_m, 0, terrain.totaldistance_m, maxelevation_m, imageWidthPx, imageHeightPx);
+
+        var polygon = document.createElementNS(SVG_NS, "polygon");
+        polygon.setAttribute('style', "fill:lime; stroke:darkgreen; stroke-width:0.5px");
+        polygon.setAttribute("points", points);
+        svg.appendChild(polygon);
+    }
+
+
+    function addAirspacePolygons(svg, terrain, maxelevation_m, imageWidthPx, imageHeightPx)
+    {
+        // sort airspaces top down (lower ones, e.g. CTR will be drawn "in front" of higher ones)
+        terrain.airspaces.sort(function(a, b) {
+            return b.heights[0][1] - a.heights[0][1];
+        });
+
+
+        // add airspace polygons to svg
+        for (var i = 0; i < terrain.airspaces.length; i++)
+        {
+            var airspace = terrain.airspaces[i];
+            var points = "";
+
+            for (var j = 0; j < airspace.heights.length; j++) // upper heights
+                points += getPointString(airspace.heights[j][0], airspace.heights[j][2], terrain.totaldistance_m, maxelevation_m, imageWidthPx, imageHeightPx);
+
+            for (j = airspace.heights.length - 1; j >= 0; j--) // lower heights
+                points += getPointString(airspace.heights[j][0], airspace.heights[j][1], terrain.totaldistance_m, maxelevation_m, imageWidthPx, imageHeightPx);
+
+            // polygon
+            var polygon = document.createElementNS(SVG_NS, "polygon");
+            setAirspacePolyLineStyle(polygon, airspace.category);
+            polygon.setAttribute("points", points);
+            svg.appendChild(polygon);
+
+            // tooltip
+            var title = document.createElementNS(SVG_NS, "title");
+            title.textContent = terrain.airspaces[i].name;
+            polygon.appendChild(title);
+
+            // category label
+            ptBottomLeft = getPointArray(airspace.heights[0][0], airspace.heights[0][1], terrain.totaldistance_m, maxelevation_m, imageWidthPx, imageHeightPx);
+
+            if (ptBottomLeft[1] > 0)
+                addAirspaceCategory(svg, ptBottomLeft, airspace.category);
+        }
+
+
+        function setAirspacePolyLineStyle(polyline, category)
+        {
+            switch (category)
             {
-                points += Math.round(currentDist) + "," + Math.round(maxelevation_m - leg.elevations_m[j]) + " ";
-                currentDist += deltaDist;
+                case "CTR":
+                    polyline.setAttribute("style", "fill:rgba(152, 206, 235, 0.7); stroke:rgba(23, 128, 194, 0.8); stroke-width:3px");
+                    //polyline.setAttribute("style", "fill:rgba(23, 128, 194, 0.6); stroke:rgba(23, 128, 194, 0.8); stroke-width:3px");
+                    polyline.setAttribute("stroke-dasharray", "10, 7");
+                    break;
+                case "A" :
+                    polyline.setAttribute("style", "fill:rgba(174, 30, 34, 0.2); stroke:rgba(174, 30, 34, 0.8); stroke-width:4px");
+                    break;
+                case "B":
+                case "C":
+                case "D":
+                    polyline.setAttribute("style", "fill:rgba(23, 128, 194, 0.2); stroke:rgba(23, 128, 194, 0.8); stroke-width:3px");
+                    break;
+                case "E":
+                    polyline.setAttribute("style", "fill:rgba(23, 128, 194, 0.2); stroke:rgba(23, 128, 194, 0.8); stroke-width:3px");
+                    break;
+                case "DANGER":
+                case "RESTRICTED":
+                case "PROHIBITED":
+                    polyline.setAttribute("style", "fill:rgba(174, 30, 34, 0.2); stroke:rgba(174, 30, 34, 0.8); stroke-width:3px");
+                    break;
+                case "TMZ":
+                case "RMZ":
+                case "FIS":
+                    polyline.setAttribute("style", "fill:rgba(23, 128, 194, 0.2); stroke:rgba(23, 128, 194, 0.8); stroke-width:3px");
+                    polyline.setAttribute("stroke-dasharray", "3, 7");
+                    break;
+                case "GLIDING":
+                case "WAVE":
+                    polyline.setAttribute("style", "fill:rgba(0, 150, 64, 0.2); stroke:rgba(0, 150, 64, 0.8); stroke-width:3px");
+                    break;
+                default :
+                    polyline.setAttribute("style", "fill:none; stroke:none; stroke-width:0px");
+                    return;
             }
         }
 
-        points += Math.round(terrain.totaldistance_m) + "," + Math.round(maxelevation_m - leg.elevations_m[leg.elevations_m.length - 1]) +
-            " " + Math.round(terrain.totaldistance_m) + "," + Math.round(maxelevation_m) +
-            " 0," + Math.round(maxelevation_m);
+
+        function addAirspaceCategory(svg, point, cat)
+        {
+            var height = 20;
+            var charWidth1 = 14;
+            var charWidth3 = 33;
+            var x = point[0];
+            var y = point[1];
+            var colorBlue = "rgba(23, 128, 194, 0.8)"; // "#1780C2";
+            var colorRed = "rgba(174, 30, 34, 0.8)"; // "#AE1E22";
+            var colorGreen = "rgba(0, 150, 64, 0.8)"; // "#009640";
+
+            switch(cat)
+            {
+                case "CTR":
+                    addText(svg, cat, x, y, charWidth3, height, colorBlue);
+                    break;
+                case "A" :
+                    addText(svg, cat, x, y, charWidth1, height, colorRed);
+                    break;
+                case "B":
+                case "C":
+                case "D":
+                case "E":
+                    addText(svg, cat, x, y, charWidth1, height, colorBlue);
+                    break;
+                case "DANGER":
+                    addText(svg, "Dng", x, y, charWidth3, height, colorRed);
+                    break;
+                case "RESTRICTED":
+                    addText(svg, "R", x, y, charWidth1, height, colorRed);
+                    break;
+                case "PROHIBITED":
+                    addText(svg, "P", x, y, charWidth1, height, colorRed);
+                    break;
+                case "TMZ":
+                case "RMZ":
+                case "FIS":
+                    addText(svg, cat, x, y, charWidth3, height, colorBlue);
+                    break;
+                case "GLIDING":
+                case "WAVE":
+                    addText(svg, "GLD", x, y, charWidth3, height, colorGreen);
+                    break;
+            }
 
 
-        var polyline = document.createElementNS(SVG_NS, "polyline");
-        polyline.setAttribute('style', polyLineStyle);
-        polyline.setAttribute("points", points);
-        svg.appendChild(polyline);
+            function addText(svg, text, x, y, width, height, color)
+            {
+                var textBg = document.createElementNS(SVG_NS, "rect");
+                textBg.setAttribute("x", x);
+                textBg.setAttribute("y", y - height);
+                textBg.setAttribute("width", width);
+                textBg.setAttribute("height", height);
+                textBg.setAttribute("style", "fill:" + color + ";stroke-width:0");
+                svg.appendChild(textBg);
+
+                var textFg = document.createElementNS(SVG_NS, "text");
+                textFg.setAttribute("x", Math.round(x + width / 2));
+                textFg.setAttribute("y", Math.round(y - height / 2));
+                textFg.setAttribute("text-anchor", "middle");
+                textFg.setAttribute("transform", "translate(0 4)");
+                textFg.setAttribute("style", "stroke:none; fill:#FFFFFF;");
+                textFg.setAttribute("font-family", "Calibri,sans-serif");
+                textFg.setAttribute("font-weight", "bold");
+                textFg.setAttribute("font-size", "14px");
+                textFg.textContent = text;
+                svg.appendChild(textFg);
+            }
+        }
     }
 
-
-    function addSvgGrid(svg, maxelevation_m, totaldistance_m)
+    function addSvgGrid(svg, maxelevation_m)
     {
         var maxelevation_ft = m2ft(maxelevation_m);
         var showMinorLabels = maxelevation_ft / GRID_ELEVATION_MAIN_STEP_FT < 2.5;
@@ -175,17 +351,6 @@ function terrainService($http)
             if (showMinorLabels)
                 addGridLabel(svg, elevationPercent, i + " ft");
         }
-
-        // bounding rectangle
-        var rect = document.createElementNS(SVG_NS, "rect");
-        rect.setAttribute("x", "0");
-        rect.setAttribute("y", "0");
-        rect.setAttribute("width", (totaldistance_m).toString());
-        rect.setAttribute("height", (maxelevation_m).toString());
-        rect.setAttribute("style", "stroke:green; stroke-width:1px; fill:none");
-        rect.setAttribute("vector-effect", "non-scaling-stroke");
-        rect.setAttribute("shape-rendering", "crispEdges");
-        svg.appendChild(rect);
 
 
         function addGridLine(svg, elevationPercent, isDashed)
@@ -223,7 +388,7 @@ function terrainService($http)
     }
 
 
-    function addRoute(svg, terrain, waypoints, height)
+    function addRoute(svg, terrain, waypoints, wpClickCallback)
     {
         if (terrain.legs.length != waypoints.length - 1)
         {
@@ -245,31 +410,34 @@ function terrainService($http)
             line.setAttribute("x2", (currentDist + legDistPercent).toString() + "%");
             line.setAttribute("y1", "40"); // TODO: temp
             line.setAttribute("y2", "40"); // TODO: temp
-            line.setAttribute("style", "stroke:#FF00FF; stroke-width:5px;");
+            line.setAttribute("style", "stroke:rgba(255, 0, 255, 1.0); stroke-width:5px;");
             line.setAttribute("shape-rendering", "crispEdges");
             svg.appendChild(line);
 
-            addRouteDot(svg, currentDist, yOffset[0]);
-            addRouteDotPlumline(svg, currentDist, yOffset[0], height);
-            addWaypointLabel(svg, currentDist, yOffset[i % 2], waypoints[i].checkpoint, (i == 0) ? "start" : "middle");
+            addRouteDot(svg, currentDist, yOffset[0], waypoints[i], wpClickCallback);
+            addRouteDotPlumline(svg, currentDist, yOffset[0], IMAGE_HEIGHT_PX);
+            addWaypointLabel(svg, currentDist, yOffset[i % 2], waypoints[i], (i == 0) ? "start" : "middle", wpClickCallback);
 
             currentDist += legDistPercent;
         }
 
         // final dot
-        addRouteDot(svg, 100, yOffset[0]);
-        addRouteDotPlumline(svg, 100, yOffset[0], height);
-        addWaypointLabel(svg, currentDist, yOffset[(waypoints.length - 1) % 2], waypoints[waypoints.length - 1].checkpoint, "end");
+        addRouteDot(svg, 100, yOffset[0], waypoints[i], wpClickCallback);
+        addRouteDotPlumline(svg, 100, yOffset[0], IMAGE_HEIGHT_PX);
+        addWaypointLabel(svg, currentDist, yOffset[(waypoints.length - 1) % 2], waypoints[waypoints.length - 1], "end", wpClickCallback);
 
 
-        function addRouteDot(svg, cxProc, cy)
+        function addRouteDot(svg, cxProc, cy, waypoint, clickCallback)
         {
             var dot = document.createElementNS(SVG_NS, "circle");
             dot.setAttribute("cx", cxProc.toString() + "%");
             dot.setAttribute("cy", cy);
             dot.setAttribute("r", "6");
-            dot.setAttribute("style", "stroke:#FF00FF; stroke-width:0px; fill:#FF00FF");
+            dot.setAttribute("style", "stroke:#FF00FF; stroke-width:0px; fill:rgba(255, 0, 255, 1.0); cursor: pointer");
             dot.setAttribute("shape-rendering", "crispEdges");
+
+            if (clickCallback)
+                dot.addEventListener("click", function() { clickCallback(waypoint); });
 
             svg.appendChild(dot);
         }
@@ -290,7 +458,7 @@ function terrainService($http)
         }
 
 
-        function addWaypointLabel(svg, xProc, y, text, textAnchor)
+        function addWaypointLabel(svg, xProc, y, waypoint, textAnchor, clickCallback)
         {
             var transformX;
 
@@ -311,13 +479,13 @@ function terrainService($http)
             var labelGlow = document.createElementNS(SVG_NS, "text");
             labelGlow.setAttribute("x", xProc.toString() + "%");
             labelGlow.setAttribute("y", y);
-            labelGlow.setAttribute("style", "stroke:#FFFFFF; stroke-width:5px; fill:#FFFFFF");
+            labelGlow.setAttribute("style", "stroke:#FFFFFF; stroke-width:5px; fill:#FFFFFF; cursor: pointer");
             labelGlow.setAttribute("text-anchor", textAnchor);
             labelGlow.setAttribute("font-family", "Calibri,sans-serif");
             labelGlow.setAttribute("font-weight", "bold");
             labelGlow.setAttribute("font-size", "15px");
             labelGlow.setAttribute("transform", "translate(" + transformX + ", -15)");
-            labelGlow.textContent = text;
+            labelGlow.textContent = waypoint.checkpoint;
 
             svg.appendChild(labelGlow);
 
@@ -325,15 +493,33 @@ function terrainService($http)
             var label = document.createElementNS(SVG_NS, "text");
             label.setAttribute("x", xProc.toString() + "%");
             label.setAttribute("y", y);
-            label.setAttribute("style", "stroke:none; fill:#660066");
+            label.setAttribute("style", "stroke:none; fill:#660066; cursor: pointer");
             label.setAttribute("text-anchor", textAnchor);
             label.setAttribute("font-family", "Calibri,sans-serif");
             label.setAttribute("font-weight", "bold");
             label.setAttribute("font-size", "15px");
             label.setAttribute("transform", "translate(" + transformX + ", -15)");
-            label.textContent = text;
+            label.textContent = waypoint.checkpoint;
+
+            if (clickCallback)
+                label.addEventListener("click", function() { clickCallback(waypoint); });
 
             svg.appendChild(label);
         }
+    }
+
+    function getPointArray(dist_m, height_m, maxdistance_m, maxelevation_m, imageWidthPx, imageHeightPx)
+    {
+        var x = Math.round(dist_m / maxdistance_m * imageWidthPx);
+        var y = Math.round((maxelevation_m - height_m) / maxelevation_m * imageHeightPx);
+
+        return [x, y];
+    }
+
+    function getPointString(dist_m, height_m, maxdistance_m, maxelevation_m, imageWidthPx, imageHeightPx)
+    {
+        var pt = getPointArray(dist_m, height_m, maxdistance_m, maxelevation_m, imageWidthPx, imageHeightPx);
+
+        return pt[0] + "," + pt[1] + " ";
     }
 }

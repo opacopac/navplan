@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="-75 -75 150 150" width="500" height="500">
+	<defs>	 
+		<path id="post" d="M -60.9558861297 -57.6313164948 L -60.9558861297 67.3686835052 A 2.15 2.15 0 1 0 -56.6559 67.3687L -56.6558861297 -57.6313164948 A 2.15 2.15 0 0 0 -60.9559 -57.6313" />
+		<polygon id="sock_outer" points="-38.2754218731,-70.0 65.0,-30.4217580364 59.3059810077,-9.17138985804 -49.9222789027,-26.533337817 -38.2754218731,-70.0" />
+		<path id="strings" d="M -39.4401075761 -65.6533337817 L -56.6558861297 -51.6313164948 L -48.7575931998 -30.8800040353" />
+		<path id="ring_1"  d="M -17.6203374985 -62.0843516073 L -28.0766269206 -23.0609482252 L -6.23097493854 -19.5885586334 L 3.03474687613 -54.1687032146 Z" />
+		<path id="ring_2"  d="M 23.6898312508 -46.2530548218 L 15.6146770436 -16.1161690416  L 37.4603290256 -12.6437794498 L 44.3449156254 -38.3374064291 Z" />
+	</defs>
+	<g>
+		<g>
+			<use xlink:href="#post" opacity="1" fill="#ffffff" stroke="none" />
+			<use xlink:href="#strings" opacity="1" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" />
+			<use xlink:href="#ring_1" opacity="1" fill="#ffffff" stroke="none" />
+			<use xlink:href="#ring_2" opacity="1" fill="#ffffff" stroke="none" />
+			<use xlink:href="#sock_outer" opacity="1" fill="none" stroke="#ffffff" stroke-width="3" />
+		</g>
+	</g>
+</svg>

@@ -160,6 +160,30 @@ function removeFromArray(array, value)
 	return array;
 }
 
+
+function chunkUpList(itemList, chunkSize)
+{
+    var chunkList = [];
+    var currentChunk = [];
+
+    for (var i = 0; i < itemList.length; i++)
+    {
+        currentChunk.push(itemList[i]);
+
+        if (currentChunk.length >= chunkSize)
+        {
+            chunkList.push(currentChunk);
+            currentChunk = [];
+        }
+    }
+
+    if (currentChunk.length > 0 || chunkList.length == 0)
+        chunkList.push(currentChunk);
+
+    return chunkList;
+}
+
+
 //endregion
 
 
@@ -189,10 +213,34 @@ function getYearMonthDayString(date)
 }
 
 
+function getHourMinAgeString(timeMs)
+{
+    var ms = Date.now() - timeMs;
+    var h = Math.floor(ms / 1000 / 3600);
+    var m = Math.floor(ms / 1000 / 60 - h * 60);
+
+    if (h > 0)
+        return h + "h " + m + "min";
+    else
+        return m + "min";
+}
+
+
 function getIsoTimeString(timeMs)
 {
     var date = new Date(timeMs);
     return date.toISOString();
+}
+
+
+function getDecimalYear()
+{
+    var d1 = new Date();
+    var d2 = new Date(d1.getFullYear(), 0, 0, 0, 0, 0, 0);
+    var d3 = new Date(d1.getFullYear() + 1, 0, 0, 0, 0, 0, 0);
+    var dec = (d1.getTime() - d2.getTime()) / (d3.getTime() - d2.getTime());
+
+    return d1.getFullYear() + dec;
 }
 
 
@@ -214,12 +262,35 @@ function getDmsString(latitude, longitude)
 
 	function getCoordString(coord)
 	{
+	    if (coord < 0)
+	        coord = -coord;
+
 		var d = Math.floor(coord);
 		var m = Math.floor((coord - d) * 60);
 		var s = Math.floor((coord - d - m/60) * 3600);
 
 		return d + "° " + zeroPad(m) + "' " + zeroPad(s) + '"';
 	}
+}
+
+
+function getLonLatFromGradMinSec(latGrad, latMin, latSec, latDir, lonGrad, lonMin, lonSec, lonDir)
+{
+    var latG = parseInt(latGrad);
+    var latM = parseInt(latMin);
+    var latS = parseFloat(latSec);
+    var lat = latG + latM / 60 + latS / 3600;
+    if (latDir.toUpperCase().indexOf("S") >= 0)
+        lat = -lat;
+
+    var lonG = parseInt(lonGrad);
+    var lonM = parseInt(lonMin);
+    var lonS = parseFloat(lonSec);
+    var lon = lonG + lonM / 60 + lonS / 3600;
+    if (lonDir.toUpperCase().indexOf("W") >= 0)
+        lon = -lon;
+
+    return [ lon, lat ];
 }
 
 
@@ -255,12 +326,17 @@ function unshrinkPositions(positions)
 }
 
 
-function zeroPad(number)
+function zeroPad(number, digits)
 {
-    if (number < 10)
-        return "0" + number;
-    else
-        return "" + number;
+    if (!digits)
+        digits = 2;
+
+    var text = number.toString();
+
+    while (text.length < digits)
+        text = "0" + text;
+
+    return text;
 }
 
 
@@ -285,15 +361,25 @@ function containsExtent(outerExtent, innerExtent)
 
 function calcOversizeExtent(extent, factor)
 {
+    var minHalfDiffDeg = 0.1;
+    var maxDigits = 7;
+
     var halfDiffLon = (extent[2] - extent[0]) / 2;
     var halfDiffLat = (extent[3] - extent[1]) / 2;
+
+    if (halfDiffLon < minHalfDiffDeg)
+        halfDiffLon = minHalfDiffDeg;
+
+    if (halfDiffLat < minHalfDiffDeg)
+        halfDiffLat = minHalfDiffDeg;
+
     var centerLon = extent[0] + halfDiffLon;
     var centerLat = extent[1] + halfDiffLat;
 
-    return [centerLon - halfDiffLon * factor,
-        centerLat - halfDiffLat * factor,
-        centerLon + halfDiffLon * factor,
-        centerLat + halfDiffLat * factor];
+    return [roundPrecision(centerLon - halfDiffLon * factor, maxDigits),
+        roundPrecision(centerLat - halfDiffLat * factor, maxDigits),
+        roundPrecision(centerLon + halfDiffLon * factor, maxDigits),
+        roundPrecision(centerLat + halfDiffLat * factor, maxDigits)];
 }
 
 //endregion
@@ -313,6 +399,18 @@ function ft2m(height_ft)
 }
 
 
+function nautmile2m(distance_nm)
+{
+    return distance_nm * 1852;
+}
+
+
+function kmh2kt(speed_kmh)
+{
+    return speed_kmh / 1.852;
+}
+
+
 function deg2rad(deg)
 {
 	return deg / 360 * 2 * Math.PI;
@@ -322,6 +420,16 @@ function deg2rad(deg)
 function rad2deg(rad)
 {
 	return rad / (2 * Math.PI) * 360;
+}
+
+
+function roundPrecision(value, decimals)
+{
+    value = value * Math.pow(10, decimals);
+    value = Math.round(value);
+    value = value / Math.pow(10, decimals);
+
+    return value;
 }
 
 
@@ -382,7 +490,149 @@ function rad2deg(rad)
 //endregion
 
 
+//region HTML CANVAS
+
+
+function createCanvas(widthPx, heightPx)
+{
+    var canvas = document.createElement('canvas');
+    canvas.width = widthPx;
+    canvas.height = heightPx;
+    canvas.displayScale = 1.0;
+
+    var ctx = getCanvasContext(canvas);
+
+    // determine pixel ratio
+    var devicePixelRatio = window.devicePixelRatio || 1;
+    var backingStoreRatio =
+        ctx.webkitBackingStorePixelRatio ||
+        ctx.mozBackingStorePixelRatio ||
+        ctx.msBackingStorePixelRatio ||
+        ctx.oBackingStorePixelRatio ||
+        ctx.backingStorePixelRatio || 1;
+
+    // upscale the canvas if the two ratios don't match
+    if (devicePixelRatio !== backingStoreRatio)
+    {
+        var ratio = devicePixelRatio / backingStoreRatio;
+
+        canvas.width = widthPx * ratio;
+        canvas.height = heightPx * ratio;
+        canvas.displayScale = 1 / ratio;
+
+        // now scale the context to counter
+        // the fact that we've manually scaled
+        // our canvas element
+        ctx.scale(ratio, ratio);
+    }
+
+    return canvas;
+}
+
+
+function getCanvasContext(canvas)
+{
+    return canvas.getContext("2d");
+}
+
+
+function drawText(canvasContext, x, y, text, fillColor, borderColor, borderWidth)
+{
+    if (borderColor && borderWidth && borderWidth > 0)
+    {
+        canvasContext.strokeStyle = borderColor;
+        canvasContext.lineWidth = borderWidth;
+        canvasContext.strokeText(text, x, y);
+    }
+
+    canvasContext.fillStyle = fillColor;
+    canvasContext.fillText(text, x, y);
+}
+
+
+function drawRectangle(canvasContext, x, y, widthPx, heightPx, fillColor, borderColor, borderWidth)
+{
+    canvasContext.fillStyle = fillColor;
+    canvasContext.fillRect(x, y, widthPx, heightPx);
+
+    if (borderColor && borderWidth && borderWidth > 0)
+    {
+        canvasContext.strokeStyle = borderColor;
+        canvasContext.lineWidth = borderWidth;
+        canvasContext.strokeRect(x, y, widthPx, heightPx);
+    }
+}
+
+
+function drawFillBox(canvasContext, x, y, width, height, borderWidth, color, levelFactor)
+{
+    canvasContext.lineWidth = borderWidth;
+    canvasContext.strokeStyle = color;
+    canvasContext.fillStyle = color;
+    canvasContext.strokeRect(x, y, width, height);
+    canvasContext.fillRect(x, y + height - height * levelFactor, width, height * levelFactor);
+}
+
+
+//endregion
+
+
+//region HTML FULL SCREEN
+
+function startFullScreenMode(element)
+{
+    if (element.requestFullScreen)
+        element.requestFullScreen();
+    else if (element.mozRequestFullScreen)
+        element.mozRequestFullScreen();
+    else if (element.webkitRequestFullScreen)
+        element.webkitRequestFullScreen();
+    else if (element.msRequestFullscreen)
+        element.msRequestFullscreen();
+}
+
+
+function stopFullScreenMode()
+{
+    if (document.cancelFullScreen)
+        document.cancelFullScreen();
+    else if (document.mozCancelFullScreen)
+        document.mozCancelFullScreen();
+    else if (document.webkitCancelFullScreen)
+        document.webkitCancelFullScreen();
+    else if (document.msExitFullscreen)
+        document.msExitFullscreen();
+}
+
+
+function isInFullScreenMode()
+{
+    return document.fullscreen || document.mozFullScreen || document.webkitIsFullScreen;
+}
+
+
+function isFullScreenEnabled2()
+{
+    return document.fullscreenEnabled || document.webkitFullscreenEnabled || document.mozFullScreenEnabled || document.msFullscreenEnabled;
+}
+
+//endregion
+
+
 //region MISC
+
+
+function isBranch2()
+{
+    return (location.href.indexOf("branch") >= 0);
+}
+
+
+function isSelf2(email)
+{
+    return (email == "armand@tschanz.com");
+}
+
 
 function getMorseString(text)
 {
@@ -426,6 +676,29 @@ function airspaceListToggle()
         asContainerFull.style.display = 'block';
         asContainerSimple.style.display = 'none';
     }
+}
+
+
+function regexMatchAll(regex, text)
+{
+    if (regex.constructor !== RegExp)
+        throw new Error('not RegExp');
+
+    var res = [];
+    var match = null;
+
+    if (regex.global) {
+        while (match = regex.exec(text)) {
+            res.push(match);
+        }
+    }
+    else {
+        if (match = regex.exec(text)) {
+            res.push(match);
+        }
+    }
+
+    return res;
 }
 
 //endregion

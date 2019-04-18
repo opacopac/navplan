@@ -5,9 +5,9 @@
 navplanApp
 	.controller('trackCtrl', trackCtrl);
 
-trackCtrl.$inject = ['$scope', 'userService', 'mapService', 'globalData'];
+trackCtrl.$inject = ['$scope', 'userService', 'globalData'];
 
-function trackCtrl($scope, userService, mapService, globalData) {
+function trackCtrl($scope, userService, globalData) {
 	$scope.globalData = globalData;
 	$scope.lasttrack = json2obj(localStorage.getItem("lasttrack"));
 
@@ -36,7 +36,7 @@ function trackCtrl($scope, userService, mapService, globalData) {
 						if (response.data && response.data.track) {
 							$scope.globalData.track = response.data.track;
 							$scope.globalData.track.positions = unshrinkPositions($scope.globalData.track.positions);
-							mapService.drawFlightTrack($scope.globalData.track.positions, true);
+							$scope.globalData.fitViewLatLon = $scope.getExtentLatLon($scope.globalData.track.positions);
 						}
 						else
 							logResponseError("ERROR reading track:", response);
@@ -203,4 +203,23 @@ function trackCtrl($scope, userService, mapService, globalData) {
 			$scope.exportKml();
 		}
 	};
+
+
+	$scope.getExtentLatLon = function(positions)
+    {
+        var minLat = 1000;
+        var minLon = 1000;
+        var maxLat = -1000;
+        var maxLon = -1000;
+
+        for (var i = 0; i < positions.length; i++)
+        {
+            minLat = Math.min(minLat, positions[i].latitude);
+            minLon = Math.min(minLon, positions[i].longitude);
+            maxLat = Math.max(maxLat, positions[i].latitude);
+            maxLon = Math.max(maxLon, positions[i].longitude);
+        }
+
+        return [ minLon, minLat, maxLon, maxLat ];
+    }
 }

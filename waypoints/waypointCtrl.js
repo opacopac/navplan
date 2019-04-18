@@ -5,28 +5,23 @@
 navplanApp
 	.controller('waypointCtrl', waypointCtrl);
 	
-waypointCtrl.$inject = ['$scope', '$http', 'geonameService', 'fuelService', 'userService', 'mapService', 'globalData'];
+waypointCtrl.$inject = ['$scope', '$http', 'geopointService', 'fuelService', 'userService', 'globalData'];
 
-function waypointCtrl($scope, $http, geonameService, fuelService, userService, mapService, globalData) {
+function waypointCtrl($scope, $http, geopointService, fuelService, userService, globalData) {
 	$scope.globalData = globalData;
 	$scope.newWp = undefined;
-
-	
-	$scope.updateOrderCallback = function(startIndex, endIndex)
-	{
-		var movedElement = $scope.globalData.navplan.waypoints[startIndex];
-		$scope.globalData.navplan.waypoints.splice(startIndex, 1);
-		$scope.globalData.navplan.waypoints.splice(endIndex, 0, movedElement);
-		
-		$scope.updateWaypoints();
-		$scope.discardCache();
-		$scope.$apply();
-	};
-
-	makeWaypointsSortable($scope.updateOrderCallback);
+    $scope.sortableOptions = {
+        //'ui-floating': true,
+        axis: 'y',
+        stop: function(e, ui) {
+            $scope.updateWaypoints();
+            $scope.discardCache();
+            $scope.$apply();
+        }
+    };
 
 
-	$scope.loadNavplan = function()
+    $scope.loadNavplan = function()
 	{
 		userService.readNavplan($scope.selectedNavplanId)
 			.then(
@@ -35,11 +30,11 @@ function waypointCtrl($scope, $http, geonameService, fuelService, userService, m
                     if (response && response.data && response.data.navplan)
                         $scope.loadNavplanToGlobalData(response.data.navplan);
                     else
-                        logResponseError("ERROR reading navplan", response);
+                        logResponseError("ERROR reading route", response);
                 },
 			    function(response) // error
                 {
-                    logResponseError("ERROR reading navplan", response);
+                    logResponseError("ERROR reading route", response);
                 }
             );
 	};
@@ -55,14 +50,14 @@ function waypointCtrl($scope, $http, geonameService, fuelService, userService, m
                     {
                         if (response && response.data && response.data.success == 1) {
                             $scope.readNavplanList();
-                            $scope.showSuccessMessage("Flight log successfully updated!");
+                            $scope.showSuccessMessage("Route successfully updated!");
                         }
                         else
-                            logResponseError("ERROR updating navplan", response);
+                            logResponseError("ERROR updating route", response);
                     },
                     function(response) // error
                     {
-                        logResponseError("ERROR updating navplan", response);
+                        logResponseError("ERROR updating route", response);
 		    		}
                 );
 		}
@@ -76,14 +71,14 @@ function waypointCtrl($scope, $http, geonameService, fuelService, userService, m
                         {
                             $scope.globalData.navplan.id = response.data.navplan_id;
                             $scope.readNavplanList();
-                            $scope.showSuccessMessage("Flight log successfully saved!");
+                            $scope.showSuccessMessage("Route successfully saved!");
                         }
                         else
-                            logResponseError("ERROR creating navplan", response);
+                            logResponseError("ERROR creating route", response);
     				},
                     function(response) // error
                     {
-                        logResponseError("ERROR creating navplan", response);
+                        logResponseError("ERROR creating route", response);
 	    			}
                 );
 		}
@@ -99,8 +94,8 @@ function waypointCtrl($scope, $http, geonameService, fuelService, userService, m
 	$scope.deleteNavplan = function()
 	{
         $scope.showRuSureMessage(
-            "Delete Flight Log?",
-            "Do you really want to delete this flight log?",
+            "Delete Route?",
+            "Do you really want to delete this route?",
             function()
             {
                 if ($scope.selectedNavplanId) {
@@ -110,14 +105,14 @@ function waypointCtrl($scope, $http, geonameService, fuelService, userService, m
                             {
                                 if (response && response.data && response.data.success == 1) {
                                     $scope.readNavplanList();
-                                    $scope.showSuccessMessage("Flight log successfully deleted!");
+                                    $scope.showSuccessMessage("Route successfully deleted!");
                                 }
                                 else
-                                    logResponseError("ERROR deleting navplan", response);
+                                    logResponseError("ERROR deleting route", response);
                             },
                             function (response) // error
                             {
-                                logResponseError("ERROR deleting navplan", response);
+                                logResponseError("ERROR deleting route", response);
                             }
                         );
                 }
@@ -128,7 +123,7 @@ function waypointCtrl($scope, $http, geonameService, fuelService, userService, m
 
 	$scope.searchGeonamesByValue = function(val)
 	{
-		return geonameService.searchGeonamesByValue($http, val);
+		return geopointService.searchGeonamesByValue($http, val);
 	};
 	
 	
@@ -209,31 +204,4 @@ function waypointCtrl($scope, $http, geonameService, fuelService, userService, m
 		else
 			return "" + num;
 	};
-}
-
-
-function makeWaypointsSortable(updateOrderCallback)
-{
-	//Helper function to keep table row from collapsing when being sorted
-	var fixHelperModified = function(e, tr) {
-		var $originals = tr.children();
-		var $helper = tr.clone();
-		$helper.children().each(function(index)
-		{
-		  $(this).width($originals.eq(index).width())
-		});
-		return $helper;
-	};
-
-	//Make diagnosis table sortable
-	$('#waypoint_list tbody').sortable({
-		items: '.tr_sortable',
-    	helper: fixHelperModified,
-		start: function(event, ui) {
-			ui.item.startPos = ui.item.index();
-		},
-		stop: function(event,ui) {
-			updateOrderCallback(ui.item.startPos, ui.item.index());
-		}
-	}).disableSelection();	
 }

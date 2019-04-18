@@ -10,21 +10,20 @@
 		</span>
 	</div>
 </div>
-<!-- zoom buttons -->
-<div class="btn-group-vertical mapbutton-zoom">
-	<button type="button" class="btn btn-primary btn-circle btn-lg" style="border-top-left-radius: 25px; border-top-right-radius: 25px" ng-click="onZoomInClicked();" title="zoom in"><span class="glyphicon glyphicon-plus"></span></button>
-	<button type="button" class="btn btn-primary btn-circle btn-lg" style="border-bottom-left-radius: 25px; border-bottom-right-radius: 25px" ng-click="onZoomOutClicked();" title="zoom out"><span class="glyphicon glyphicon-minus"></span></button>
-</div>
 <!-- location button -->
 <div class="mapbutton-location">
-	<button type="button" class="btn btn-circle btn-lg" ng-class="{ 'btn-primary' : globalData.locationStatus == 'off', 'btn-success' : globalData.locationStatus == 'current', 'btn-warning' : globalData.locationStatus == 'waiting', 'btn-danger' : globalData.locationStatus == 'error' }" ng-class="{ 'active': globalData.showLocation }" ng-click="onLocationClicked();" title="start/stop tracking own position"><i class="fa fa-location-arrow"></i></button>
+    <button type="button" class="btn btn-circle btn-lg" ng-class="{ 'btn-primary' : globalData.locationStatus == 'off', 'btn-success' : globalData.locationStatus == 'current', 'btn-warning' : globalData.locationStatus == 'waiting', 'btn-danger' : globalData.locationStatus == 'error' }" ng-class="{ 'active': globalData.showLocation }" ng-click="onLocationClicked();" title="start/stop tracking own position"><i class="fa fa-location-arrow"></i></button>
 </div>
 <!-- traffic button -->
 <div class="mapbutton-traffic">
-	<button type="button" class="btn btn-primary btn-circle btn-lg" ng-class="{ 'btn-primary' : globalData.trafficStatus == 'off', 'btn-success' : globalData.trafficStatus == 'current', 'btn-warning' : globalData.trafficStatus == 'waiting', 'btn-danger' : globalData.trafficStatus == 'error' }" ng-class="{ 'active': globalData.showTraffic }" ng-click="onTrafficClicked();" title="show/hide traffic"><i class="fa fa-plane"></i></button>
+    <button type="button" class="btn btn-primary btn-circle btn-lg" ng-class="{ 'btn-primary' : globalData.trafficStatus == 'off', 'btn-success' : globalData.trafficStatus == 'current', 'btn-warning' : globalData.trafficStatus == 'waiting', 'btn-danger' : globalData.trafficStatus == 'error' }" ng-class="{ 'active': globalData.showTraffic }" ng-click="onTrafficClicked();" title="show/hide traffic"><i class="fa fa-plane"></i></button>
+</div>
+<!-- meteo button -->
+<div id="mapbutton-meteo" class="mapbutton-meteo" ng-show="isMeteoButtonVisible();">
+    <button type="button" class="btn btn-primary btn-circle btn-lg" ng-class="{ 'btn-primary' : globalData.showMeteo == false, 'btn-success' : globalData.showMeteo == true }" ng-click="onMeteoClicked();" title="show/hide wind arrows"><img src="icon/windsock.svg?v=2" height="25" width="25" /></button>
 </div>
 <!-- terrain button -->
-<div class="mapbutton-terrain">
+<div id="mapbutton-terrain" class="mapbutton-terrain">
     <button type="button" class="btn btn-primary btn-circle btn-lg"  ng-show="globalData.navplan.waypoints.length > 1" ng-class="{ 'btn-primary' : globalData.showTerrain == false, 'btn-success' : globalData.showTerrain == true }" ng-click="onTerrainClicked();" title="show/hide terrain"><i class="fa fa-area-chart"></i></button>
 </div>
 <!-- offline cache button -->
@@ -87,7 +86,7 @@
 						<th colspan="2">Frequency</th>
 					</tr>
 					<tr ng-repeat="radio in globalData.selectedWp.airport.radios">
-						<td>{{ radio.description }}</td>
+						<td>{{ radio.description ? radio.description : radio.type }}</td>
 						<td>{{ radio.frequency }}</td>
 					</tr>
 				</table>
@@ -106,15 +105,16 @@
                 <i class="glyphicon glyphicon-info-sign info-button" title="openAIP login is required for editing"></i></em>
             </div>
             <hr />
+            <p ng-show="globalData.selectedWp.airport.notams.length > 0"><button type="button" class="btn btn-danger btn-circle" ng-click="onShowAirportNotams()"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i></button> NOTAM</p>
 			<p ng-show="globalData.selectedWp.airport.weatherInfo"><a href="#" ng-click="$event.preventDefault(); onShowMetarTaf();" class="btn btn-info btn-circle"><i class="fa fa-cloud" aria-hidden="true"></i></a> METAR / TAF</p>
             <p><a href="#" ng-click="$event.preventDefault(); onShowWeather(globalData.selectedWp.airport.latitude, globalData.selectedWp.airport.longitude, globalData.selectedWp.airport.icao ? globalData.selectedWp.airport.icao : globalData.selectedWp.airport.name);"
-                  class="btn btn-info btn-circle"><i class="fa fa-cloud" aria-hidden="true"></i></a> Weather Forecast</p>
+                  class="btn btn-info btn-circle"><i class="fa fa-cloud" aria-hidden="true"></i></a> Meteogram</p>
             <p ng-repeat="webcam in globalData.selectedWp.airport.webcams"><a href="{{ webcam.url }}" target="_blank" class="btn btn-success btn-circle"><i class="glyphicon glyphicon-facetime-video"></i></a> {{ webcam.name }}</p>
 			<hr />
-			<p ng-show="globalData.selectedWp.isNew"><button type="button" class="btn btn-success btn-circle" ng-click="onAddSelectedWaypointClicked()"><i class="glyphicon glyphicon-plus"></i></button> Add as Waypoint</p>
+            <add-to-route-directive></add-to-route-directive>
 			<p ng-show="globalData.selectedWp.isNew"><button type="button" class="btn btn-warning btn-circle" ng-click="onSetAsAlternateClicked()"><i class="glyphicon glyphicon-plus"></i></button> Set as Alternate</p>
 			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-warning btn-circle" ng-click="onEditSelectedWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Edit Waypoint</p>
-			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-danger btn-circle" ng-click="onRemoveSelectedWaypointClicked()"><i class="glyphicon glyphicon-remove"></i></button> Remove Waypoint</p>
+			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-danger btn-circle" ng-click="onRemoveSelectedWaypointClicked()"><i class="glyphicon glyphicon-remove"></i></button> Remove from Route</p>
 		</div>
 		<!-- navaid -->
 		<div ng-show="globalData.selectedWp.navaid">
@@ -129,9 +129,9 @@
                     <i class="glyphicon glyphicon-info-sign info-button" title="openAIP login is required for editing"></i></em>
             </div>
 			<hr />
-			<p ng-show="globalData.selectedWp.isNew"><button type="button" class="btn btn-success btn-circle" ng-click="onAddSelectedWaypointClicked()"><i class="glyphicon glyphicon-plus"></i></button> Add as Waypoint</p>
+            <add-to-route-directive></add-to-route-directive>
 			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-warning btn-circle" ng-click="onEditSelectedWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Edit Waypoint</p>
-			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-danger btn-circle" ng-click="onRemoveSelectedWaypointClicked()"><i class="glyphicon glyphicon-remove"></i></button> Remove Waypoint</p>
+			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-danger btn-circle" ng-click="onRemoveSelectedWaypointClicked()"><i class="glyphicon glyphicon-remove"></i></button> Remove from Route</p>
 		</div>
 		<!-- reporting point -->
 		<div ng-show="globalData.selectedWp.reportingpoint">
@@ -150,9 +150,9 @@
 				{{ globalData.selectedWp.reportingpoint.outbd_comp ? "OUTBD" : "" }}
 			</p>
 			<hr />
-			<p ng-show="globalData.selectedWp.isNew"><button type="button" class="btn btn-success btn-circle" ng-click="onAddSelectedWaypointClicked()"><i class="glyphicon glyphicon-plus"></i></button> Add as Waypoint</p>
+            <add-to-route-directive></add-to-route-directive>
 			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-warning btn-circle" ng-click="onEditSelectedWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Edit Waypoint</p>
-			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-danger btn-circle" ng-click="onRemoveSelectedWaypointClicked()"><i class="glyphicon glyphicon-remove"></i></button> Remove Waypoint</p>
+			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-danger btn-circle" ng-click="onRemoveSelectedWaypointClicked()"><i class="glyphicon glyphicon-remove"></i></button> Remove from Route</p>
 		</div>
 		<!-- user point -->
 		<div ng-show="globalData.selectedWp.userWaypoint">
@@ -160,13 +160,13 @@
 			<p>User Point</p>
 			<p>{{ getPositionString(globalData.selectedWp.userWaypoint.latitude, globalData.selectedWp.userWaypoint.longitude) }}</p>
 			<p ng-show="globalData.selectedWp.userWaypoint.remark">Remark: {{ globalData.selectedWp.userWaypoint.remark }}</p>
-            <hr />
+                <hr />
             <p><a href="#" ng-click="$event.preventDefault(); onShowWeather(globalData.selectedWp.userWaypoint.latitude, globalData.selectedWp.userWaypoint.longitude, globalData.selectedWp.userWaypoint.name);"
-                  class="btn btn-info btn-circle"><i class="fa fa-cloud" aria-hidden="true"></i></a> Weather Forecast</p>
+                  class="btn btn-info btn-circle"><i class="fa fa-cloud" aria-hidden="true"></i></a> Meteogram</p>
 			<hr />
-			<p ng-show="globalData.selectedWp.isNew"><button type="button" class="btn btn-success btn-circle" ng-click="onAddSelectedWaypointClicked()"><i class="glyphicon glyphicon-plus"></i></button> Add as Waypoint</p>
+            <add-to-route-directive></add-to-route-directive>
 			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-warning btn-circle" ng-click="onEditSelectedWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Edit Waypoint</p>
-			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-danger btn-circle" ng-click="onRemoveSelectedWaypointClicked()"><i class="glyphicon glyphicon-remove"></i></button> Remove Waypoint</p>
+			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-danger btn-circle" ng-click="onRemoveSelectedWaypointClicked()"><i class="glyphicon glyphicon-remove"></i></button> Remove from Route</p>
 			<p ng-show="isLoggedIn()"><button type="button" class="btn btn-primary btn-circle" ng-click="onEditUserWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Edit my User Point</p>
 		</div>
 		<!-- geopoint -->
@@ -174,13 +174,15 @@
 			<h4>{{ globalData.selectedWp.geopoint.name }}</h4>
 			<p>{{ getPositionString(globalData.selectedWp.geopoint.latitude, globalData.selectedWp.geopoint.longitude) }}</p>
 			<p ng-show="globalData.selectedWp.geopoint.elevation">Elevation: {{ getElevationString(globalData.selectedWp.geopoint.elevation) }}</p>
+            <p ng-show="globalData.selectedWp.callsign">Callsign: {{ globalData.selectedWp.callsign}}</p>
+            <p ng-show="globalData.selectedWp.freq">Frequency: {{ globalData.selectedWp.freq }}</p>
             <hr />
             <p><a href="#" ng-click="$event.preventDefault(); onShowWeather(globalData.selectedWp.geopoint.latitude, globalData.selectedWp.geopoint.longitude, globalData.selectedWp.geopoint.name);"
-                  class="btn btn-info btn-circle"><i class="fa fa-cloud" aria-hidden="true"></i></a> Weather Forecast</p>
+                  class="btn btn-info btn-circle"><i class="fa fa-cloud" aria-hidden="true"></i></a> Meteogram</p>
 			<hr />
-			<p ng-show="globalData.selectedWp.isNew"><button type="button" class="btn btn-success btn-circle" ng-click="onAddSelectedWaypointClicked()"><i class="glyphicon glyphicon-plus"></i></button> Add Was aypoint</p>
+            <add-to-route-directive></add-to-route-directive>
 			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-warning btn-circle" ng-click="onEditSelectedWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Edit Waypoint</p>
-			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-danger btn-circle" ng-click="onRemoveSelectedWaypointClicked()"><i class="glyphicon glyphicon-remove"></i></button> Remove Waypoint</p>
+			<p ng-show="!globalData.selectedWp.isNew"><button type="button" class="btn btn-danger btn-circle" ng-click="onRemoveSelectedWaypointClicked()"><i class="glyphicon glyphicon-remove"></i></button> Remove from Route</p>
 			<p ng-show="isLoggedIn()"><button type="button" class="btn btn-primary btn-circle" ng-click="onEditUserWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Save to my User Points</p>
 		</div>
 		<!-- waypoint without feature reference -->
@@ -193,10 +195,10 @@
 			<p ng-show="globalData.selectedWp.remark">Remarks: {{ globalData.selectedWp.remark}}</p>
             <hr />
             <p><a href="#" ng-click="$event.preventDefault(); onShowWeather(globalData.selectedWp.latitude, globalData.selectedWp.longitude, globalData.selectedWp.geopoint.checkpoint);"
-                  class="btn btn-info btn-circle"><i class="fa fa-cloud" aria-hidden="true"></i></a> Weather Forecast</p>
+                  class="btn btn-info btn-circle"><i class="fa fa-cloud" aria-hidden="true"></i></a> Meteogram</p>
 			<hr />
 			<p><button type="button" class="btn btn-warning btn-circle" ng-click="onEditSelectedWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Edit Waypoint</p>
-			<p><button type="button" class="btn btn-danger btn-circle" ng-click="onRemoveSelectedWaypointClicked()"><i class="glyphicon glyphicon-remove"></i></button> Remove Waypoint</p>
+			<p><button type="button" class="btn btn-danger btn-circle" ng-click="onRemoveSelectedWaypointClicked()"><i class="glyphicon glyphicon-remove"></i></button> Remove from Route</p>
 			<p ng-show="isLoggedIn()"><button type="button" class="btn btn-primary btn-circle" ng-click="onEditUserWaypointClicked()"><i class="glyphicon glyphicon-edit"></i></button> Save to my User Points</p>
 		</div>
 	</div>
@@ -228,6 +230,20 @@
 		<p><a href="#" ng-click="$event.preventDefault(); onFollowSelectedTraffic();" class="btn btn-info btn-circle"><i class="glyphicon glyphicon-screenshot"></i></a> Follow Aircraft on Map</p>
 	</div>
 </div>
+<!-- NOTAM popup -->
+<div id="notam-popup" class="ol-popup ol-popup-notam" style="visibility: hidden">
+    <a href="#" id="notam-popup-closer" class="ol-popup-closer" ng-click="$event.preventDefault(); onCloseOverlayClicked()"></a>
+    <div id="notam-popup-content">
+        <h4>NOTAM <span ng-show="selectedNotam.id">{{ selectedNotam.id }}</span><span ng-show="selectedNotam.airport_icao">for {{ selectedNotam.airport_icao }} (today &amp; tomorrow)</span></h4>
+        <div class="table-notam">
+            <table class="table table-striped table-condensed">
+                <tr ng-repeat="notam in selectedNotam.notams">
+                    <td><span ng-bind-html="getFormatedNotamHtml(notam)"></span></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
 <!-- METAR TAF popup -->
 <div id="metartaf-popup" class="ol-popup ol-popup-metartaf" style="visibility: hidden">
 	<a href="#" id="metartaf-popup-closer" class="ol-popup-closer" ng-click="$event.preventDefault(); onCloseOverlayClicked()"></a>
@@ -249,7 +265,7 @@
 <div id="weather-popup" class="ol-popup ol-popup-weather" style="visibility: hidden">
     <a href="#" id="weather-popup-closer" class="ol-popup-closer" ng-click="$event.preventDefault(); onCloseOverlayClicked()"></a>
     <div id="weather-popup-content">
-        <h4>Weather Forecast <span ng-show="selectedLocationName">for {{ selectedLocationName }}</span> </h4>
+        <h4>Meteogram <span ng-show="selectedLocationName">for {{ selectedLocationName }}</span> </h4>
         <span id="windytviframe"></span>
     </div>
 </div>

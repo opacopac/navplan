@@ -1,0 +1,2 @@
+cd /home/tschanz/www/navplan.ch/branch/php/meteoretriever
+php sma_measurement_retriever.php $1 >>../../logs/sma_measurement_retriever.log 2>>../../logs/sma_measurement_retriever.log

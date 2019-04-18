@@ -13,7 +13,7 @@ function trafficService($http)
     var positionMethod = { "flarm": "FLARM", "adsb": "ADSB", "mlat" : "MLAT" };
 	var trafficBaseUrl = 'php/ogntraffic.php?v=' + navplanVersion;
 	var adsbExchangeBaseUrl = 'https://public-api.adsbexchange.com/VirtualRadar/AircraftList.json'; //?fAltL=0&fAltU=15000&fSBnd=45.7656&fEBnd=10.7281&fNBnd=47.8556&fWBnd=5.4382';
-    var acList = {};
+    var acCache = new AircraftCache();
     var lastExtent = undefined;
 
 
@@ -21,6 +21,41 @@ function trafficService($http)
 	return {
         requestTraffic: requestTraffic
 	};
+	
+	
+	// region CLASSES
+    
+    function AircraftCache()
+    {
+        this.acList = {};
+    }
+
+
+    function Aircraft()
+    {
+        this.acaddress = undefined;
+        this.addresstype = undefined;
+        this.actype = undefined;
+        this.registration = undefined;
+        this.callsign = undefined;
+        this.opCallsign = undefined;
+        this.aircraftModelType = undefined;
+        this.positions = [];
+    }
+
+
+    function AircraftPosition()
+    {
+        this.latitude = undefined;
+        this.longitude = undefined;
+        this.altitude = undefined;
+        this.timestamp = undefined;
+        this.method = undefined;
+        this.receiver = undefined;
+        this.receivedTimestamp = undefined;
+    }
+
+    // endregion
 
 
 	function requestTraffic(extent, maxAgeSec, maxAltitude, sessionId, successCallback, errorCallback)
@@ -47,17 +82,11 @@ function trafficService($http)
                     if (response && response.data && response.data.aclist)
                     {
                         var acListOgn = response.data.aclist;
+                        var receivedTimestampMs = response.data.timestamp * 1000;
 
                         for (var acAddress in acListOgn)
                         {
                             var ac = acListOgn[acAddress];
-
-                            for (var j = 0; j < ac.positions.length; j++)
-                            {
-                                ac.positions[j].timestamp = getMs(ac.positions[j].time);
-                                ac.positions[j].receiver = "Open Glider Network (" + ac.positions[j].receiver + ")";
-                                ac.positions[j].method = positionMethod.flarm;
-                            }
 
                             addOrUpdateAc(
                                 dataSources.ogn,
@@ -68,13 +97,13 @@ function trafficService($http)
                                 null, // callsign
                                 null, // operator callsign
                                 ac.aircraftModelType,
-                                ac.positions);
+                                parseOgnPositions(ac, receivedTimestampMs));
                         }
 
-                        compactAcList(maxagesec);
+                        compactAcList(maxagesec, receivedTimestampMs);
 
                         if (successCallback)
-                            successCallback(acList);
+                            successCallback(acCache.acList, receivedTimestampMs);
                     }
                 },
                 function (response) // error
@@ -82,9 +111,30 @@ function trafficService($http)
                     logResponseError("ERROR reading ac traffic from ognlistener", response);
                     
                     if (errorCallback)
-                        errorCallback(acList);
+                        errorCallback(acCache.acList, Date.now()); // TODO
                 }
             );
+
+
+        function parseOgnPositions(ac, receivedTimestamp)
+        {
+            var positionList = [];
+
+            for (var i = 0; i < ac.positions.length; i++)
+            {
+                var position = new AircraftPosition();
+                position.latitude = ac.positions[i].latitude;
+                position.longitude = ac.positions[i].longitude;
+                position.altitude = ac.positions[i].altitude;
+                position.timestamp = Math.min(getMs(ac.positions[i].time), receivedTimestamp);
+                position.receivedTimestamp = receivedTimestamp;
+                position.receiver = "Open Glider Network (" + ac.positions[i].receiver + ")";
+                position.method = positionMethod.flarm;
+                positionList.push(position);
+            }
+
+            return positionList;
+        }
 
 
         function getMs(timeString)
@@ -109,6 +159,7 @@ function trafficService($http)
                     if (response && response.data && response.data.acList)
                     {
                         var acListAx = response.data.acList;
+                        var receivedTimestampMs = response.data.stm;
 
                         for (var i = 0; i < acListAx.length; i++)
                             addOrUpdateAc(
@@ -120,12 +171,12 @@ function trafficService($http)
                                 getCallsign(acListAx[i]),
                                 getOperatorCallsign(acListAx[i]),
                                 acListAx[i].Mdl,
-                                parseAdsbExchangePositions(acListAx[i]));
+                                parseAdsbExchangePositions(acListAx[i], receivedTimestampMs));
 
-                        compactAcList(maxagesec);
+                        compactAcList(maxagesec, receivedTimestampMs);
 
                         if (successCallback)
-                            successCallback(acList);
+                            successCallback(acCache.acList, receivedTimestampMs);
                     }
                 },
                 function (response) // error
@@ -133,7 +184,7 @@ function trafficService($http)
                     logResponseError("ERROR reading ac traffic from ADSBExchange", response);
                     
                     if (errorCallback)
-                        errorCallback(acList);
+                        errorCallback(acCache.acList, Date.now()); // TODO
                 }
             );
 
@@ -191,21 +242,22 @@ function trafficService($http)
         }
 
 
-        function parseAdsbExchangePositions(ac)
+        function parseAdsbExchangePositions(ac, receivedTimestamp)
         {
-            var pos = {};
-            var positions = [];
+            var pos = new AircraftPosition();
+            var positionList = []; // will contain only one entry
 
             pos.latitude = ac.Lat;
             pos.longitude = ac.Long;
             pos.method = ac.Mlat ? positionMethod.mlat : positionMethod.adsb;
             pos.altitude = ac.Gnd ? undefined : ft2m(ac.GAlt);
-            pos.timestamp = ac.PosTime;
+            pos.timestamp = Math.min(ac.PosTime, receivedTimestamp);
+            pos.receivedTimestamp = receivedTimestamp;
             pos.receiver = ac.Mlat ? "ADSBExchange (MLAT)" : "ADSBExchange (ADS-B)";
 
-            positions.push(pos);
+            positionList.push(pos);
 
-            return positions;
+            return positionList;
         }
 
 
@@ -285,11 +337,11 @@ function trafficService($http)
     }
 
 
-    function addOrUpdateAc(source, acaddress, addresstype, actype, registration, callsign, opCallsign, aircraftModelType, positions)
+    function addOrUpdateAc(source, acaddress, addresstype, actype, registration, callsign, opCallsign, aircraftModelType, positionList)
     {
-        var ac = {};
+        var ac = new Aircraft();
 
-        if (!acList.hasOwnProperty(acaddress)) // add new ac to list
+        if (!acCache.acList.hasOwnProperty(acaddress)) // add new ac to list
         {
             ac.acaddress = acaddress;
             ac.addresstype = addresstype;
@@ -299,11 +351,11 @@ function trafficService($http)
             ac.opCallsign = opCallsign;
             ac.aircraftModelType = aircraftModelType;
             ac.positions = [];
-            acList[acaddress] = ac;
+            acCache.acList[acaddress] = ac;
         }
         else
         {
-            ac = acList[acaddress];
+            ac = acCache.acList[acaddress];
 
             if (source == dataSources.adsbexchange) // overwrite ac info if data source is adsbexchange
             {
@@ -317,26 +369,25 @@ function trafficService($http)
             {
                 ac.actype = (ac.actype == "UNKNOWN" || actype == "DROP_PLANE") ? actype : ac.actype; // overwrite drop plane type
                 ac.registration = (!ac.registration || ac.registration == "") ? registration : ac.registration;
-                ac.callsign = (!ac.registration || ac.registration == "") ? registration : ac.registration;
-                ac.opCallsign = (!ac.opCallsign || ac.opCallsign == "") ? registration : ac.opCallsign;
-                ac.aircraftModelType = (!ac.aircraftModelType || ac.aircraftModelType == "") ? registration : ac.aircraftModelType;
+                ac.callsign = (!ac.callsign || ac.callsign == "") ? callsign : ac.callsign;
+                ac.opCallsign = (!ac.opCallsign || ac.opCallsign == "") ? opCallsign : ac.opCallsign;
+                ac.aircraftModelType = (!ac.aircraftModelType || ac.aircraftModelType == "") ? aircraftModelType : ac.aircraftModelType;
             }
         }
 
         // add new positions
-        for (var i = 0; i < positions.length; i++)
-            ac.positions.push(positions[i]);
+        for (var i = 0; i < positionList.length; i++)
+            ac.positions.push(positionList[i]);
     }
 
 
-    function compactAcList(maxagesec)
+    function compactAcList(maxagesec, currentTimestamp)
     {
-        var d = new Date();
-        var oldestTimestamp = d.getTime() - maxagesec * 1000;
+        var lastWp;
 
-        for (var acAddress in acList)
+        for (var acAddress in acCache.acList)
         {
-            var ac = acList[acAddress];
+            var ac = acCache.acList[acAddress];
 
             // sort positions by time DESC
             ac.positions.sort(function (a, b) {
@@ -346,34 +397,38 @@ function trafficService($http)
 
             // remove expired or identical entries
             var newPositions = [];
+            var lastWp = undefined;
 
             for (var i = 0; i < ac.positions.length; i++)
             {
                 // mark expired entries
-                if (ac.positions[i].timestamp < oldestTimestamp)
+                if (ac.positions[i].timestamp < currentTimestamp - maxagesec * 1000)
                     continue;
 
-                // mark identical positions (lat/lon and/or time)
-                if (i > 0)
+                // check for points to skip
+                if (lastWp)
                 {
-                    if (ac.positions[i].latitude == ac.positions[i - 1].latitude && ac.positions[i].longitude == ac.positions[i - 1].longitude)
+                    // skip identical positions
+                    if (ac.positions[i].latitude == lastWp.latitude && ac.positions[i].longitude == lastWp.longitude)
                         continue;
 
-                    if (ac.positions[i].timestamp == ac.positions[i - 1].timestamp)
+                    // skip identical timestamps
+                    if (ac.positions[i].timestamp == lastWp.timestamp)
                         continue;
 
-                    // skip mlat-positions within 30 sec after more accurate position
-                    if (ac.positions[i].method == positionMethod.mlat && ac.positions[i - 1].method != positionMethod.mlat && ac.positions[i].timestamp < ac.positions[i - 1].timestamp + 30000)
+                    // skip adsb-exchange positions within 30 sec after more reliable ogn position
+                    if (lastWp.method == positionMethod.flarm && ac.positions[i].method != positionMethod.flarm && ac.positions[i].timestamp < lastWp.timestamp + 30000)
                         continue;
                 }
 
-                newPositions.push(ac.positions[i]);
+                lastWp =ac.positions[i];
+                newPositions.push(lastWp);
             }
 
 
             // remove aircrafts without positions
             if (newPositions.length == 0)
-                delete acList[acAddress];
+                delete acCache.acList[acAddress];
 
 
             ac.positions = newPositions;

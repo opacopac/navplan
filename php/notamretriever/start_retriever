@@ -1,0 +1,3 @@
+cd /home/tschanz/www/navplan.ch/branch/php/notamretriever
+php notam_retriever.php $1 >>../../logs/notamretriever.log 2>>../../logs/notamretriever.log
+php notamGeometryParser.php $1 >>../../logs/notamretriever.log 2>>../../logs/notamretriever.log

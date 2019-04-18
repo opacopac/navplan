@@ -1,0 +1,8 @@
+<p ng-show="globalData.selectedWp.isNew" class="form-inline">
+    <button type="button" class="btn btn-success btn-circle" ng-click="onAddSelectedWaypointClicked2()"><i class="glyphicon glyphicon-plus"></i></button> Add to Route
+    <select ng-show="globalData.navplan.waypoints.length > 0" class="form-control input-sm" ng-model="addToRouteAfterWp">
+        <option value="0">at the start</option>
+        <option ng-repeat="wp in globalData.navplan.waypoints" value="{{ $index + 1 }}">after {{ wp.checkpoint }}</option>
+        <option value="{{ globalData.navplan.waypoints.length + 1 }}">at the end</option>
+    </select>
+</p>

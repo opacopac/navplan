@@ -7,7 +7,7 @@ navplanApp
 
 navplanCtrl.$inject = ['$scope', '$http', '$timeout', 'globalData', 'userService', 'mapService', 'waypointService', 'fuelService', 'terrainService'];
 
-function navplanCtrl($scope, $http, $timeout, globalData, userService, mapService, waypointService, fuelService, terrainService)
+function navplanCtrl($scope, $http, $timeout, globalData, userService, mapService, waypointService, fuelService)
 {
 	// init global data object
 	$scope.globalData = globalData;
@@ -23,7 +23,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 		{
 			var data = json2obj(storedGlobalData);
 
-			$scope.globalData.initialData = false;
+			$scope.globalData.initialPositionHasBeenSet = true;
 			$scope.globalData.sessionId = $scope.createSessionId();
 			$scope.globalData.user = data.user;
 			$scope.globalData.pilot = data.pilot;
@@ -38,17 +38,21 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 			$scope.globalData.trafficTimer = undefined;
 			$scope.globalData.showLocation = false; // data.showLocation;
 			$scope.globalData.showTraffic = false; // data.showTraffic;
-            $scope.globalData.showTerrain = false; // data.showTraffic;
+            $scope.globalData.showMeteo = false;
+            $scope.globalData.showTerrain = false;
 			$scope.globalData.cacheIsActive = data.cacheIsActive;
 			$scope.globalData.locationStatus = "off"; // data.locationStatus;
 			$scope.globalData.trafficStatus = "off"; // data.trafficStatus;
 			$scope.globalData.cacheStatus = data.cacheStatus;
 			$scope.globalData.cacheProgress = data.cacheProgress;
 			$scope.globalData.clickHistory = []; // internally used only
+            $scope.globalData.downloadLink = {}; // internally used only
+            $scope.globalData.fitViewLatLon = undefined; // internally used only
+            $scope.globalData.lastActivity = undefined;
 		}
 		else // load default values
 		{
-			$scope.globalData.initialData = true;
+			$scope.globalData.initialPositionHasBeenSet = false;
 			$scope.globalData.sessionId = $scope.createSessionId();
 			$scope.globalData.user =
 			{
@@ -78,6 +82,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 			{
 				id: undefined,
 				name: '',
+                comments: '',
 				waypoints: [ ],
 				alternate: undefined,
 				selectedWaypoint: undefined
@@ -102,6 +107,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 			$scope.globalData.clockTimer = undefined;
 			$scope.globalData.showLocation = false;
 			$scope.globalData.showTraffic = false;
+            $scope.globalData.showMeteo = false;
 			$scope.globalData.showTerrain = false;
 			$scope.globalData.cacheIsActive = false;
 			$scope.globalData.locationStatus = "off"; // "off", "waiting", "current", "error"
@@ -110,7 +116,11 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 			$scope.globalData.cacheProgress =  { loaded: 0, total: 100, percent: 0 };
 			$scope.globalData.clickHistory = []; // internally used only
             $scope.globalData.downloadLink = {}; // internally used only
+            $scope.globalData.fitViewLatLon = undefined; // internally used only
+            $scope.globalData.lastActivity = undefined;
 		}
+
+		$scope.updateLastActivity();
 	};
 
 
@@ -182,20 +192,6 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 
 		if (storedHideDisclaimer != "true")
 			$('#disclaimerDialog').modal('show');
-	};
-
-
-	$scope.initPosition = function()
-	{
-		if ($scope.globalData.initialData && navigator.geolocation)
-			navigator.geolocation.getCurrentPosition($scope.setPosition);
-	};
-
-
-	$scope.setPosition = function(position)
-	{
-		mapService.setMapPosition(position.coords.latitude, position.coords.longitude, 11);
-		$scope.globalData.currentMapPos = mapService.getMapPosition();
 	};
 
 
@@ -278,13 +274,32 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 	};
 
 
+    $scope.isBranch = function()
+    {
+        return isBranch2();
+    };
+
+
+    $scope.isSelf = function(email)
+    {
+        return isSelf2(email);
+    };
+
+
 	$scope.hasLastTrack = function()
 	{
 		return (localStorage.getItem('lasttrack') !== null);
 	};
 
 
-	$scope.onDisclaimerOKClicked = function()
+    $scope.updateLastActivity = function()
+    {
+        $scope.globalData.lastActivity = Date.now();
+        //console.log("MEEP");
+    };
+
+
+    $scope.onDisclaimerOKClicked = function()
 	{
 		if ($scope.hideDisclaimer)
 			window.localStorage.setItem("hideDisclaimer", "true");
@@ -302,22 +317,8 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 	{
 		waypointService.recalcWaypoints($scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.settings.variation, $scope.globalData.aircraft.speed);
 		fuelService.updateFuelCalc($scope.globalData.fuel, $scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.aircraft);
-		mapService.drawWaypoints($scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.settings.variation);
 
-        if ($scope.globalData.showTerrain)
-        {
-            if ($scope.globalData.navplan.waypoints && $scope.globalData.navplan.waypoints.length >= 2)
-                terrainService.updateTerrain($scope.globalData.navplan.waypoints);
-            else
-                $scope.globalData.showTerrain = false;
-        }
-	};
-
-
-	$scope.updateFlightTrack = function()
-	{
-		if ($scope.globalData.track && $scope.globalData.track.positions)
-			mapService.drawFlightTrack($scope.globalData.track.positions);
+		$scope.$broadcast("redrawWaypoints");
 	};
 
 
@@ -400,8 +401,8 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 	$scope.onTrashClicked = function()
 	{
         $scope.showRuSureMessage(
-            "Clear Map?",
-            "Do you really want to clear all waypoints, charts and tracks from the map? Unsaved changes will be lost!",
+            "Clear Route & Track?",
+            "Do you really want to clear all route waypoints, charts and track from the map? Unsaved changes will be lost!",
             function()
             {
                 $scope.globalData.navplan =
@@ -418,10 +419,11 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
                 $scope.globalData.showTerrain = false;
 
                 $scope.updateWaypoints();
-                $scope.updateFlightTrack();
                 $scope.discardCache();
 
-                mapService.clearAllCharts();
+                $scope.$broadcast("onTrashClicked");
+
+                mapService.clearAllCharts(); // TODO
             }
         );
 	};
@@ -509,7 +511,8 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
             alternate: $scope.globalData.navplan.alternate ? getWaypointData($scope.globalData.navplan.alternate) : undefined,
             fuel: $scope.globalData.fuel,
             pilot: $scope.globalData.pilot,
-            aircraft: $scope.globalData.aircraft
+            aircraft: $scope.globalData.aircraft,
+            comments: $scope.globalData.navplan.comments
         };
 
 
@@ -524,8 +527,10 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
                 alt: wp.alt,
                 isminalt: wp.isminalt,
                 ismaxalt: wp.ismaxalt,
+                isaltatlegstart: wp.isaltatlegstart,
                 eetText: wp.eetText,
-                remark: wp.remark
+                remark: wp.remark,
+                supp_info: wp.supp_info
             };
         }
     };
@@ -566,7 +571,10 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 			callsign: $scope.globalData.selectedWp.callsign,
 			alt: $scope.globalData.selectedWp.alt,
 			isminalt:  $scope.globalData.selectedWp.isminalt,
-			ismaxalt:  $scope.globalData.selectedWp.ismaxalt
+			ismaxalt:  $scope.globalData.selectedWp.ismaxalt,
+            isaltatlegstart:  $scope.globalData.selectedWp.isaltatlegstart,
+            remark: $scope.globalData.selectedWp.remark,
+            supp_info: $scope.globalData.selectedWp.supp_info
 		}
 	};
 	
@@ -579,6 +587,9 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 		$scope.globalData.selectedWp.alt = $scope.globalData.wpBackup.alt;
 		$scope.globalData.selectedWp.isminalt = $scope.globalData.wpBackup.isminalt;
 		$scope.globalData.selectedWp.ismaxalt = $scope.globalData.wpBackup.ismaxalt;
+        $scope.globalData.selectedWp.isaltatlegstart = $scope.globalData.wpBackup.isaltatlegstart;
+        $scope.globalData.selectedWp.remark = $scope.globalData.wpBackup.remark;
+        $scope.globalData.selectedWp.supp_info = $scope.globalData.wpBackup.supp_info;
 	};
 
 
@@ -588,7 +599,9 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 
 		deleteCookie("cachewaypoints");
 		deleteCookie("cachecharts");
-        window.sessionStorage.removeItem("mapFeatureCache");
+        deleteCookie("mapfeaturesextent");
+
+        window.sessionStorage.removeItem("notamCache");
 
 		if ($scope.appCache.status == $scope.appCache.DOWNLOADING)
 		{
@@ -663,6 +676,18 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
     };
 
 
+	$scope.onCollapseNavbarTriggered = function()
+    {
+        $("#navbarcontent").collapse("toggle");
+    };
+
+
+	$scope.onNavbarCollapsed = function()
+    {
+        $scope.$broadcast("onNavbarCollapsed");
+    };
+
+
 	$scope.onClockTimer = function()
 	{
 		var timer = $scope.globalData.timer;
@@ -692,8 +717,8 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 		$scope.globalData.aircraft.speed = navplanData.aircraft_speed;
 		$scope.globalData.aircraft.consumption = navplanData.aircraft_consumption;
 		$scope.globalData.fuel.extraTime = navplanData.extra_fuel;
-		$scope.globalData.navplan.alternate = undefined; // TODO
-		
+		$scope.globalData.navplan.comments = navplanData.comments;
+
 		// waypoints
 		$scope.globalData.navplan.waypoints = [ ];
 		var wp;
@@ -717,7 +742,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 		}
 
         $scope.updateWaypoints();
-        mapService.fitView($scope.getNavplanExtentMercator());
+		$scope.globalData.fitViewLatLon = $scope.getNavplanExtentLatLon();
 		$scope.discardCache();
 	};
 	
@@ -744,7 +769,9 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 			alt: wp_data.alt,
 			isminalt: wp_data.isminalt,
 			ismaxalt: wp_data.ismaxalt,
+            isaltatlegstart: wp_data.isaltatlegstart,
 			remark: wp_data.remark,
+            supp_info: wp_data.supp_info,
 			airport: ap
 		};
 	};
@@ -752,7 +779,6 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 
     $scope.getNavplanExtentLatLon = function()
     {
-        var minLon, maxLon, minLat, maxLat;
         var navplan = $scope.globalData.navplan;
 
         if (!navplan || !navplan.waypoints)
@@ -767,54 +793,39 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
         if (navplan.alternate)
             allWps.push(navplan.alternate);
 
+        var minLon = 1000;
+        var minLat = 1000;
+        var maxLon = -1000;
+        var maxLat = -1000;
 
-        // find max values
+        // find min/max values
         for (i = 0; i < allWps.length; i++)
         {
-            if (!minLon || allWps[i].longitude < minLon)
-                minLon = allWps[i].longitude;
-
-            if (!minLat || allWps[i].latitude < minLat)
-                minLat = allWps[i].latitude;
-
-            if (!maxLon || allWps[i].longitude > maxLon)
-                maxLon = allWps[i].longitude;
-
-            if (!maxLat || allWps[i].latitude > maxLat)
-                maxLat = allWps[i].latitude;
+            minLon = Math.min(minLon, allWps[i].longitude);
+            maxLon = Math.max(maxLon, allWps[i].longitude);
+            minLat = Math.min(minLat, allWps[i].latitude);
+            maxLat = Math.max(maxLat, allWps[i].latitude);
         }
 
-        if (minLon && minLat && maxLon && maxLat)
-            return [minLon, minLat, maxLon, maxLat];
-        else
-            return undefined;
+        return [minLon, minLat, maxLon, maxLat];
     };
 
-
-	$scope.getNavplanExtentMercator = function()
-    {
-        var extentLatLon = $scope.getNavplanExtentLatLon();
-
-        if (!extentLatLon)
-            return undefined;
-
-        var minMercator = mapService.getMercatorCoordinates(extentLatLon[1], extentLatLon[0]);
-        var maxMercator = mapService.getMercatorCoordinates(extentLatLon[3], extentLatLon[2]);
-
-        return [minMercator[0], minMercator[1], maxMercator[0], maxMercator[1]];
-    };
-	
-	
 	// init stuff
 	$scope.initGlobalData();
 	$scope.initUser();
 	$scope.initDisclaimer();
-	$scope.initPosition();
 
 	// event listeners
 	window.addEventListener("beforeunload", $scope.onLeaving);
 	window.addEventListener("pagehide", $scope.onLeaving);
 	window.addEventListener("visibilitychange", $scope.onVisibilityChange);
+    window.addEventListener("mousemove", $scope.updateLastActivity);
+    document.addEventListener("click", $scope.updateLastActivity);
+    window.addEventListener("keypress", $scope.updateLastActivity);
+
+	// init collapse handlers
+    $(document).on("click","#navbarcontent.in", $scope.onCollapseNavbarTriggered);
+    $("#navbarcontent").on('hidden.bs.collapse', $scope.onNavbarCollapsed);
 
 	// init application cache
 	window.frames[0].onload = function()

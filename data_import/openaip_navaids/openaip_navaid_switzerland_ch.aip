@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 
 <!--
-*  Exported on: 10.03.2017
+*  Exported on: 15.10.2017
 *  This data is owned by Butterfly Avionics GmbH and licensed under the CC BY-NC-SA,
 *  not to be used for commercial purposes. For more information on commercial licensing visit
 *  
@@ -24,7 +24,7 @@
 *  POSSIBILITY OF SUCH DAMAGES.
 -->
 
-<OPENAIP VERSION="1477570" DATAFORMAT="1.1">
+<OPENAIP VERSION="1666574" DATAFORMAT="1.1">
 <NAVAIDS>
 <NAVAID TYPE="NDB">
   <COUNTRY>CH</COUNTRY>
@@ -129,7 +129,7 @@
     <ALIGNEDTOTRUENORTH>FALSE</ALIGNEDTOTRUENORTH>
   </PARAMS>
 </NAVAID>
-<NAVAID TYPE="DVOR-DME">
+<NAVAID TYPE="DME">
   <COUNTRY>CH</COUNTRY>
   <NAME>HOCHWALD</NAME>
   <ID>HOC</ID>

@@ -13,6 +13,7 @@ $alternate = $data["alternate"];
 $fuel = $data["fuel"];
 $pilot = $data["pilot"];
 $aircraft = $data["aircraft"];
+$comments = $data["comments"];
 
 
 $sfc = 0.142822265625;
@@ -449,10 +450,14 @@ $objPHPExcel->addNamedRange(new PHPExcel_NamedRange('alternatetime1', $objPHPExc
 $objPHPExcel->getActiveSheet()->setCellValue("H26", "=IF(G25>0,G25+5,0)");
 
 // comment cells
+$commentLines = explode("\n", $comments);
 for ($i = 27; $i <= 33; $i++)
 {
     $objPHPExcel->getActiveSheet()->mergeCells("A" . $i . ":F" . $i);
     $objPHPExcel->getActiveSheet()->getStyle("K" . $i)->applyFromArray($styleTextWps);
+
+    if (count($commentLines) > $i - 27)
+        $objPHPExcel->getActiveSheet()->setCellValue("A" . $i, $commentLines[$i - 27]);
 }
 
 // comment grid
@@ -531,6 +536,7 @@ $tmpFile = $tmpDir . "/" . $userFileName;
 
 // output pdf
 $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel2007');
+$objWriter->setPreCalculateFormulas(true);
 $objWriter->save(TMP_DIR_BASE . $tmpFile);
 
 // return tempfile

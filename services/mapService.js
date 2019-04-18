@@ -5,25 +5,44 @@
 navplanApp
 	.factory('mapService', mapService);
 
-mapService.$inject = ['$http', 'mapFeatureService', 'weatherService'];
+mapService.$inject = ['$http', 'mapFeatureService', 'metarTafNotamService', 'meteoService'];
 
-function mapService($http, mapFeatureService, weatherService)
+function mapService($http, mapFeatureService, metarTafNotamService, meteoService)
 {
     //region INIT
 
 	var MAX_ZOOMLEVEL = 17;
 
 	var map = undefined;
-	var mapLayer, wpTrackLayer, closeIconLayer, airportLayer, navaidLayer, airspaceLayer, reportingpointLayer, userWpLayer, flightTrackLayer, geopointLayer, trafficLayer, locationLayer, weatherLayer, webcamLayer;
-    var airspaceImageLayer; //, airportImageLayer, navaidImageLayer, reportingpointImageLayer, userWpImageLayer, weatherImageLayer, webcamImageLayer;
-	var chartLayers = [];
-	var wpTrackCache = { wps: undefined, alternate: undefined, variation: undefined };
+	var mapLayer,
+        wpTrackLayer,
+        closeIconLayer,
+        airportLayer,
+        navaidLayer,
+        airspaceLayer,
+        reportingpointLayer,
+        userWpLayer,
+        flightTrackLayer,
+        geopointLayer,
+        trafficLayer,
+        locationLayer,
+        weatherLayer,
+        webcamLayer,
+        notamPolyLayer,
+        notamTextLayer,
+        meteoBgLayer,
+        meteoSmaLayer;
+    var airspaceImageLayer;
+	var chartLayerCache = new ChartLayerCache();
+	var wpCache = new WaypointCache(undefined, undefined, undefined);
 	var currentOverlay = undefined;
 	var modifySnapInteractions = [];
     var onFeatureSelectCallback = undefined;
     var onMapClickCallback = undefined;
     var onMoveEndCallback = undefined;
 	var onTrackModifyEndCallback = undefined;
+	var onMapActivityCallback = undefined;
+	var onFullScreenCallback = undefined;
 	var isGeopointSelectionActive = false;
 	var wgs84Sphere = new ol.Sphere(6378137);
 	var minZoomLevel = [];
@@ -42,7 +61,6 @@ function mapService($http, mapFeatureService, weatherService)
 
     // return api reference
 	return {
-		MAX_ZOOMLEVEL: MAX_ZOOMLEVEL,
 		addOverlay: addOverlay,
 		clearAllCharts: clearAllCharts,
 		closeOverlay: closeOverlay,
@@ -50,17 +68,20 @@ function mapService($http, mapFeatureService, weatherService)
         drawFlightTrack: drawFlightTrack,
         drawGeopointSelection: drawGeopointSelection,
         drawOwnPlane: drawOwnPlane,
+        drawMeteoBg: drawMeteoBg,
+        drawSmaMeasurements: drawSmaMeasurements,
         drawTraffic: drawTraffic,
         drawWaypoints: drawWaypoints,
-        fitView: fitView,
+        fitViewLatLon: fitViewLatLon,
 		getAirport: getAirport,
 		getBearing: getBearing,
 		getDistance: getDistance,
 		getLatLonCoordinates: getLatLonCoordinates,
 		getLatLonFromPixel: getLatLonFromPixel,
+        getMercatorFromPixel: getMercatorFromPixel,
 		getMapPosition: getMapPosition,
 		getMercatorCoordinates: getMercatorCoordinates,
-		getViewExtent: getViewExtent,
+		getViewExtentLatLon: getViewExtentLatLon,
 		init: init,
         loadAndDrawUserPoints: loadAndDrawUserPoints,
 		setMapPosition: setMapPosition,
@@ -70,13 +91,44 @@ function mapService($http, mapFeatureService, weatherService)
 	//endregion
 
 
+    // region CLASSES
+
+    function WaypointCache(wps, alternate, variation)
+    {
+        this.wps = wps;
+        this.alternate = alternate;
+        this.variation = variation;
+    }
+
+
+    function ChartLayerCache()
+    {
+        this.chartLayers = [];
+    }
+
+    // endregion
+
+
     //region INIT MAP
 	
 	// init map
-	function init(mapClickCallback, featureSelectCallback, moveEndCallback, trackModEndCallback, mapPos)
+	function init(mapPos, mapClickCallback, featureSelectCallback, moveEndCallback, trackModEndCallback, mapActivityCallback, toggleFullScreenCallback)
     {
-        if (map)
-            map.setTarget(null); // detach map if already exists
+        // set callbacks
+        onMapClickCallback = mapClickCallback;
+        onFeatureSelectCallback = featureSelectCallback;
+        onMoveEndCallback = moveEndCallback;
+        onTrackModifyEndCallback = trackModEndCallback;
+        onMapActivityCallback = mapActivityCallback;
+        onFullScreenCallback = toggleFullScreenCallback;
+
+
+        if (map) // re-attach map if it already exists (e.g. from switching views)
+        {
+            map.setTarget(null);
+            map.setTarget("map");
+            return;
+        }
 
         // init layers
         mapLayer = createMapLayer();
@@ -93,18 +145,34 @@ function mapService($http, mapFeatureService, weatherService)
         webcamLayer = createEmptyVectorLayer();
         weatherLayer = createEmptyVectorLayer();
         geopointLayer = createEmptyVectorLayer();
+        notamPolyLayer = createEmptyVectorLayer();
+        notamTextLayer = createEmptyVectorLayer();
+        meteoBgLayer = createEmptyVectorLayer();
+        meteoSmaLayer = createEmptyVectorLayer();
         airspaceImageLayer = createImageVectorLayerFromVectorLayer(airspaceLayer);
+
+        // buttons
+        ol.inherits(ZoomButtonsControl, ol.control.Control);
+        var zoomButtonsControl =new ZoomButtonsControl();
+
+        ol.inherits(FullScreenButtonControl, ol.control.Control);
+        var fsButtonControl = new FullScreenButtonControl();
+
 
         // init map
         map = new ol.Map({
             target: 'map',
             controls: [
-                new ol.control.ScaleLine({units: 'nautical'}),
-                new ol.control.Attribution()
+                new ol.control.ScaleLine({ units: 'nautical' }),
+                fsButtonControl,
+                new ol.control.Rotate(),
+                new ol.control.Attribution(),
+                zoomButtonsControl
             ],
             layers: [
                 mapLayer,
                 airspaceImageLayer,
+                notamPolyLayer,
                 webcamLayer,
                 closeIconLayer,
                 reportingpointLayer,
@@ -112,10 +180,13 @@ function mapService($http, mapFeatureService, weatherService)
                 navaidLayer,
                 airportLayer,
                 weatherLayer,
+                notamTextLayer,
+                meteoBgLayer,
                 wpTrackLayer,
                 flightTrackLayer,
-                geopointLayer,
                 trafficLayer,
+                meteoSmaLayer,
+                geopointLayer,
                 locationLayer
             ],
             view: new ol.View(
@@ -125,41 +196,33 @@ function mapService($http, mapFeatureService, weatherService)
                 })
         });
 
+        // add rotate interaction
+        map.addInteraction(new ol.interaction.DragRotateAndZoom());
+
         // register map events
         map.on('singleclick', onSingleClick);
         map.on('pointermove', onPointerMove);
         map.on('moveend', onMoveEnd);
         map.getView().on('change:rotation', onViewRotation);
 
-        onFeatureSelectCallback = featureSelectCallback;
-        onTrackModifyEndCallback = trackModEndCallback;
-        onMapClickCallback = mapClickCallback;
-        onMoveEndCallback = moveEndCallback;
-
-
-        // restore chart layers
-        for (var i = 0; i < chartLayers.length; i++)
-            map.getLayers().insertAt(i + 1, chartLayers[i]);
-
         minZoomLevel = [
             {layer: closeIconLayer, minZoom: 9},
-            /*{layer: airportImageLayer, minZoom: 9},
-            {layer: navaidImageLayer, minZoom: 9},*/
             {layer: airportLayer, minZoom: 9},
             {layer: navaidLayer, minZoom: 9},
             {layer: airspaceImageLayer, minZoom: 9},
-            /*{layer: reportingpointImageLayer, minZoom: 11},
-            {layer: userWpImageLayer, minZoom: 11},
-            {layer: webcamImageLayer, minZoom: 9},*/
+            {layer: notamPolyLayer, minZoom: 9},
+            {layer: notamTextLayer, minZoom: 9},
             {layer: reportingpointLayer, minZoom: 11},
             {layer: userWpLayer, minZoom: 11},
-            {layer: webcamLayer, minZoom: 9},
+            {layer: webcamLayer, minZoom: 10},
             {layer: trafficLayer, minZoom: 7},
-            /*{layer: weatherImageLayer, minZoom: 9}];*/
+            {layer: meteoBgLayer, minZoom: 9},
+            {layer: meteoSmaLayer, minZoom: 9},
             {layer: weatherLayer, minZoom: 9}];
 
         setLayerVisibility();
     }
+
 
     //endregion
 
@@ -196,12 +259,13 @@ function mapService($http, mapFeatureService, weatherService)
                     [
                         new ol.Attribution({ html: 'Map Data: &copy; <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors <a href="https://creativecommons.org/licenses/by-sa/2.0/" target="_blank">(CC-BY-SA)</a>' }),
                         new ol.Attribution({ html: 'Elevation Data: <a href="https://lta.cr.usgs.gov/SRTM" target="_blank">SRTM</a>' }),
-                        //new ol.Attribution({ html: 'Map Visualization: <a href="http://www.opentopomap.org/" target="_blank">OpenTopoMap</a> <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank">(CC-BY-SA)</a>' }),
-                        new ol.Attribution({ html: 'Map Visualization: <a href="https://www.mapbox.com/about/maps/" target="_blank">&copy; Mapbox</a>, <a href="https://www.mapbox.com/map-feedback/" target="_blank">Improve this map</a>' }),
+                        new ol.Attribution({ html: 'Map Visualization #1: <a href="https://www.mapbox.com/about/maps/" target="_blank">&copy; Mapbox</a>, <a href="https://www.mapbox.com/map-feedback/" target="_blank">Improve this map</a>' }),
+                        new ol.Attribution({ html: 'Map Visualization #2: <a href="http://www.opentopomap.org/" target="_blank">OpenTopoMap</a> <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank">(CC-BY-SA)</a>' }),
                         new ol.Attribution({ html: 'Aviation Data: <a href="http://www.openaip.net/" target="_blank">openAIP</a> <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/" target="_blank">(BY-NC-SA)</a>' }),
                         new ol.Attribution({ html: 'Traffic Data: <a href="http://wiki.glidernet.org/about" target="_blank">Open Glider Network</a> | <a href="http://www.ADSBexchange.com/" target="_blank">ADSBexchange</a>' }),
                         new ol.Attribution({ html: 'Aerodrome Charts: <a href="http://www.avare.ch/" target="_blank">Avare.ch</a>' }),
                         new ol.Attribution({ html: 'Weather Data: <a href="https://www.aviationweather.gov/" target="_blank">NOAA - Aviation Weather Center</a>' }),
+                        new ol.Attribution({ html: 'NOTAM Data: <a href="https://www.icao.int/safety/iStars/pages/intro.aspx" target="_blank">ICAO - iSTARS API Data Service</a>' }),
                         new ol.Attribution({ html: 'Geographical Data: <a href="http://www.geonames.org/" target="_blank">GeoNames</a> <a href="http://creativecommons.org/licenses/by/3.0/" target="_blank">(CC-BY)</a>' }),
                         new ol.Attribution({ html: 'Links to Webcams: all images are digital property of the webcam owners. check the reference for details.' })
                     ]
@@ -211,8 +275,8 @@ function mapService($http, mapFeatureService, weatherService)
 
         function getTileUrl(coordinate)
         {
-            //var otmBaseUrls = [ "//a.tile.opentopomap.org/", "//b.tile.opentopomap.org/", "//c.tile.opentopomap.org/" ];
-            var otmBaseUrls = [ "//opentopomap.org/", "//opentopomap.org/", "//opentopomap.org/" ];
+            var otmBaseUrls = [ "//a.tile.opentopomap.org/", "//b.tile.opentopomap.org/", "//c.tile.opentopomap.org/" ];
+            //var otmBaseUrls = [ "//opentopomap.org/", "//opentopomap.org/", "//opentopomap.org/" ];
             var localBaseUrl = "maptiles/";
             var z = coordinate[0];
             var y = coordinate[1];
@@ -221,12 +285,18 @@ function mapService($http, mapFeatureService, weatherService)
             //return "https://tile.mapzen.com/mapzen/terrain/v1/normal/" + z + "/" + y + "/" + x + ".png?api_key=mapzen-ECzH36f";
             //return "https://api.mapbox.com/styles/v1/opacopac/cj0msmdwf00ad2snz48faknaq/tiles/256/" + z + "/" + y + "/" + x + "@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2owbXNsN3ltMDAwdjMyczZudmt0bGwwdiJ9.RG5N7U6VkoIQ44S-bB-aNg";
 
-            if (location.href.indexOf("branch") >= 0)
-                return "https://api.mapbox.com/styles/v1/opacopac/cj0mxdtd800bx2slaha4b0p68/tiles/256/" + z + "/" + y + "/" + x + "@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2oxYjZ6aDQxMDA1ejJ3cGUzbmZ1Zm81eiJ9.oFvbw05OkuQesxOghWqv_A";
-            else
-                return "https://api.mapbox.com/styles/v1/opacopac/cj0mxdtd800bx2slaha4b0p68/tiles/256/" + z + "/" + y + "/" + x + "@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2oxYjdkOXpzMDA2dTMycGV3ZDlkM3R2NyJ9.paBLy_T8QJLELJd8VAAEIw";
+            /*if (isBranch())
+            {
+                // TODO: temp for saving map views
+                var email = getCookie("email");
 
-            /*if (isLocalTile(z, y, x))
+                    if (!(email && isSelf(email)))
+                    return "https://api.mapbox.com/styles/v1/opacopac/cj0mxdtd800bx2slaha4b0p68/tiles/256/" + z + "/" + y + "/" + x + "@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2oxYjZ6aDQxMDA1ejJ3cGUzbmZ1Zm81eiJ9.oFvbw05OkuQesxOghWqv_A";
+            }
+            else
+                return "https://api.mapbox.com/styles/v1/opacopac/cj0mxdtd800bx2slaha4b0p68/tiles/256/" + z + "/" + y + "/" + x + "@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2oxYjdkOXpzMDA2dTMycGV3ZDlkM3R2NyJ9.paBLy_T8QJLELJd8VAAEIw";*/
+
+            if (isLocalTile(z, y, x))
             {
                 return localBaseUrl + z + "/" + y + "/" + x + ".png";
             }
@@ -234,7 +304,7 @@ function mapService($http, mapFeatureService, weatherService)
             {
                 var n = (z + y + x) % otmBaseUrls.length;
                 return otmBaseUrls[n] + z + "/" + y + "/" + x + ".png";
-            }*/
+            }
         }
 
 
@@ -279,19 +349,6 @@ function mapService($http, mapFeatureService, weatherService)
 
 
     //region DRAW MAP FEATURES
-
-    function drawAllFeatures(mapFeatureList)
-    {
-        drawAirports(mapFeatureList.airports);
-        drawNavaids(mapFeatureList.navaids);
-        drawAirspaces(mapFeatureList.airspaces);
-        drawReportingPoints(mapFeatureList.reportingPoints);
-        drawUserPoints(mapFeatureList.userPoints);
-        drawWebcams(mapFeatureList.webcams);
-
-        weatherService.getAreaWeatherInfos(getViewExtent(), drawWeatherInfo);
-    }
-
 
     function drawAirports(airportList)
     {
@@ -542,7 +599,7 @@ function mapService($http, mapFeatureService, weatherService)
                     src: src
                 })),
                 text: new ol.style.Text({
-                    textAlign: "start",
+                    textAlign: "end",
                     textBaseline: "baseline",
                     font: '13px Calibri,sans-serif',
                     text: wx_cond,
@@ -595,9 +652,131 @@ function mapService($http, mapFeatureService, weatherService)
                     //anchorYUnits: 'fraction',
                     scale: 1,
                     rotation: rot,
-                    rotateWithView: true,
+                    rotateWithView: false,
                     src: src
                 }))
+            });
+        }
+    }
+
+
+    function drawAreaNotams(notamList)
+    {
+        if (!notamList)
+            return;
+
+        var notamBoundariesMer;
+
+        notamPolyLayer.getSource().clear();
+        notamTextLayer.getSource().clear();
+
+        for (var i = 0; i < notamList.length; i++)
+        {
+            var notamPolyFeature, notamTextFeature;
+            var notamGeometry = notamList[i].geometry;
+
+            if (!notamGeometry)
+            {
+                continue;
+            }
+            else if (notamGeometry.polygon)
+            {
+                notamBoundariesMer = new ol.geom.Polygon([convertPolygonToMercator(notamGeometry.polygon)]);
+                if (!ol.extent.intersects(getViewExtentMercator(), notamBoundariesMer.getExtent()))
+                    continue;
+
+                // polygon
+                notamPolyFeature = new ol.Feature();
+                notamPolyFeature.setGeometry(notamBoundariesMer);
+                notamPolyFeature.setStyle(createNotamPolyStyle(notamList[i].id));
+                notamPolyLayer.getSource().addFeature(notamPolyFeature);
+
+                // text
+                notamTextFeature = new ol.Feature();
+                notamTextFeature.setGeometry(notamBoundariesMer.getInteriorPoint());
+                notamTextFeature.setStyle(createNotamTextStyle(notamList[i].id));
+                notamTextFeature.notam = notamList[i];
+                notamTextLayer.getSource().addFeature(notamTextFeature);
+            }
+            else if (notamGeometry.multipolygon)
+            {
+                for (var j = 0; j < notamGeometry.multipolygon.length; j++)
+                {
+                    notamBoundariesMer = new ol.geom.Polygon([convertPolygonToMercator(notamGeometry.multipolygon[j])]);
+                    if (!ol.extent.intersects(getViewExtentMercator(), notamBoundariesMer.getExtent()))
+                        continue;
+
+                    // polygon
+                    notamPolyFeature = new ol.Feature();
+                    notamPolyFeature.setGeometry(notamBoundariesMer);
+                    notamPolyFeature.setStyle(createNotamPolyStyle(notamList[i].id));
+                    notamPolyLayer.getSource().addFeature(notamPolyFeature);
+
+                    // text
+                    notamTextFeature = new ol.Feature();
+                    notamTextFeature.setGeometry(notamBoundariesMer.getInteriorPoint());
+                    notamTextFeature.setStyle(createNotamTextStyle(notamList[i].id));
+                    notamTextFeature.notam = notamList[i];
+                    notamTextLayer.getSource().addFeature(notamTextFeature);
+                }
+            }
+            else if (notamGeometry.center)
+            {
+                if (notamGeometry.radius > nautmile2m(50)) // TODO: hide if radius > 50NM => temp hack
+                    notamGeometry.radius = 1;
+					
+				var polycirc = new ol.geom.Polygon.circular(new ol.Sphere(6378137), notamGeometry.center, notamGeometry.radius);
+				var polycirc_mer = convertPolygonToMercator(polycirc.getCoordinates()[0]);
+				var polycirc_geom = new ol.geom.Polygon([polycirc_mer]);
+				
+                var centerMer = getMercatorCoordinates(notamGeometry.center[1], notamGeometry.center[0]);
+                if (!ol.extent.intersects(getViewExtentMercator(), polycirc_geom.getExtent()))
+                    continue;
+
+                // polygon
+                notamPolyFeature = new ol.Feature();
+                notamPolyFeature.setGeometry(polycirc_geom);
+                notamPolyFeature.setStyle(createNotamPolyStyle(notamList[i].id));
+                notamPolyLayer.getSource().addFeature(notamPolyFeature);
+
+
+                // text
+                notamTextFeature = new ol.Feature();
+                notamTextFeature.setGeometry(new ol.geom.Point(centerMer));
+                notamTextFeature.setStyle(createNotamTextStyle(notamList[i].id));
+                notamTextFeature.notam = notamList[i];
+                notamTextLayer.getSource().addFeature(notamTextFeature);
+            }
+        }
+
+
+        function createNotamPolyStyle()
+        {
+            return new ol.style.Style({
+                fill: new ol.style.Fill({
+                    color: 'rgba(255, 0, 0, 0.15)'}),
+                stroke: new ol.style.Stroke({
+                    color: 'rgba(255, 0, 0, 0.8)',
+                    width: 3
+                })
+            });
+        }
+
+
+        function createNotamTextStyle(name)
+        {
+            return new ol.style.Style({
+                fill: new ol.style.Fill({
+                    color: 'rgba(0, 0, 0, 0.0)'}),
+                stroke: new ol.style.Stroke({
+                    color: 'rgba(0, 0, 0, 0.0)',
+                    width: 0}),
+                text: new ol.style.Text({
+                    font: 'bold 14px Calibri,sans-serif',
+                    text: name,
+                    fill: new ol.style.Fill({color: 'rgba(255, 0, 0, 1.0)'}),
+                    stroke: new ol.style.Stroke({color: '#FFFFFF', width: 2}),
+                })
             });
         }
     }
@@ -1008,10 +1187,232 @@ function mapService($http, mapFeatureService, weatherService)
         }
     }
 
+
+    function drawMeteoBg(showBg)
+    {
+        meteoBgLayer.getSource().clear();
+
+        if (!showBg)
+            return;
+
+        var mer_coordinates = [[
+            getMercatorCoordinates(-85, -180),
+            getMercatorCoordinates(85, -180),
+            getMercatorCoordinates(85, 180),
+            getMercatorCoordinates(-85, 180),
+            getMercatorCoordinates(-85, -180)
+        ]];
+
+        var bgFeature = new ol.Feature({
+            geometry: new ol.geom.Polygon(mer_coordinates)
+        });
+
+        var bgStyle = new ol.style.Style({
+            fill: new ol.style.Fill({
+                color: 'rgba(0, 0, 0, 0.5)'
+            })
+        });
+
+        bgFeature.setStyle(bgStyle);
+
+        meteoBgLayer.getSource().addFeature(bgFeature);
+    }
+
+
+    function drawSmaMeasurements(measurementList)
+    {
+        meteoSmaLayer.getSource().clear();
+
+        if (!measurementList)
+            return;
+
+        for (var i = 0; i < measurementList.length; i++)
+        {
+            var measurement = measurementList[i];
+
+            drawLocationDot(measurement);
+            drawWindArrow(measurement);
+
+            if (map.getView().getZoom() > 10)
+                drawDetailBox(measurement);
+            else
+                drawSmallBox(measurement);
+        }
+
+
+        function drawLocationDot(measurement)
+        {
+            var dotFeature = new ol.Feature({
+                geometry: new ol.geom.Point(ol.proj.fromLonLat([measurement.station_lon, measurement.station_lat]))
+            });
+
+            var dotStyle = new ol.style.Style({
+                image: new ol.style.Circle({
+                    radius: 4,
+                    fill: new ol.style.Fill({
+                        color: '#FFFFFF'
+                    }),
+                    stroke: new ol.style.Stroke({
+                        color: '#000000',
+                        width: 2
+                    })
+                })
+            });
+
+            dotFeature.setStyle(dotStyle);
+            meteoSmaLayer.getSource().addFeature(dotFeature);
+        }
+
+
+        function drawWindArrow(measurement)
+        {
+            var windArrowFeature = new ol.Feature({
+                geometry: new ol.geom.Point(ol.proj.fromLonLat([measurement.station_lon, measurement.station_lat]))
+            });
+
+            var windArrowImage = meteoService.getWindArrowImage(measurement);
+            var rotRad = deg2rad(measurement.wind_dir);
+
+            var windArrowStyle = new ol.style.Style({
+                image: new ol.style.Icon({
+                    anchor: [0.5, 0.0],
+                    opacity: 1.0,
+                    img: windArrowImage,
+                    imgSize : [windArrowImage.width, windArrowImage.height],
+                    scale: windArrowImage.displayScale,
+                    rotation: rotRad,
+                    rotateWithView: true
+                }),
+                text: new ol.style.Text({
+                    //textAlign: align,
+                    //textBaseline: baseline,
+                    font: 'bold 15px Calibri,sans-serif',
+                    text: Math.round(kmh2kt(measurement.wind_speed_kmh)) + "kt",
+                    fill: new ol.style.Fill({color: "#FFFFFF"}),
+                    stroke: new ol.style.Stroke({color: "#000000", width: 2}),
+                    offsetX: -windArrowImage.height / 2 * windArrowImage.displayScale * Math.sin(rotRad + map.getView().getRotation()),
+                    offsetY: windArrowImage.height / 2 * windArrowImage.displayScale * Math.cos(rotRad  + map.getView().getRotation())
+                })
+            });
+
+
+            windArrowFeature.setStyle(windArrowStyle);
+            windArrowFeature.smaMeasurement = measurement;
+            meteoSmaLayer.getSource().addFeature(windArrowFeature);
+        }
+
+
+        function drawDetailBox(measurement)
+        {
+            var boxFeature = new ol.Feature({
+                geometry: new ol.geom.Point(ol.proj.fromLonLat([measurement.station_lon, measurement.station_lat]))
+            });
+
+            var boxImage = meteoService.getDetailBoxImage(measurement);
+            var rotDeg = measurement.wind_dir + rad2deg(map.getView().getRotation())
+
+            var anchor;
+            if (rotDeg >= 90 && rotDeg < 270)
+                anchor = [0.5, -0.2];
+            else
+                anchor = [0.5, 1.2];
+
+            /*
+            if (rotDeg >= 0 && rotDeg < 90)
+                anchor = [0.5, 1.2]; //anchor = [-0.1, 1.1];
+            else if (rotDeg >= 90 && rotDeg < 180)
+                anchor = [0.5, -0.2]; //anchor = [-0.1, -0.1];
+            else if (rotDeg >= 180 && rotDeg < 270)
+                anchor = [0.5, -0.2]; // anchor = [1.1, -0.1];
+            else
+                anchor = [0.5, 1.2]; // anchor = [1.1, 1.1];*/
+
+
+            var boxStyle = new ol.style.Style({
+                image: new ol.style.Icon({
+                    anchor: anchor,
+                    opacity: 0.9,
+                    img: boxImage,
+                    imgSize : [boxImage.width, boxImage.height],
+                    scale: boxImage.displayScale
+                })
+            });
+
+
+            boxFeature.setStyle(boxStyle);
+            boxFeature.smaMeasurement = measurement;
+            meteoSmaLayer.getSource().addFeature(boxFeature);
+        }
+    }
+
+
+    function drawSmallBox(measurement)
+    {
+        var boxFeature = new ol.Feature({
+            geometry: new ol.geom.Point(ol.proj.fromLonLat([measurement.station_lon, measurement.station_lat]))
+        });
+
+        var smallBoxImage = meteoService.getSmallBoxImage(measurement);
+
+        var offsetPixel = 18 / smallBoxImage.displayScale;
+        var rot = measurement.wind_dir ? deg2rad(measurement.wind_dir) : 0.0;
+        var anchor = [-offsetPixel * Math.sin(rot) + 7, offsetPixel * Math.cos(rot) + 7];
+
+        var boxStyle = new ol.style.Style({
+            image: new ol.style.Icon({
+                anchor: anchor,
+                anchorXUnits: 'pixels',
+                anchorYUnits: 'pixels',
+                opacity: 0.9,
+                img: smallBoxImage,
+                imgSize : [smallBoxImage.width, smallBoxImage.height],
+                scale: smallBoxImage.displayScale
+            })
+        });
+
+
+        boxFeature.setStyle(boxStyle);
+        boxFeature.smaMeasurement = measurement;
+        meteoSmaLayer.getSource().addFeature(boxFeature);
+    }
+
+
     //endregion
 
 
     //region USER EVENTS
+
+
+    function onZoomInClicked()
+    {
+        onMapActivityOccuring();
+
+        var view = map.getView();
+        var zoom = view.getZoom();
+
+        if (zoom < MAX_ZOOMLEVEL)
+            view.setZoom(zoom + 1);
+    }
+
+
+    function onZoomOutClicked()
+    {
+        onMapActivityOccuring();
+
+        var view = map.getView();
+        var zoom = view.getZoom();
+
+        if (zoom > 1)
+            view.setZoom(zoom - 1);
+    }
+
+
+    function onMapActivityOccuring()
+    {
+        if (onMapActivityCallback)
+            onMapActivityCallback();
+    }
+
 
     // click event
     function onSingleClick(event)
@@ -1028,6 +1429,8 @@ function mapService($http, mapFeatureService, weatherService)
 
                 // specific feature clicked
                 if (feature.geopoint ||
+                    feature.notam ||
+                    feature.notamList ||
                     feature.airport ||
                     feature.navaid ||
                     feature.waypoint ||
@@ -1035,12 +1438,13 @@ function mapService($http, mapFeatureService, weatherService)
                     feature.reportingpoint ||
                     feature.webcam ||
                     feature.weatherInfo ||
-                    feature.closeLayer)
+                    feature.smaMeasurement ||
+                    feature.closeChartId)
                 {
                     closeOverlay();
                     clearGeopointSelection();
 
-                    if (feature.closeLayer)
+                    if (feature.closeChartId)
                         removeChart(feature);
                     else
                         onFeatureSelectCallback(event, feature);
@@ -1049,17 +1453,20 @@ function mapService($http, mapFeatureService, weatherService)
                 }
             },
             {
+                hitTolerance: 10,
                 layerFilter : function (layer) // layers to search for features
                 {
                     return (layer === geopointLayer ||
                         layer === closeIconLayer ||
+                        layer === notamTextLayer ||
                         layer === airportLayer ||
                         layer === navaidLayer ||
                         layer === reportingpointLayer ||
                         layer === userWpLayer ||
                         layer === wpTrackLayer ||
                         layer === webcamLayer ||
-                        layer === weatherLayer);
+                        layer === weatherLayer ||
+                        layer === meteoSmaLayer);
                 }
             }
         );
@@ -1118,6 +1525,7 @@ function mapService($http, mapFeatureService, weatherService)
                 {
                     return (layer === geopointLayer ||
                     layer === closeIconLayer ||
+                    layer === notamTextLayer ||
                     layer === airportLayer ||
                     layer === navaidLayer ||
                     layer === reportingpointLayer ||
@@ -1125,7 +1533,8 @@ function mapService($http, mapFeatureService, weatherService)
                     layer === wpTrackLayer ||
                     layer === trafficLayer ||
                     layer === webcamLayer ||
-                    layer === weatherLayer);
+                    layer === weatherLayer ||
+                    layer === meteoSmaLayer);
                 }
             }
         );
@@ -1140,22 +1549,49 @@ function mapService($http, mapFeatureService, weatherService)
     // moveend event (pan / zoom)
     function onMoveEnd(event)
     {
+        onMapActivityOccuring();
+
         setLayerVisibility();
+
+        map.getView().setRotation((map.getView().getRotation() + 2 * Math.PI) % (2 * Math.PI));
 
         // update map features
         if (map.getView().getZoom() >= 9) // TODO: variable zoom level
-            mapFeatureService.getMapFeatures(getViewExtent(), drawAllFeatures);
+        {
+            var extent = getViewExtentLatLon();
+            mapFeatureService.getMapFeatures(extent, onMapFeaturesLoaded, onMapFeatureError);
+        }
 
         onMoveEndCallback(event);
+
+
+        function onMapFeaturesLoaded(mapFeatureList)
+        {
+            drawAirports(mapFeatureList.airports);
+            drawNavaids(mapFeatureList.navaids);
+            drawAirspaces(mapFeatureList.airspaces);
+            drawReportingPoints(mapFeatureList.reportingPoints);
+            drawUserPoints(mapFeatureList.userPoints);
+            drawWebcams(mapFeatureList.webcams);
+
+            metarTafNotamService.getAreaWeatherInfos(getViewExtentLatLon(), drawWeatherInfo);
+            metarTafNotamService.getNotams(getViewExtentLatLon(), mapFeatureList.airports, drawAreaNotams);
+        }
+
+
+        function onMapFeatureError()
+        {
+            // TODO
+        }
     }
 
 
     // rotate event
     function onViewRotation(event)
     {
-        if (wpTrackCache && wpTrackCache.wps)
+        if (wpCache && wpCache.wps)
         {
-            drawWaypoints(wpTrackCache.wps, wpTrackCache.alternate, wpTrackCache.variation);
+            drawWaypoints(wpCache.wps, wpCache.alternate, wpCache.variation);
             wpTrackLayer.getSource().changed();
         }
     }
@@ -1189,6 +1625,9 @@ function mapService($http, mapFeatureService, weatherService)
 
     function setMapPosition(lat, lon, zoom, forceRender)
     {
+        if (!map || !map.getView())
+            return;
+
         if (lat && lon)
         {
             var pos = ol.proj.fromLonLat([lon, lat]);
@@ -1209,7 +1648,13 @@ function mapService($http, mapFeatureService, weatherService)
     }
 
 
-    function getViewExtent()
+    function getViewExtentMercator()
+    {
+        return map.getView().calculateExtent(map.getSize());
+    }
+
+
+    function getViewExtentLatLon()
     {
         var extent = map.getView().calculateExtent(map.getSize());
 
@@ -1217,9 +1662,21 @@ function mapService($http, mapFeatureService, weatherService)
     }
 
 
-    function fitView(mercator_extent)
+    function fitViewLatLon(extentLatLon)
     {
-        if (!mercator_extent || !map || !map.getView || !map.getSize)
+        if (!extentLatLon || extentLatLon.length != 4)
+            return;
+
+        var minMercator = getMercatorCoordinates(extentLatLon[1], extentLatLon[0]);
+        var maxMercator = getMercatorCoordinates(extentLatLon[3], extentLatLon[2]);
+
+        fitViewMercator([minMercator[0], minMercator[1], maxMercator[0], maxMercator[1]]);
+    }
+
+
+    function fitViewMercator(extentMercator)
+    {
+        if (!extentMercator || !map || !map.getView || !map.getSize)
             return;
 
         var paddingFactor = 0.05;
@@ -1227,8 +1684,89 @@ function mapService($http, mapFeatureService, weatherService)
         var padX = Math.ceil(mapSize[0] * paddingFactor / 2);
         var padY = Math.ceil(mapSize[1] * paddingFactor / 2);
 
-        map.getView().fit(mercator_extent, { size: map.getSize(), padding: [ padX, padX, padY, padY], maxZoom: 15 });
+        map.getView().fit(extentMercator, { size: map.getSize(), padding: [ padX, padX, padY, padY], maxZoom: 15 });
     }
+
+    //endregion
+
+
+    //region CONTROLS & BUTTONS
+
+
+    function ZoomButtonsControl(opt_options)
+    {
+        var options = opt_options || {};
+
+        var img1 = document.createElement('span');
+        img1.className = "glyphicon glyphicon-plus";
+
+        var img2 = document.createElement('span');
+        img2.className = "glyphicon glyphicon-minus";
+
+        var button1 = document.createElement('button');
+        button1.className = "btn btn-primary btn-circle btn-lg";
+        button1.setAttribute("type", "button");
+        button1.setAttribute("title", "zoom in");
+        button1.setAttribute("style", "border-top-left-radius: 25px; border-top-right-radius: 25px");
+        button1.addEventListener('click', onZoomInClicked, false);
+        button1.appendChild(img1);
+
+        var button2 = document.createElement('button');
+        button2.className = "btn btn-primary btn-circle btn-lg";
+        button2.setAttribute("type", "button");
+        button2.setAttribute("title", "zoom out");
+        button2.setAttribute("style", "border-bottom-left-radius: 25px; border-bottom-right-radius: 25px");
+        button2.addEventListener('click', onZoomOutClicked, false);
+        button2.appendChild(img2);
+
+        var div = document.createElement('div');
+        div.className = 'btn-group-vertical mapbutton-zoom';
+        div.appendChild(button1);
+        div.appendChild(button2);
+
+        ol.control.Control.call(this, {
+            element: div,
+            target: options.target
+        });
+    }
+
+
+    function FullScreenButtonControl(opt_options)
+    {
+        var options = opt_options || {};
+
+        var img = document.createElement('i');
+        img.className = "glyphicon glyphicon-fullscreen";
+
+        var img2 = document.createElement('i');
+        img2.className = "glyphicon glyphicon-resize-small";
+
+        var button = document.createElement('button');
+        button.setAttribute("title", "toggle full screen mode");
+        button.addEventListener('click', onFullScreenButtonClicked, false);
+        button.appendChild(img);
+        button.appendChild(img2);
+
+        var div = document.createElement('div');
+        div.className = 'ol-full-screen ol-unselectable ol-control';
+        div.appendChild(button);
+
+        if (!isFullScreenEnabled2())
+            div.setAttribute("style", "display:none");
+
+        ol.control.Control.call(this, {
+            element: div,
+            target: options.target
+        });
+
+
+        function onFullScreenButtonClicked()
+        {
+            if (onFullScreenCallback)
+                onFullScreenCallback();
+        }
+    }
+
 
     //endregion
 
@@ -1237,8 +1775,6 @@ function mapService($http, mapFeatureService, weatherService)
 
 	function addOverlay(coordinates, container, autopan)
 	{
-
-
 		if (currentOverlay)
 			closeOverlay();
 
@@ -1261,8 +1797,8 @@ function mapService($http, mapFeatureService, weatherService)
 	{
 		if (!currentOverlay)
 			return;
-		else
-			map.removeOverlay(currentOverlay);
+
+        map.removeOverlay(currentOverlay);
 
 		currentOverlay = undefined;
 	}
@@ -1279,7 +1815,7 @@ function mapService($http, mapFeatureService, weatherService)
 	}
 	
 	
-	function drawGeopointSelection(geopoints, clickPixel)
+	function drawGeopointSelection(geopoints, notams, clickPixel)
 	{
 		var layerSource = geopointLayer.getSource();
 		layerSource.clear();
@@ -1340,9 +1876,20 @@ function mapService($http, mapFeatureService, weatherService)
 			layerSource.addFeature(lineFeature);
 
 			// add feature object
-			addFeatureObject(geopoints[i], geoPointFeature, labelFeature);
+            mapFeatureService.addFeatureByTypeAndId(geopoints[i].type, geopoints[i].id, geoPointFeature);
+            mapFeatureService.addFeatureByTypeAndId(geopoints[i].type, geopoints[i].id, labelFeature);
 		}
 
+
+		// notams
+        if (notams && notams.length > 0)
+        {
+            var notamFeature = createNotamFeature(geopoints, notams);
+            layerSource.addFeature(notamFeature);
+        }
+
+
+		// airspaces
 		addAirspaceOverlay(geopoints, airspaceSelection, simpleAirspaceSelection);
 
 
@@ -1358,7 +1905,7 @@ function mapService($http, mapFeatureService, weatherService)
 			}
 
 			// check exclusions
-			for (i = 0; i < asList.length; i++)
+			/*for (i = 0; i < asList.length; i++)
 			{
 				if (asList[i].exclude_aip_id)
 				{
@@ -1378,7 +1925,7 @@ function mapService($http, mapFeatureService, weatherService)
 						}
 					}
 				}
-			}
+			}*/
 
 
 			// sort airspaces top to bottom
@@ -1734,9 +2281,9 @@ function mapService($http, mapFeatureService, weatherService)
 		}
 
 
-		function addAirspaceOverlay(geopoints, airspaceSelection, simpleAirspaceSelection)
+        // determine top left coordinate in bottom right quadrant
+		function getTLCoordInBRQuad(geopoints)
         {
-            // determine top left coordinate
             var minLat, maxLon;
 
             for (var i = 0; i < geopoints.length; i++) {
@@ -1747,10 +2294,54 @@ function mapService($http, mapFeatureService, weatherService)
                     maxLon = geopoints[i].longitude;
             }
 
-            var pixelTopLeft = map.getPixelFromCoordinate(ol.proj.fromLonLat([maxLon, minLat]));
+            return [maxLon, minLat];
+        }
+
+
+        function createNotamFeature(geopoints, notams)
+        {
+            // find position
+            var topLeftCoord = getTLCoordInBRQuad(geopoints);
+            var pixelTopLeft = map.getPixelFromCoordinate(ol.proj.fromLonLat(topLeftCoord));
+            pixelTopLeft[0] += 50;
+
+
+            var notamText = "NOTAM: " + notams.length + "x";
+
+            var notamFeature = new ol.Feature({
+                geometry: new ol.geom.Point(ol.proj.fromLonLat(topLeftCoord))
+            });
+
+            notamFeature.notamList = notams;
+
+            notamFeature.setStyle(
+                new ol.style.Style({
+                    text: new ol.style.Text({
+                        textAlign: 'left',
+                        font: 'bold 14px Calibri,sans-serif',
+                        text: notamText,
+                        fill: new ol.style.Fill( { color: '#660066' } ),
+                        stroke: new ol.style.Stroke( {color: '#FFFFFF', width: 10 } ),
+                        offsetX: 45,
+                        offsetY: -15
+                    })
+                })
+            );
+
+            return notamFeature;
+        }
+
+
+		function addAirspaceOverlay(geopoints, airspaceSelection, simpleAirspaceSelection)
+        {
+            // find position
+            var topLeftCoord = getTLCoordInBRQuad(geopoints);
+            var pixelTopLeft = map.getPixelFromCoordinate(ol.proj.fromLonLat(topLeftCoord));
             pixelTopLeft[0] += 50;
             //pixelTopLeft[1] += 10;
 
+
+            // build airspaces table
             var asTableHtml;
 
             if (airspaceSelection.length > simpleAirspaceSelection.length)
@@ -1957,55 +2548,6 @@ function mapService($http, mapFeatureService, weatherService)
 				return '<span class="' + cssClass + '">' + text + '</span>';
 			}			
 		}
-
-
-		function addFeatureObject(geopoint, geoPointFeature, labelFeature)
-		{
-			switch (geopoint.type) {
-				case 'airport':
-				{
-                    var ap = mapFeatureService.getAirportById(geopoint.id);
-
-					if (ap) {
-						geoPointFeature.airport = ap;
-						labelFeature.airport = ap;
-					}
-					break;
-				}
-				case 'navaid':
-				{
-					var nav = mapFeatureService.getNavaidById(geopoint.id);
-
-					if (nav) {
-						geoPointFeature.navaid = nav;
-						labelFeature.navaid = nav;
-					}
-					break;
-				}
-				case 'report':
-				{
-					var rp = mapFeatureService.getReportingPointById(geopoint.id);
-
-					if (rp) {
-						geoPointFeature.reportingpoint = rp;
-						labelFeature.reportingpoint = rp;
-					}
-
-					break;
-				}
-				case 'user':
-				{
-					var uwp = mapFeatureService.getUserPointById(geopoint.id);
-
-					if (uwp) {
-						geoPointFeature.userWaypoint = uwp;
-						labelFeature.userWaypoint = uwp;
-					}
-
-					break;
-				}
-			}
-		}
 	}
 
 	//endregion
@@ -2019,15 +2561,17 @@ function mapService($http, mapFeatureService, weatherService)
 			return;
 
 		// cache parameters for updates after view rotation
-		wpTrackCache = { wps: wps, alternate: alternate, variation: variation};
+		wpCache = new WaypointCache(wps, alternate, variation);
 
 		// remove features
 		var trackSource = wpTrackLayer.getSource();
 		trackSource.clear();
 
 		// remove interactions
-		for (var j = 0; j < modifySnapInteractions.length; j++)
-			 map.removeInteraction(modifySnapInteractions[j]);
+		for (var j = 0; j < modifySnapInteractions.length; j++) {
+		    modifySnapInteractions[j].un('modifyend', onTrackModifyEnd);
+            map.removeInteraction(modifySnapInteractions[j]);
+        }
 		modifySnapInteractions = [];
 
 
@@ -2259,9 +2803,9 @@ function mapService($http, mapFeatureService, weatherService)
 				throw "invalid waypoints";
 
 			if (!rotateWithView || (rotDeg + maprotDeg) % 360 < 180)
-				align = "start";
-			else
 				align = "end";
+			else
+				align = "start";
 
 			if (rotateWithView)
 				rotRad = deg2rad(rotDeg + maprotDeg);
@@ -2299,19 +2843,19 @@ function mapService($http, mapFeatureService, weatherService)
 			if (!wp)
 			{
 				rotRad = 0;
-				align = "start";
+				align = "end";
 				text = '';
 			}
-			else if ((wp.mt + maprotDeg) % 360 < 180)
+			else if ((wp.mt + maprotDeg + 360) % 360 < 180)
 			{
 				rotRad = deg2rad(wp.mt - 90);
-				align = "start";
+				align = "end";
 				text = '   ' + wp.mt + '° ' + wp.dist + 'NM >';
 			}
 			else
 			{
 				rotRad = deg2rad(wp.mt - 270);
-				align = "end";
+				align = "start";
 				text = '< ' + wp.mt + '° ' + wp.dist + 'NM   ';
 			}
 
@@ -2334,7 +2878,7 @@ function mapService($http, mapFeatureService, weatherService)
 
     //region TRACK
 
-	function drawFlightTrack(positions, fitToView)
+	function drawFlightTrack(positions)
 	{
 		if (typeof flightTrackLayer === "undefined")
 			return;
@@ -2349,8 +2893,6 @@ function mapService($http, mapFeatureService, weatherService)
 			})
 		});
 
-
-        var minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
 
         for (var i = 0; i < positions.length - 1; i++)
 		{
@@ -2367,21 +2909,7 @@ function mapService($http, mapFeatureService, weatherService)
 
 			flightTrackFeature.setStyle(flightTrackStyle);
 			flightTrackSource.addFeature(flightTrackFeature);
-
-			if (fitToView)
-			{
-			    // find max extent
-                minLon = Math.min(minLon, pos1.longitude);
-                minLat = Math.min(minLat, pos1.latitude);
-                maxLon = Math.max(maxLon, pos1.longitude);
-                maxLat = Math.max(maxLat, pos1.latitude);
-            }
 		}
-
-		if (fitToView)
-        {
-            fitView(ol.proj.transformExtent([minLon, minLat, maxLon, maxLat], 'EPSG:4326', 'EPSG:3857')); // transform from lat/lon to web mercator
-        }
 	}
 
 	//endregion
@@ -2414,7 +2942,7 @@ function mapService($http, mapFeatureService, weatherService)
 
 						var chartLayer = new ol.layer.Image({
 							source: new ol.source.ImageStatic({
-								url: 'charts/' + response.data.chart.filename,
+								url: 'charts/' + response.data.chart.filename + '?v=' + navplanVersion,
 								projection: projection,
 								imageExtent: extent
 							}),
@@ -2422,13 +2950,14 @@ function mapService($http, mapFeatureService, weatherService)
 							opacity: 0.9
 						});
 
-						chartLayers.push(chartLayer);
+                        chartLayer.chartId = chartId;
+                        chartLayerCache.chartLayers.push(chartLayer);
 
-						map.getLayers().insertAt(chartLayers.length, chartLayer);
+						map.getLayers().insertAt(chartLayerCache.chartLayers.length, chartLayer);
 
-						addChartCloseFeature(chartId, chartLayer, extent);
+						addChartCloseFeature(chartId, extent);
 
-						fitView(extent);
+						fitViewMercator(extent);
 					}
 				},
 				function(response) { // error
@@ -2437,7 +2966,7 @@ function mapService($http, mapFeatureService, weatherService)
 			);
 
 
-		function addChartCloseFeature(chartId, chartLayer, extent)
+		function addChartCloseFeature(chartId, extent)
 		{
 			var closerFeature = new ol.Feature({
 				geometry: new ol.geom.Point([extent[2], extent[3]])
@@ -2455,7 +2984,7 @@ function mapService($http, mapFeatureService, weatherService)
 			});
 
 			closerFeature.setStyle(closerStyle);
-			closerFeature.closeLayer = chartLayer;
+			closerFeature.closeChartId = chartId;
 
 			closeIconLayer.getSource().addFeature(closerFeature);
 		}
@@ -2464,28 +2993,37 @@ function mapService($http, mapFeatureService, weatherService)
 
 	function removeChart(closerFeature)
     {
-        map.removeLayer(closerFeature.closeLayer);
-        closeIconLayer.getSource().removeFeature(closerFeature);
-        removeFromArray(chartLayers, closerFeature.closeLayer);
+        for (var i = 0; i < chartLayerCache.chartLayers.length; i++)
+        {
+            if (chartLayerCache.chartLayers[i].chartId == closerFeature.closeChartId)
+            {
+                var closingChartLayer = chartLayerCache.chartLayers[i];
+
+                map.removeLayer(closingChartLayer);
+                closeIconLayer.getSource().removeFeature(closerFeature);
+                removeFromArray(chartLayerCache.chartLayers, closingChartLayer);
+
+                break;
+            }
+        }
     }
 
 
 	function clearAllCharts()
 	{
-		for (var i = 0; i < chartLayers.length; i++)
-			map.removeLayer(chartLayers[i]);
+		for (var i = 0; i < chartLayerCache.chartLayers.length; i++)
+            map.removeLayer(chartLayerCache.chartLayers[i]);
 
 
 		var iconFeatures = closeIconLayer.getSource().getFeatures();
 
-
 		for (var j = 0; j < iconFeatures.length; j++)
 		{
-			if (iconFeatures[j].closeLayer)
+			if (iconFeatures[j].closeChartId)
 				closeIconLayer.getSource().removeFeature(iconFeatures[j]);
 		}
 
-		chartLayers = [];
+        chartLayerCache.chartLayers = [];
 	}
 
 	//endregion
@@ -2499,18 +3037,18 @@ function mapService($http, mapFeatureService, weatherService)
 		layerSource.clear();
 
 		if (lastPositions)
-			drawTrafficTrack({ actype: "OWN", positions: lastPositions }, layerSource, false);
+			drawTrafficTrack({ actype: "OWN", positions: lastPositions }, layerSource, false, Date.now());
 	}
 
 
-	function drawTraffic(acList, maxTrafficAltitudeFt)
+	function drawTraffic(acList, maxTrafficAltitudeFt, currentTimestamp)
 	{
 		var layerSource = trafficLayer.getSource();
 		layerSource.clear();
 
 		if (acList)
 		{
-			var extent = getViewExtent();
+			var extent = getViewExtentLatLon();
 			var acListVisible = [];
 
 			// filter by visibility
@@ -2520,24 +3058,27 @@ function mapService($http, mapFeatureService, weatherService)
 				var lastPos = ac.positions[ac.positions.length - 1];
 				ac.receiver = lastPos.receiver;
 
+				// hide traffic higher than max alt
 				if (lastPos.altitude && m2ft(lastPos.altitude) > maxTrafficAltitudeFt)
 				    continue;
 
+				// hide traffic outside map extent
 				if (lastPos.longitude < extent[0] || lastPos.latitude < extent[1] || lastPos.longitude > extent[2] || lastPos.latitude > extent[3])
 				    continue;
 
 				acListVisible.push(ac);
 			}
 
+			// hide trails if there's too much traffic on the screen
 			var showTrails = acListVisible.length <= maxTrafficForTrails;
 
 			for (var i = 0; i < acListVisible.length; i++)
-                drawTrafficTrack(acListVisible[i], layerSource, showTrails);
+                drawTrafficTrack(acListVisible[i], layerSource, showTrails, currentTimestamp);
         }
 	}
 
 
-	function drawTrafficTrack(ac, layerSource, showTrails)
+	function drawTrafficTrack(ac, layerSource, showTrails, currentTimestamp)
 	{
 		if (!ac || !ac.positions)
 			return;
@@ -2547,7 +3088,7 @@ function mapService($http, mapFeatureService, weatherService)
 		// draw track dots
 		if (showTrails) {
 			for (var i = maxIdx; i >= 0; i--) {
-				if (Date.now() - ac.positions[i].timestamp < maxAgeSecTrackDots * 1000) {
+				if (currentTimestamp - ac.positions[i].timestamp < maxAgeSecTrackDots * 1000) {
 					var trackDotFeature = createTrackDotFeature(ac.positions[i], ac.actype);
 					layerSource.addFeature(trackDotFeature);
 				}
@@ -2569,13 +3110,16 @@ function mapService($http, mapFeatureService, weatherService)
 					0);
 			}
 
+			// plane icon
 			var planeFeature = createTrafficFeature(
                 ac.positions[maxIdx],
 				rotation,
-				ac);
+				ac,
+                currentTimestamp);
 
 			layerSource.addFeature(planeFeature);
 
+			// registration or callsign text
 			if (ac.registration || ac.callsign)
 			{
 				var csFeature = createRegistrationCallsignFeature(ac);
@@ -2614,7 +3158,7 @@ function mapService($http, mapFeatureService, weatherService)
 		}
 
 
-		function createTrafficFeature(position, rotation, ac)
+		function createTrafficFeature(position, rotation, ac, currentTimestamp)
 		{
 			var icon = "icon/";
 			var color = "#FF0000";
@@ -2628,7 +3172,7 @@ function mapService($http, mapFeatureService, weatherService)
 				heighttext = Math.round(m2ft(position.altitude)).toString() + " ft"; // TODO: einstellbar
 
 			var iconSuffix = "";
-			if (position.timestamp && (Date.now() - position.timestamp > maxAgeSecInactive * 1000))
+			if (position.timestamp && (currentTimestamp - position.timestamp > maxAgeSecInactive * 1000))
 				iconSuffix = "_inactive";
 
 			var rotWithView = true;
@@ -2677,8 +3221,7 @@ function mapService($http, mapFeatureService, weatherService)
 					icon += "traffic_plane" + iconSuffix + ".png";
 					break;
 				case "UAV":
-					typetext = " - UAV";
-					icon += "traffic_plane" + iconSuffix + ".png";
+					icon += "traffic_uav" + iconSuffix + ".png";
 					break;
                 case "JET_AIRCRAFT":
                     icon += "traffic_jetplane" + iconSuffix + ".png";
@@ -2755,6 +3298,8 @@ function mapService($http, mapFeatureService, weatherService)
 				})
 			);
 
+			csFeature.acInfo = ac;
+
 			return csFeature;
 		}
 
@@ -2786,13 +3331,19 @@ function mapService($http, mapFeatureService, weatherService)
 	}
 
 
-	function getLatLonFromPixel(x, y)
+	function getMercatorFromPixel(x, y)
 	{
-		return getLatLonCoordinates((map.getCoordinateFromPixel([x, y])));
+		return map.getCoordinateFromPixel([x, y]);
 	}
 
 
-	function getDistance(lat1, lon1, lat2, lon2)
+    function getLatLonFromPixel(x, y)
+    {
+        return getLatLonCoordinates((map.getCoordinateFromPixel([x, y])));
+    }
+
+
+    function getDistance(lat1, lon1, lat2, lon2)
 	{
 		return (wgs84Sphere.haversineDistance([lon1,lat1],[lon2,lat2]) * 0.000539957);
 	}
@@ -2835,5 +3386,22 @@ function mapService($http, mapFeatureService, weatherService)
 		return clickPoint;
 	}
 
-	//endregion
+
+    function convertPolygonToMercator(latLonPolygon)
+    {
+        var merCoords, lonLat;
+        var merPoly = [];
+
+        for (var i = 0; i < latLonPolygon.length; i++)
+        {
+            lonLat = latLonPolygon[i];
+            merCoords = ol.proj.fromLonLat(lonLat);
+            merPoly.push(merCoords);
+        }
+
+        return merPoly;
+    }
+
+
+    //endregion
 }

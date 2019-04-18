@@ -3,13 +3,20 @@
  */
 
 navplanApp
-	.controller('mapCtrl', [ '$scope', '$sce', '$route', 'mapService', 'mapFeatureService', 'locationService', 'trafficService', 'geonameService', 'userService', 'weatherService', 'terrainService', 'globalData', mapCtrl ]);
+	.controller('mapCtrl', [ '$scope', '$sce', '$route', 'mapService', 'mapFeatureService', 'locationService', 'trafficService', 'geopointService', 'userService', 'metarTafNotamService', 'terrainService', 'meteoService', 'globalData', mapCtrl ]);
+
+navplanApp
+    .directive('addToRouteDirective', addToRouteDirective);
+
+function addToRouteDirective()
+{
+    return { templateUrl: 'map/add-to-route-directive.html?v=' + navplanVersion };
+}
 
 
-function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationService, trafficService, geonameService, userService, weatherService, terrainService, globalData)
+function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationService, trafficService, geopointService, userService, metarTafNotamService, terrainService, meteoService, globalData)
 {
     //region INIT VARS
-
 	$scope.$route = $route;
 	$scope.globalData = globalData;
 	$scope.trafficTimerIntervallMs = 5000;
@@ -18,11 +25,11 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 	$scope.selectedTraffic = {};
 	$scope.followTrafficAddress = undefined;
 	$scope.followTrafficLastPosition = undefined;
-
-	var featureContainer = document.getElementById('feature-popup');
-	var trafficContainer = document.getElementById('traffic-popup');
-	var metarTafContainer = document.getElementById('metartaf-popup');
-    var weatherContainer = document.getElementById('weather-popup');
+	$scope.featureContainer = document.getElementById('feature-popup');
+	$scope.trafficContainer = document.getElementById('traffic-popup');
+    $scope.notamContainer = document.getElementById('notam-popup');
+	$scope.metarTafContainer = document.getElementById('metartaf-popup');
+    $scope.weatherContainer = document.getElementById('weather-popup');
 
 	//endregion
 
@@ -31,7 +38,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 
     $scope.onSearchGeonamesByName = function(search)
 	{
-		return geonameService.searchGeonamesByValue(search);
+		return geopointService.searchGeonamesByValue(search);
 	};
 
 
@@ -48,7 +55,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 		};
 
 		mapService.setMapPosition($item.latitude, $item.longitude, 11, true);
-		mapService.drawGeopointSelection([ $item ], undefined);
+		mapService.drawGeopointSelection([ $item ], [], undefined);
 	};
 
 
@@ -78,14 +85,16 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 	{
 		$scope.globalData.clickHistory.push(clickCoordinates); // used internally only
 
-		geonameService.searchGeonamesByPosition(clickCoordinates[1], clickCoordinates[0], maxRadius)
+        var minMaxTimes = metarTafNotamService.getDefaultNotamTimeslot();
+
+		geopointService.searchGeonamesByPosition(clickCoordinates[1], clickCoordinates[0], maxRadius, minMaxTimes[0], minMaxTimes[1])
 			.then(
 			    function(response)
                 {
                     if (response.data.geonames)
                     {
                         $scope.closeFeatureOverlay();
-                        mapService.drawGeopointSelection(response.data.geonames, event.pixel);
+                        mapService.drawGeopointSelection(response.data.geonames, response.data.notams, event.pixel);
                     }
                     else
                         logResponseError("ERROR searching geonames", response);
@@ -94,8 +103,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
                 {
                     logResponseError("ERROR searching geonames", response);
 
-                    var geonames = [];
-                    mapService.drawGeopointSelection(geonames, event.pixel);
+                    mapService.drawGeopointSelection([], [], event.pixel); // draw with empty set (client data only)
     			}
             );
 	};
@@ -109,30 +117,43 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
             center: view.getCenter(),
             zoom: view.getZoom()
         };
+
+        $scope.updateMeteo();
+        $scope.$applyAsync();
     };
 
 
-    $scope.onZoomInClicked = function()
+    $scope.fitView = function()
     {
-        var zoom = mapService.getMapPosition().zoom;
-
-        if (zoom < mapService.MAX_ZOOMLEVEL)
-            mapService.setMapPosition(null, null, zoom + 1);
+        if ($scope.globalData.fitViewLatLon)
+        {
+            mapService.fitViewLatLon($scope.globalData.fitViewLatLon);
+            $scope.globalData.fitViewLatLon = undefined;
+        }
     };
 
-
-    $scope.onZoomOutClicked = function()
-    {
-        var zoom = mapService.getMapPosition().zoom;
-
-        if (zoom > 1)
-            mapService.setMapPosition(null, null, zoom - 1);
-    };
 
     //endregion
 
 
     //region WAYPOINTS
+
+
+    $scope.redrawWaypoints = function()
+    {
+        // update waypoints
+        mapService.drawWaypoints($scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.settings.variation);
+
+        // update terrain
+        if ($scope.globalData.showTerrain)
+        {
+            if ($scope.globalData.navplan.waypoints && $scope.globalData.navplan.waypoints.length >= 2)
+                terrainService.updateTerrain($scope.globalData.navplan.waypoints, $scope.onTerrainWaypointClicked);
+            else
+                $scope.globalData.showTerrain = false;
+        }
+    };
+
 
 	$scope.onTrackModifyEnd = function(feature, latLon, idx, isInsert)
 	{
@@ -150,6 +171,12 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 	};
 
 
+	$scope.onMapActivityOccured = function()
+    {
+        $scope.updateLastActivity();
+    };
+
+
 	$scope.onAddSelectedWaypointClicked = function()
 	{
 		$scope.globalData.selectedWp.isNew = false;
@@ -160,7 +187,17 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 	};
 
 
-	$scope.onSetAsAlternateClicked = function()
+    $scope.onAddSelectedWaypointClicked2 = function()
+    {
+        $scope.globalData.selectedWp.isNew = false;
+        $scope.insertWaypoint($scope.globalData.selectedWp, parseInt($scope.addToRouteAfterWp));
+        $scope.globalData.selectedWp = undefined;
+
+        $scope.closeFeatureOverlay();
+    };
+
+
+    $scope.onSetAsAlternateClicked = function()
 	{
 		$scope.globalData.selectedWp.isNew = false;
 		$scope.setAlternate($scope.globalData.selectedWp);
@@ -195,8 +232,8 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 	{
 		$scope.editUserWaypoint();
 	};
-	
-	
+
+
 	$scope.addWaypoint = function(newWp)
 	{
 		var wps = $scope.globalData.navplan.waypoints;
@@ -211,9 +248,31 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 		$scope.updateWaypoints();
 		$scope.discardCache();
 	};
-	
-	
-	$scope.setAlternate = function(altWp)
+
+
+    $scope.insertWaypoint = function(newWp, newWpIdx)
+    {
+        /*var wps = $scope.globalData.navplan.waypoints;
+        var numWp = wps.length;
+
+        // skip if same coordinates as last waypoint
+        if (numWp > 1 && wps[numWp - 1].latitude == newWp.latitude && wps[numWp - 1].longitude == newWp.longitude)
+            return;
+
+        $scope.globalData.navplan.waypoints.push(newWp);*/
+
+        if (newWpIdx < 0 || newWpIdx > $scope.globalData.navplan.waypoints.length)
+            newWpIdx = $scope.globalData.navplan.waypoints.length; // default: append
+
+        $scope.globalData.navplan.waypoints.splice(newWpIdx, 0, newWp);
+
+
+        $scope.updateWaypoints();
+        $scope.discardCache();
+    };
+
+
+    $scope.setAlternate = function(altWp)
 	{
 		$scope.globalData.navplan.alternate = altWp;
 		
@@ -224,6 +283,17 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 	//endregion
 
 
+    //region TRACK
+
+    $scope.redrawFlightTrack = function()
+    {
+        if ($scope.globalData.track && $scope.globalData.track.positions)
+            mapService.drawFlightTrack($scope.globalData.track.positions);
+    };
+
+    //endregion
+
+
     //region FEATURES N OVERLAYS
 
     $scope.onFeatureSelected = function(event, feature)
@@ -232,6 +302,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
         {
             $scope.globalData.selectedWp = $scope.getWpFromFeature(feature, mapService.getLatLonFromPixel(event.pixel[0], event.pixel[1]));
             $scope.globalData.selectedWp.isNew = true;
+            $scope.addToRouteAfterWp = "" + ($scope.globalData.navplan.waypoints.length + 1); // TODO
 
             $scope.$apply();
             $scope.openFeatureOverlay($scope.globalData.selectedWp.latitude, $scope.globalData.selectedWp.longitude);
@@ -239,7 +310,10 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
         else if (feature.waypoint)
         {
             $scope.globalData.selectedWp = feature.waypoint;
-            $scope.globalData.selectedWp.airport = feature.waypoint.airport; // if set, undefined otherwise
+            // try to add feature object from the cache on the fly
+            mapFeatureService.addFeatureByTypeAndPos(feature.waypoint.type, feature.waypoint.latitude, feature.waypoint.longitude, $scope.globalData.selectedWp);
+            //$scope.globalData.selectedWp.airport = feature.waypoint.airport; // if set, undefined otherwise
+
             $scope.$apply();
 
             $scope.openFeatureOverlay(feature.waypoint.latitude, feature.waypoint.longitude);
@@ -271,17 +345,45 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
                 receiver: feature.acInfo.receiver
             };
 
-            mapService.addOverlay(feature.getGeometry().getCoordinates(), trafficContainer, true);
+            mapService.addOverlay(feature.getGeometry().getCoordinates(), $scope.trafficContainer, true);
             $scope.$apply();
         }
         else if (feature.webcam)
         {
             window.open(feature.webcam.url);
         }
+        else if (feature.smaMeasurement)
+        {
+            //var baseUrl = "http://www.meteoswiss.admin.ch/home/measurement-and-forecasting-systems/land-based-stations/automatisches-messnetz.html?station=";
+            var baseUrl = "http://www.meteoswiss.admin.ch/product/input/smn-stations/docs/";
+            window.open(baseUrl + feature.smaMeasurement.station_id + ".pdf");
+        }
         else if (feature.weatherInfo)
         {
             $scope.selectedMetarTaf = feature.weatherInfo;
-            mapService.addOverlay(feature.getGeometry().getCoordinates(), metarTafContainer, true);
+            mapService.addOverlay(feature.getGeometry().getCoordinates(), $scope.metarTafContainer, true);
+            $scope.$apply();
+        }
+        else if (feature.notam)
+        {
+            $scope.selectedNotam = {
+                id: feature.notam.id,
+                title: metarTafNotamService.getNotamTitle(feature.notam),
+                notams: [ feature.notam ],
+                airport_icao: undefined
+            };
+            mapService.addOverlay(mapService.getMercatorFromPixel(event.pixel[0], event.pixel[1]), $scope.notamContainer, true);
+            $scope.$apply();
+        }
+        else if (feature.notamList)
+        {
+            $scope.selectedNotam = {
+                id: undefined,
+                title: undefined,
+                notams: feature.notamList,
+                airport_icao: undefined
+            };
+            mapService.addOverlay(mapService.getMercatorFromPixel(event.pixel[0], event.pixel[1]), $scope.notamContainer, true);
             $scope.$apply();
         }
     };
@@ -294,12 +396,39 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 	};
 
 
+    $scope.onShowAirportNotams = function()
+    {
+        $scope.selectedNotam = {
+            id: undefined,
+            title: undefined,
+            airport_icao: $scope.globalData.selectedWp.airport.icao,
+            notams: globalData.selectedWp.airport.notams
+        };
+
+        var coords = mapService.getMercatorCoordinates($scope.globalData.selectedWp.airport.latitude, $scope.globalData.selectedWp.airport.longitude);
+        mapService.addOverlay(coords, $scope.notamContainer, true);
+    };
+
+
+    $scope.getFormatedNotamHtml = function(notam)
+    {
+        var subTitle = "<b>" + metarTafNotamService.getNotamTitle(notam) + "</b> ";
+
+        var fromTill = metarTafNotamService.getNotamValidityLt(notam);
+        var validText = "<i>(" + fromTill[0] + " - " + fromTill[1] + ")</i><br />";
+
+        var notamText = notam.all.replace(/\n/g, "<br />");
+
+        return $sce.trustAsHtml(subTitle + validText + notamText);
+    };
+
+
 	$scope.onShowMetarTaf = function()
 	{
 		$scope.selectedMetarTaf = $scope.globalData.selectedWp.airport.weatherInfo;
 		$scope.selectedMetarTaf.airport_icao = $scope.globalData.selectedWp.airport.icao;
 		var coords = mapService.getMercatorCoordinates($scope.globalData.selectedWp.airport.latitude, $scope.globalData.selectedWp.airport.longitude);
-		mapService.addOverlay(coords, metarTafContainer, true);
+		mapService.addOverlay(coords, $scope.metarTafContainer, true);
 	};
 
 
@@ -311,17 +440,23 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
             $scope.selectedLocationName = undefined;
 
         var coords = mapService.getMercatorCoordinates(latitude, longitude);
-        mapService.addOverlay(coords, weatherContainer, true);
+        mapService.addOverlay(coords, $scope.weatherContainer, true);
 
         var span = document.getElementById("windytviframe");
         while (span.firstChild)
             span.removeChild(span.firstChild);
 
-        //<iframe width="800" height="220" src="https://embed.windytv.com/embed2.html?lat=46.9458&lon=7.4713&type=forecast&metricWind=kt&metricTemp=%C2%B0C" frameborder="0"></iframe>
+        // old: <iframe width="800" height="220" src="https://embed.windytv.com/embed2.html?lat=46.9458&lon=7.4713&type=forecast&metricWind=kt&metricTemp=%C2%B0C" frameborder="0"></iframe>
+        // new: <iframe width="650" height="450" src="https://embed.windy.com/embed2.html?lat=45.813&lon=9.844&zoom=6&level=surface&overlay=wind&menu=&message=&marker=&calendar=&pressure=true&type=map&location=coordinates&detail=true&detailLat=46.770&detailLon=8.657&metricWind=kt&metricTemp=%C2%B0C&radarRange=-1" frameborder="0"></iframe>
+
         var iframe = document.createElement('iframe');
-        iframe.src = "https://embed.windytv.com/embed2.html?lat=" + latitude + "&lon=" + longitude + "&type=forecast&metricWind=kt&metricTemp=%C2%B0C";
-        iframe.width = weatherContainer.clientWidth - 2 * 16;
-        iframe.height = 220;
+        //iframe.src = "https://embed.windytv.com/embed2.html?lat=" + latitude + "&lon=" + longitude + "&type=forecast&display=meteogram&metricWind=kt&metricTemp=%C2%B0C";
+        //iframe.src = "https://embed.windy.com/embed2.html?lat=" + latitude + "&lon=" + longitude + "&type=forecast&display=meteogram&metricWind=kt&metricTemp=%C2%B0C";
+        iframe.src = "https://embed.windy.com/embed2.html?lat=" + latitude + "&lon=" + longitude + "&zoom=6";
+        iframe.src += "&level=surface&overlay=wind&menu=&message=&marker=&calendar=&pressure=true&type=map&location=coordinates&detail=true&detailLat=" + latitude + "&detailLon=" + longitude + "&metricWind=kt&metricTemp=%C2%B0C&radarRange=-1";
+        iframe.width = $scope.weatherContainer.clientWidth - 2 * 16;
+        //iframe.height = 280;
+        iframe.height = 480;
         iframe.frameborder = 0;
 
         span.appendChild(iframe);
@@ -331,8 +466,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
     $scope.openFeatureOverlay = function(latitude, longitude)
 	{
 		var coordinates = mapService.getMercatorCoordinates(latitude, longitude);
-
-		mapService.addOverlay(coordinates, featureContainer, true);
+		mapService.addOverlay(coordinates, $scope.featureContainer, true);
 
 		$('#ad_details').hide();
 		$('#ad_charts').hide();
@@ -477,7 +611,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 		$scope.stopFollowTraffic();
 
 		if ($scope.globalData.showTraffic)
-		{				
+		{
 			$scope.globalData.trafficStatus = "waiting";
 
 			if (!$scope.globalData.trafficTimer)
@@ -487,20 +621,35 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 		}
 		else
 		{
-			window.clearInterval($scope.globalData.trafficTimer);
-			$scope.globalData.trafficTimer = undefined;
-			$scope.stopFollowTraffic();
-			mapService.drawTraffic(undefined);
-			$scope.globalData.trafficStatus = "off";
+            $scope.stopTrafficUpdates();
 		}
 	};
 
 
 	$scope.onTrafficTimer = function()
 	{
-	    if ($scope.$route.current.controller == "mapCtrl")
+	    if (!$scope.globalData.showLocation && Date.now() > $scope.globalData.lastActivity + 10 * 60 * 1000)
+        {
+            $scope.stopTrafficUpdates();
+            $scope.showErrorMessage("Traffic updates automatically turned off after 10 minutes of inactivity");
+            $scope.$apply();
+        }
+        else if ($scope.$route.current.controller == "mapCtrl")
+        {
             $scope.updateTraffic();
+        }
 	};
+
+
+	$scope.stopTrafficUpdates = function()
+    {
+        window.clearInterval($scope.globalData.trafficTimer);
+        $scope.globalData.showTraffic = false;
+        $scope.globalData.trafficTimer = undefined;
+        $scope.stopFollowTraffic();
+        mapService.drawTraffic(undefined);
+        $scope.globalData.trafficStatus = "off";
+    };
 
 
 	$scope.updateTraffic = function()
@@ -516,32 +665,32 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
             return;
         }
 
-		var extent = mapService.getViewExtent();
+		var extent = mapService.getViewExtentLatLon();
 
 		trafficService.requestTraffic(extent, $scope.trafficMaxAgeSec, $scope.globalData.settings.maxTrafficAltitudeFt + 1000, $scope.globalData.sessionId, successCallback, errorCallback);
 
 		if ($scope.globalData.trafficStatus != "current")
             $scope.globalData.trafficStatus = "waiting";
 
-		function successCallback(acList)
+		function successCallback(acList, currentTimestamp)
         {
             if (!$scope.globalData.showTraffic)
                 return;
 
             $scope.globalData.trafficStatus = "current";
-            mapService.drawTraffic(acList, $scope.globalData.settings.maxTrafficAltitudeFt);
+            mapService.drawTraffic(acList, $scope.globalData.settings.maxTrafficAltitudeFt, currentTimestamp);
 
             if ($scope.followTrafficAddress)
                 $scope.followTraffic(acList);
         }
 
-        function errorCallback(acList)
+        function errorCallback(acList, currentTimestamp)
         {
             if (!$scope.globalData.showTraffic)
                 return;
 
             $scope.globalData.trafficStatus = "error";
-            mapService.drawTraffic(acList, $scope.globalData.settings.maxTrafficAltitudeFt);
+            mapService.drawTraffic(acList, $scope.globalData.settings.maxTrafficAltitudeFt, currentTimestamp);
         }
 	};
 
@@ -563,8 +712,8 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 
 		$scope.followTrafficLastPosition = currentAcPosition;
 	};
-	
-	
+
+
 	$scope.onFollowSelectedTraffic = function()
 	{
 		if ($scope.globalData.showLocation)
@@ -594,6 +743,54 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 	//endregion
 
 
+    //region METEO
+
+
+    $scope.isMeteoButtonVisible = function()
+    {
+        if ($scope.globalData.showMeteo)
+            return true;
+        else if ($scope.globalData.currentMapPos.zoom < 9)
+            return false;
+        else {
+            var meteoMinLon = 5.8;
+            var meteoMinLat = 45.8;
+            var meteoMaxLon = 10.5;
+            var meteoMaxLat = 47.9;
+            var extent = mapService.getViewExtentLatLon();
+
+            if (extent[0] > meteoMaxLon || extent[1] > meteoMaxLat || extent[2] < meteoMinLon || extent[3] < meteoMinLat)
+                return false;
+            else
+                return true;
+        }
+    };
+
+
+    $scope.onMeteoClicked = function()
+    {
+        $scope.globalData.showMeteo = !$scope.globalData.showMeteo;
+        $scope.updateMeteo();
+    };
+
+
+    $scope.updateMeteo = function()
+    {
+        if ($scope.globalData.showMeteo)
+        {
+            mapService.drawMeteoBg(true);
+            meteoService.getSmaMeasurements(mapService.getViewExtentLatLon(), mapService.drawSmaMeasurements);
+        }
+        else
+        {
+            mapService.drawMeteoBg(false);
+            mapService.drawSmaMeasurements(undefined);
+        }
+    };
+
+    //endregion
+
+
     //region TERRAIN
 
     $scope.onTerrainClicked = function()
@@ -601,13 +798,20 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
         $scope.globalData.showTerrain = !$scope.globalData.showTerrain;
 
         if ($scope.globalData.showTerrain)
-            terrainService.updateTerrain($scope.globalData.navplan.waypoints);
+            terrainService.updateTerrain($scope.globalData.navplan.waypoints, $scope.onTerrainWaypointClicked);
+    };
+
+
+    $scope.onTerrainWaypointClicked = function(waypoint)
+    {
+        var mockFeature = { waypoint : waypoint };
+        $scope.onFeatureSelected(undefined, mockFeature);
     };
 
     //endregion
 
 
-    //region CACHING
+    //region OFFLINE CACHE
 
     $scope.onOfflineCacheClicked = function()
     {
@@ -626,6 +830,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
             setWaypointCacheCookie();
             setChartCacheCookie();
             cacheMapFeatures();
+            cacheNotams();
             updateAppCache();
         }
         else
@@ -733,23 +938,32 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 
             function getChartUrl(filename)
             {
-                return 'charts/' + filename;
+                return 'charts/' + filename + '?v=' + navplanVersion;
             }
         }
 
 
         function cacheMapFeatures()
         {
-            mapFeatureService.getMapFeatures($scope.getNavplanExtentLatLon(), cacheMapFeaturesSuccess, cacheMapFeaturesError);
+            var extent = $scope.getNavplanExtentLatLon();
+            var oversizeExtent = calcOversizeExtent(extent, mapFeatureService.OVERSIZE_FACTOR);
+
+            setCookie("mapfeaturesextent", obj2json(oversizeExtent));
+        }
 
 
-            function cacheMapFeaturesSuccess(mapFeatureList)
+        function cacheNotams()
+        {
+            metarTafNotamService.getNotams($scope.getNavplanExtentLatLon(), [], cacheNotamsSuccess, cacheNotamsError);
+
+
+            function cacheNotamsSuccess(notamList)
             {
-                window.sessionStorage.setItem("mapFeatureCache", obj2json(mapFeatureList));
+                window.sessionStorage.setItem("notamCache", obj2json(notamList));
             }
 
 
-            function cacheMapFeaturesError()
+            function cacheNotamsError()
             {
                 // TODO: cache status => error
             }
@@ -782,6 +996,27 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
     //endregion
 
 
+    //region FULL SCREEN
+
+    $scope.isInFullScreenMode = function()
+    {
+        return isInFullScreenMode();
+    };
+
+
+    $scope.onFullScreenModeClicked = function()
+    {
+        var fsElement = document.getElementById("fullScreenContent");
+
+        if (isInFullScreenMode())
+            stopFullScreenMode();
+        else
+            startFullScreenMode(fsElement);
+    };
+
+    //endregion
+
+
 	//region UTIL FUNCTIONS
 
     $scope.getWpFromFeature = function(feature, latLon)
@@ -791,8 +1026,8 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
                 type: feature.geopoint.type,
                 geopoint: feature.geopoint,
                 id: feature.geopoint.id,
-                freq: '',
-                callsign: '',
+                freq: feature.geopoint.frequency ? feature.geopoint.frequency : "",
+                callsign: feature.geopoint.callsign ? feature.geopoint.callsign : "",
                 checkpoint: feature.geopoint.wpname,
                 airport_icao: '',
                 latitude: feature.geopoint.latitude,
@@ -800,15 +1035,16 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
                 mt: '',
                 dist: '',
                 alt: '',
-                remark: ''
+                remark: '',
+                supp_info: feature.geopoint.supp_info
             };
         }
         else if (feature.airport) {
             return {
                 type: 'airport',
                 airport: feature.airport,
-                freq: getFrequency(feature.airport),
-                callsign: getCallsign(feature.airport),
+                freq: getMainFrequency(feature.airport),
+                callsign: getMainCallsign(feature.airport),
                 checkpoint: feature.airport.icao ? feature.airport.icao : feature.airport.name,
                 airport_icao: feature.airport.icao,
                 latitude: feature.airport.latitude,
@@ -816,7 +1052,8 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
                 mt: '',
                 dist: '',
                 alt: '',
-                remark: ''
+                remark: '',
+                supp_info: getAirportSuppInfoString(feature.airport)
             };
         }
         else if (feature.navaid) {
@@ -831,7 +1068,8 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
                 mt: '',
                 dist: '',
                 alt: '',
-                remark: ''
+                remark: '',
+                supp_info: ''
             };
         }
         else if (feature.reportingpoint) {
@@ -868,7 +1106,8 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
                 alt: alt ? alt : '',
                 ismaxalt: ismaxalt,
                 isminalt: isminalt,
-                remark: feature.reportingpoint.remark
+                remark: feature.reportingpoint.remark,
+                supp_info: feature.reportingpoint.supp_info
             };
         }
         else if (feature.userWaypoint) {
@@ -884,14 +1123,15 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
                 mt: '',
                 dist: '',
                 alt: '',
-                remark: feature.userWaypoint.remark
+                remark: feature.userWaypoint.remark,
+                supp_info: feature.userWaypoint.supp_info
             };
         }
         else
             return undefined;
 
 
-        function getFrequency(airport)
+        function getMainFrequency(airport)
         {
             if (!airport || !airport.radios || airport.radios.length == 0)
                 return '';
@@ -900,13 +1140,17 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
         }
 
 
-        function getCallsign(airport)
+        function getMainCallsign(airport)
         {
             if (!airport || !airport.radios || airport.radios.length == 0)
                 return '';
 
-            var radio = airport.radios[0];
+            return getCallsign(airport.radios[0], airport.country);
+        }
 
+
+        function getCallsign(radio, country)
+        {
             switch (radio.type)
             {
                 case "TOWER" : return "TWR";
@@ -915,8 +1159,9 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
                 case "DEPARTURE" : return "DEP";
                 case "GLIDING" : return "GLD";
                 case "GROUND" : return "GND";
+                case "DELIVERY" : return "DEL";
                 case "CTAF" :
-                    if (airport.country == "CH") // spezialregel nur für country = CH
+                    if (country == "CH") // spezialregel nur für country = CH
                         return "AD";
                     else
                         return "CTAF";
@@ -930,6 +1175,51 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
                 }
                 default : return radio.type;
             }
+        }
+
+
+        function getAirportSuppInfoString(airport)
+        {
+            var i;
+            var suppInfoPart = [];
+
+            // altitude
+            if (airport.elevation)
+                suppInfoPart.push("ELEV:" + $scope.getElevationString(airport.elevation));
+
+            // runways
+            if (airport.runways && airport.runways.length > 0)
+            {
+                var runwayStringList = [];
+
+                for (i = 0; i < airport.runways.length; i++)
+                {
+                    var rwy = airport.runways[i];
+
+                    if (rwy.name.toString().indexOf("GLD") == -1 || airport.runways.length == 1) // skip GLD strip unless it's the only rwy
+                        runwayStringList.push(rwy.name);
+                }
+
+                suppInfoPart.push("RWY:" + runwayStringList.join(","));
+            }
+
+            // frequencies
+            if (airport.radios && airport.radios.length > 0)
+            {
+                var radioStringList = [];
+
+                for (i = 0; i < airport.radios.length; i++)
+                {
+                    var radio = airport.radios[i];
+                    var callsign = getCallsign(radio, airport.country);
+                    if ((radio.type != "GLIDING" && radio.type != "INFO" && radio.type != "FIS" && callsign != "VDF") || airport.radios.length == 1) // skip GLD, FIS, VDF freq unless it's the only frequency
+                        radioStringList.push(callsign + ":" + radio.frequency);
+                }
+
+                suppInfoPart.push(radioStringList.join(" "));
+            }
+
+            return suppInfoPart.join(" ");
         }
     };
 
@@ -975,13 +1265,13 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 
 	$scope.getAgeString = function(dateString)
     {
-        return weatherService.getAgeString(dateString)
+        return metarTafNotamService.getAgeString(dateString)
     };
 
 
     $scope.getTafAgeString = function(weatherInfo)
     {
-        return weatherService.getTafAgeString(weatherInfo)
+        return metarTafNotamService.getTafAgeString(weatherInfo)
     };
 
 
@@ -1030,11 +1320,35 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 	};
 
 
+	$scope.isInFullScreenMode = function()
+    {
+        return (document.fullscreenElement != null
+            || document.webkitFullscreenElement != null
+            || document.mozFullScreenElement != null
+            || document.msFullscreenElement != null
+            || document.fullscreen
+            || document.webkitIsFullScreen
+            || document.mozFullScreen
+            || document.webkitIsFullScreen);
+    };
+
+
 	$scope.resizeMapToWindow = function(event)
 	{
-		$('#map').height($(window).height() - $('#navbarheader').height());
+        if ($scope.isInFullScreenMode())
+        {
+            $('#map').offset({top: 0, left: 0});
+            $('#map').height($(window).height());
+        }
+        else
+        {
+            $('#map').offset({top: $('#navbarheader').height(), left: 0});
+            $('#map').height($(window).height() - $('#navbarheader').height());
+        }
+
 		$('#map').width($(window).width());
 		mapService.updateMapSize();
+		$scope.updateWaypoints();
 	};
 
 
@@ -1045,7 +1359,10 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
                 function(response)
                 {
                     if (response.data.navplan)
+                    {
                         $scope.loadNavplanToGlobalData(response.data.navplan);
+                        $scope.fitView();
+                    }
                     else
                         logResponseError("ERROR loading shared navplan", response);
                 },
@@ -1061,18 +1378,39 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 
     //region INIT MAP & EVENT LISTENERS
 
+
+    $scope.initPosition = function()
+    {
+        if (!$scope.globalData.initialPositionHasBeenSet && navigator.geolocation)
+            navigator.geolocation.getCurrentPosition(setInitialPosition);
+
+
+        function setInitialPosition(position)
+        {
+            mapService.setMapPosition(position.coords.latitude, position.coords.longitude, 11);
+            $scope.globalData.currentMapPos = mapService.getMapPosition();
+            $scope.globalData.initialPositionHasBeenSet = true;
+        }
+    };
+
+
     try
 	{
 		mapService.init(
+            $scope.globalData.currentMapPos,
 			$scope.onMapClicked,
 			$scope.onFeatureSelected,
 			$scope.onMapMoveEnd,
 			$scope.onTrackModifyEnd,
-			$scope.globalData.currentMapPos);
+            $scope.onMapActivityOccured,
+            $scope.onFullScreenModeClicked
+        );
 
-		$scope.updateWaypoints();
-		$scope.updateFlightTrack();
+		$scope.redrawWaypoints();
+		$scope.redrawFlightTrack();
+		$scope.fitView();
 		$scope.resizeMapToWindow();
+        $scope.initPosition();
 	}
 	catch(err)
 	{
@@ -1087,18 +1425,36 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
         };
 
 		writeServerErrLog(errLog);
+		logError(errLog);
 	}
 
+	// navplan broadcast events
+	$scope.$on("redrawWaypoints", $scope.redrawWaypoints);
+	$scope.$on("onTrashClicked", $scope.redrawFlightTrack);
+	$scope.$on("onNavbarCollapsed", $scope.resizeMapToWindow);
 
-    window.removeEventListener("keydown", $scope.onKeyDown);
+	// other event listeners
     window.addEventListener("keydown", $scope.onKeyDown);
-	
-	window.removeEventListener("resize", $scope.resizeMapToWindow);
-	window.addEventListener("resize", $scope.resizeMapToWindow);
+    window.addEventListener("resize", $scope.resizeMapToWindow);
+    document.addEventListener("fullscreenchange", $scope.resizeMapToWindow);
+    document.addEventListener("webkitfullscreenchange", $scope.resizeMapToWindow);
+    document.addEventListener("mozfullscreenchange", $scope.resizeMapToWindow);
+    document.addEventListener("MSFullscreenChange", $scope.resizeMapToWindow);
+
+
+    $scope.$on('$destroy', function()
+    {
+        window.removeEventListener("keydown", $scope.onKeyDown);
+        window.removeEventListener("resize", $scope.resizeMapToWindow);
+        document.removeEventListener("fullscreenchange", $scope.resizeMapToWindow);
+        document.removeEventListener("webkitfullscreenchange", $scope.resizeMapToWindow);
+        document.removeEventListener("mozfullscreenchange", $scope.resizeMapToWindow);
+        document.removeEventListener("MSFullscreenChange", $scope.resizeMapToWindow);
+    });
 
 	if ($route.current.$$route.showtraffic && !$scope.globalData.showTraffic)
 		$scope.onTrafficClicked();
-		
+
 	if ($route.current.params.shareid)
 		$scope.loadSharedNavplan($route.current.params.shareid);
 

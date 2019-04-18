@@ -5,7 +5,7 @@
 	$conn->set_charset("utf8");
 	
 	// clear table
-	$query = "DELETE FROM openaip_navaids2";
+	$query = "DELETE FROM openaip_navaids";
 	$result = $conn->query($query);
 
 	if (!$result)
@@ -35,7 +35,7 @@
 		    /*if ($navaid->COUNTRY != 'CH' && $navaid->ID != 'BLM' && $navaid->ID != 'BN' && $navaid->ID != 'BS')
 		        continue;*/
 
-			$query = "INSERT INTO openaip_navaids2 (type, country, name, kuerzel, latitude, longitude, elevation, frequency, declination, truenorth, lonlat) VALUES (";
+			$query = "INSERT INTO openaip_navaids (type, country, name, kuerzel, latitude, longitude, elevation, frequency, declination, truenorth, lonlat) VALUES (";
 			$query .= " '" . $navaid['TYPE'] . "',";
 			$query .= " '" . $navaid->COUNTRY . "',";
 			$query .= " '" . mysqli_real_escape_string($conn, $navaid->NAME) . "',";

@@ -9,13 +9,16 @@ waypointService.$inject = ['mapService'];
 
 function waypointService(mapService)
 {
-	// service api
+    var wmm = new WorldMagneticModel();
+    //wmm.declination(alt, lat, lon, decyear);
+
+    // service api
 	return {
 		recalcWaypoints: recalcWaypoints
 	};
-	
-	
-	function recalcWaypoints(wps, altWp, magvar, speed)
+
+
+    function recalcWaypoints(wps, altWp, magvar, speed)
 	{
 		var prevWp;
 

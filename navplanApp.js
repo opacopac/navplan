@@ -1,5 +1,5 @@
 // version
-var navplanVersion = "1.4b"; // must be the same as in version.txt
+var navplanVersion = "1.5y"; // must be the same as in version.txt
 
 
 // js error handler
@@ -21,6 +21,7 @@ window.onerror = function(message, url, linenum, colnum, error)
 		};
 
 		writeServerErrLog(errLog);
+		logError(errLog);
 	}
 	
 	displayGenericError();
@@ -41,7 +42,7 @@ $.get("version.txt?q=" + Math.random(),
 
 
 // init app
-var navplanApp = angular.module('navplanApp', [ 'ngRoute', 'ngResource', 'ui.bootstrap' ]);
+var navplanApp = angular.module('navplanApp', [ 'ngRoute', 'ngResource', 'ui.bootstrap', 'ui.sortable' ]);
 
 
 // no hash prefix (!)
@@ -74,7 +75,8 @@ navplanApp.config(function($sceDelegateProvider) {
         // Allow same origin resource loads.
         'self',
         'https://www.aviationweather.gov/gis/scripts/**',
-        'https://public-api.adsbexchange.com/VirtualRadar/**'
+        'https://public-api.adsbexchange.com/VirtualRadar/**',
+        'https://v4p4sz5ijk.execute-api.us-east-1.amazonaws.com/anbdata/states/notams/**'
         // Allow loading from our assets domain.  Notice the difference between * and **.
         //'http://srv*.assets.example.com/**'
     ]);
@@ -96,6 +98,7 @@ navplanApp.config(function($provide) {
 			};
 
 			writeServerErrLog(errLog);
+			logError(errLog);
 		};
 	}]);
 });
