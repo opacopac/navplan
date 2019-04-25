@@ -12,7 +12,8 @@ function trafficService($http)
     var dataSources = { "ogn": "OGN", "adsbexchange": "ADSBX" };
     var positionMethod = { "flarm": "FLARM", "adsb": "ADSB", "mlat" : "MLAT" };
 	var trafficBaseUrl = 'php/ogntraffic.php?v=' + navplanVersion;
-	var adsbExchangeBaseUrl = 'https://public-api.adsbexchange.com/VirtualRadar/AircraftList.json'; //?fAltL=0&fAltU=15000&fSBnd=45.7656&fEBnd=10.7281&fNBnd=47.8556&fWBnd=5.4382';
+	// var adsbExchangeBaseUrl = 'https://public-api.adsbexchange.com/VirtualRadar/AircraftList.json'; //?fAltL=0&fAltU=15000&fSBnd=45.7656&fEBnd=10.7281&fNBnd=47.8556&fWBnd=5.4382';
+    var adsbExchangeBaseUrl = 'https://global.adsbexchange.com/VirtualRadar/AircraftList.json'; //?fAltL=0&fAltU=15000&fSBnd=45.7656&fEBnd=10.7281&fNBnd=47.8556&fWBnd=5.4382';
     var acCache = new AircraftCache();
     var lastExtent = undefined;
 

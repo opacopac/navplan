@@ -356,7 +356,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
         {
             //var baseUrl = "http://www.meteoswiss.admin.ch/home/measurement-and-forecasting-systems/land-based-stations/automatisches-messnetz.html?station=";
             var baseUrl = "http://www.meteoswiss.admin.ch/product/input/smn-stations/docs/";
-            window.open(baseUrl + feature.smaMeasurement.station_id + ".pdf");
+            // window.open(baseUrl + feature.smaMeasurement.station_id + ".pdf");
         }
         else if (feature.weatherInfo)
         {
