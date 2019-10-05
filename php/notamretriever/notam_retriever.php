@@ -55,9 +55,9 @@ foreach ($chunkedCountryList as $countryChunk)
     }
 
     $logger->writelog("INFO", "successful (" . round(1000 * (microtime(true) - $time1)) . "ms)");
-
     $notamList = json_decode($response, JSON_NUMERIC_CHECK);
-
+    $logger->writelog("INFO", count($notamList) . " NOTAMs fetched.");
+	
 
     // delete existing notams from db
     $query = "DELETE FROM icao_notam WHERE country in ('" . join("','", $countryChunk) . "')";
