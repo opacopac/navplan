@@ -12,8 +12,7 @@ function trafficService($http)
     var dataSources = { "ogn": "OGN", "adsbexchange": "ADSBX" };
     var positionMethod = { "flarm": "FLARM", "adsb": "ADSB", "mlat" : "MLAT" };
 	var trafficBaseUrl = 'php/ogntraffic.php?v=' + navplanVersion;
-	// var adsbExchangeBaseUrl = 'https://public-api.adsbexchange.com/VirtualRadar/AircraftList.json'; //?fAltL=0&fAltU=15000&fSBnd=45.7656&fEBnd=10.7281&fNBnd=47.8556&fWBnd=5.4382';
-    var adsbExchangeBaseUrl = 'https://global.adsbexchange.com/VirtualRadar/AircraftList.json'; //?fAltL=0&fAltU=15000&fSBnd=45.7656&fEBnd=10.7281&fNBnd=47.8556&fWBnd=5.4382';
+    var adsbExchangeBaseUrl = 'https://www.navplan.ch/v2/php/Navplan/Traffic/TrafficService.php?action=readadsbextrafficwithdetails'; // &minlon=6.921691064453124&minlat=46.61094866382615&maxlon=7.922820214843749&maxlat=47.20901611815029
     var acCache = new AircraftCache();
     var lastExtent = undefined;
 
@@ -149,30 +148,29 @@ function trafficService($http)
 
 	function readTrafficAdsbExchange(extent, maxagesec, maxHeight, successCallback, errorCallback)
     {
-        var url = adsbExchangeBaseUrl + '?fAltL=0&fAltU=' + maxHeight; //+ '&trFmt=sa';
-        url += '&fWBnd=' + extent[0] + '&fSBnd=' + extent[1] + '&fEBnd=' + extent[2] + '&fNBnd=' + extent[3];
-        //url += "&callback=JSON_CALLBACK";
+        var url = adsbExchangeBaseUrl + '&minlon=' + extent[0] + '&minlat=' + extent[1] + '&maxlon=' + extent[2] + '&maxlat=' + extent[3];
 
-        $http.jsonp(url, {jsonpCallbackParam: 'callback'})
+        $http.get(url)
             .then(
                 function (response) // success
                 {
-                    if (response && response.data && response.data.acList)
+                    if (response && response.data && response.data.aclist)
                     {
-                        var acListAx = response.data.acList;
-                        var receivedTimestampMs = response.data.stm;
+                        var acListAx = response.data.aclist;
+                        var receivedTimestampMs = Date.now();
 
                         for (var i = 0; i < acListAx.length; i++)
                             addOrUpdateAc(
                                 dataSources.adsbexchange,
-                                acListAx[i].Icao,
-                                "ICAO",
+                                acListAx[i].addr[0],
+                                acListAx[i].addr[1],
                                 parseAdsbExchangeAcType(acListAx[i]),
-                                acListAx[i].Reg,
+                                acListAx[i].reg,
                                 getCallsign(acListAx[i]),
                                 getOperatorCallsign(acListAx[i]),
-                                acListAx[i].Mdl,
-                                parseAdsbExchangePositions(acListAx[i], receivedTimestampMs));
+                                acListAx[i].icaotype,
+                                parseAdsbExchangePositions(acListAx[i].poslist[0])
+                            );
 
                         compactAcList(maxagesec, receivedTimestampMs);
 
@@ -192,19 +190,19 @@ function trafficService($http)
 
         function getCallsign(ac)
         {
-            if (!ac.Call)
+            if (!ac.call)
                 return undefined;
 
-            if (!ac.Reg) // no registration -> use call sign
-                return ac.Call;
+            if (!ac.reg) // no registration -> use call sign
+                return ac.call;
 
-            if (ac.Call.match(/^\d.*/)) // only numbers -> skip
+            if (ac.call.match(/^\d.*/)) // only numbers -> skip
                 return undefined;
 
-            if (ac.Call.match(/^.{1,3}$/)) // only 3 letters -> skip
+            if (ac.call.match(/^.{1,3}$/)) // only 3 letters -> skip
                 return undefined;
 
-            return ac.Call;
+            return ac.call;
         }
 
 
@@ -212,29 +210,29 @@ function trafficService($http)
         {
             var opCallsign, icaoCode;
 
-            if (!ac.Call)
+            if (!ac.call)
                 return undefined;
 
-            if (ac.Mil && !ac.OpIcao) // if military but no opcode -> assume tactical call sign
+            if (ac.mil && !ac.opicao) // if military but no opcode -> assume tactical call sign
                 return undefined;
 
-            if (ac.Call.toUpperCase().match(/^[A-Z]{3}\d[A-Z0-9]{0,3}/)) // check for default format (3 letters + 1 digit + 1-3x digit/letter)
+            if (ac.call.toUpperCase().match(/^[A-Z]{3}\d[A-Z0-9]{0,3}/)) // check for default format (3 letters + 1 digit + 1-3x digit/letter)
             {
-                icaoCode = ac.Call.substring(0, 3);
+                icaoCode = ac.call.substring(0, 3);
                 opCallsign = telephony[icaoCode];
 
                 if (opCallsign)
-                    return opCallsign + " " + ac.Call.substring(3);
+                    return opCallsign + " " + ac.call.substring(3);
                 else
                     return undefined;
             }
-            else if (ac.OpIcao && ac.Call.match(/^\d{1,4}$/)) // digits only but opcode present-> assume opcode as operator
+            else if (ac.opicao && ac.call.match(/^\d{1,4}$/)) // digits only but opcode present-> assume opcode as operator
             {
-                icaoCode = ac.OpIcao;
+                icaoCode = ac.opicao;
                 opCallsign = telephony[icaoCode];
 
                 if (opCallsign)
-                    return opCallsign + " " + ac.Call;
+                    return opCallsign + " " + ac.call;
                 else
                     return undefined;
             }
@@ -243,22 +241,17 @@ function trafficService($http)
         }
 
 
-        function parseAdsbExchangePositions(ac, receivedTimestamp)
-        {
+        function parseAdsbExchangePositions(acPos) {
             var pos = new AircraftPosition();
-            var positionList = []; // will contain only one entry
+            pos.longitude = acPos.position.pos[0];
+            pos.latitude = acPos.position.pos[1];
+            pos.method = acPos.method;
+            pos.altitude = acPos.position.alt[0] ? ft2m(acPos.position.alt[0]) : undefined;
+            pos.timestamp = acPos.position.time;
+            pos.receivedTimestamp = acPos.timestamp;
+            pos.receiver = acPos.receiver;
 
-            pos.latitude = ac.Lat;
-            pos.longitude = ac.Long;
-            pos.method = ac.Mlat ? positionMethod.mlat : positionMethod.adsb;
-            pos.altitude = ac.Gnd ? undefined : ft2m(ac.GAlt);
-            pos.timestamp = Math.min(ac.PosTime, receivedTimestamp);
-            pos.receivedTimestamp = receivedTimestamp;
-            pos.receiver = ac.Mlat ? "ADSBExchange (MLAT)" : "ADSBExchange (ADS-B)";
-
-            positionList.push(pos);
-
-            return positionList;
+            return [pos];
         }
 
 
@@ -278,7 +271,7 @@ function trafficService($http)
             Ultralight helicopter 	UHEL
             */
 
-            switch (ac.Type)
+            switch (ac.icaotype)
             {
                 case 'SHIP':
                 case 'BALL':
@@ -296,41 +289,20 @@ function trafficService($http)
                     break;
             }
 
-            /* ADSB Exchange Enums
-             VRS.EngineType =
-             None: 0,
-             Piston: 1,
-             Turbo: 2,
-             Jet: 3,
-             Electric: 4
-
-             VRS.Species =
-             None: 0,
-             LandPlane: 1,
-             SeaPlane: 2,
-             Amphibian: 3,
-             Helicopter: 4,
-             Gyrocopter: 5,
-             Tiltwing: 6,
-             GroundVehicle: 7,
-             Tower: 8 */
-
-            switch (ac.Species)
+            switch (ac.acclass)
             {
-                case 1:
-                case 2:
-                case 3:
-                case 6:
-                    if (ac.EngType == 3)
+                case 'L': // LANDPLANE
+                case 'S': // SEAPLANE
+                case 'A': // AMPHIBIAN
+                case 'T': // TILTROTOR
+                    if (ac.engclass === 'J') // JET
                         return "JET_AIRCRAFT";
                     else
                         return "POWERED_AIRCRAFT";
-                case 4:
-                case 5:
+                case 'H': // HELICOPTER
+                case 'G': // GYROCOPTER
                     return "HELICOPTER_ROTORCRAFT";
                     break;
-                case 8:
-                    return "STATIC_OBJECT";
                 default:
                     return "UNKNOWN";
             }

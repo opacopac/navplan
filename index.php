@@ -35,7 +35,7 @@
 	<link rel="icon" type="image/png" href="icon/favicon.png" />
 	<!-- css -->
 	<link rel="stylesheet" href="bootstrap/3.3.7/bootstrap.min.css">
-	<link rel="stylesheet" href="openlayers/4.4.0/ol.css">
+    <link rel="stylesheet" href="openlayers/4.6.5/ol.css">
 	<link rel="stylesheet" href="css/arial-narrow.css" type="text/css" />
     <link rel="stylesheet" href="font-awesome/css/font-awesome.min.css">
 	<link rel="stylesheet" href="css/navplan.css?v=<?php echo $ver ?>">
@@ -51,8 +51,8 @@
 	<script src="bootstrap/3.3.7/bootstrap.min.js"></script>
 	<script src="js/ui-bootstrap-tpls-1.3.2.min.js"></script>
     <script src="js/sortable.min.js"></script>
-	<script src="openlayers/4.4.0/ol.js"></script>
-    <!--<script src="openlayers/4.4.0/ol-debug.js"></script>-->
+    <script src="openlayers/4.6.5/ol.js"></script>
+    <!--<script src="openlayers/4.6.5/ol-debug.js"></script>-->
 	<script src="js/turf.min.js"></script>
     <script src="js/WorldMagneticModel.js?v=<?php echo $ver ?>"></script>
     <script src="js/telephony.js?v=<?php echo $ver ?>"></script>
