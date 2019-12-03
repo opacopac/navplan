@@ -1373,21 +1373,32 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
             );
     };
 
+
     //endregion
 
 
     //region INIT MAP & EVENT LISTENERS
 
 
-    $scope.initPosition = function()
-    {
-        if (!$scope.globalData.initialPositionHasBeenSet && navigator.geolocation)
+    $scope.initPosition = function() {
+        if ($route.current.params.lonlatzoom) {
+            var lonLatZoom = $route.current.params.lonlatzoom.split(",");
+            if (lonLatZoom && lonLatZoom.length === 3) {
+                setInitialPosition(
+                    {coords: {longitude: parseFloat(lonLatZoom[0]), latitude: parseFloat(lonLatZoom[1])}},
+                    parseInt(lonLatZoom[2])
+                );
+            }
+        } else if (navigator.geolocation && !$scope.globalData.initialPositionHasBeenSet) {
             navigator.geolocation.getCurrentPosition(setInitialPosition);
+        }
 
 
-        function setInitialPosition(position)
-        {
-            mapService.setMapPosition(position.coords.latitude, position.coords.longitude, 11);
+        function setInitialPosition(position, zoom) {
+            if (!zoom)
+                zoom = 11;
+
+            mapService.setMapPosition(position.coords.latitude, position.coords.longitude, zoom);
             $scope.globalData.currentMapPos = mapService.getMapPosition();
             $scope.globalData.initialPositionHasBeenSet = true;
         }
