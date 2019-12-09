@@ -2,6 +2,8 @@
 /charts
 /data_import/.htaccess
 /data_import/geonames
+/data_import/geonames_codes
+/data_import/lfr_ch
 /data_import/openaip_airports*
 /data_import/openaip_airspace*
 /data_import/openaip_navaids*
