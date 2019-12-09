@@ -3,8 +3,8 @@ include_once "../config.php";
 include_once "../helper.php";
 include_once "../logger.php";
 
-$smaMeasurementsUrl = "http://data.geo.admin.ch/ch.meteoschweiz.swissmetnet/VQHA69.csv";
-
+//$smaMeasurementsUrl = "http://data.geo.admin.ch/ch.meteoschweiz.swissmetnet/VQHA69.csv";
+$smaMeasurementsUrl = "https://data.geo.admin.ch/ch.meteoschweiz.messwerte-aktuell/VQHA80.csv";
 
 // open log file & db connection
 $logger = new Logger(NULL);
@@ -47,23 +47,24 @@ $logger->writelog("INFO", "processing measurement lines");
 
 for ($lineNum = 3; $lineNum < count($measurementList); $lineNum++)
 {
-    $values = explode("|", $measurementList[$lineNum]);
+    $values = explode(";", $measurementList[$lineNum]);
 
-    if (count($values) != 12)
+    if (count($values) != 22)
         continue;
 
-    $station_id = checkEscapeString($conn, $values[0], 3, 3);
-    $measurement_time = getDbTimeString(strtotime($values[1]));
-    $temp_c = $values[2] == "-" ? "NULL" : checkNumeric($values[2]);
-    $sun_min = $values[3] == "-" ? "NULL" : checkNumeric($values[3]);
-    $precip_mm = $values[4] == "-" ? "NULL" : checkNumeric($values[4]);
-    $wind_dir = $values[5] == "-" ? "NULL" : checkNumeric($values[5]);
-    $wind_speed_kmh = $values[6] == "-" ? "NULL" : checkNumeric($values[6]);
-    $qnh_hpa = $values[7] == "-" ? "NULL" : checkNumeric($values[7]);
-    $wind_gusts_kmh = $values[8] == "-" ? "NULL" : checkNumeric($values[8]);
-    $humidity_pc = $values[9] == "-" ? "NULL" : checkNumeric($values[9]);
-    $qfe_hpa = $values[10] == "-" ? "NULL" : checkNumeric($values[10]);
-    $qff_hpa = $values[11] == "-" ? "NULL" : checkNumeric($values[11]);
+    // https://data.geo.admin.ch/ch.meteoschweiz.messwerte-aktuell/info/VQHA80_de.txt
+    $station_id = checkEscapeString($conn, $values[0], 3, 3); // stn
+    $measurement_time = getDbTimeString(strtotime($values[1])); // time
+    $temp_c = $values[2] == "-" ? "NULL" : checkNumeric($values[2]); // tre200s0
+    $precip_mm = $values[3] == "-" ? "NULL" : checkNumeric($values[3]); // rre150z0
+    $sun_min = $values[4] == "-" ? "NULL" : checkNumeric($values[4]); // sre000z0
+    $wind_dir = $values[8] == "-" ? "NULL" : checkNumeric($values[8]); // dkl010z0
+    $wind_speed_kmh = $values[9] == "-" ? "NULL" : checkNumeric($values[9]); // fu3010z0
+    $qnh_hpa = $values[13] == "-" ? "NULL" : checkNumeric($values[13]); // pp0qnhs0
+    $wind_gusts_kmh = $values[10] == "-" ? "NULL" : checkNumeric($values[10]); // fu3010z1
+    $humidity_pc = $values[6] == "-" ? "NULL" : checkNumeric($values[6]); // ure200s0
+    $qfe_hpa = $values[11] == "-" ? "NULL" : checkNumeric($values[11]); // prestas0
+    $qff_hpa = $values[12] == "-" ? "NULL" : checkNumeric($values[12]); // pp0qffs0
 
     // write measurements to db
     $query = "INSERT INTO meteo_sma_measurements";

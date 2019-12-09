@@ -51,13 +51,19 @@ function locationService()
 
 		function onPositionUpdate(position)
 		{
-			// add latest pos
+			// only update positions after >=2 sec
+			lastPos = lastPositions.length > 0 ? lastPositions[lastPositions.length - 1] : undefined;
+			if (lastPos && position.timestamp - lastPos.timestamp < 2000) {
+				return;
+			}
+
 			lastPositions.push({
 				latitude: position.coords.latitude,
 				longitude: position.coords.longitude,
 				altitude: position.coords.altitude,
 				timestamp: position.timestamp
 			});
+
 
 			if (successCallback)
 				successCallback(position);
