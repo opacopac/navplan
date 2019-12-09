@@ -1,1 +1,9 @@
-php/config_orig.php
+/.idea
+/charts
+/data_import/.htaccess
+/data_import/geonames
+/data_import/openaip_airports*
+/data_import/openaip_airspace*
+/data_import/openaip_navaids*
+/data_import/vfrm_charts_pdf*
+/php/config_orig.php
