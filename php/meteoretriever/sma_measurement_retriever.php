@@ -47,24 +47,24 @@ $logger->writelog("INFO", "processing measurement lines");
 
 for ($lineNum = 3; $lineNum < count($measurementList); $lineNum++)
 {
+    // https://data.geo.admin.ch/ch.meteoschweiz.messwerte-aktuell/info/VQHA80_de.txt
     $values = explode(";", $measurementList[$lineNum]);
 
     if (count($values) != 22)
         continue;
 
-    // https://data.geo.admin.ch/ch.meteoschweiz.messwerte-aktuell/info/VQHA80_de.txt
-    $station_id = checkEscapeString($conn, $values[0], 3, 3); // stn
+    $station_id = getStationId($conn, $values);
     $measurement_time = getDbTimeString(strtotime($values[1])); // time
-    $temp_c = $values[2] == "-" ? "NULL" : checkNumeric($values[2]); // tre200s0
-    $precip_mm = $values[3] == "-" ? "NULL" : checkNumeric($values[3]); // rre150z0
-    $sun_min = $values[4] == "-" ? "NULL" : checkNumeric($values[4]); // sre000z0
-    $wind_dir = $values[8] == "-" ? "NULL" : checkNumeric($values[8]); // dkl010z0
-    $wind_speed_kmh = $values[9] == "-" ? "NULL" : checkNumeric($values[9]); // fu3010z0
-    $qnh_hpa = $values[13] == "-" ? "NULL" : checkNumeric($values[13]); // pp0qnhs0
-    $wind_gusts_kmh = $values[10] == "-" ? "NULL" : checkNumeric($values[10]); // fu3010z1
-    $humidity_pc = $values[6] == "-" ? "NULL" : checkNumeric($values[6]); // ure200s0
-    $qfe_hpa = $values[11] == "-" ? "NULL" : checkNumeric($values[11]); // prestas0
-    $qff_hpa = $values[12] == "-" ? "NULL" : checkNumeric($values[12]); // pp0qffs0
+    $temp_c = getTempC($values);
+    $precip_mm = getPrecipMm($values);
+    $sun_min = getSunMin($values);
+    $wind_dir = getWindDir($values);
+    $wind_speed_kmh = getWindSpeedKmh($values);
+    $qnh_hpa = getQnhHpa($values);
+    $wind_gusts_kmh = getWindGustsKmh($values);
+    $humidity_pc = getHumidityPerc($values);
+    $qfe_hpa = getQfeHpa($values);
+    $qff_hpa = getQffHpa($values);
 
     // write measurements to db
     $query = "INSERT INTO meteo_sma_measurements";
@@ -98,3 +98,80 @@ for ($lineNum = 3; $lineNum < count($measurementList); $lineNum++)
 $conn->close();
 
 $logger->writelog("INFO", "finished successfully.");
+
+
+function getStationId($conn, $values) {
+    return checkEscapeString($conn, $values[0], 3, 3); // stn
+}
+
+
+function getTempC($values) {
+    return getFirstAvailableValueOrNullString([$values[2], $values[19]]); // tre200s0, ta1tows0
+}
+
+
+function getPrecipMm($values) {
+    return getNumericOrNullString($values[3]); // rre150z0
+}
+
+
+function getSunMin($values) {
+    return getNumericOrNullString($values[4]); // sre000z0
+}
+
+
+function getQnhHpa($values) {
+    return getNumericOrNullString($values[13]); // pp0qnhs0
+}
+
+
+function getQfeHpa($values) {
+    return getNumericOrNullString($values[11]); // prestas0
+}
+
+
+function getQffHpa($values) {
+    return getNumericOrNullString($values[12]); // pp0qffs0
+}
+
+
+function getHumidityPerc($values) {
+    return getFirstAvailableValueOrNullString([$values[6], $values[20]]); // ure200s0, uretows0
+}
+
+
+function getWindDir($values) {
+    return getFirstAvailableValueOrNullString([$values[8], $values[16]]); // dkl010z0, dv1towz0
+}
+
+
+function getWindSpeedKmh($values) {
+    return getFirstAvailableValueOrNullString([$values[9], $values[17]]); // fu3010z0, fu3towz0
+}
+
+
+function getWindGustsKmh($values) {
+    return getFirstAvailableValueOrNullString([$values[10], $values[18]]); // fu3010z1, fu3towz1
+}
+
+
+function getFirstAvailableValueOrNullString($valueList) {
+    foreach ($valueList as $value) {
+        $valueOrNullString = getNumericOrNullString($value);
+
+        if ($valueOrNullString !== "NULL") {
+            return $valueOrNullString;
+        }
+    }
+
+    return "NULL";
+}
+
+
+function getNumericOrNullString($value) {
+    if (is_numeric($value)) {
+        return $value;
+    } else {
+        return "NULL";
+    }
+}
