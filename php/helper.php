@@ -579,6 +579,20 @@ function array_implode($glue, $separator, $array)
 //endregion
 
 
+//region TYPE CONVERSIONS
+
+function intvalOrNull($value) {
+    if ($value === NULL) {
+        return NULL;
+    } else {
+        return intval($value);
+    }
+}
+
+
+//endregion
+
+
 function printLine($text)
 {
     if ($text)

@@ -35,15 +35,15 @@
         while ($rs = $result->fetch_array(MYSQLI_ASSOC))
         {
             $webcams[] = array(
-                id => $rs["id"],
+                id => intval($rs["id"]),
                 name => $rs["name"],
                 url => $rs["url"],
-                latitude => $rs["latitude"],
-                longitude => $rs["longitude"]
+                latitude => floatval($rs["latitude"]),
+                longitude => floatval($rs["longitude"])
             );
         }
 
-        echo json_encode(array("webcams" => $webcams), JSON_NUMERIC_CHECK);
+        echo json_encode(array("webcams" => $webcams));
 
         $conn->close();
     }

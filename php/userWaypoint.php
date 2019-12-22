@@ -71,18 +71,18 @@
             while ($rs = $result->fetch_array(MYSQLI_ASSOC))
             {
                 $userWps[] = array(
-                    id => $rs["id"],
+                    id => intval($rs["id"]),
                     type => $rs["type"],
                     name => $rs["name"],
-                    latitude => $rs["latitude"],
-                    longitude => $rs["longitude"],
+                    latitude => floatval($rs["latitude"]),
+                    longitude => floatval($rs["longitude"]),
                     remark => $rs["remark"],
                     supp_info => $rs["supp_info"]
                 );
             }
         }
 
-		echo json_encode(array("userWaypoints" => $userWps), JSON_NUMERIC_CHECK);
+		echo json_encode(array("userWaypoints" => $userWps));
 	}
 		
 		
@@ -116,7 +116,7 @@
 		if ($result === FALSE)
 			die("error creating user waypoint: " . $conn->error . " query:" . $query);
 
-		echo json_encode(array("success" => 1), JSON_NUMERIC_CHECK);
+		echo json_encode(array("success" => 1));
 	}
 
 
@@ -157,7 +157,7 @@
 		if ($result === FALSE)
 			die("error updating user waypoint: " . $conn->error . " query:" . $query);
 
-		echo json_encode(array("success" => 1), JSON_NUMERIC_CHECK);
+		echo json_encode(array("success" => 1));
 	}
 	
 	
@@ -187,6 +187,6 @@
 		else
 			die("no valid user / waypoint found");
 
-		echo json_encode(array("success" => 1), JSON_NUMERIC_CHECK);
+		echo json_encode(array("success" => 1));
 	}	
 ?>

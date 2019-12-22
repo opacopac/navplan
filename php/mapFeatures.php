@@ -35,8 +35,9 @@ $return_object = json_encode(
         "airspaces" => $airspaces,
         "reportingPoints" => $reportingPoints,
         "userPoints" => $userPoints,
-        "webcams" => $webcams),
-    JSON_NUMERIC_CHECK);
+        "webcams" => $webcams
+    )
+);
 
 header("Content-Type: application/json; charset=UTF-8");
 
@@ -64,17 +65,17 @@ function getNavaids($extent)
             $unit = "kHz";
 
         $navaids[] = array(
-            id => $rs["id"],
+            id => intval($rs["id"]),
             type => $rs["type"],
             kuerzel => $rs["kuerzel"],
             name => $rs["name"],
             latitude => reduceDegAccuracy($rs["latitude"], "NAVAID"),
             longitude => reduceDegAccuracy($rs["longitude"], "NAVAID"),
-            elevation => $rs["elevation"],
+            elevation => floatval($rs["elevation"]),
             frequency => $rs["frequency"],
             unit => $unit,
-            declination => $rs["declination"],
-            truenorth => $rs["truenorth"]
+            declination => floatval($rs["declination"]),
+            truenorth => intval($rs["truenorth"])
         );
     }
 
@@ -102,14 +103,14 @@ function getAirports($extent, $email)
     {
         // build return object
         $ap = array(
-            id => $rs["id"],
+            id => intval($rs["id"]),
             type => $rs["type"],
             name => $rs["name"],
             icao => $rs["icao"],
             country => $rs["country"],
             latitude => reduceDegAccuracy($rs["latitude"], "AIRPORT"),
             longitude => reduceDegAccuracy($rs["longitude"], "AIRPORT"),
-            elevation => $rs["elevation"],
+            elevation => floatval($rs["elevation"]),
             runways => [],
             radios => [],
             webcams => [],
@@ -164,16 +165,16 @@ function getAirports($extent, $email)
         $runway = array(
             name => $rs["name"],
             surface => $rs["surface"],
-            length => $rs["length"],
-            width => $rs["width"],
-            direction1 => $rs["direction1"],
-            direction2 => $rs["direction2"],
-            tora1 => $rs["tora1"],
-            tora2 => $rs["tora2"],
-            lda1 => $rs["lda1"],
-            lda2 => $rs["lda2"],
-            papi1 => $rs["papi1"],
-            papi2 => $rs["papi2"]
+            length => floatval($rs["length"]),
+            width => floatval($rs["width"]),
+            direction1 => intval($rs["direction1"]),
+            direction2 => intval($rs["direction2"]),
+            tora1 => intvalOrNull($rs["tora1"]),
+            tora2 => intvalOrNull($rs["tora2"]),
+            lda1 => intvalOrNull($rs["lda1"]),
+            lda2 => intvalOrNull($rs["lda2"]),
+            papi1 => intvalOrNull($rs["papi1"]),
+            papi2 => intvalOrNull($rs["papi2"])
         );
 
         // add to airport object
@@ -265,14 +266,14 @@ function getAirports($extent, $email)
     while ($rs = $result->fetch_array(MYSQLI_ASSOC))
     {
         $chart = array(
-            id => $rs["id"],
+            id => intval($rs["id"]),
             source => $rs["source"],
             type => $rs["type"],
             filename => $rs["filename"],
-            mercator_n => $rs["mercator_n"],
-            mercator_s => $rs["mercator_s"],
-            mercator_e => $rs["mercator_e"],
-            mercator_w => $rs["mercator_w"]
+            mercator_n => intvalOrNull($rs["mercator_n"]),
+            mercator_s => intvalOrNull($rs["mercator_s"]),
+            mercator_e => intvalOrNull($rs["mercator_e"]),
+            mercator_w => intvalOrNull($rs["mercator_w"])
         );
 
         // add to airport object
@@ -399,20 +400,20 @@ function getAirspaces($extent)
 
         // build airspace object
         $airspaces[$rs["aip_id"]] = array(
-            id => (int)$rs["id"],
-            aip_id => (int)$rs["aip_id"],
+            id => intval($rs["id"]),
+            aip_id => intval($rs["aip_id"]),
             category => $rs["category"],
             country => $rs["country"],
             name => $rs["name"],
             alt => array(
                 top => array(
                     ref => $rs["alt_top_reference"],
-                    height => $rs["alt_top_height"],
+                    height => intval($rs["alt_top_height"]),
                     unit => $rs["alt_top_unit"]
                 ),
                 bottom => array(
                     ref => $rs["alt_bottom_reference"],
-                    height => $rs["alt_bottom_height"],
+                    height => intval($rs["alt_bottom_height"]),
                     unit => $rs["alt_bottom_unit"]
                 )
             ),
@@ -447,7 +448,7 @@ function getWebcams($minLon, $minLat, $maxLon, $maxLat)
     while ($rs = $result->fetch_array(MYSQLI_ASSOC))
     {
         $webcams[] = array(
-            id => $rs["id"],
+            id => intval($rs["id"]),
             name => $rs["name"],
             url => $rs["url"],
             latitude => reduceDegAccuracy($rs["latitude"], "WEBCAM"),
@@ -474,28 +475,21 @@ function getReportingPoints($extent)
     while ($rs = $result->fetch_array(MYSQLI_ASSOC))
     {
         if ($rs["polygon"])
-        {
-            // prepare coordinates
-            $polygon = [];
-            $coord_pairs = explode(",", $rs["polygon"]);
-
-            foreach ($coord_pairs as $latlon)
-                $polygon[] = explode(" ", trim($latlon));
-        }
+            $polygon = convertDbPolygonToArray($rs["polygon"]);
         else
             $polygon = NULL;
 
 
         $reportingpoints[] = array(
-            id => $rs["id"],
+            id => intval($rs["id"]),
             type => $rs["type"],
             airport_icao => $rs["airport_icao"],
             name => $rs["name"],
-            heli => $rs["heli"],
-            inbd_comp => $rs["inbd_comp"],
-            outbd_comp => $rs["outbd_comp"],
-            min_ft => $rs["min_ft"],
-            max_ft => $rs["max_ft"],
+            heli => intvalOrNull($rs["heli"]),
+            inbd_comp => intvalOrNull($rs["inbd_comp"]),
+            outbd_comp => intvalOrNull($rs["outbd_comp"]),
+            min_ft => intvalOrNull($rs["min_ft"]),
+            max_ft => intvalOrNull($rs["max_ft"]),
             latitude => reduceDegAccuracy($rs["latitude"], "REPORTINGPOINT"),
             longitude => reduceDegAccuracy($rs["longitude"], "REPORTINGPOINT"),
             polygon => $polygon
@@ -527,11 +521,11 @@ function getUserPoints($email, $token, $minLon, $minLat, $maxLon, $maxLat)
         while ($rs = $result->fetch_array(MYSQLI_ASSOC))
         {
             $userPoints[] = array(
-                id => $rs["id"],
+                id => intval($rs["id"]),
                 type => $rs["type"],
                 name => $rs["name"],
-                latitude => $rs["latitude"],
-                longitude => $rs["longitude"],
+                latitude => floatval($rs["latitude"]),
+                longitude => floatval($rs["longitude"]),
                 remark => $rs["remark"],
                 supp_info => $rs["supp_info"]
             );

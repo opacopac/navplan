@@ -168,7 +168,7 @@ function searchByName($search, $email, $token)
     $geonamesList = buildGeonamesList($result, true, null);
 
     // build return object
-    print json_encode(array("geonames" => $geonamesList, "notams" => []), JSON_NUMERIC_CHECK);
+    print json_encode(array("geonames" => $geonamesList, "notams" => []));
 
 
     $conn->close();
@@ -259,7 +259,7 @@ function searchByPosition($lat, $lon, $rad, $minNotamTime, $maxNotamTime, $email
 
 
     // build return object
-    print json_encode(array("geonames" => $geonamesList, "notams" => $notamList), JSON_NUMERIC_CHECK);
+    print json_encode(array("geonames" => $geonamesList, "notams" => $notamList));
 
 
     $conn->close();
@@ -332,7 +332,7 @@ function buildGeonamesList($result, $renameDuplicates, $lonLat)
     {
         $geoname = array(
             type => $rs["type"],
-            id => $rs["id"],
+            id => intval($rs["id"]),
             name => $rs["name"],
             wpname => $rs["wpname"],
             country => $rs["country"] ? $rs["country"] : "",
@@ -341,9 +341,9 @@ function buildGeonamesList($result, $renameDuplicates, $lonLat)
             frequency => $rs["frequency"],
             callsign => $rs["callsign"],
             airport_icao => $rs["airport_icao"],
-            latitude => $rs["latitude"],
-            longitude => $rs["longitude"],
-            elevation => $rs["elevation"] ? $rs["elevation"] : $terrainHelper->getElevationMeters([$rs["longitude"], $rs["latitude"]])
+            latitude => floatval($rs["latitude"]),
+            longitude => floatval($rs["longitude"]),
+            elevation => $rs["elevation"] ? floatval($rs["elevation"]) : $terrainHelper->getElevationMeters([$rs["longitude"], $rs["latitude"]])
         );
 
         $geonames[] = $geoname;

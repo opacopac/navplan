@@ -88,12 +88,12 @@ function readNavplanList($email, $token)
     while ($row = $result->fetch_array(MYSQLI_ASSOC))
     {
         $navplans[] = array(
-            id => $row["nav_id"],
+            id => intval($row["nav_id"]),
             title => $row["nav_title"]
         );
     }
 
-    echo json_encode(array("navplanList" => $navplans), JSON_NUMERIC_CHECK);
+    echo json_encode(array("navplanList" => $navplans));
 }
 
 
@@ -114,11 +114,11 @@ function readNavplan($navplan_id, $email, $token)
     if ($result->num_rows > 0)
     {
         $row = $result->fetch_assoc();
-        $navplan["id"] = $row["id"];
+        $navplan["id"] = intval($row["id"]);
         $navplan["title"] = $row["title"];
-        $navplan["aircraft_speed"] = $row["aircraft_speed"];
-        $navplan["aircraft_consumption"] = $row["aircraft_consumption"];
-        $navplan["extra_fuel"] = $row["extra_fuel"];
+        $navplan["aircraft_speed"] = intval($row["aircraft_speed"]);
+        $navplan["aircraft_consumption"] = intval($row["aircraft_consumption"]);
+        $navplan["extra_fuel"] = intval($row["extra_fuel"]);
         $navplan["comments"] = $row["comments"];
     }
     else
@@ -130,7 +130,9 @@ function readNavplan($navplan_id, $email, $token)
     $navplan["waypoints"] = $wpalt["waypoints"];
     $navplan["alternate"] = $wpalt["alternate"];
 
-    echo json_encode(array("navplan" => $navplan), JSON_NUMERIC_CHECK);
+    // var_dump($navplan);
+
+    echo json_encode(array("navplan" => $navplan));
 }
 
 
@@ -150,11 +152,11 @@ function readSharedNavplan($share_id)
     if ($result->num_rows > 0)
     {
         $row = $result->fetch_assoc();
-        $navplan["id"] = $row["id"];
+        $navplan["id"] = intval($row["id"]);
         $navplan["title"] = $row["title"];
-        $navplan["aircraft_speed"] = $row["aircraft_speed"];
-        $navplan["aircraft_consumption"] = $row["aircraft_consumption"];
-        $navplan["extra_fuel"] = $row["extra_fuel"];
+        $navplan["aircraft_speed"] = intval($row["aircraft_speed"]);
+        $navplan["aircraft_consumption"] = intval($row["aircraft_consumption"]);
+        $navplan["extra_fuel"] = intval($row["extra_fuel"]);
         $navplan["comments"] = $row["comments"];
     }
     else
@@ -168,7 +170,7 @@ function readSharedNavplan($share_id)
     $navplan["id"] = NULL;
 
 
-    echo json_encode(array("navplan" => $navplan), JSON_NUMERIC_CHECK);
+    echo json_encode(array("navplan" => $navplan));
 }
 
 
@@ -195,12 +197,12 @@ function readNavplanWaypoints($navplanId)
             callsign => $row["callsign"],
             checkpoint => $row["checkpoint"],
             airport_icao => $row["airport_icao"],
-            latitude => $row["latitude"],
-            longitude => $row["longitude"],
+            latitude => floatval($row["latitude"]),
+            longitude => floatval($row["longitude"]),
             alt => $row["alt"],
-            isminalt => $row["isminalt"],
-            ismaxalt => $row["ismaxalt"],
-            isaltatlegstart => $row["isaltatlegstart"],
+            isminalt => intval($row["isminalt"]),
+            ismaxalt => intval($row["ismaxalt"]),
+            isaltatlegstart => intval($row["isaltatlegstart"]),
             remark => $row["remark"],
             supp_info => $row["supp_info"]
         );
@@ -257,7 +259,7 @@ function updateNavplan($navplan, $email, $token)
     createWaypoints($conn, $navplan["waypoints"], $navplan["alternate"], $navplan["id"]);
 
 
-    echo json_encode(array("success" => 1), JSON_NUMERIC_CHECK);
+    echo json_encode(array("success" => 1));
 }
 
 
@@ -302,7 +304,7 @@ function createNavplan($navplan, $email, $token)
     createWaypoints($conn, $navplan["waypoints"], $navplan["alternate"], $navplan_id);
 
 
-    echo json_encode(array("navplan_id" => $navplan_id), JSON_NUMERIC_CHECK);
+    echo json_encode(array("navplan_id" => $navplan_id));
 }
 
 
@@ -352,7 +354,7 @@ function createSharedNavplan($navplan)
     }
 
 
-    echo json_encode(array("share_id" => $share_id), JSON_NUMERIC_CHECK);
+    echo json_encode(array("share_id" => $share_id));
 }
 
 
@@ -383,7 +385,7 @@ function deleteNavplan($navplan_id, $email, $token)
         die("error deleting navplan: " . $conn->error . " query:" . $query);
 
 
-    echo json_encode(array("success" => 1), JSON_NUMERIC_CHECK);
+    echo json_encode(array("success" => 1));
 }
 
 
