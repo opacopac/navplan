@@ -379,8 +379,8 @@ function buildGeonamesList($result, $renameDuplicates, $lonLat)
             frequency => "",
             callsign => "",
             airport_icao => "",
-            latitude => $lonLat[1],
-            longitude => $lonLat[0],
+            latitude => floatval($lonLat[1]),
+            longitude => floatval($lonLat[0]),
             elevation => $terrainHelper->getElevationMeters($lonLat)
         );
 
