@@ -1,4 +1,4 @@
-www.Navplan.ch
+Navplan.ch
 
 VFR flight planning online. Open-source, non-commercial hobbyist project with a main focus on Switzerland.
 
