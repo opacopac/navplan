@@ -22,6 +22,7 @@ $corrLines = array(
 	array('type' => 'CORR','aip_country' => 'CH','aip_type' => 'HELI_CIVIL','aip_name' => 'REGIONALSPITAL DAVOS','corr_type' => 'HELI_HOSPITAL'),
 	array('type' => 'CORR','aip_country' => 'CH','aip_type' => 'HELI_CIVIL','aip_name' => 'REGIONALSPITAL LOCARNO','corr_type' => 'HELI_HOSPITAL'),
 	array('type' => 'CORR','aip_country' => 'CH','aip_type' => 'HELI_CIVIL','aip_name' => 'REGIONALSPITAL LUGANO CIVICO','corr_type' => 'HELI_HOSPITAL'),
+	array('type' => 'CORR','aip_country' => 'CH','aip_type' => 'HELI_CIVIL','aip_name' => 'SCHWEIZER PARAPLEHIKER ZENTRUM NOTTWIL','corr_type' => 'HELI_HOSPITAL'),
 	array('type' => 'CORR','aip_country' => 'CH','aip_type' => 'HELI_CIVIL','aip_name' => 'SPITAL APPENZELL','corr_type' => 'HELI_HOSPITAL'),
 	array('type' => 'CORR','aip_country' => 'CH','aip_type' => 'HELI_CIVIL','aip_name' => 'SPITAL GRABS','corr_type' => 'HELI_HOSPITAL'),
 	array('type' => 'CORR','aip_country' => 'CH','aip_type' => 'HELI_CIVIL','aip_name' => 'SPITAL HERISAU','corr_type' => 'HELI_HOSPITAL'),
