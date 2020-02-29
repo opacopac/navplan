@@ -261,10 +261,7 @@ class TerrainHelper
     {
         $query = "SELECT air.* ";
         $query .= " FROM openaip_airspace AS air";
-        $query .= "   LEFT JOIN airspace_corr AS cor ON cor.aip_id = air.aip_id";
         $query .= " WHERE";
-        $query .= "  (cor.type IS NULL OR cor.type != 'HIDE') ";
-        $query .= "    AND ";
         $query .= "  air.category NOT IN ('FIR', 'UIR') ";
         $query .= "    AND ";
         $query .= "  ST_INTERSECTS(ST_GEOMFROMTEXT('LINESTRING(" . $pos1[0] . " " . $pos1[1] . "," .  $pos2[0] . " " . $pos2[1] . ")'), extent) LIMIT " . self::MAX_AIRSPACES_PER_LEG;
