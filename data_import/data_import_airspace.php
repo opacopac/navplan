@@ -4,6 +4,34 @@ include "../php/helper.php";
 
 const START_NUM_CORR_ADD_ENTRIES = 999000000;
 
+// correction table
+$corrLines = array(
+    array('type' => 'CORR','aip_country' => 'CH','aip_cat' => 'PROHIBITED','aip_name' => 'SAMEDAN FIZ','corr_cat' => 'FIZ'),
+    array('type' => 'CORR','aip_country' => 'CH','aip_cat' => 'RESTRICTED','aip_name' => 'LS-R4 LAC DE 128.675','corr_name' => 'LS-R4 LAC DE NEUCHATEL 128.675'),
+    array('type' => 'CORR','aip_country' => 'CH','aip_cat' => 'RESTRICTED','aip_name' => 'LS-R4A LAC DE 128.675','corr_name' => 'LS-R4A LAC DE NEUCHATEL 128.675'),
+    array('type' => 'CORR','aip_country' => 'CH','aip_cat' => 'RESTRICTED','aip_name' => 'LS-R8 DAMMAST 128.375','corr_name' => 'LS-R8 DAMMASTOCK 128.375'),
+    array('type' => 'CORR','aip_country' => 'CH','aip_cat' => 'RESTRICTED','aip_name' => 'LS-R8A DAMMAS 128.375','corr_name' => 'LS-R8A DAMMASTOCK 128.375'),
+    array('type' => 'CORR','aip_country' => 'CH','aip_cat' => 'RESTRICTED','aip_name' => 'LS-R11 ZUOZ S 135.475','corr_name' => 'LS-R11 ZUOZ / S-CHANF 135.475'),
+    array('type' => 'CORR','aip_country' => 'CH','aip_cat' => 'RESTRICTED','aip_name' => 'LS-R11A ZUOZ 135.475','corr_name' => 'LS-R11A ZUOZ / S-CHANF 135.475'),
+    array('type' => 'CORR','aip_country' => 'CH','aip_cat' => 'RESTRICTED','aip_name' => 'LS-R31 EMMEN 120.425','corr_name' => 'LS-R31 EMMEN EAST 120.425'),
+    array('type' => 'CORR','aip_country' => 'CH','aip_cat' => 'DANGER','aip_name' => 'LS-D7 GRANDVI 135.475','corr_name' => 'LS-D7 GRANDVILLARD 135.475'),
+
+    array('type' => 'CORR','aip_country' => 'FR','aip_cat' => 'D','aip_name' => 'Bale2 119.35','corr_alt_top_reference' => 'STD','corr_alt_top_height' => '100','corr_alt_top_unit' => 'FL'),
+    array('type' => 'HIDE','aip_country' => 'FR','aip_cat' => 'C','aip_name' => 'Bale AZ1 119.35'),
+    array('type' => 'HIDE','aip_country' => 'FR','aip_cat' => 'D','aip_name' => 'Bale AZ1 119.35'),
+    array('type' => 'HIDE','aip_country' => 'FR','aip_cat' => 'C','aip_name' => 'Bale AZ2 119.35'),
+    array('type' => 'HIDE','aip_country' => 'FR','aip_cat' => 'D','aip_name' => 'Bale AZ2 119.35'),
+    array('type' => 'HIDE','aip_country' => 'FR','aip_cat' => 'C','aip_name' => 'Bale AZ3 119.35'),
+    array('type' => 'HIDE','aip_country' => 'FR','aip_cat' => 'E','aip_name' => 'Bale AZ3 119.35'),
+    array('type' => 'HIDE','aip_country' => 'FR','aip_cat' => 'C','aip_name' => 'Bale AZ4 119.35'),
+    array('type' => 'HIDE','aip_country' => 'FR','aip_cat' => 'E','aip_name' => 'Bale AZ4 119.35'),
+
+    array('type' => 'CORR','aip_country' => 'DE','aip_cat' => 'TMZ','aip_name' => 'TMZ-EDNY XPDR A2677 119.925','corr_alt_top_reference' => 'STD','corr_alt_top_height' => '100','corr_alt_top_unit' => 'FL'),
+
+    array('type' => 'HIDE','aip_country' => 'IT','aip_cat' => 'D','aip_name' => 'LUGANO CTR'),
+);
+
+
 header('Content-type: text/html; charset=utf-8');
 
 $conn = openDb();
@@ -17,39 +45,6 @@ $result = $conn->query($query);
 
 if ($result === FALSE)
     die("ERROR: " . $conn->error);
-
-printLine("ok");
-
-
-// reading correction table
-printLine("reading correction table...");
-
-$query = "SELECT * from airspace_corr";
-$result = $conn->query($query);
-
-if ($result === FALSE)
-    die("ERROR: " . $conn->error);
-
-$corrLines = [];
-
-while ($rs = $result->fetch_array(MYSQLI_ASSOC))
-{
-    $corrLines[] = array(
-        id => $rs["id"],
-        type => $rs["type"],
-        aip_country => $rs["aip_country"],
-        aip_cat => $rs["aip_cat"],
-        aip_name => $rs["aip_name"],
-        corr_cat => $rs["corr_cat"],
-        corr_alt_top_reference => $rs["corr_alt_top_reference"],
-        corr_alt_top_height => $rs["corr_alt_top_height"],
-        corr_alt_top_unit => $rs["corr_alt_top_unit"],
-        corr_alt_bottom_reference => $rs["corr_alt_bottom_reference"],
-        corr_alt_bottom_height => $rs["corr_alt_bottom_height"],
-        corr_alt_bottom_unit => $rs["corr_alt_bottom_unit"],
-        corr_polygon => $rs["corr_polygon"]
-    );
-}
 
 printLine("ok");
 
@@ -136,28 +131,31 @@ foreach ($dir_entries as $filename)
                 }
 
                 // corrections
-                if ($corrLine["corr_cat"])
+                if (isset($corrLine["corr_cat"]))
                     $category = $corrLine["corr_cat"];
 
-                if ($corrLine["corr_alt_top_reference"])
+                if (isset($corrLine["corr_name"]))
+                    $name = $corrLine["corr_name"];
+
+                if (isset($corrLine["corr_alt_top_reference"]))
                     $alt_top_reference = $corrLine["corr_alt_top_reference"];
 
-                if ($corrLine["corr_alt_top_height"])
+                if (isset($corrLine["corr_alt_top_height"]))
                     $alt_top_height = $corrLine["corr_alt_top_height"];
 
-                if ($corrLine["corr_alt_top_unit"])
+                if (isset($corrLine["corr_alt_top_unit"]))
                     $alt_top_unit = $corrLine["corr_alt_top_unit"];
 
-                if ($corrLine["corr_alt_bottom_reference"])
+                if (isset($corrLine["corr_alt_bottom_reference"]))
                     $alt_bottom_reference = $corrLine["corr_alt_bottom_reference"];
 
-                if ($corrLine["corr_alt_bottom_height"])
+                if (isset($corrLine["corr_alt_bottom_height"]))
                     $alt_bottom_height = $corrLine["corr_alt_bottom_height"];
 
-                if ($corrLine["corr_alt_bottom_unit"])
+                if (isset($corrLine["corr_alt_bottom_unit"]))
                     $alt_bottom_unit = $corrLine["corr_alt_bottom_unit"];
 
-                if ($corrLine["polygon"])
+                if (isset($corrLine["polygon"]))
                     $polygon = $corrLine["polygon"];
             }
         }
