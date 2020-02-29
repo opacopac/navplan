@@ -1252,10 +1252,13 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 			case 'AF_CIVIL' : return "Civil Airfield";
 			case 'AF_MIL_CIVIL' : return "Airfield (civil/military)";
 			case 'AF_WATER' : return "Water Airfield";
+            case 'AF_MOUNTAIN' : return "Mountain Landing Site";
 			case 'APT' : return "Airport resp. Airfield IFR";
 			case 'GLIDING' : return "Glider Site";
 			case 'HELI_CIVIL' : return "Civil Heliport";
 			case 'HELI_MIL' : return "Military Heliport";
+            case 'HELI_HOSPITAL' : return "Hospital Landing Site";
+            case 'HELI_MOUNTAIN' : return "Mountain Landing Site";
 			case 'INTL_APT' : return "International Airport";
 			case 'LIGHT_AIRCRAFT' : return "Ultra Light Flying Site";
 			default : return "Unknown";

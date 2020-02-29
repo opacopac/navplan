@@ -415,11 +415,11 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 
             if (ad_type == "APT" || ad_type == "INTL_APT")
                 src = 'icon/ad_civ.png';
-            else if (ad_type == "AF_CIVIL" || ad_type == "GLIDING" || ad_type == "LIGHT_AIRCRAFT")
+            else if (ad_type == "AF_CIVIL" || ad_type == "GLIDING" || ad_type == "LIGHT_AIRCRAFT" || ad_type == "AF_MOUNTAIN")
                 src = 'icon/ad_civ_nofac.png';
             else if (ad_type == "AF_MIL_CIVIL")
                 src = 'icon/ad_civmil.png';
-            else if (ad_type == "HELI_CIVIL")
+            else if (ad_type == "HELI_CIVIL" || ad_type == "HELI_MOUNTAIN" || ad_type == "HELI_HOSPITAL")
                 src = 'icon/ad_heli.png';
             else if (ad_type == "HELI_MIL")
                 src = 'icon/ad_heli_mil.png';
@@ -466,12 +466,15 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
             var rwy_surface = rwy.surface ? rwy.surface : undefined;
             var rwy_direction = rwy.direction1 ? rwy.direction1 : undefined;
 
+            // no rwy for mountain landing sites
+            if (ad_type === "AF_MOUNTAIN" || ad_type === "HELI_MOUNTAIN")
+                return;
 
             if (ad_type == "AD_MIL")
                 src = 'icon/rwy_mil.png';
             else if (rwy_surface == "ASPH" || rwy_surface == "CONC")
                 src = 'icon/rwy_concrete.png';
-            else if (rwy_surface != "WATE")
+            else if (rwy_surface !== "WATE")
                 src = 'icon/rwy_grass.png';
             else
                 return;
