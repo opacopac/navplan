@@ -677,7 +677,7 @@ class NotamGeometryParser
     private function tryFindMatchingAirspace(&$notamList)
     {
         // load intersecting airspaces from db
-        $typeCatDict = array("RP" => ["PROHIBITED"], "RR" => ["RESTRICTED"], "RT" => ["RESTRICTED"], "RD" => ["DANGER", "PROHIBITED"], "RM" => ["DANGER", "RESTRICTED", "PROHIBITED"]);
+        $typeCatDict = array("RP" => ["PROHIBITED"], "RR" => ["RESTRICTED", "GLIDING"], "RT" => ["RESTRICTED"], "RD" => ["DANGER", "PROHIBITED"], "RM" => ["DANGER", "RESTRICTED", "PROHIBITED"]);
 
         $queryParts = [];
         foreach ($notamList as $index=>$notam)
