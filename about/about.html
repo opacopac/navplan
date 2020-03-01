@@ -1,31 +1,325 @@
 <div class="container">
-	<h3>About</h3>
+    <h3>About</h3>
     <p>VFR flight planning online. Open-source, non-commercial hobbyist project with a main focus on Switzerland.</p>
-	<p>The goal of this project is to show the possibilities of VFR flight planning in a modern web browser, integrating different data sources and using current web technologies and frameworks like HTML5, Javascript, AngularJS, Openlayers and Bootstrap.
-		It's a personal, non-commercial project written out of passion for aviation and information technology in general.</p>
-	<ul>
-		<li>Contact: Armand Tschanz (<a href="mailto:info@navplan.ch">info@navplan.ch</a>)</li>
-        <li>Facebook: <a href="https://www.facebook.com/navplan.ch" target="_blank">https://www.facebook.com/navplan.ch</a> (comments or feature requests are always welcome!)</li>
-		<li>Source Code: <a href="https://github.com/opacopac/navplan" target="_blank">https://github.com/opacopac/navplan</a></li>
-		<!--<li>Problem Reports or Feature Requests: <a href="https://github.com/opacopac/navplan/issues" target="_blank">https://github.com/opacopac/navplan/issues</a></li>-->
-	</ul>
-    <br />
-	<h4>NOT FOR OPERATIONAL USE!</h4>
-	<p>The information contained on this website is for informational purposes only. <b>Do not use for actual navigation!</b></p>
-	<p>The data used on this website could be outdated, inaccurate, or contain errors. Always use up-to-date official sources for your flight planning.</p>
-    <br />
-	<h3>Attributions</h3>
-	<ul>
-		<li>Map Data: &copy; <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors <a href="https://creativecommons.org/licenses/by-sa/2.0/" target="_blank">(CC-BY-SA)</a></li>
-		<li>Elevation Data: <a href="https://lta.cr.usgs.gov/SRTM" target="_blank">SRTM</a></li>
-		<!--<li>Map Visualization: <a href="http://www.opentopomap.org/" target="_blank">OpenTopoMap</a> <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank">(CC-BY-SA)</a></li>-->
-        <li>Map Visualization: <a href="https://www.mapbox.com/about/maps/" target="_blank">&copy; Mapbox</a>, <a href="https://www.mapbox.com/map-feedback/" target="_blank">Improve this map</a></li>
-		<li>Aviation Data: <a href="http://www.openaip.net/" target="_blank">openAIP</a> <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/" target="_blank">(BY-NC-SA)</a></li>
-		<li>Traffic Data: <a href="http://wiki.glidernet.org/about" target="_blank">Open Glider Network</a> | <a href="http://www.ADSBexchange.com/" target="_blank">ADSBexchange</a></li>
-		<li>Aerodrome Charts: <a href="http://www.avare.ch/" target="_blank">Avare.ch</a></li>
-		<li>Weather Data: <a href="https://www.aviationweather.gov/" target="_blank">NOAA - Aviation Weather Center</a></li>
-		<li>Geographical Data: <a href="http://www.geonames.org/" target="_blank">GeoNames</a> <a href="http://creativecommons.org/licenses/by/3.0/" target="_blank">(CC-BY)</a></li>
-        <li>NOTAM Data: <a href="https://www.icao.int/safety/iStars/pages/intro.aspx" target="_blank">ICAO - iSTARS API Data Service</a></li>
-		<li>Links to Webcams: all images are digital property of the webcam owners. check the reference for details.</li>
-	</ul>
+    <p>The goal of this project is to show the possibilities of VFR flight planning in a modern web browser, integrating
+        different data sources and using current web technologies and frameworks like HTML5, Javascript, AngularJS,
+        Openlayers and Bootstrap.
+        It's a personal, non-commercial project written out of passion for aviation and information technology in
+        general.</p>
+    <ul>
+        <li>Contact: Armand Tschanz (<a href="mailto:info@navplan.ch">info@navplan.ch</a>)</li>
+        <li>Facebook: <a href="https://www.facebook.com/navplan.ch"
+                         target="_blank">https://www.facebook.com/navplan.ch</a> (comments or feature requests are
+            always welcome!)
+        </li>
+        <li>Source Code: <a href="https://github.com/opacopac/navplan" target="_blank">https://github.com/opacopac/navplan</a>
+        </li>
+        <!--<li>Problem Reports or Feature Requests: <a href="https://github.com/opacopac/navplan/issues" target="_blank">https://github.com/opacopac/navplan/issues</a></li>-->
+    </ul>
+    <p>&nbsp;</p>
+    <h4>NOT FOR OPERATIONAL USE!</h4>
+    <p>The information contained on this website is for informational purposes only. <b>Do not use for actual
+        navigation!</b></p>
+    <p>The data used on this website could be outdated, inaccurate, or contain errors. Always use up-to-date official
+        sources for your flight planning.</p>
+    <p>&nbsp;</p>
+    <h3>Attributions</h3>
+    <ul>
+        <li>Map Data: &copy; <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>
+            contributors <a href="https://creativecommons.org/licenses/by-sa/2.0/" target="_blank">(CC-BY-SA)</a></li>
+        <li>Elevation Data: <a href="https://lta.cr.usgs.gov/SRTM" target="_blank">SRTM</a></li>
+        <!--<li>Map Visualization: <a href="http://www.opentopomap.org/" target="_blank">OpenTopoMap</a> <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank">(CC-BY-SA)</a></li>-->
+        <li>Map Visualization: <a href="https://www.mapbox.com/about/maps/" target="_blank">&copy; Mapbox</a>, <a
+                href="https://www.mapbox.com/map-feedback/" target="_blank">Improve this map</a></li>
+        <li>Aviation Data: <a href="http://www.openaip.net/" target="_blank">openAIP</a> <a
+                href="https://creativecommons.org/licenses/by-nc-sa/3.0/" target="_blank">(BY-NC-SA)</a></li>
+        <li>Traffic Data: <a href="http://wiki.glidernet.org/about" target="_blank">Open Glider Network</a> | <a
+                href="http://www.ADSBexchange.com/" target="_blank">ADSBexchange</a></li>
+        <li>Aerodrome Charts: <a href="http://www.avare.ch/" target="_blank">Avare.ch</a></li>
+        <li>Weather Data: <a href="https://www.aviationweather.gov/" target="_blank">NOAA - Aviation Weather Center</a>
+        </li>
+        <li>Geographical Data: <a href="http://www.geonames.org/" target="_blank">GeoNames</a> <a
+                href="http://creativecommons.org/licenses/by/3.0/" target="_blank">(CC-BY)</a></li>
+        <li>NOTAM Data: <a href="https://www.icao.int/safety/iStars/pages/intro.aspx" target="_blank">ICAO - iSTARS API
+            Data Service</a></li>
+        <li>Links to Webcams: all images are digital property of the webcam owners. check the reference for details.
+        </li>
+    </ul>
+    <p>&nbsp;</p>
+    <!-- impressum -->
+    <h3>Impressum</h3>
+    <h4>Kontakt-Adresse</h4>
+    <p>Armand Tschanz<br/>Viktoriastrasse 21<br/>3013 Bern<br/>Schweiz</p>
+    <p>E-Mail: info@navplan.ch</p>
+    <p>&nbsp;</p>
+    <h4>Haftungsausschluss</h4>
+    Der Autor &uuml;bernimmt keinerlei Gew&auml;hr hinsichtlich der
+    inhaltlichen Richtigkeit, Genauigkeit, Aktualit&auml;t, Zuverl&auml;ssigkeit und Vollst&auml;ndigkeit der
+    Informationen.</p><p>Haftungsanspr&uuml;che gegen den Autor wegen Sch&auml;den materieller oder immaterieller Art,
+    welche aus dem Zugriff oder der Nutzung bzw. Nichtnutzung der ver&ouml;ffentlichten Informationen, durch Missbrauch
+    der Verbindung oder durch technische St&ouml;rungen entstanden sind, werden ausgeschlossen.</p>
+    <p>Alle Angebote sind unverbindlich. Der Autor beh&auml;lt es sich ausdr&uuml;cklich vor, Teile der Seiten oder das
+        gesamte Angebot ohne besondere Ank&uuml;ndigung zu ver&auml;ndern, zu erg&auml;nzen, zu l&ouml;schen oder die
+        Ver&ouml;ffentlichung zeitweise oder endg&uuml;ltig einzustellen.</p>
+    <p>&nbsp;</p>
+    <h4>Haftungsausschluss f&uuml;r Links</h4>
+    <p>Verweise und Links auf Webseiten Dritter liegen ausserhalb unseres Verantwortungsbereichs. Es wird jegliche
+        Verantwortung f&uuml;r solche Webseiten abgelehnt. Der Zugriff und die Nutzung solcher Webseiten erfolgen auf
+        eigene Gefahr des jeweiligen Nutzers.</p>
+    <p>&nbsp;</p>
+    <!--ACHTUNG: Wenn Sie die Quelle ohne Erlaubnis von SwissAnwalt entfernen, dann begehen Sie eine Urheberrechtsverletzung welche in jedem Fall geahndet wird.-->
+    Quelle: <a href="https://www.swissanwalt.ch" target="_blank" rel="noopener">SwissAnwalt</a>
+    <!--Bitte beachten Sie die AGB von SwissAnwalt betreffend allf&auml;llig anfallenden Kosten bei Weglassen der Quelle!-->
+    <p>&nbsp;</p>
+    <!-- datenschutzerklaerung -->
+    <h3>Datenschutzerkl&auml;rung</h3>
+    <p>Verantwortliche Stelle im Sinne der Datenschutzgesetze, insbesondere der EU-Datenschutzgrundverordnung (DSGVO),
+        ist:</p><br/>
+    <p>Armand Tschanz<br/>3013 Bern</p>
+    <p>E-Mail: info@navplan.ch<br/>WebSite: https://www.navplan.ch/ </p>
+    <p>&nbsp;</p>
+    <h4>Allgemeiner Hinweis</h4>
+    <p>Gest&uuml;tzt auf Artikel 13 der schweizerischen Bundesverfassung und die datenschutzrechtlichen Bestimmungen des
+        Bundes (Datenschutzgesetz, DSG<!--DSG--> ) hat jede Person Anspruch auf Schutz ihrer Privatsph&auml;re sowie auf
+        Schutz vor Missbrauch ihrer pers&ouml;nlichen Daten. Die Betreiber dieser Seiten nehmen den Schutz Ihrer pers&ouml;nlichen
+        Daten sehr ernst. Wir behandeln Ihre personenbezogenen Daten vertraulich und entsprechend der gesetzlichen
+        Datenschutzvorschriften sowie dieser Datenschutzerkl&auml;rung.</p>
+    <p>In Zusammenarbeit mit unseren Hosting-Providern bem&uuml;hen wir uns, die Datenbanken so gut wie m&ouml;glich vor
+        fremden Zugriffen, Verlusten, Missbrauch oder vor F&auml;lschung zu sch&uuml;tzen.</p>
+    <p>Wir weisen darauf hin, dass die Daten&uuml;bertragung im Internet (z.B. bei der Kommunikation per E-Mail)
+        Sicherheitsl&uuml;cken aufweisen kann. Ein l&uuml;ckenloser Schutz der Daten vor dem Zugriff durch Dritte ist
+        nicht m&ouml;glich.</p>
+    <p>Durch die Nutzung dieser WebSite erkl&auml;ren Sie sich mit der Erhebung, Verarbeitung und Nutzung von Daten gem&auml;ss
+        der nachfolgenden Beschreibung einverstanden. Diese WebSite kann grunds&auml;tzlich ohne Registrierung besucht
+        werden. Dabei werden Daten wie beispielsweise aufgerufene Seiten bzw. Namen der abgerufenen Datei, Datum und
+        Uhrzeit zu statistischen Zwecken auf dem Server gespeichert, ohne dass diese Daten unmittelbar auf Ihre Person
+        bezogen werden. Personenbezogene Daten, insbesondere Name, Adresse oder E-Mail-Adresse werden soweit m&ouml;glich
+        auf freiwilliger Basis erhoben. Ohne Ihre Einwilligung erfolgt keine Weitergabe der Daten an Dritte.</p>
+    <p>&nbsp;</p>
+    <h4>Bearbeitung von Personendaten</h4>
+    <p>Personendaten sind alle Angaben, die sich auf eine bestimmte oder bestimmbare Person beziehen. Eine betroffene
+        Person ist eine Person, &uuml;ber die Personendaten bearbeitet werden. Bearbeiten umfasst jeden Umgang mit
+        Personendaten, unabh&auml;ngig von den angewandten Mitteln und Verfahren, insbesondere das Aufbewahren,
+        Bekanntgeben, Beschaffen, L&ouml;schen, Speichern, Ver&auml;ndern, Vernichten und Verwenden von
+        Personendaten.</p>
+    <p>Wir bearbeiten Personendaten im Einklang mit dem schweizerischen Datenschutzrecht. Im &Uuml;brigen bearbeiten wir
+        – soweit und sofern die EU-DSGVO anwendbar ist – Personendaten gem&auml;ss folgenden Rechtsgrundlagen im
+        Zusammenhang mit Art. 6 Abs. 1 DSGVO<!--DSGVO--> :</p>
+    <ul>
+        <li>lit. a) Bearbeitung von Personendaten mit Einwilligung der betroffenen Person.</li>
+        <li>lit. b) Bearbeitung von Personendaten zur Erf&uuml;llung eines Vertrages mit der betroffenen Person sowie
+            zur Durchf&uuml;hrung entsprechender vorvertraglicher Massnahmen.
+        </li>
+        <li>lit. c) Bearbeitung von Personendaten zur Erf&uuml;llung einer rechtlichen Verpflichtung, der wir gem&auml;ss
+            allenfalls anwendbarem Recht der EU oder gem&auml;ss allenfalls anwendbarem Recht eines Landes, in dem die
+            DSGVO<!--DSGVO--> ganz oder teilweise anwendbar ist, unterliegen.
+        </li>
+        <li>lit. d) Bearbeitung von Personendaten um lebenswichtige Interessen der betroffenen Person oder einer anderen
+            nat&uuml;rlichen Person zu sch&uuml;tzen.
+        </li>
+        <li>lit. f) Bearbeitung von Personendaten um die berechtigten Interessen von uns oder von Dritten zu wahren,
+            sofern nicht die Grundfreiheiten und Grundrechte sowie Interessen der betroffenen Person &uuml;berwiegen.
+            Berechtigte Interessen sind insbesondere unser betriebswirtschaftliches Interesse, unsere Website
+            bereitstellen zu k&ouml;nnen, die Informationssicherheit, die Durchsetzung von eigenen rechtlichen Anspr&uuml;chen
+            und die Einhaltung von schweizerischem Recht.
+        </li>
+    </ul>
+    <p>Wir bearbeiten Personendaten f&uuml;r jene Dauer, die f&uuml;r den jeweiligen Zweck oder die jeweiligen Zwecke
+        erforderlich ist. Bei l&auml;nger dauernden Aufbewahrungspflichten aufgrund von gesetzlichen und sonstigen
+        Pflichten, denen wir unterliegen, schr&auml;nken wir die Bearbeitung entsprechend ein.</p>
+    <p>&nbsp;</p>
+    <h4>Datenschutzerkl&auml;rung f&uuml;r Cookies</h4>
+    <p>Diese Webseite verwendet Cookies. Das sind kleine Textdateien, die es m&ouml;glich machen, auf dem Endger&auml;t
+        des Nutzers spezifische, auf den Nutzer bezogene Informationen zu speichern, w&auml;hrend er die Website nutzt.
+        Cookies erm&ouml;glichen es, insbesondere Nutzungsh&auml;ufigkeit und Nutzeranzahl der Seiten zu ermitteln,
+        Verhaltensweisen der Seitennutzung zu analysieren, aber auch unser Angebot kundenfreundlicher zu gestalten.
+        <!--Allg.Cookies-->Cookies bleiben &uuml;ber das Ende einer Browser-Sitzung gespeichert und k&ouml;nnen bei
+        einem erneuten Seitenbesuch wieder aufgerufen werden. Wenn Sie das nicht w&uuml;nschen, sollten Sie Ihren
+        Internetbrowser so einstellen, dass er die Annahme von Cookies verweigert.</p>
+    <p>Ein genereller Widerspruch gegen den Einsatz der zu Zwecken des Onlinemarketing eingesetzten Cookies kann bei
+        einer Vielzahl der Dienste, vor allem im Fall des Trackings, über die US-amerikanische Seite <a
+                href="http://www.aboutads.info/choices/" target="_blank" rel="noopener">http://www.aboutads.info/choices/</a>
+        oder die EU-Seite <a href="http://www.youronlinechoices.com/" target="_blank" rel="noopener">http://www.youronlinechoices.com/</a>
+        erklärt werden. Des Weiteren kann die Speicherung von Cookies mittels deren Abschaltung in den Einstellungen des
+        Browsers erreicht werden. Bitte beachten Sie, dass dann gegebenenfalls nicht alle Funktionen dieses
+        Onlineangebotes genutzt werden können.</p>
+    <p>&nbsp;</p>
+    <h4>Datenschutzerkl&auml;rung f&uuml;r SSL-/TLS-Verschl&uuml;sselung</h4>
+    <p>Diese Webseite nutzt aus Gr&uuml;nden der Sicherheit und zum Schutz der &Uuml;bertragung vertraulicher Inhalte,
+        wie zum Beispiel der Anfragen, die Sie an uns als Seitenbetreiber senden, eine SSL-/TLS-Verschl&uuml;sselung.
+        Eine verschl&uuml;sselte Verbindung erkennen Sie daran, dass die Adresszeile des Browsers von &quot;http://&quot;
+        auf &quot;https://&quot; wechselt und an dem Schloss-Symbol in Ihrer Browserzeile.</p>
+    <p>Wenn die SSL bzw. TLS Verschl&uuml;sselung aktiviert ist, k&ouml;nnen die Daten, die Sie an uns &uuml;bermitteln,
+        nicht von Dritten mitgelesen werden.</p>
+    <p>&nbsp;</p>
+    <h4>Datenschutzerkl&auml;rung f&uuml;r Server-Log-Files</h4>
+    <p>Der Provider dieser Webseite erhebt und speichert automatisch Informationen in so genannten Server-Log Files, die
+        Ihr Browser automatisch an uns &uuml;bermittelt. Dies sind:</p>
+    <ul>
+        <li>Browsertyp und Browserversion</li>
+        <li>verwendetes Betriebssystem</li>
+        <li>Referrer URL</li>
+        <li>Hostname des zugreifenden Rechners</li>
+        <li>Uhrzeit der Serveranfrage</li>
+    </ul>
+    <p>Diese Daten sind nicht bestimmten Personen zuordenbar. Eine Zusammenf&uuml;hrung dieser Daten mit anderen
+        Datenquellen wird nicht vorgenommen. Wir behalten uns vor, diese Daten nachtr&auml;glich zupr&uuml;fen, wenn uns
+        konkrete Anhaltspunkte f&uuml;r eine rechtswidrige Nutzung bekannt werden.</p>
+    <p>&nbsp;</p>
+    <h4>Rechte betroffener Personen</h4>
+    <p><strong>Recht auf Best&auml;tigung</strong></p>
+    <p>Jede betroffene Person hat das Recht, vom Betreiber der Webseite eine Best&auml;tigung dar&uuml;ber zu verlangen,
+        ob betroffene Personen betreffende, personenbezogene Daten verarbeitet werden. M&ouml;chten Sie dieses Best&auml;tigungsrecht
+        in Anspruch nehmen, k&ouml;nnen Sie sich hierzu jederzeit an den Datenschutzbeauftragten wenden.</p> <br/>
+    <p><strong>Recht auf Auskunft</strong></p>
+    <p>Jede von der Verarbeitung betroffene Person mit personenbezogenen Daten hat das Recht, jederzeit vom Betreiber
+        dieser Webseite unentgeltliche Auskunft &uuml;ber die zu seiner Person gespeicherten personenbezogenen Daten und
+        eine Kopie dieser Auskunft zu erhalten. Ferner kann gegebenenfalls &uuml;ber folgende Informationen Auskunft
+        gegeben werden:</p>
+    <ul>
+        <li>die Verarbeitungszwecke</li>
+        <li>die Kategorien personenbezogener Daten, die verarbeitet werden</li>
+        <li>die Empf&auml;nger, gegen&uuml;ber denen die personenbezogenen Daten offengelegt worden sind oder noch
+            offengelegt werden
+        </li>
+        <li>falls m&ouml;glich, die geplante Dauer, f&uuml;r die die personenbezogenen Daten gespeichert werden, oder,
+            falls dies nicht m&ouml;glich ist, die Kriterien f&uuml;r die Festlegung dieser Dauer
+        </li>
+        <li>das Bestehen eines Rechts auf Berichtigung oder L&ouml;schung der sie betreffenden personenbezogenen Daten
+            oder auf Einschr&auml;nkung der Verarbeitung durch den Verantwortlichen oder eines Widerspruchsrechts gegen
+            diese Verarbeitung
+        </li>
+        <li>das Bestehen eines Beschwerderechts bei einer Aufsichtsbeh&ouml;rde</li>
+        <li>wenn die personenbezogenen Daten nicht bei der betroffenen Person erhoben werden: Alle verf&uuml;gbaren
+            Informationen &uuml;ber die Herkunft der Daten
+        </li>
+    </ul>
+    <p>Ferner steht der betroffenen Person ein Auskunftsrecht dar&uuml;ber zu, ob personenbezogene Daten an ein
+        Drittland oder an eine internationale Organisation &uuml;bermittelt wurden. Sofern dies der Fall ist, so steht
+        der betroffenen Person im &uuml;brigen das Recht zu, Auskunft &uuml;ber die geeigneten Garantien im Zusammenhang
+        mit der &uuml;bermittlung zu erhalten.</p>
+    <p>M&ouml;chten Sie dieses Auskunftsrecht in Anspruch nehmen, k&ouml;nnen Sie sich hierzu jederzeit an unseren
+        Datenschutzbeauftragten wenden.</p> <br/>
+    <p><strong>Recht auf Berichtigung</strong></p>
+    <p>Jede von der Verarbeitung personenbezogener Daten betroffene Person hat das Recht, die unverz&uuml;gliche
+        Berichtigung sie betreffender unrichtiger personenbezogener Daten zu verlangen. Ferner steht der betroffenen
+        Person das Recht zu, unter Ber&uuml;cksichtigung der Zwecke der Verarbeitung, die Vervollst&auml;ndigung
+        unvollst&auml;ndiger personenbezogener Daten - auch mittels einer erg&auml;nzenden Erkl&auml;rung - zu
+        verlangen.</p>
+    <p>M&ouml;chten Sie dieses Berichtigungsrecht in Anspruch nehmen, k&ouml;nnen Sie sich hierzu jederzeit an unseren
+        Datenschutzbeauftragten wenden.</p> <br/>
+    <p><strong>Recht auf L&ouml;schung (Recht auf Vergessen werden)</strong></p>
+    <p>Jede von der Verarbeitung personenbezogener Daten betroffene Person hat das Recht, von dem Verantwortlichen
+        dieser Webseite zu verlangen, dass die sie betreffenden personenbezogenen Daten unverz&uuml;glich gel&ouml;scht
+        werden, sofern einer der folgenden Gr&uuml;nde zutrifft und soweit die Verarbeitung nicht erforderlich ist:</p>
+    <ul>
+        <li>Die personenbezogenen Daten wurden f&uuml;r solche Zwecke erhoben oder auf sonstige Weise verarbeitet, f&uuml;r
+            welche sie nicht mehr notwendig sind
+        </li>
+        <li>Die betroffene Person widerruft ihre Einwilligung, auf die sich die Verarbeitung st&uuml;tzte, und es fehlt
+            an einer anderweitigen Rechtsgrundlage f&uuml;r die Verarbeitung
+        </li>
+        <li>Die betroffene Person legt aus Gr&uuml;nden, die sich aus ihrer besonderen Situation ergeben, Widerspruch
+            gegen die Verarbeitung ein und es liegen keine vorrangigen berechtigten Gr&uuml;nde f&uuml;r die
+            Verarbeitung vor, oder die betroffene Person legt im Falle von Direktwerbung und damit verbundenem Profiling
+            Widerspruch gegen die Verarbeitung ein
+        </li>
+        <li>Die personenbezogenen Daten wurden unrechtm&auml;ssig verarbeitet</li>
+        <li>Die L&ouml;schung der personenbezogenen Daten ist zur Erf&uuml;llung einer rechtlichen Verpflichtung nach
+            dem Unionsrecht oder dem Recht der Mitgliedstaaten erforderlich, dem der Verantwortliche unterliegt
+        </li>
+        <li>Die personenbezogenen Daten wurden in Bezug auf angebotene Dienste der Informationsgesellschaft, die einem
+            Kind direkt gemacht wurden, erhoben
+        </li>
+    </ul>
+    <p>Sofern einer der oben genannten Gr&uuml;nde zutrifft und Sie die L&ouml;schung von personenbezogenen Daten, die
+        beimBetreiber dieser Webseite gespeichert sind, veranlassen m&ouml;chten, k&ouml;nnen Sie sich hierzu jederzeit
+        an unseren Datenschutzbeauftragten wenden. Der Datenschutzbeauftragte dieser Webseite wird veranlassen, dass dem
+        L&ouml;schverlangen unverz&uuml;glich nachgekommen wird.</p> <br/>
+    <p><strong>Recht auf Einschr&auml;nkung der Verarbeitung</strong></p>
+    <p>Jede von der Verarbeitung personenbezogener Daten betroffene Person hat das Recht, von dem Verantwortlichen
+        dieser Webseite die Einschr&auml;nkung der Verarbeitung zu verlangen, wenn eine der folgenden Voraussetzungen
+        gegeben ist:</p>
+    <ul>
+        <li>Die Richtigkeit der personenbezogenen Daten wird von der betroffenen Person bestritten, und zwar f&uuml;r
+            eine Dauer, die es dem Verantwortlichen erm&ouml;glicht, die Richtigkeit der personenbezogenen Daten zu
+            &uuml;berpr&uuml;fen
+        </li>
+        <li>Die Verarbeitung ist unrechtm&auml;ssig, die betroffene Person lehnt die L&ouml;schung der personenbezogenen
+            Daten ab und verlangt stattdessen die Einschr&auml;nkung der Nutzung der personenbezogenen Daten
+        </li>
+        <li>Der Verantwortliche ben&ouml;tigt die personenbezogenen Daten f&uuml;r die Zwecke der Verarbeitung nicht l&auml;nger,
+            die betroffene Person ben&ouml;tigt sie jedoch zur Geltendmachung, Aus&uuml;bung oder Verteidigung von
+            Rechtsanspr&uuml;chen
+        </li>
+        <li>Die betroffene Person hat aus Gr&uuml;nden, die sich aus ihrer besonderen Situation ergeben, Widerspruch
+            gegen die Verarbeitung eingelegt und es steht noch nicht fest, ob die berechtigten Gr&uuml;nde des
+            Verantwortlichen gegen&uuml;ber denen der betroffenen Person &uuml;berwiegen
+        </li>
+    </ul>
+    <p>Sofern eine der oben genannten Voraussetzungen gegeben ist Sie die Einschr&auml;nkung von personenbezogenen
+        Daten, die beim Betreiber dieser Webseitep gespeichert sind, verlangen m&ouml;chten, k&ouml;nnen Sie sich hierzu
+        jederzeit an unseren Datenschutzbeauftragten wenden. Der Datenschutzbeauftragte dieser Webseite wird die Einschr&auml;nkung
+        der Verarbeitung veranlassen.</p> <br/>
+    <p><strong>Recht auf Daten&uuml;bertragbarkeit</strong></p>
+    <p>Jede von der Verarbeitung personenbezogener Daten betroffene Person hat das Recht, die sie betreffenden
+        personenbezogenen Daten in einem strukturierten, g&auml;ngigen und maschinenlesbaren Format zu erhalten. Sie hat
+        ausserdem das Recht, dass diese Daten bei Vorliegen der gesetzlichen Voraussetzungen einem anderen
+        Verantwortlichen &uuml;bermittelt werden.</p>
+    <p>Ferner hat die betroffene Person das Recht, zu erwirken, dass die personenbezogenen Daten direkt von einem
+        Verantwortlichen an einen anderen Verantwortlichen &uuml;bermittelt werden, soweit dies technisch machbar ist
+        und sofern hiervon nicht die Rechte und Freiheiten anderer Personen beeintr&auml;chtigt werden.</p>
+    <p>Zur Geltendmachung des Rechts auf Daten&uuml;bertragbarkeit k&ouml;nnen Sie sich jederzeit an den vom Betreiber
+        dieser Webseite bestellten Datenschutzbeauftragten wenden.</p> <br/>
+    <p><strong>Recht auf Widerspruch</strong></p>
+    <p>Jede von der Verarbeitung personenbezogener Daten betroffene Person hat das Recht, aus Gr&uuml;nden, die sich aus
+        ihrer besonderen Situation ergeben, jederzeit gegen die Verarbeitung sie betreffender personenbezogener Daten,
+        Widerspruch einzulegen.</p>
+    <p>Der Betreiber dieser Webseite verarbeitet die personenbezogenen Daten im Falle des Widerspruchs nicht mehr, es
+        sei denn, wir k&ouml;nnen zwingende schutzw&uuml;rdige Gr&uuml;nde f&uuml;r die Verarbeitung nachweisen, die den
+        Interessen, Rechten und Freiheiten der betroffenen Person &uuml;berwiegen, oder wenn die Verarbeitung der
+        Geltendmachung, Aus&uuml;bung oder Verteidigung von Rechtsanspr&uuml;chen dient.</p>
+    <p>Zur Aus&uuml;bung des Rechts auf Widerspruch k&ouml;nnen Sie sich direkt an den Datenschutzbeauftragten dieser
+        Webseite wenden.</p> <br/>
+    <p><strong>Recht auf Widerruf einer datenschutzrechtlichen Einwilligung</strong></p>
+    <p>Jede von der Verarbeitung personenbezogener Daten betroffene Person hat das Recht, eine abgegebene Einwilligung
+        zur Verarbeitung personenbezogener Daten jederzeit zu widerrufen.</p>
+    <p>M&ouml;chten Sie Ihr Recht auf Widerruf einer Einwilligung geltend machen, k&ouml;nnen Sie sich hierzu jederzeit
+        an unseren Datenschutzbeauftragten wenden.</p>
+    <p>&nbsp;</p>
+    <h4>Allgemeiner Haftungsausschluss</h4>
+    <p>Alle Angaben unseres Internetangebotes wurden sorgf&auml;ltig gepr&uuml;ft. Wir bem&uuml;hen uns, unser
+        Informationsangebot aktuell, inhaltlich richtig und vollst&auml;ndig anzubieten. Trotzdem kann das Auftreten von
+        Fehlern nicht v&ouml;llig ausgeschlossen werden, womit wir keine Garantie f&uuml;r Vollst&auml;ndigkeit,
+        Richtigkeit und Aktualit&auml;t von Informationen auch journalistisch-redaktioneller Art &uuml;bernehmen k&ouml;nnen.
+        Haftungsanspr&uuml;che aus Sch&auml;den materieller oder ideeller Art, die durch die Nutzung der angebotenen
+        Informationen verursacht wurden, sind ausgeschlossen, sofern kein nachweislich vors&auml;tzliches oder grob
+        fahrl&auml;ssiges Verschulden vorliegt.</p>
+    <p>Der Herausgeber kann nach eigenem Ermessen und ohne Ank&uuml;ndigung Texte ver&auml;ndern oder l&ouml;schen und
+        ist nicht verpflichtet, Inhalte dieser Website zu aktualisieren. Die Benutzung bzw. der Zugang zu dieser Website
+        geschieht auf eigene Gefahr des Besuchers. Der Herausgeber, seine Auftraggeber oder Partner sind nicht
+        verantwortlich f&uuml;r Sch&auml;den, wie direkte, indirekte, zuf&auml;llige, vorab konkret zu bestimmende oder
+        Folgesch&auml;den, die angeblich durch den Besuch dieser Website entstanden sind und &uuml;bernehmen hierf&uuml;r
+        folglich keine Haftung.</p>
+    <p>Der Herausgeber &uuml;bernimmt ebenfalls keine Verantwortung und Haftung f&uuml;r die Inhalte und die Verf&uuml;gbarkeit
+        von Webseiten Dritter, die &uuml;ber externe Links dieser Webseite erreichbar sind. F&uuml;r den Inhalt der
+        verlinkten Seiten sind ausschliesslich deren Betreiber verantwortlich. Der Herausgeber distanziert sich damit
+        ausdr&uuml;cklich von allen Inhalten Dritter, die m&ouml;glicherweise straf- oder haftungsrechtlich relevant
+        sind oder gegen die guten Sitten verstossen.</p>
+    <p>&nbsp;</p>
+    <h4>&Auml;nderungen</h4>
+    <p>Wir k&ouml;nnen diese Datenschutzerkl&auml;rung jederzeit ohne Vorank&uuml;ndigung anpassen. Es gilt die jeweils
+        aktuelle, auf unserer Website publizierte Fassung. Soweit die Datenschutzerkl&auml;rung Teil einer Vereinbarung
+        mit Ihnen ist, werden wir Sie im Falle einer Aktualisierung über die &Auml;nderung per E-Mail oder auf andere
+        geeignete Weise informieren.</p>
+    <p>&nbsp;</p>
+    <h4>Fragen an den Datenschutzbeauftragten</h4>
+    <p>Wenn Sie Fragen zum Datenschutz haben, schreiben Sie uns bitte eine E-Mail oder wenden Sie sich direkt an die f&uuml;r
+        den Datenschutz zu Beginn der Datenschutzerkl&auml;rung aufgef&uuml;hrten, verantwortlichen Person in unserer
+        Organisation.</p>
+    <p>&nbsp;</p>
+    <p>Bern, 01.03.2020
+        <!--ACHTUNG: Wenn Sie die Quelle ohne Erlaubnis von SwissAnwalt entfernen, dann begehen Sie eine Urheberrechtsverletzung welche in jedem Fall unter Kostenfolge geahndet wird.-->
+        Quelle: <a href="https://www.swissanwalt.ch" target="_blank" rel="noopener">SwissAnwalt</a></p>
+    <!--Bitte beachten Sie die AGB von SwissAnwalt betreffend allfällig anfallenden Kosten bei Weglassen der Quelle!-->
 </div>

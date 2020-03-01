@@ -144,6 +144,7 @@
                     <div class="modal-body">
                         <p><b>NOT FOR OPERATIONAL USE!</b> The information contained on this website is for informational purposes only.</p>
                         <p>The data used on this website could be outdated, inaccurate, or contain errors. Always use up-to-date official sources for your flight planning.</p>
+                        <p>This website uses cookies to remember your user settings. If you continue you agree to the storing of cookies on your device.</p>
                     </div>
                     <div class="modal-footer">
                         <input type="checkbox" ng-model="hideDisclaimer" title="Don't show again">Don't show this message again
