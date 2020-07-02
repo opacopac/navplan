@@ -11,7 +11,7 @@ function metarTafNotamService($http, $sce)
 {
     var EXTENT_OVERSIZE_FACTOR = 1.3;
     var WEATHER_MAXAGE = 5 * 60 * 1000; // 5 min
-    var metarTafBaseUrl = 'https://www.aviationweather.gov/gis/scripts/MetarJSON.php?taf=true&density=all&bbox='; //6.0,44.0,10.0,48.0';
+    var metarTafBaseUrl = 'https://www.aviationweather.gov/cgi-bin/json/MetarJSON.php?taf=true&density=all&bbox='; //6.0,44.0,10.0,48.0';
     var notamBaseUrl2 = 'php/notam.php?v=' + navplanVersion;
 	var weatherInfoCache = new WeatherInfoCache(undefined, undefined, undefined);
 	var areaNotamCache = new AreaNotamCache(undefined, []);

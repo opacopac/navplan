@@ -25,6 +25,11 @@ $corrLines = array(
     array('type' => 'HIDE','aip_country' => 'FR','aip_cat' => 'E','aip_name' => 'Bale AZ3 119.35'),
     array('type' => 'HIDE','aip_country' => 'FR','aip_cat' => 'C','aip_name' => 'Bale AZ4 119.35'),
     array('type' => 'HIDE','aip_country' => 'FR','aip_cat' => 'E','aip_name' => 'Bale AZ4 119.35'),
+    array('type' => 'HIDE','aip_country' => 'FR','aip_cat' => 'C','aip_name' => 'TMA GENEVE partie 1'),
+    array('type' => 'HIDE','aip_country' => 'FR','aip_cat' => 'C','aip_name' => 'TMA GENEVE partie 2'),
+    array('type' => 'HIDE','aip_country' => 'FR','aip_cat' => 'E','aip_name' => 'Geneve2 E 126.35'),
+    array('type' => 'HIDE','aip_country' => 'FR','aip_cat' => 'C','aip_name' => 'TMA GENEVE partie 3'),
+    array('type' => 'HIDE','aip_country' => 'FR','aip_cat' => 'E','aip_name' => 'Geneve3 E 126.35'),
 
     array('type' => 'CORR','aip_country' => 'DE','aip_cat' => 'TMZ','aip_name' => 'TMZ-EDNY XPDR A2677 119.925','corr_alt_top_reference' => 'STD','corr_alt_top_height' => '100','corr_alt_top_unit' => 'FL'),
 
