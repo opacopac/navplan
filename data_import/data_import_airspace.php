@@ -15,6 +15,7 @@ $corrLines = array(
     array('type' => 'CORR','aip_country' => 'CH','aip_cat' => 'RESTRICTED','aip_name' => 'LS-R11A ZUOZ 135.475','corr_name' => 'LS-R11A ZUOZ / S-CHANF 135.475'),
     array('type' => 'CORR','aip_country' => 'CH','aip_cat' => 'RESTRICTED','aip_name' => 'LS-R31 EMMEN 120.425','corr_name' => 'LS-R31 EMMEN EAST 120.425'),
     array('type' => 'CORR','aip_country' => 'CH','aip_cat' => 'DANGER','aip_name' => 'LS-D7 GRANDVI 135.475','corr_name' => 'LS-D7 GRANDVILLARD 135.475'),
+    array('type' => 'CORR','aip_country' => 'CH','aip_cat' => 'GLIDING','aip_name' => 'LSR51 CALANDA (MIL OFF FL150)','corr_name' => 'LSR54 CALANDA (MIL OFF FL150)'),
 
     array('type' => 'CORR','aip_country' => 'FR','aip_cat' => 'D','aip_name' => 'Bale2 119.35','corr_alt_top_reference' => 'STD','corr_alt_top_height' => '100','corr_alt_top_unit' => 'FL'),
     array('type' => 'HIDE','aip_country' => 'FR','aip_cat' => 'C','aip_name' => 'Bale AZ1 119.35'),
