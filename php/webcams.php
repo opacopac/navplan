@@ -35,11 +35,11 @@
         while ($rs = $result->fetch_array(MYSQLI_ASSOC))
         {
             $webcams[] = array(
-                id => intval($rs["id"]),
-                name => $rs["name"],
-                url => $rs["url"],
-                latitude => floatval($rs["latitude"]),
-                longitude => floatval($rs["longitude"])
+                "id" => intval($rs["id"]),
+                "name" => $rs["name"],
+                "url" => $rs["url"],
+                "latitude" => floatval($rs["latitude"]),
+                "longitude" => floatval($rs["longitude"])
             );
         }
 

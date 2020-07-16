@@ -88,8 +88,8 @@ function readNavplanList($email, $token)
     while ($row = $result->fetch_array(MYSQLI_ASSOC))
     {
         $navplans[] = array(
-            id => intval($row["nav_id"]),
-            title => $row["nav_title"]
+            "id" => intval($row["nav_id"]),
+            "title" => $row["nav_title"]
         );
     }
 
@@ -192,19 +192,19 @@ function readNavplanWaypoints($navplanId)
     while ($row = $result->fetch_assoc())
     {
         $wp = array(
-            type => $row["type"],
-            freq => $row["freq"],
-            callsign => $row["callsign"],
-            checkpoint => $row["checkpoint"],
-            airport_icao => $row["airport_icao"],
-            latitude => floatval($row["latitude"]),
-            longitude => floatval($row["longitude"]),
-            alt => $row["alt"],
-            isminalt => intval($row["isminalt"]),
-            ismaxalt => intval($row["ismaxalt"]),
-            isaltatlegstart => intval($row["isaltatlegstart"]),
-            remark => $row["remark"],
-            supp_info => $row["supp_info"]
+            "type" => $row["type"],
+            "freq" => $row["freq"],
+            "callsign" => $row["callsign"],
+            "checkpoint" => $row["checkpoint"],
+            "airport_icao" => $row["airport_icao"],
+            "latitude" => floatval($row["latitude"]),
+            "longitude" => floatval($row["longitude"]),
+            "alt" => $row["alt"],
+            "isminalt" => intval($row["isminalt"]),
+            "ismaxalt" => intval($row["ismaxalt"]),
+            "isaltatlegstart" => intval($row["isaltatlegstart"]),
+            "remark" => $row["remark"],
+            "supp_info" => $row["supp_info"]
         );
 
         if ($row["is_alternate"] == 1)

@@ -32,21 +32,21 @@
 	        foreach($metar->sky_condition as $condition)
 	        {
 	            $sky_condition[] = array(
-	                sky_cover => (string) $condition->attributes()->sky_cover,
-	                cloud_base_ft_agl => $condition->attributes()->cloud_base_ft_agl ? (string) $condition->attributes()->cloud_base_ft_agl : NULL
+	                "sky_cover" => (string) $condition->attributes()->sky_cover,
+	                "cloud_base_ft_agl" => $condition->attributes()->cloud_base_ft_agl ? (string) $condition->attributes()->cloud_base_ft_agl : NULL
 	            );
 	        }
 
 	        $weatherinfolist[(string) $metar->station_id]["metar"] = array(
-                raw_text => (string) $metar->raw_text,
-                observation_time => (string) $metar->observation_time,
-                temp_c => (string) $metar->temp_c,
-                dewpoint_c => (string) $metar->dewpoint_c,
-                visibility_m => (string) $metar->visibility_statute_mi > 0? ($metar->visibility_statute_mi * 1666.5) : NULL, // 1.60934
-                wind_dir_degrees => (string) $metar->wind_dir_degrees,
-                wind_speed_kt => (string) $metar->wind_speed_kt,
-                wx_string => (string) $metar->wx_string,
-                sky_condition => $sky_condition
+                "raw_text" => (string) $metar->raw_text,
+                "observation_time" => (string) $metar->observation_time,
+                "temp_c" => (string) $metar->temp_c,
+                "dewpoint_c" => (string) $metar->dewpoint_c,
+                "visibility_m" => (string) $metar->visibility_statute_mi > 0? ($metar->visibility_statute_mi * 1666.5) : NULL, // 1.60934
+                "wind_dir_degrees" => (string) $metar->wind_dir_degrees,
+                "wind_speed_kt" => (string) $metar->wind_speed_kt,
+                "wx_string" => (string) $metar->wx_string,
+                "sky_condition" => $sky_condition
 	        );
 	    }
 
@@ -64,8 +64,8 @@
 	            continue;
 
   	        $weatherinfolist[(string) $taf->station_id]["taf"] = array(
-  	            raw_text => (string) $taf->raw_text,
-                issue_time => (string) $taf->issue_time
+  	            "raw_text" => (string) $taf->raw_text,
+                "issue_time" => (string) $taf->issue_time
   	        );
         }
 

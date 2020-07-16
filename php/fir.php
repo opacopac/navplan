@@ -43,14 +43,14 @@ function getFirList($extent)
     while ($rs = $result->fetch_array(MYSQLI_ASSOC))
     {
         $firList[] = array(
-            id => $rs["id"],
-            region => $rs["region"],
-            icao => $rs["icao"],
-            name => $rs["name"],
-            statecode => $rs["statecode"],
-            statename => $rs["statename"],
-            centerlat => $rs["centerlat"],
-            centerlon => $rs["centerlon"]
+            "id" => $rs["id"],
+            "region" => $rs["region"],
+            "icao" => $rs["icao"],
+            "name" => $rs["name"],
+            "statecode" => $rs["statecode"],
+            "statename" => $rs["statename"],
+            "centerlat" => $rs["centerlat"],
+            "centerlon" => $rs["centerlon"]
         );
     }
 

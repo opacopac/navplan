@@ -331,19 +331,19 @@ function buildGeonamesList($result, $renameDuplicates, $lonLat)
     while ($rs = $result->fetch_array(MYSQLI_ASSOC))
     {
         $geoname = array(
-            type => $rs["type"],
-            id => intval($rs["id"]),
-            name => $rs["name"],
-            wpname => $rs["wpname"],
-            country => $rs["country"] ? $rs["country"] : "",
-            admin1 => $rs["admin1"] ? $rs["admin1"] : "",
-            admin2 => $rs["admin2"] ? $rs["admin2"] : "",
-            frequency => $rs["frequency"],
-            callsign => $rs["callsign"],
-            airport_icao => $rs["airport_icao"],
-            latitude => floatval($rs["latitude"]),
-            longitude => floatval($rs["longitude"]),
-            elevation => $rs["elevation"] ? floatval($rs["elevation"]) : $terrainHelper->getElevationMeters([$rs["longitude"], $rs["latitude"]])
+            "type" => $rs["type"],
+            "id" => intval($rs["id"]),
+            "name" => $rs["name"],
+            "wpname" => $rs["wpname"],
+            "country" => $rs["country"] ? $rs["country"] : "",
+            "admin1" => $rs["admin1"] ? $rs["admin1"] : "",
+            "admin2" => $rs["admin2"] ? $rs["admin2"] : "",
+            "frequency" => $rs["frequency"],
+            "callsign" => $rs["callsign"],
+            "airport_icao" => $rs["airport_icao"],
+            "latitude" => floatval($rs["latitude"]),
+            "longitude" => floatval($rs["longitude"]),
+            "elevation" => $rs["elevation"] ? floatval($rs["elevation"]) : $terrainHelper->getElevationMeters([$rs["longitude"], $rs["latitude"]])
         );
 
         $geonames[] = $geoname;
@@ -369,19 +369,19 @@ function buildGeonamesList($result, $renameDuplicates, $lonLat)
     if ($lonLat) // add click coordinates as last point
     {
         $clickPoint = array(
-            type => "coordinates",
-            id => null,
-            name => round($lonLat[1], 4) . " " . round($lonLat[0], 4),
-            wpname => round($lonLat[1], 4) . " " . round($lonLat[0], 4),
-            country => "",
-            admin1 => "",
-            admin2 => "",
-            frequency => "",
-            callsign => "",
-            airport_icao => "",
-            latitude => floatval($lonLat[1]),
-            longitude => floatval($lonLat[0]),
-            elevation => $terrainHelper->getElevationMeters($lonLat)
+            "type" => "coordinates",
+            "id" => null,
+            "name" => round($lonLat[1], 4) . " " . round($lonLat[0], 4),
+            "wpname" => round($lonLat[1], 4) . " " . round($lonLat[0], 4),
+            "country" => "",
+            "admin1" => "",
+            "admin2" => "",
+            "frequency" => "",
+            "callsign" => "",
+            "airport_icao" => "",
+            "latitude" => floatval($lonLat[1]),
+            "longitude" => floatval($lonLat[0]),
+            "elevation" => $terrainHelper->getElevationMeters($lonLat)
         );
 
         $geonames[] = $clickPoint;

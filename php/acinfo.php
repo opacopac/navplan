@@ -22,14 +22,14 @@
 	while ($rs = $result->fetch_array(MYSQLI_ASSOC))
 	{
 	    $aircrafts[] = array(
-	        id => $rs["id"],
-	        address => $rs["icaohex"],
-	        addresstype => 'ICAO',
-	        registration => $rs["registration"],
-	        aircraftModelType => $rs["aircraftModelType"],
-	        manufacturer => $rs["manufacturer"],
-	        aircraftCategoryId => $rs["aircraftCategoryId"],
-	        ownerOperators => json_decode($rs["ownerOperators"])
+	        "id" => $rs["id"],
+	        "address" => $rs["icaohex"],
+	        "addresstype" => 'ICAO',
+	        "registration" => $rs["registration"],
+	        "aircraftModelType" => $rs["aircraftModelType"],
+	        "manufacturer" => $rs["manufacturer"],
+	        "aircraftCategoryId" => $rs["aircraftCategoryId"],
+	        "ownerOperators" => json_decode($rs["ownerOperators"])
 	    );
     }
 

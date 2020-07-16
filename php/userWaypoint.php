@@ -71,13 +71,13 @@
             while ($rs = $result->fetch_array(MYSQLI_ASSOC))
             {
                 $userWps[] = array(
-                    id => intval($rs["id"]),
-                    type => $rs["type"],
-                    name => $rs["name"],
-                    latitude => floatval($rs["latitude"]),
-                    longitude => floatval($rs["longitude"]),
-                    remark => $rs["remark"],
-                    supp_info => $rs["supp_info"]
+                    "id" => intval($rs["id"]),
+                    "type" => $rs["type"],
+                    "name" => $rs["name"],
+                    "latitude" => floatval($rs["latitude"]),
+                    "longitude" => floatval($rs["longitude"]),
+                    "remark" => $rs["remark"],
+                    "supp_info" => $rs["supp_info"]
                 );
             }
         }

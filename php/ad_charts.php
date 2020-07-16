@@ -43,15 +43,15 @@
             $rs = $result->fetch_array(MYSQLI_ASSOC);
 
             $chart = array(
-                id => $rs["id"],
-                airport_icao => $rs["airport_icao"],
-                source => $rs["source"],
-                type => $rs["type"],
-                filename => $rs["filename"],
-                mercator_n => $rs["mercator_n"],
-                mercator_s => $rs["mercator_s"],
-                mercator_e => $rs["mercator_e"],
-                mercator_w => $rs["mercator_w"]
+                "id" => $rs["id"],
+                "airport_icao" => $rs["airport_icao"],
+                "source" => $rs["source"],
+                "type" => $rs["type"],
+                "filename" => $rs["filename"],
+                "mercator_n" => $rs["mercator_n"],
+                "mercator_s" => $rs["mercator_s"],
+                "mercator_e" => $rs["mercator_e"],
+                "mercator_w" => $rs["mercator_w"]
             );
 
     		echo json_encode(array("chart" => $chart), JSON_NUMERIC_CHECK);

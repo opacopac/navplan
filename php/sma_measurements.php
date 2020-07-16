@@ -59,20 +59,20 @@ function getMeasurementList($minLat, $minLon, $maxLat, $maxLon)
     while ($rs = $result->fetch_array(MYSQLI_ASSOC))
     {
         $firList[] = array(
-            station_id => $rs["station_id"],
-            station_name => $rs["station_name"],
-            station_lat => $rs["station_lat"],
-            station_lon => $rs["station_lon"],
-            station_alt_m => $rs["station_alt_m"],
-            measurement_time => $rs["measurement_time"],
-            temp_c => $rs["temp_c"],
-            sun_min => $rs["sun_min"],
-            precip_mm => $rs["precip_mm"],
-            wind_dir => $rs["wind_dir"],
-            wind_speed_kmh => $rs["wind_speed_kmh"],
-            wind_gusts_kmh => $rs["wind_gusts_kmh"],
-            qnh_hpa => $rs["qnh_hpa"],
-            humidity_pc => $rs["humidity_pc"]
+            "station_id" => $rs["station_id"],
+            "station_name" => $rs["station_name"],
+            "station_lat" => $rs["station_lat"],
+            "station_lon" => $rs["station_lon"],
+            "station_alt_m" => $rs["station_alt_m"],
+            "measurement_time" => $rs["measurement_time"],
+            "temp_c" => $rs["temp_c"],
+            "sun_min" => $rs["sun_min"],
+            "precip_mm" => $rs["precip_mm"],
+            "wind_dir" => $rs["wind_dir"],
+            "wind_speed_kmh" => $rs["wind_speed_kmh"],
+            "wind_gusts_kmh" => $rs["wind_gusts_kmh"],
+            "qnh_hpa" => $rs["qnh_hpa"],
+            "humidity_pc" => $rs["humidity_pc"]
         );
     }
 
