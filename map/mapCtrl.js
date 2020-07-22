@@ -568,6 +568,31 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
         $scope.$apply();
     };
 
+    $scope.alignPosition = function()
+    {
+        if ($scope.globalData.locationStatus !== 'current') { return; }
+
+        const lastPositions = locationService.getLastPositions();
+        if (lastPositions.length > 0) {
+            const currentPosition = lastPositions[lastPositions.length - 1];
+            updateMapPosition(currentPosition);
+        } else if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(currentPosition) {
+                updateMapPosition(currentPosition.coords);
+            }, function(error) {
+                $scope.showErrorMessage(error.message);
+                $scope.globalData.locationStatus = "error";
+                $scope.$apply();
+            });
+        }
+    };
+
+    function updateMapPosition(currentPosition)
+    {
+        const { latitude, longitude } = currentPosition;
+        mapService.setMapPosition(latitude, longitude);
+    }
+
 	//endregion
 
 
