@@ -167,26 +167,26 @@ html, body {
     display: none;
 }
 
-.mapbutton-timer {
+.mapbutton-location-options {
   position: absolute;
   top: 50px;
   left: 70px;
   z-index: 20;
 }
 
-#fullScreenContent:fullscreen .mapbutton-timer {
+#fullScreenContent:fullscreen .mapbutton-location-options {
     top: 10px;
 }
 
-#fullScreenContent:-webkit-full-screen .mapbutton-timer {
+#fullScreenContent:-webkit-full-screen .mapbutton-location-options {
     top: 10px;
 }
 
-#fullScreenContent:-moz-full-screen .mapbutton-timer {
+#fullScreenContent:-moz-full-screen .mapbutton-location-options {
     top: 10px;
 }
 
-#fullScreenContent:-ms-fullscreen .mapbutton-timer {
+#fullScreenContent:-ms-fullscreen .mapbutton-location-options {
     top: 10px;
 }
 
