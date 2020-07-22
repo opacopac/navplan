@@ -35,21 +35,29 @@
 		{{ globalData.cacheProgress.percent }}%
 	</div>
 </div>
-<!-- timer -->
-<div id="map_timer" class="mapbutton-timer" ng-show="globalData.showLocation" align="center" class="ng-cloak">
+<div class="mapbutton-location-options" ng-show="globalData.showLocation" align="center" ng-cloak>
+	<!-- timer -->
+	<div id="map_timer">
 	<span class="map-currenttime">
 		{{ globalData.timer.currentTimeString }}
 	</span>
-	<br />
-	<button type="button" class="btn btn-primary btn-lg" ng-click="onTimerClicked();" title="start timer"><span class="glyphicon glyphicon-time"></span> Timer</button>
-	<br />
-	<span class="map-stoptime">
+		<br />
+		<button type="button" class="btn btn-primary btn-lg" ng-click="onTimerClicked();" title="start timer"><span class="glyphicon glyphicon-time"></span> Timer</button>
+		<br />
+		<span class="map-stoptime">
 		{{ globalData.timer.stopTimeString }}
 	</span>
-	<br />
-	<span class="map-timer">
+		<br />
+		<span class="map-timer">
 		{{ globalData.timer.elapsedTimeString }}
 	</span>
+	</div>
+	<!-- location alignment -->
+	<div class="mapbutton-alignment">
+		<button type="button" class="btn btn-primary btn-circle btn-lg" ng-click="alignPosition();" title="align position">
+			<i class="fa fa-thumb-tack"></i>
+		</button>
+	</div>
 </div>
 <!-- feature popup -->
 <div id="feature-popup" class="ol-popup" style="visibility: hidden">
