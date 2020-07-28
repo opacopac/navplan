@@ -3206,7 +3206,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 					rotWithView = false;
 					break;
 				case "UNKNOWN":
-					icon += "traffic_unknown" + iconSuffix + ".png";
+					icon += "traffic_unknown" + iconSuffix + ".svg";
 					rotation = 0;
 					rotWithView = false;
 					break;

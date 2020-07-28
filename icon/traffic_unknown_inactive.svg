@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="-200 -200 400 400" width="40" height="40">
+	<defs>
+		<mask id="caret_mask" x="-200" y="-200" width="400" height="400" >
+			<rect x="-200" y="-200" width="400" height="400" style="stroke:none; fill:#ffffff"></rect>
+			<path id="inner_caret" d="M -80.0 0.0 L 0.0 -120.0 L 80.0 0.0 L 0.0 120.0 L -80.0 0.0" style="stroke:none; fill:#000000"/>
+		</mask>
+		<path id="caret"  d="M 0.0 -180.0 L -120.0 0.0 L 0.0 180.0 L 120.0 0.0 L 0.0 -180.0" style="mask: url(#caret_mask)" />
+		<circle id="dot" cx="0" cy="0" r="15" />
+		<path id="question_mark"  d="M 105.0 -140.0 A 35 35 0 1 1 163.333 -113.913A 70 70 0 0 0 140 -61.7376" />
+		<circle id="question_mark_dot" cx="140" cy="-30" r="10" />
+	</defs>
+	<g>
+		<use xlink:href="#caret" opacity="1" fill="#ff0000" stroke="none" />
+		<use xlink:href="#dot" opacity="1" fill="#ff0000" stroke="none" />
+		<use xlink:href="#question_mark" opacity="1" fill="none" stroke="#ff0000" stroke-width="20" />
+		<use xlink:href="#question_mark_dot" opacity="1" fill="#ff0000" stroke="none" />
+	</g>
+</svg>
