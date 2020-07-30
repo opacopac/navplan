@@ -213,7 +213,7 @@ function readNavplanWaypoints($navplanId)
             $waypoints[] = $wp;
     }
 
-    return array(waypoints => $waypoints, alternate => $alternate);
+    return array("waypoints" => $waypoints, "alternate" => $alternate);
 }
 
 
