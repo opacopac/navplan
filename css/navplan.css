@@ -89,6 +89,12 @@ html, body {
   z-index: 20;
 }
 
+.mapbutton-center-position{
+    top: auto;
+    right: .5em;
+    bottom: 6.5em;
+}
+
 .mapbutton-traffic {
   position: absolute;
   top: 180px;
@@ -359,7 +365,7 @@ html, body {
 .ol-rotate {
     top: auto;
     right: .5em;
-    bottom: 6.5em;
+    bottom: 9.5em;
 }
 
 .ol-full-screen {

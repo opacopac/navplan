@@ -37,12 +37,15 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 	var wpCache = new WaypointCache(undefined, undefined, undefined);
 	var currentOverlay = undefined;
 	var modifySnapInteractions = [];
+	var lastOwnPos;
+    var centerOwnPosContainer;
     var onFeatureSelectCallback = undefined;
     var onMapClickCallback = undefined;
     var onMoveEndCallback = undefined;
 	var onTrackModifyEndCallback = undefined;
 	var onMapActivityCallback = undefined;
 	var onFullScreenCallback = undefined;
+	var onCenterOwnPositionCallback = undefined;
 	var isGeopointSelectionActive = false;
 	var wgs84Sphere = new ol.Sphere(6378137);
 	var minZoomLevel = [];
@@ -112,7 +115,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
     //region INIT MAP
 	
 	// init map
-	function init(mapPos, mapClickCallback, featureSelectCallback, moveEndCallback, trackModEndCallback, mapActivityCallback, toggleFullScreenCallback)
+	function init(mapPos, mapClickCallback, featureSelectCallback, moveEndCallback, trackModEndCallback, mapActivityCallback, toggleFullScreenCallback, centerOwnPositionCallback)
     {
         // set callbacks
         onMapClickCallback = mapClickCallback;
@@ -121,6 +124,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
         onTrackModifyEndCallback = trackModEndCallback;
         onMapActivityCallback = mapActivityCallback;
         onFullScreenCallback = toggleFullScreenCallback;
+        onCenterOwnPositionCallback = centerOwnPositionCallback;
 
 
         if (map) // re-attach map if it already exists (e.g. from switching views)
@@ -158,6 +162,9 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
         ol.inherits(FullScreenButtonControl, ol.control.Control);
         var fsButtonControl = new FullScreenButtonControl();
 
+        ol.inherits(CenterOwnPositionControl, ol.control.Control);
+        var centerOwnPosButtonControl = new CenterOwnPositionControl();
+
 
         // init map
         map = new ol.Map({
@@ -167,7 +174,8 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
                 fsButtonControl,
                 new ol.control.Rotate(),
                 new ol.control.Attribution(),
-                zoomButtonsControl
+                zoomButtonsControl,
+                centerOwnPosButtonControl
             ],
             layers: [
                 mapLayer,
@@ -1558,6 +1566,16 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 
         map.getView().setRotation((map.getView().getRotation() + 2 * Math.PI) % (2 * Math.PI));
 
+        // show center own pos button
+        var mapLatLon = getMapPosition().center;
+
+        if (lastOwnPos !== undefined && roundToDigits(mapLatLon[1], 7) === roundToDigits(lastOwnPos.lat, 7) && roundToDigits(mapLatLon[0], 7) === roundToDigits(lastOwnPos.lon, 7)) {
+            centerOwnPosContainer.style.visibility = "hidden";
+        } else {
+            centerOwnPosContainer.style.visibility = "visible";
+        }
+
+
         // update map features
         if (map.getView().getZoom() >= 9) // TODO: variable zoom level
         {
@@ -1626,7 +1644,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
     }
 
 
-    function setMapPosition(lat, lon, zoom, forceRender)
+    function setMapPosition(lat, lon, zoom, forceRender, isOwnPosition)
     {
         if (!map || !map.getView())
             return;
@@ -1642,6 +1660,10 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 
         if (forceRender)
             map.renderSync();
+
+        if (isOwnPosition === true) {
+            lastOwnPos = { lat: lat, lon: lon };
+        }
     }
 
 
@@ -1771,6 +1793,37 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
     }
 
 
+    function CenterOwnPositionControl(opt_options)
+    {
+        var options = opt_options || {};
+
+        var img = document.createElement('i');
+        img.className = "fa fa-thumb-tack";
+
+        var button = document.createElement('button');
+        button.setAttribute("title", "center own position");
+        button.addEventListener('click', onCenterOwnPositionClicked, false);
+        button.appendChild(img);
+
+        centerOwnPosContainer = document.createElement('div');
+        centerOwnPosContainer.className = 'mapbutton-center-position ol-unselectable ol-control';
+        centerOwnPosContainer.appendChild(button);
+
+        ol.control.Control.call(this, {
+            element: centerOwnPosContainer,
+            target: options.target
+        });
+
+
+        function onCenterOwnPositionClicked()
+        {
+            if (onCenterOwnPositionCallback) {
+                onCenterOwnPositionCallback();
+            }
+        }
+    }
+
+
     //endregion
 
 
@@ -1781,7 +1834,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 		if (currentOverlay)
 			closeOverlay();
 
-		if (container.style.visibility = "hidden")
+		if (container.style.visibility === "hidden")
 			container.style.visibility = "visible";
 
 		currentOverlay = new ol.Overlay({

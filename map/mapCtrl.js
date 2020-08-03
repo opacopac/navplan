@@ -54,7 +54,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 			longitude: $item.longitude
 		};
 
-		mapService.setMapPosition($item.latitude, $item.longitude, 11, true);
+		mapService.setMapPosition($item.latitude, $item.longitude, 11, true, false);
 		mapService.drawGeopointSelection([ $item ], [], undefined);
 	};
 
@@ -548,11 +548,14 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
                 var latDiff = lastPositions[lastIdx].latitude - lastPositions[lastIdx - 1].latitude;
                 var lonDiff = lastPositions[lastIdx].longitude - lastPositions[lastIdx - 1].longitude;
                 var pos = mapService.getMapPosition();
+                var newLat = pos.center[1] + latDiff;
+                var newLon = pos.center[0] + lonDiff;
+                var isOwnPos = (roundToDigits(newLat, 7) === roundToDigits(currentPosition.coords.latitude, 7) && roundToDigits(newLon, 7) === roundToDigits(currentPosition.coords.longitude, 7));
 
-                mapService.setMapPosition(pos.center[1] + latDiff, pos.center[0] + lonDiff, pos.zoom);
+                mapService.setMapPosition(newLat, newLon, pos.zoom, false, isOwnPos);
             }
             else
-                mapService.setMapPosition(currentPosition.coords.latitude, currentPosition.coords.longitude);
+                mapService.setMapPosition(currentPosition.coords.latitude, currentPosition.coords.longitude, undefined, false, true);
         }
 
         $scope.globalData.locationStatus = "current";
@@ -568,17 +571,18 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
         $scope.$apply();
     };
 
-    $scope.alignPosition = function()
-    {
-        if ($scope.globalData.locationStatus !== 'current') { return; }
 
-        const lastPositions = locationService.getLastPositions();
+    $scope.onCenterOwnPositionClicked = function()
+    {
+        // if ($scope.globalData.locationStatus !== 'current') { return; }
+
+        var lastPositions = locationService.getLastPositions();
         if (lastPositions.length > 0) {
-            const currentPosition = lastPositions[lastPositions.length - 1];
-            updateMapPosition(currentPosition);
+            var currentPosition = lastPositions[lastPositions.length - 1];
+            mapService.setMapPosition(currentPosition.latitude, currentPosition.longitude, undefined, false, true);
         } else if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(function(currentPosition) {
-                updateMapPosition(currentPosition.coords);
+                mapService.setMapPosition(currentPosition.coords.latitude, currentPosition.coords.longitude, undefined, false, true);
             }, function(error) {
                 $scope.showErrorMessage(error.message);
                 $scope.globalData.locationStatus = "error";
@@ -586,12 +590,6 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
             });
         }
     };
-
-    function updateMapPosition(currentPosition)
-    {
-        const { latitude, longitude } = currentPosition;
-        mapService.setMapPosition(latitude, longitude);
-    }
 
 	//endregion
 
@@ -733,7 +731,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 		var lonDiff = currentAcPosition.longitude - $scope.followTrafficLastPosition.longitude;
 		var pos = mapService.getMapPosition();
 
-		mapService.setMapPosition(pos.center[1] + latDiff, pos.center[0] + lonDiff, pos.zoom);
+		mapService.setMapPosition(pos.center[1] + latDiff, pos.center[0] + lonDiff, pos.zoom, false, false);
 
 		$scope.followTrafficLastPosition = currentAcPosition;
 	};
@@ -755,7 +753,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 		$scope.followTrafficAddress = $scope.selectedTraffic.acaddress;
 		$scope.followTrafficLastPosition = $scope.selectedTraffic.position;
 
-		mapService.setMapPosition($scope.followTrafficLastPosition.latitude, $scope.followTrafficLastPosition.longitude);
+		mapService.setMapPosition($scope.followTrafficLastPosition.latitude, $scope.followTrafficLastPosition.longitude, undefined, false, false);
 	};
 
 
@@ -1426,7 +1424,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
             if (!zoom)
                 zoom = 11;
 
-            mapService.setMapPosition(position.coords.latitude, position.coords.longitude, zoom);
+            mapService.setMapPosition(position.coords.latitude, position.coords.longitude, zoom, false, true);
             $scope.globalData.currentMapPos = mapService.getMapPosition();
             $scope.globalData.initialPositionHasBeenSet = true;
         }
@@ -1442,7 +1440,8 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 			$scope.onMapMoveEnd,
 			$scope.onTrackModifyEnd,
             $scope.onMapActivityOccured,
-            $scope.onFullScreenModeClicked
+            $scope.onFullScreenModeClicked,
+            $scope.onCenterOwnPositionClicked
         );
 
 		$scope.redrawWaypoints();
