@@ -31,14 +31,16 @@
 		<div class="form-group">
 			<label for="aircraft_speed" class="control-label col-sm-3">Ground Speed</label>
 			<div class="col-sm-2">
-				<input type="text" id="aircraft_speed" class="form-control" ng-model="globalData.aircraft.speed" placeholder="kt" maxlength="3" size="3">
+				<input type="text" id="aircraft_speed" class="form-control" ng-model="globalData.aircraft.speed" placeholder="Speed in kt" maxlength="3" size="3">
 			</div>
+			<label class="control-label hidden-xs">kt</label>
 		</div>
 		<div class="form-group">
 			<label for="aircraft_consumption" class="control-label col-sm-3">Fuel Consumption</label>
 			<div class="col-sm-2">
-				<input type="text" id="aircraft_consumption" class="form-control" ng-model="globalData.aircraft.consumption" placeholder="l/h" maxlength="3" size="3">
+				<input type="text" id="aircraft_consumption" class="form-control" ng-model="globalData.aircraft.consumption" placeholder="Consumption in l/h" maxlength="3" size="3">
 			</div>
+			<label class="control-label hidden-xs">l/h</label>
 		</div>
 	</div>
     <!-- waypoint list -->
@@ -158,7 +160,7 @@
                     </thead>
                     <tbody>
                     <tr>
-                        <td>Trip</td>
+                        <td>Trip <i class="glyphicon glyphicon-info-sign info-button" title="Time and distance for each waypoint are rounded up. Includes +5min for departure and +5min for arrival waypoint."></i></td>
                         <td><span ng-show="globalData.fuel.tripTime > 0">{{ formatHourMin(globalData.fuel.tripTime) }}</span></td>
                         <td><span ng-show="globalData.fuel.tripTime > 0">{{ fuelByTime(globalData.fuel.tripTime) }}</span></td>
                     </tr>
