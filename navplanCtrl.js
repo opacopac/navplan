@@ -603,11 +603,11 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 
         window.sessionStorage.removeItem("notamCache");
 
-		if ($scope.appCache.status == $scope.appCache.DOWNLOADING)
+		if ($scope.appCache && $scope.appCache.status == $scope.appCache.DOWNLOADING)
 		{
 			$scope.appCache.abort();
 		}
-		else if ($scope.appCache.status != $scope.appCache.UNCACHED)
+		else if ($scope.appCache && $scope.appCache.status != $scope.appCache.UNCACHED)
 		{
 			$scope.globalData.cacheStatus = "updating";
 			$scope.globalData.cacheProgress = {loaded: 0, total: 100, percent: 0};
@@ -642,7 +642,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 
 	$scope.onCacheReady = function(e)
 	{
-		if ($scope.appCache.status == $scope.appCache.UPDATEREADY)
+		if ($scope.appCache && $scope.appCache.status == $scope.appCache.UPDATEREADY)
 			$scope.appCache.swapCache();
 
 		if ($scope.globalData.cacheIsActive)
