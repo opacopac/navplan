@@ -314,7 +314,7 @@ function trafficService($http)
     function addOrUpdateAc(source, acaddress, addresstype, actype, registration, callsign, opCallsign, aircraftModelType, positionList)
     {
         var ac = new Aircraft();
-        var isInBlackList = (acaddressBlacklist.indexOf(acaddress.toUpperCase()) >= 0);
+        var isInBlackList = (acaddressBlacklist.indexOf(acaddress.toString().toUpperCase()) >= 0);
 
         if (!acCache.acList.hasOwnProperty(acaddress)) // add new ac to list
         {
