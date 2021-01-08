@@ -5,7 +5,7 @@
 navplanApp
 	.factory('metarTafNotamService', metarTafNotamService );
 
-trafficService.$inject = ['$http', '$sce'];
+metarTafNotamService.$inject = ['$http', '$sce'];
 
 function metarTafNotamService($http, $sce)
 {

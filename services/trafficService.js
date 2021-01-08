@@ -15,7 +15,8 @@ function trafficService($http)
     var adsbExchangeBaseUrl = 'https://www.navplan.ch/v2/php/Navplan/Traffic/TrafficService.php?action=readadsbextrafficwithdetails'; // &minlon=6.921691064453124&minlat=46.61094866382615&maxlon=7.922820214843749&maxlat=47.20901611815029
     var acCache = new AircraftCache();
     var lastExtent = undefined;
-    var acaddressBlacklist = ["4B3416"];
+    var acAddressMasklist = ["4B3416"];
+    var acAddressHidelist = ["4B4321"];
 
 
 	// return api reference
@@ -313,12 +314,17 @@ function trafficService($http)
 
     function addOrUpdateAc(source, acaddress, addresstype, actype, registration, callsign, opCallsign, aircraftModelType, positionList)
     {
-        var ac = new Aircraft();
-        var isInBlackList = (acaddressBlacklist.indexOf(acaddress.toString().toUpperCase()) >= 0);
+        var isInHideList = (acAddressHidelist.indexOf(acaddress.toString().toUpperCase()) >= 0);
+        var isInMaskList = (acAddressMasklist.indexOf(acaddress.toString().toUpperCase()) >= 0);
 
+        if (isInHideList) {
+            return;
+        }
+
+        var ac = new Aircraft();
         if (!acCache.acList.hasOwnProperty(acaddress)) // add new ac to list
         {
-            if (isInBlackList)
+            if (isInMaskList)
             {
                 ac.acaddress = "Unknown";
                 ac.addresstype = "N/A";
@@ -336,7 +342,7 @@ function trafficService($http)
             ac.positions = [];
             acCache.acList[acaddress] = ac;
         }
-        else if (!isInBlackList)
+        else if (!isInMaskList)
         {
             ac = acCache.acList[acaddress];
 
