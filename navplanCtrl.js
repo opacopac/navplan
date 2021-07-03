@@ -460,33 +460,45 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 
 	$scope.exportKml = function()
 	{
-        createTempFile($http, "php/navplanKml.php", "application/vnd.google-earth.kml+xml", "navplan.kml", { navplan: $scope.globalData.navplan, track: $scope.globalData.track }, $scope.onTempFileCreated);
+		const filename = $scope.getExportFilename($scope.globalData.navplan, "navplan_", ".kml", "navplan.kml");
+        createTempFile($http, "php/navplanKml.php", "application/vnd.google-earth.kml+xml", filename, { navplan: $scope.globalData.navplan, track: $scope.globalData.track }, $scope.onTempFileCreated);
 	};
 
 
     $scope.exportGpx = function()
     {
-        createTempFile($http, "php/navplanGpx.php", "application/gpx+xml", "navplan.gpx", { navplan: $scope.globalData.navplan, track: $scope.globalData.track }, $scope.onTempFileCreated);
+		const filename = $scope.getExportFilename($scope.globalData.navplan, "navplan_", ".gpx", "navplan.gpx");
+        createTempFile($http, "php/navplanGpx.php", "application/gpx+xml", filename, { navplan: $scope.globalData.navplan, track: $scope.globalData.track }, $scope.onTempFileCreated);
     };
 
 
     $scope.exportFpl = function()
     {
-        createTempFile($http, "php/navplanFpl.php", "application/octet-stream", "navplan.fpl", { navplan: $scope.globalData.navplan }, $scope.onTempFileCreated);
+		const filename = $scope.getExportFilename($scope.globalData.navplan, "navplan_", ".fpl", "navplan.fpl");
+        createTempFile($http, "php/navplanFpl.php", "application/octet-stream", filename, { navplan: $scope.globalData.navplan }, $scope.onTempFileCreated);
     };
 
 
-    // TODO: include in onShareClicked
+	$scope.exportGarminFpl = function()
+	{
+		const filename = $scope.getExportFilename($scope.globalData.navplan, "navplan_", ".fpl", "navplan.fpl");
+		createTempFile($http, "php/navplanGarminFpl.php", "application/octet-stream", filename, { navplan: $scope.globalData.navplan }, $scope.onTempFileCreated);
+	};
+
+
+	// TODO: include in onShareClicked
     $scope.createPdfNavplan = function()
     {
-        createTempFile($http, "php/navplanPdf.php", "application/pdf", "navplan.pdf", $scope.getNavplanExportData(), $scope.onTempFileCreated);
+		const filename = $scope.getExportFilename($scope.globalData.navplan, "navplan_", ".pdf", "navplan.pdf");
+        createTempFile($http, "php/navplanPdf.php", "application/pdf", filename, $scope.getNavplanExportData(), $scope.onTempFileCreated);
     };
 
 
     // TODO: include in onShareClicked
     $scope.createExcelNavplan = function()
     {
-        createTempFile($http, "php/navplanExcel.php", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "navplan.xlsx", $scope.getNavplanExportData(), $scope.onTempFileCreated);
+		const filename = $scope.getExportFilename($scope.globalData.navplan, "navplan_", ".xlsx", "navplan.xlsx");
+        createTempFile($http, "php/navplanExcel.php", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", filename, $scope.getNavplanExportData(), $scope.onTempFileCreated);
     };
 
 
@@ -842,4 +854,23 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 			$scope.appCache.addEventListener('error', $scope.onCacheError, false);
 		}
 	};
+
+
+	$scope.getExportFilename = function (navplan, prefix, suffix, fallbackName) {
+		if (!navplan || !navplan.waypoints || navplan.waypoints.length < 2) {
+			return fallbackName;
+		}
+
+		const wpFirst = navplan.waypoints[0];
+		const wpLast = navplan.waypoints[navplan.waypoints.length - 1];
+		if (wpFirst.type !== 'airport' || wpLast.type !== 'airport') {
+			return fallbackName;
+		}
+
+		if (!wpFirst.checkpoint.match(/^[A-Z]{4}$/) || !wpLast.checkpoint.match(/^[A-Z]{4}$/)) {
+			return fallbackName;
+		}
+
+		return prefix + wpFirst.checkpoint + '-' + wpLast.checkpoint + suffix;
+	}
 }

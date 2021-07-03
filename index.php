@@ -103,7 +103,8 @@
 							<li><a href="#" onclick="return false;" ng-click="createExcelNavplan()"><i class="fa fa-file-excel-o fa-fw"></i>&nbsp; Excel</a></li>
 							<li><a href="#" onclick="return false;" ng-click="exportKml()"><i class="fa fa-globe fa-fw"></i>&nbsp; KML (Google Earth)</a></li>
                             <li><a href="#" onclick="return false;" ng-click="exportGpx()"><i class="fa fa-map-marker fa-fw"></i>&nbsp; GPX (Airnav Pro, SkyDemon, etc.)</a></li>
-                            <li><a href="#" onclick="return false;" ng-click="exportFpl()"><i class="fa fa-map-marker fa-fw"></i>&nbsp; FPL (Garmin, Foreflight, etc.)</a></li>
+                            <li><a href="#" onclick="return false;" ng-click="exportFpl()"><i class="fa fa-map-marker fa-fw"></i>&nbsp; FPL (Foreflight)</a></li>
+                            <li><a href="#" onclick="return false;" ng-click="exportGarminFpl()"><i class="fa fa-map-marker fa-fw"></i>&nbsp; FPL (Garmin)</a></li>
 							<!--<li><a>Share current Navplan on...</a></li>
 							<li><a href="#" onclick="return false;" ng-click="onShareClicked('facebook')"><i class="fa fa-facebook fa-fw"></i>&nbsp;  Facebook</a></li>
 							<li><a href="#" onclick="return false;" ng-click="onShareClicked('twitter')"><i class="fa fa-twitter fa-fw"></i>&nbsp;  Twitter</a></li>
