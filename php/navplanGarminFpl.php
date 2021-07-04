@@ -69,7 +69,7 @@ function createFplXml($data)
             '    <route-name>' . $routeTitle . '</route-name>' . "\n" .
             '    <flight-plan-index>1</flight-plan-index>' . "\n"; // TODO: nötig?
 
-        foreach ($uniqueWaypoints as $wp) {
+        foreach ($waypoints as $wp) {
             $xml .= '' .
                 '    <route-point>' . "\n" .
                 '      <waypoint-identifier>' . getNormalizedName($wp) . '</waypoint-identifier>' . "\n" .
