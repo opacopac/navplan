@@ -1,6 +1,7 @@
 <?php
-	include "config.php";
-	include "helper.php";
+	require_once "config.php";
+	require_once "helper.php";
+	require_once "terrainHelper.php";
 
     $conn = openDb();
 
@@ -59,7 +60,9 @@
 
 		if ($email && $token)
 		{
-            $query = "SELECT uwp.* FROM user_waypoints AS uwp";
+			$terrainHelper = new TerrainHelper($conn);
+
+			$query = "SELECT uwp.* FROM user_waypoints AS uwp";
             $query .= " INNER JOIN users AS usr ON uwp.user_id = usr.id";
             $query .= " WHERE usr.email = '" . $email . "' AND usr.token = '" . $token . "'";
 
@@ -76,7 +79,8 @@
                     "name" => $rs["name"],
                     "latitude" => floatval($rs["latitude"]),
                     "longitude" => floatval($rs["longitude"]),
-                    "remark" => $rs["remark"],
+					"elevation" => $terrainHelper->getElevationMeters([$rs["longitude"], $rs["latitude"]]),
+					"remark" => $rs["remark"],
                     "supp_info" => $rs["supp_info"]
                 );
             }

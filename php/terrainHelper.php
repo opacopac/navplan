@@ -22,10 +22,15 @@ class TerrainHelper
 
     //region CONSTRUCTOR / DESTRUCTOR
 
-    function __construct()
+    function __construct($existing_connection = null)
     {
         $this->openTileFiles = array();
-        $this->conn = openDb();
+
+        if ($existing_connection) {
+            $this->conn = $existing_connection;
+        } else {
+            $this->conn = openDb();
+        }
     }
 
 

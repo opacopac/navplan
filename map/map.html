@@ -159,6 +159,7 @@
 			<h4>{{ globalData.selectedWp.userWaypoint.name }}</h4>
 			<p>User Point</p>
 			<p>{{ getPositionString(globalData.selectedWp.userWaypoint.latitude, globalData.selectedWp.userWaypoint.longitude) }}</p>
+			<p ng-show="globalData.selectedWp.userWaypoint.elevation">Elevation: {{ getElevationString(globalData.selectedWp.userWaypoint.elevation) }}</p>
 			<p ng-show="globalData.selectedWp.userWaypoint.remark">Remark: {{ globalData.selectedWp.userWaypoint.remark }}</p>
                 <hr />
             <p><a href="#" ng-click="$event.preventDefault(); onShowWeather(globalData.selectedWp.userWaypoint.latitude, globalData.selectedWp.userWaypoint.longitude, globalData.selectedWp.userWaypoint.name);"

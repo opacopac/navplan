@@ -1,6 +1,7 @@
 <?php
-include "config.php";
-include "helper.php";
+require_once "config.php";
+require_once "helper.php";
+require_once "terrainHelper.php";
 
 const MAX_BOTTOM_ALT_FL = 200;
 
@@ -508,6 +509,8 @@ function getUserPoints($email, $token, $minLon, $minLat, $maxLon, $maxLat)
 
     if ($email && $token)
     {
+        $terrainHelper = new TerrainHelper($conn);
+
         $query = "SELECT uwp.* FROM user_waypoints AS uwp";
         $query .= " INNER JOIN users AS usr ON uwp.user_id = usr.id";
         $query .= " WHERE usr.email = '" . $email . "' AND usr.token = '" . $token . "'";
@@ -526,6 +529,7 @@ function getUserPoints($email, $token, $minLon, $minLat, $maxLon, $maxLat)
                 "name" => $rs["name"],
                 "latitude" => floatval($rs["latitude"]),
                 "longitude" => floatval($rs["longitude"]),
+                "elevation" => $terrainHelper->getElevationMeters([$rs["longitude"], $rs["latitude"]]),
                 "remark" => $rs["remark"],
                 "supp_info" => $rs["supp_info"]
             );
