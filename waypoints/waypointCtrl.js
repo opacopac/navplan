@@ -175,6 +175,12 @@ function waypointCtrl($scope, $http, geopointService, fuelService, userService, 
 	{
 		$scope.exportKml();
 	};
+
+
+    $scope.updateFuelCalc = function()
+    {
+        fuelService.updateFuelCalc($scope.globalData.fuel, $scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.aircraft);
+    }
 	
 	
 	$scope.fuelByTime = function(time)
