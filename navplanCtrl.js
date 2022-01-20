@@ -93,7 +93,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 			};
 			$scope.globalData.settings =
 			{
-				variation: 2,
+				variation: 3,
 				maxTrafficAltitudeFt: 15000
 			};
 			$scope.globalData.currentMapPos = 
