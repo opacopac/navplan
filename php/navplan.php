@@ -32,7 +32,7 @@ switch ($_SERVER['REQUEST_METHOD'])
         break;
     case 'POST':
         $input = json_decode(file_get_contents('php://input'), true);
-        if ($input["createShared"] === true)
+        if (isset($input["createShared"]) && $input["createShared"] === true)
         {
             createSharedNavplan(
                 escapeNavplanData($conn, $input["globalData"])
@@ -213,7 +213,7 @@ function readNavplanWaypoints($navplanId)
             $waypoints[] = $wp;
     }
 
-    return array("waypoints" => $waypoints, "alternate" => $alternate);
+    return array("waypoints" => $waypoints ?? [], "alternate" => $alternate ?? null);
 }
 
 
@@ -256,7 +256,7 @@ function updateNavplan($navplan, $email, $token)
     if ($result === FALSE)
         die("error deleting waypoints from navplan: " . $conn->error . " query:" . $query);
 
-    createWaypoints($conn, $navplan["waypoints"], $navplan["alternate"], $navplan["id"]);
+    createWaypoints($conn, $navplan["waypoints"] ?? null, $navplan["alternate"] ?? null, $navplan["id"]);
 
 
     echo json_encode(array("success" => 1));
@@ -301,7 +301,7 @@ function createNavplan($navplan, $email, $token)
 
 
     // update waypoints
-    createWaypoints($conn, $navplan["waypoints"], $navplan["alternate"], $navplan_id);
+    createWaypoints($conn, $navplan["waypoints"] ?? null, $navplan["alternate"] ?? null, $navplan_id);
 
 
     echo json_encode(array("navplan_id" => $navplan_id));
@@ -350,7 +350,7 @@ function createSharedNavplan($navplan)
             $navplan_id = $conn->insert_id;
 
         // create waypoints
-        createWaypoints($conn, $navplan["waypoints"], $navplan["alternate"], $navplan_id);
+        createWaypoints($conn, $navplan["waypoints"] ?? null, $navplan["alternate"] ?? null, $navplan_id);
     }
 
 
@@ -396,7 +396,7 @@ function escapeNavplanData($conn, $globalData)
     $nav["aircraft_speed"] = mysqli_real_escape_string($conn, $globalData["aircraft"]["speed"]);
     $nav["aircraft_consumption"] = mysqli_real_escape_string($conn, $globalData["aircraft"]["consumption"]);
     $nav["extra_fuel"] = mysqli_real_escape_string($conn, $globalData["fuel"]["extraTime"]);
-    $nav["comments"] = mysqli_real_escape_string($conn, $globalData["navplan"]["comments"]);
+    $nav["comments"] = mysqli_real_escape_string($conn, $globalData["navplan"]["comments"] ?? '');
 
     foreach ($globalData["navplan"]["waypoints"] as $waypoint)
         $nav["waypoints"][] =  escapeWaypointData($conn, $waypoint);
@@ -430,16 +430,17 @@ function escapeWaypointData($conn, $waypoint)
 
 function createWaypoints($conn, $waypoints, $alternate, $navplan_id)
 {
-    for ($i = 0; $i < count($waypoints); $i++)
-    {
-        $query = createInsertWaypointQuery($waypoints[$i], $i, $navplan_id, 0);
-        $result = $conn->query($query);
+    if ($waypoints) {
+        for ($i = 0; $i < count($waypoints); $i++) {
+            $query = createInsertWaypointQuery($waypoints[$i], $i, $navplan_id, 0);
+            $result = $conn->query($query);
 
-        if ($result === FALSE)
-            die("error inserting waypoint: " . $conn->error . " query:" . $query);
+            if ($result === FALSE)
+                die("error inserting waypoint: " . $conn->error . " query:" . $query);
+        }
     }
 
-    if ($alternate)
+    if ($alternate && $waypoints)
     {
         $query = createInsertWaypointQuery($alternate, count($waypoints), $navplan_id, 1);
         $result = $conn->query($query);

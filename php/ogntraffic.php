@@ -55,17 +55,17 @@
             $msg = json_decode($line, true);
 
             // skip line if out of lat/lon/time
-            if ($msg["latitude"] > $maxLat || $msg["latitude"] < $minLat)
+            if (!isset($msg["latitude"]) || $msg["latitude"] > $maxLat || $msg["latitude"] < $minLat)
                 continue;
 
-            if ($msg["longitude"] > $maxLon || $msg["longitude"] < $minLon)
+            if (!isset($msg["longitude"]) || $msg["longitude"] > $maxLon || $msg["longitude"] < $minLon)
                 continue;
 
             if (time() - strtotime($msg["time"] . " UTC") > $maxAgeSec)
                 continue;
 
             // add new aircrafts to list
-            if (!$aclist[$msg["id"]]) {
+            if (!isset($aclist[$msg["id"]])) {
                 $ac = array("id" => $msg["id"], "addresstype" => $msg["addresstype"], "actype" => $msg["actype"], "positions" => array());
                 $aclist[$msg["id"]] = $ac;
             }
