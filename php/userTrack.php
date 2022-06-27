@@ -10,7 +10,7 @@
     switch ($_SERVER['REQUEST_METHOD'])
     {
         case 'GET':
-            if ($_GET["id"])
+            if (isset($_GET["id"]))
             {
                 readUserTrack(
                     checkId(intval($_GET["id"])),

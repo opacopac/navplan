@@ -217,7 +217,7 @@ class TerrainHelper
 
     private function getFile($filepath)
     {
-        if ($this->openTileFiles[$filepath])
+        if (isset($this->openTileFiles[$filepath]))
             return $this->openTileFiles[$filepath];
 
         if (!file_exists($filepath))

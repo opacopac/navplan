@@ -8,13 +8,13 @@ $conn = openDb();
 switch ($_SERVER['REQUEST_METHOD'])
 {
     case 'GET':
-        if ($_GET["shareid"])
+        if (isset($_GET["shareid"]))
         {
             readSharedNavplan(
                 checkString($_GET["shareid"], 10, 10)
             );
         }
-        elseif ($_GET["id"])
+        elseif (isset($_GET["id"]))
         {
             readNavplan(
                 checkId(intval($_GET["id"])),
@@ -414,13 +414,13 @@ function escapeWaypointData($conn, $waypoint)
     $wp["freq"] = mysqli_real_escape_string($conn, $waypoint["freq"]);
     $wp["callsign"] = mysqli_real_escape_string($conn, $waypoint["callsign"]);
     $wp["checkpoint"] = mysqli_real_escape_string($conn, $waypoint["checkpoint"]);
-    $wp["airport_icao"] = $waypoint["airport_icao"] ? mysqli_real_escape_string($conn, $waypoint["airport_icao"]) : NULL;
+    $wp["airport_icao"] = isset($waypoint["airport_icao"]) ? mysqli_real_escape_string($conn, $waypoint["airport_icao"]) : NULL;
     $wp["latitude"] = mysqli_real_escape_string($conn, $waypoint["latitude"]);
     $wp["longitude"] = mysqli_real_escape_string($conn, $waypoint["longitude"]);
     $wp["alt"] = mysqli_real_escape_string($conn, $waypoint["alt"]);
-    $wp["isminalt"] = $waypoint["isminalt"] ? '1' : '0';
-    $wp["ismaxalt"] = $waypoint["ismaxalt"] ? '1' : '0';
-    $wp["isaltatlegstart"] = $waypoint["isaltatlegstart"] ? '1' : '0';
+    $wp["isminalt"] = isset($waypoint["isminalt"]) ? '1' : '0';
+    $wp["ismaxalt"] = isset($waypoint["ismaxalt"]) ? '1' : '0';
+    $wp["isaltatlegstart"] = isset($waypoint["isaltatlegstart"]) ? '1' : '0';
     $wp["remark"] = mysqli_real_escape_string($conn, $waypoint["remark"]);
     $wp["supp_info"] = mysqli_real_escape_string($conn, $waypoint["supp_info"]);
 
@@ -459,7 +459,7 @@ function createInsertWaypointQuery($waypoint, $sortorder, $navplan_id, $is_alter
     $query .= "'" . $waypoint["freq"] . "',";
     $query .= "'" . $waypoint["callsign"] . "',";
     $query .= "'" . $waypoint["checkpoint"] . "',";
-    $query .= $waypoint["airport_icao"] ? "'" . $waypoint["airport_icao"] . "'," : "NULL, ";
+    $query .= isset($waypoint["airport_icao"]) ? "'" . $waypoint["airport_icao"] . "'," : "NULL, ";
     $query .= "'" . $waypoint["latitude"] . "',";
     $query .= "'" . $waypoint["longitude"] . "',";
     $query .= "'" . $waypoint["alt"] . "',";

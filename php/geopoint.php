@@ -10,8 +10,8 @@ switch($_GET["action"])
     case "searchByName":
         searchByName(
             checkEscapeString($conn, $_GET["search"], 1, 100),
-            $_COOKIE["email"] ? checkEscapeEmail($conn, $_COOKIE["email"]) : NULL,
-            $_COOKIE["token"] ? checkEscapeToken($conn, $_COOKIE["token"]) : NULL
+            isset($_COOKIE["email"]) ? checkEscapeEmail($conn, $_COOKIE["email"]) : NULL,
+            isset($_COOKIE["token"]) ? checkEscapeToken($conn, $_COOKIE["token"]) : NULL
         );
         break;
     case "searchByPosition":
@@ -21,8 +21,8 @@ switch($_GET["action"])
             checkNumeric($_GET["rad"]),
             checkNumeric($_GET["minnotamtime"]),
             checkNumeric($_GET["maxnotamtime"]),
-            $_COOKIE["email"] ? checkEscapeEmail($conn, $_COOKIE["email"]) : NULL,
-            $_COOKIE["token"] ? checkEscapeToken($conn, $_COOKIE["token"]) : NULL
+            isset($_COOKIE["email"]) ? checkEscapeEmail($conn, $_COOKIE["email"]) : NULL,
+            isset($_COOKIE["token"]) ? checkEscapeToken($conn, $_COOKIE["token"]) : NULL
         );
         break;
     default:
@@ -335,15 +335,15 @@ function buildGeonamesList($result, $renameDuplicates, $lonLat)
             "id" => intval($rs["id"]),
             "name" => $rs["name"],
             "wpname" => $rs["wpname"],
-            "country" => $rs["country"] ? $rs["country"] : "",
-            "admin1" => $rs["admin1"] ? $rs["admin1"] : "",
-            "admin2" => $rs["admin2"] ? $rs["admin2"] : "",
+            "country" => isset($rs["country"]) ? $rs["country"] : "",
+            "admin1" => isset($rs["admin1"]) ? $rs["admin1"] : "",
+            "admin2" => isset($rs["admin2"]) ? $rs["admin2"] : "",
             "frequency" => $rs["frequency"],
             "callsign" => $rs["callsign"],
             "airport_icao" => $rs["airport_icao"],
             "latitude" => floatval($rs["latitude"]),
             "longitude" => floatval($rs["longitude"]),
-            "elevation" => $rs["elevation"] ? floatval($rs["elevation"]) : $terrainHelper->getElevationMeters([$rs["longitude"], $rs["latitude"]])
+            "elevation" => isset($rs["elevation"]) ? floatval($rs["elevation"]) : $terrainHelper->getElevationMeters([$rs["longitude"], $rs["latitude"]])
         );
 
         $geonames[] = $geoname;
@@ -456,7 +456,7 @@ function loadNotamList($lon, $lat, $minNotamTime, $maxNotamTime)
 
         // TODO: use same filters in notam.php
         // filter by max FL195
-        if ($notam["geometry"] && $notam["geometry"]["bottom"] >= NOTAM_MAX_BOTTOM_FL)
+        if (isset($notam["geometry"]) && isset($notam["geometry"]["bottom"]) >= NOTAM_MAX_BOTTOM_FL)
             continue;
 
         // filter by notam type (no KKKK)

@@ -15,7 +15,7 @@ $locationNotamList = NULL;
 
 
 // handle area notam request
-if ($_GET["minlat"])
+if (isset($_GET["minlat"]))
 {
     $minLat = checkNumeric($_GET["minlat"]);
     $maxLat = checkNumeric($_GET["maxlat"]);
@@ -34,7 +34,7 @@ if ($_GET["minlat"])
 
 
 // process location notam request
-if ($_GET["icaolist"])
+if (isset($_GET["icaolist"]))
 {
     $icaoList = [];
 
@@ -127,7 +127,7 @@ function loadNotamList($icaoList, $startTimestamp, $endTimestamp)
 
         // TODO: use same filters in geopoint.php
         // filter by max FL195
-        if ($notam["geometry"] && $notam["geometry"]["bottom"] >= NOTAM_MAX_BOTTOM_FL)
+        if (isset($notam["geometry"]) && isset($notam["geometry"]["bottom"]) >= NOTAM_MAX_BOTTOM_FL)
             continue;
 
         // filter by notam type (no KKKK)

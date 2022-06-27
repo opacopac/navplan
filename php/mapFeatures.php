@@ -13,8 +13,8 @@ $minLat = checkNumeric($_GET["minlat"]);
 $maxLat = checkNumeric($_GET["maxlat"]);
 $minLon = checkNumeric($_GET["minlon"]);
 $maxLon = checkNumeric($_GET["maxlon"]);
-$email = $_COOKIE["email"] ? checkEscapeEmail($conn, $_COOKIE["email"]) : NULL;
-$token = $_COOKIE["token"] ? checkEscapeToken($conn, $_COOKIE["token"]) : NULL;
+$email = isset($_COOKIE["email"]) ? checkEscapeEmail($conn, $_COOKIE["email"]) : NULL;
+$token = isset($_COOKIE["token"]) ? checkEscapeToken($conn, $_COOKIE["token"]) : NULL;
 
 // load data
 $extent = "GeomFromText('POLYGON((" . $minLon . " " . $minLat . "," . $maxLon . " " . $minLat . "," . $maxLon . " " . $maxLat . "," . $minLon . " " . $maxLat . "," . $minLon . " " . $minLat . "))')";
@@ -509,7 +509,7 @@ function getUserPoints($email, $token, $minLon, $minLat, $maxLon, $maxLat)
 
     if ($email && $token)
     {
-        $terrainHelper = new TerrainHelper($conn);
+        $terrainHelper = new TerrainHelper();
 
         $query = "SELECT uwp.* FROM user_waypoints AS uwp";
         $query .= " INNER JOIN users AS usr ON uwp.user_id = usr.id";

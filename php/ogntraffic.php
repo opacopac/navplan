@@ -61,7 +61,7 @@
             if ($msg["longitude"] > $maxLon || $msg["longitude"] < $minLon)
                 continue;
 
-            if (gmmktime() - strtotime($msg["time"] . " UTC") > $maxAgeSec)
+            if (time() - strtotime($msg["time"] . " UTC") > $maxAgeSec)
                 continue;
 
             // add new aircrafts to list
