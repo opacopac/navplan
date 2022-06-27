@@ -82,8 +82,8 @@
 		echo json_encode(
 			array(
 				"resultcode" => $resultcode,
-				"message" => $message,
-				"token" => $token
+				"message" => $message ?? "",
+				"token" => $token ?? ""
 			)
 		);
 

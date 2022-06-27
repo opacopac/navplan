@@ -3,7 +3,10 @@ include_once "../config.php";
 include_once "../helper.php";
 include_once "../logger.php";
 
-const NOTAM_BASE_URL = "https://v4p4sz5ijk.execute-api.us-east-1.amazonaws.com/anbdata/states/notams/notams-list?api_key=2a9daa70-2604-11e7-a2b8-e55a51cc8ef0&format=json&states=";
+//const NOTAM_BASE_URL = "https://v4p4sz5ijk.execute-api.us-east-1.amazonaws.com/anbdata/states/notams/notams-list?api_key=2a9daa70-2604-11e7-a2b8-e55a51cc8ef0&format=json&states=";
+//const NOTAM_BASE_URL = "https://v4p4sz5ijk.execute-api.us-east-1.amazonaws.com/anbdata/states/notams/notams-list?api_key=aa1c1f30-9de7-4e73-88ce-d377afab4559&format=json&states=";
+const NOTAM_BASE_URL = "https://applications.icao.int/dataservices/api/notams-list?api_key=aa1c1f30-9de7-4e73-88ce-d377afab4559&format=json&states=";
+
 const NOTAM_COUNTRIES = [
     "CHE", "DEU", "FRA", "ITA", "AUT", "ESP", "PRT", "GBR", "IRL", "BEL",
     "NDL", "DNK", "SWE", "NOR", "FIN", "EST", "LVA", "LTU", "POL", "CZE",
@@ -27,12 +30,14 @@ $countryList = [];
 while ($rs = $result->fetch_array(MYSQLI_ASSOC))
     $countryList[] = $rs["statecode"];
 
+// TODO: TMP
+//$countryList = ["CHE"];
+
 
 // load from icao in 10-chunks
 $chunkedCountryList = array_chunk($countryList, 10);
 
-foreach ($chunkedCountryList as $countryChunk)
-{
+foreach ($chunkedCountryList as $countryChunk) {
     // load notams from icao
     $url = NOTAM_BASE_URL . join(",", $countryChunk);
     $logger->writelog("INFO", "fetching NOTAMs for " . join(",", $countryChunk));
@@ -40,6 +45,7 @@ foreach ($chunkedCountryList as $countryChunk)
 
     try
     {
+        // $logger->writelog("INFO", "calling api url: " . $url);
         $response = file_get_contents($url);
     }
     catch (Exception $e)
@@ -57,14 +63,18 @@ foreach ($chunkedCountryList as $countryChunk)
     $logger->writelog("INFO", "successful (" . round(1000 * (microtime(true) - $time1)) . "ms)");
     $notamList = json_decode($response, JSON_NUMERIC_CHECK);
     $logger->writelog("INFO", count($notamList) . " NOTAMs fetched.");
-	
 
-    // delete existing notams from db
+    // TODO: tmp
+    //file_put_contents("./icao_api_response.json", $response);
+
+    // delete previous notams from db
+    $logger->writelog("INFO", "deleting previous notams from db for " . join("','", $countryChunk));
     $query = "DELETE FROM icao_notam WHERE country in ('" . join("','", $countryChunk) . "')";
     $result = $conn->query($query);
 
-    if ($result === FALSE)
+    if ($result === FALSE) {
         die("error deleting notams: " . $conn->error . " query:" . $query);
+    }
 
     // add updated notams to db
     if (count($notamList) > 0) {
@@ -84,13 +94,13 @@ foreach ($chunkedCountryList as $countryChunk)
                 . checkEscapeString($conn, json_encode($notam, JSON_NUMERIC_CHECK), 0, 999999) . "')";
         }
 
-        if (count($queryParts) > 0)
-        {
+        if (count($queryParts) > 0) {
             $query = "INSERT INTO icao_notam (notam_id, country, type, icao, startdate, enddate, notam) VALUES " . join(",", $queryParts);
             $result = $conn->query($query);
 
-            if ($result === FALSE)
+            if ($result === FALSE) {
                 die("error adding notams: " . $conn->error . " query:" . $query);
+            }
         }
 
     }
