@@ -1,6 +1,17 @@
 <?php
+
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\NamedRange;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
+
 include("helper.php");
-require('phpexcel/PHPExcel.php');
+require('./Autoloader.php');
+
 
 $postData = json_decode(file_get_contents('php://input'), true);
 
@@ -34,7 +45,7 @@ $ckpKeys = array("freq" => "A", "callsign" => "B", "checkpoint" => "C", "mtText"
 $styleBorderThin = array(
     'borders' => array(
         'outline' => array(
-            'style' => PHPExcel_Style_Border::BORDER_THIN,
+            'borderStyle' => Border::BORDER_THIN,
         )
     )
 );
@@ -42,15 +53,15 @@ $styleBorderThin = array(
 $styleBorderThick = array(
     'borders' => array(
         'outline' => array(
-            'style' => PHPExcel_Style_Border::BORDER_MEDIUM,
+            'borderStyle' => Border::BORDER_MEDIUM,
         )
     )
 );
 
 $styleAllBorder = array(
     'borders' => array(
-        'allborders' => array(
-            'style' => PHPExcel_Style_Border::BORDER_THIN,
+        'allBorders' => array(
+            'borderStyle' => Border::BORDER_THIN,
             'color' => array('argb' => 'FF000000')
         )
     )
@@ -58,18 +69,18 @@ $styleAllBorder = array(
 
 $styleNotUse = array(
     'borders' => array(
-        'allborders' => array(
-            'style' => PHPExcel_Style_Border::BORDER_THIN,
+        'allBorders' => array(
+            'borderStyle' => Border::BORDER_THIN,
             'color' => array('argb' => 'FF000000')
         ),
         'diagonal' => array(
-            'style' => PHPExcel_Style_Border::BORDER_THIN,
+            'borderStyle' => Border::BORDER_THIN,
             'color' => array('argb' => 'FF000000')
         )
     ),
     'fill' => array(
-        'type' => PHPExcel_Style_Fill::FILL_PATTERN_LIGHTGRAY,
-        'color' => array('rgb' => '000000'),
+        'fillType' => Fill::FILL_PATTERN_LIGHTGRAY,
+        'startcolor' => array('rgb' => '000000'),
         'endcolor' => array('rgb' => 'ffffff')
     )
 );
@@ -81,8 +92,8 @@ $styleTitle = array(
         'name'  => 'Arial'
     ),
     'alignment' => array(
-        'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER,
-        'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER
+        'horizontal' => Alignment::HORIZONTAL_CENTER,
+        'vertical' => Alignment::VERTICAL_CENTER
     )
 );
 
@@ -93,7 +104,7 @@ $styleGenTitle = array(
         'name'  => 'Arial'
     ),
     'alignment' => array(
-        'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER
+        'vertical' => Alignment::VERTICAL_CENTER
     )
 );
 
@@ -104,11 +115,11 @@ $styleCkpTitle = array(
         'name'  => 'Arial'
     ),
     'alignment' => array(
-        'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER
+        'vertical' => Alignment::VERTICAL_CENTER
     ),
     'fill' => array(
-        'type' => PHPExcel_Style_Fill::FILL_PATTERN_LIGHTGRAY,
-        'color' => array('rgb' => '000000'),
+        'fillType' => Fill::FILL_PATTERN_LIGHTGRAY,
+        'startcolor' => array('rgb' => '000000'),
         'endcolor' => array('rgb' => 'ffffff')
     )
 );
@@ -119,18 +130,18 @@ $styleInputField = array(
         'name'  => 'Arial'
     ),
     'alignment' => array(
-        'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER,
-        'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER
+        'vertical' => Alignment::VERTICAL_CENTER,
+        'horizontal' => Alignment::HORIZONTAL_CENTER
     ),
     'fill' => array(
-        'type' => PHPExcel_Style_Fill::FILL_SOLID,
+        'fillType' => Fill::FILL_SOLID,
         'color' => array('rgb' => 'ccffff')
     )
 );
 
 $styleInputBackground = array(
     'fill' => array(
-        'type' => PHPExcel_Style_Fill::FILL_SOLID,
+        'fillType' => Fill::FILL_SOLID,
         'color' => array('rgb' => 'ccffff')
     )
 );
@@ -141,7 +152,7 @@ $styleTextWps = array(
         'name'  => 'Arial Narrow'
     ),
     'alignment' => array(
-        'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER
+        'vertical' => Alignment::VERTICAL_CENTER
     )
 );
 
@@ -151,8 +162,8 @@ $styleTextMtDist = array(
         'name'  => 'Arial'
     ),
     'alignment' => array(
-        'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER,
-        'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER
+        'vertical' => Alignment::VERTICAL_CENTER,
+        'horizontal' => Alignment::HORIZONTAL_CENTER
     )
 );
 
@@ -162,8 +173,8 @@ $styleTextAltEet = array(
         'name'  => 'Arial Narrow'
     ),
     'alignment' => array(
-        'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER,
-        'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER
+        'vertical' => Alignment::VERTICAL_CENTER,
+        'horizontal' => Alignment::HORIZONTAL_CENTER
     )
 );
 
@@ -174,7 +185,7 @@ $styleTextAlternateTitle = array(
         'name'  => 'Arial Narrow'
     ),
     'alignment' => array(
-        'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER
+        'vertical' => Alignment::VERTICAL_CENTER
     )
 );
 
@@ -185,18 +196,18 @@ $styleFuelTitle = array(
         'name'  => 'Arial'
     ),
     'alignment' => array(
-        'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER,
-        'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER
+        'horizontal' => Alignment::HORIZONTAL_CENTER,
+        'vertical' => Alignment::VERTICAL_CENTER
     ),
     'borders' => array(
-        'allborders' => array(
-            'style' => PHPExcel_Style_Border::BORDER_THIN,
+        'allBorders' => array(
+            'borderStyle' => Border::BORDER_THIN,
             'color' => array('argb' => 'FF000000')
         )
     ),
     'fill' => array(
-        'type' => PHPExcel_Style_Fill::FILL_PATTERN_LIGHTGRAY,
-        'color' => array('rgb' => '000000'),
+        'fillType' => Fill::FILL_PATTERN_LIGHTGRAY,
+        'startcolor' => array('rgb' => '000000'),
         'endcolor' => array('rgb' => 'ffffff')
     )
 );
@@ -208,18 +219,18 @@ $styleFuelColTitle = array(
         'name'  => 'Arial'
     ),
     'alignment' => array(
-        'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER,
-        'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER
+        'horizontal' => Alignment::HORIZONTAL_CENTER,
+        'vertical' => Alignment::VERTICAL_CENTER
     ),
     'borders' => array(
-        'allborders' => array(
-            'style' => PHPExcel_Style_Border::BORDER_THIN,
+        'allBorders' => array(
+            'borderStyle' => Border::BORDER_THIN,
             'color' => array('argb' => 'FF000000')
         )
     ),
     'fill' => array(
-        'type' => PHPExcel_Style_Fill::FILL_PATTERN_LIGHTGRAY,
-        'color' => array('rgb' => '000000'),
+        'fillType' => Fill::FILL_PATTERN_LIGHTGRAY,
+        'startcolor' => array('rgb' => '000000'),
         'endcolor' => array('rgb' => 'ffffff')
     )
 );
@@ -231,8 +242,8 @@ $styleFuelConsumptionTitle = array(
         'name'  => 'Arial'
     ),
     'alignment' => array(
-        'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER,
-        'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER
+        'horizontal' => Alignment::HORIZONTAL_CENTER,
+        'vertical' => Alignment::VERTICAL_CENTER
     )
 );
 
@@ -242,11 +253,11 @@ $styleFuelRowTitle = array(
         'name'  => 'Arial Narrow'
     ),
     'alignment' => array(
-        'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER
+        'vertical' => Alignment::VERTICAL_CENTER
     ),
     'borders' => array(
         'allborders' => array(
-            'style' => PHPExcel_Style_Border::BORDER_THIN,
+            'borderStyle' => Border::BORDER_THIN,
             'color' => array('argb' => 'FF000000')
         )
     )
@@ -259,11 +270,11 @@ $styleBlockFuelTitle = array(
         'name'  => 'Arial Narrow'
     ),
     'alignment' => array(
-        'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER
+        'vertical' => Alignment::VERTICAL_CENTER
     ),
     'borders' => array(
-        'allborders' => array(
-            'style' => PHPExcel_Style_Border::BORDER_THIN,
+        'allBorders' => array(
+            'borderStyle' => Border::BORDER_THIN,
             'color' => array('argb' => 'FF000000')
         )
     )
@@ -275,12 +286,12 @@ $styleFuelText = array(
         'name'  => 'Arial'
     ),
     'alignment' => array(
-        'vertical' => PHPExcel_Style_Alignment::VERTICAL_CENTER,
-        'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER
+        'vertical' => Alignment::VERTICAL_CENTER,
+        'horizontal' => Alignment::HORIZONTAL_CENTER
     ),
     'borders' => array(
-        'allborders' => array(
-            'style' => PHPExcel_Style_Border::BORDER_THIN,
+        'allBorders' => array(
+            'borderStyle' => Border::BORDER_THIN,
             'color' => array('argb' => 'FF000000')
         )
     )
@@ -288,7 +299,7 @@ $styleFuelText = array(
 
 
 // create new excel
-$objPHPExcel = new PHPExcel();
+$objPHPExcel = new Spreadsheet();
 
 // set doc title
 $objPHPExcel->getProperties()->setTitle("NAV-Flightplan");
@@ -297,8 +308,8 @@ $objPHPExcel->getProperties()->setTitle("NAV-Flightplan");
 $objPHPExcel->setActiveSheetIndex(0);
 
 // Set page orientation and size
-$objPHPExcel->getActiveSheet()->getPageSetup()->setOrientation(PHPExcel_Worksheet_PageSetup::ORIENTATION_LANDSCAPE);
-$objPHPExcel->getActiveSheet()->getPageSetup()->setPaperSize(PHPExcel_Worksheet_PageSetup::PAPERSIZE_A4);
+$objPHPExcel->getActiveSheet()->getPageSetup()->setOrientation(PageSetup::ORIENTATION_LANDSCAPE);
+$objPHPExcel->getActiveSheet()->getPageSetup()->setPaperSize(PageSetup::PAPERSIZE_A4);
 $objPHPExcel->getActiveSheet()->getPageMargins()->setTop(0.394);
 $objPHPExcel->getActiveSheet()->getPageMargins()->setLeft(0.315);
 $objPHPExcel->getActiveSheet()->getPageMargins()->setRight(0.236);
@@ -308,7 +319,7 @@ $objPHPExcel->getActiveSheet()->getPageMargins()->setBottom(0.394);
 $objPHPExcel->getActiveSheet()->setTitle('NAV-Flightplan');
 
 // set default font
-$objPHPExcel->getActiveSheet()->getDefaultStyle()->getFont()->setName('Arial')->setSize(10);
+$objPHPExcel->getActiveSheet()->getParent()->getDefaultStyle()->getFont()->setName('Arial')->setSize(10);
 
 // set column widths
 foreach($sheetColWidth as $colName => $colWidth)
@@ -362,7 +373,7 @@ foreach($genColTitle as $cellName => $text)
 $objPHPExcel->getActiveSheet()->setCellValue("E3", getSpeedString());
 $objPHPExcel->getActiveSheet()->getStyle("E3")->applyFromArray($styleInputField);
 $objPHPExcel->addNamedRange(
-    new PHPExcel_NamedRange('groundspeed1', $objPHPExcel->getActiveSheet(), 'E3')
+    new NamedRange('groundspeed1', $objPHPExcel->getActiveSheet(), '=$E$3')
 );
 
 // checkpoint titles
@@ -415,7 +426,7 @@ for ($i = 6; $i < 22; $i++)
 for ($i = 0; $i < 18; $i++)
 {
     foreach($ckpKeys as $key => $col)
-        $objPHPExcel->getActiveSheet()->setCellValueExplicit($col . ($i + 5), getWaypointString($i, $key), PHPExcel_Cell_DataType::TYPE_STRING);
+        $objPHPExcel->getActiveSheet()->setCellValueExplicit($col . ($i + 5), getWaypointString($i, $key), DataType::TYPE_STRING);
 }
 
 // pre-eet/dist sums
@@ -423,7 +434,7 @@ $objPHPExcel->getActiveSheet()->setCellValue("E23", "=SUM(E6:E22)");
 $objPHPExcel->getActiveSheet()->setCellValue("G23", "=SUM(G6:G22)");
 
 // triptime cell
-$objPHPExcel->addNamedRange(new PHPExcel_NamedRange('triptime1', $objPHPExcel->getActiveSheet(), 'H23'));
+$objPHPExcel->addNamedRange(new NamedRange('triptime1', $objPHPExcel->getActiveSheet(), '=$H$23'));
 $objPHPExcel->getActiveSheet()->setCellValue("H23", "=IF(G23>0, G23+COUNTIF(D6:D22, \"VAC\")*5, \"\")");
 
 // alternate title
@@ -446,7 +457,7 @@ $objPHPExcel->getActiveSheet()->setCellValue("G25", getPreEetFormula(25));
 $objPHPExcel->getActiveSheet()->setCellValue("H25", "=IF(G25>0,G25 & \"/+5\",\"\")");
 
 // alternate time cell
-$objPHPExcel->addNamedRange(new PHPExcel_NamedRange('alternatetime1', $objPHPExcel->getActiveSheet(), 'H26'));
+$objPHPExcel->addNamedRange(new NamedRange('alternatetime1', $objPHPExcel->getActiveSheet(), '=$H$26'));
 $objPHPExcel->getActiveSheet()->setCellValue("H26", "=IF(G25>0,G25+5,0)");
 
 // comment cells
@@ -495,7 +506,7 @@ $objPHPExcel->getActiveSheet()->getStyle("I28:J32")->applyFromArray($styleFuelRo
 $objPHPExcel->getActiveSheet()->getStyle("I33:J33")->applyFromArray($styleBlockFuelTitle);
 
 // consumption cell
-$objPHPExcel->addNamedRange(new PHPExcel_NamedRange('fuelconsumption1', $objPHPExcel->getActiveSheet(), "J27"));
+$objPHPExcel->addNamedRange(new NamedRange('fuelconsumption1', $objPHPExcel->getActiveSheet(), '=$J$27'));
 $objPHPExcel->getActiveSheet()->setCellValue("J27", getFuelConsumptionString());
 $objPHPExcel->getActiveSheet()->getStyle("J27")->applyFromArray($styleInputField);
 
@@ -535,7 +546,7 @@ $tmpDir = createTempDir();
 $tmpFile = $tmpDir . "/" . $userFileName;
 
 // output pdf
-$objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, 'Excel2007');
+$objWriter = IOFactory::createWriter($objPHPExcel, 'Xlsx');
 $objWriter->setPreCalculateFormulas(true);
 $objWriter->save(TMP_DIR_BASE . $tmpFile);
 
