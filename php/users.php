@@ -38,15 +38,14 @@
 		// get credentials
 		$email = mysqli_real_escape_string($conn, trim($input["email"]));
 		$password = mysqli_real_escape_string($conn, trim($input["password"]));
-		
+		$token = "";
+		$message = "";
+
 		if (!checkEmailFormat($email) || !checkPwFormat($password))
 		{
 			$resultcode = -3;
 			$message = "error: invalid format of email or password";
 		}
-
-		$token = "";
-		$message = "";
 
 		if (!$resultcode)
 		{
