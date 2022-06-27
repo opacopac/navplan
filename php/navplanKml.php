@@ -25,7 +25,7 @@ exit;
 
 function createKmlXml($data)
 {
-    $routeTitle = $data["navplan"]["title"] ? $data["navplan"]["title"] : "";
+    $routeTitle = $data["navplan"]["title"] ?? "";
     $waypoints = getWaypoints($data["navplan"]);
     $trackTitle = $data["track"]["name"] ? $data["track"]["name"] : "";
     $trackpoints = $data["track"]["positions"] ? $data["track"]["positions"] : [];

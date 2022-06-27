@@ -45,6 +45,9 @@
 			$message = "error: invalid format of email or password";
 		}
 
+		$token = "";
+		$message = "";
+
 		if (!$resultcode)
 		{
 			// check duplicate email
@@ -53,8 +56,6 @@
 
 			if ($result->num_rows > 0)
 			{
-				$token = "";
-				
 				$message = "error: user already exists";
 				$resultcode = -1;
 			}
@@ -73,7 +74,6 @@
 				if ($result === FALSE)
 					die("error creating user: " . $conn->error . " query:" . $query);
 				
-				$message = "";
 				$resultcode = 0;
 			}
 		}
@@ -82,8 +82,8 @@
 		echo json_encode(
 			array(
 				"resultcode" => $resultcode,
-				"message" => $message ?? "",
-				"token" => $token ?? ""
+				"message" => $message,
+				"token" => $token
 			)
 		);
 
