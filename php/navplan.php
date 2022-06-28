@@ -93,7 +93,7 @@ function readNavplanList($email, $token)
         );
     }
 
-    echo json_encode(array("navplanList" => $navplans));
+    echo json_encode(array("navplanList" => $navplans ?? []));
 }
 
 
