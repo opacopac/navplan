@@ -12,7 +12,7 @@ function trafficService($http)
     var dataSources = { "ogn": "OGN", "adsbexchange": "ADSBX" };
     var positionMethod = { "flarm": "FLARM", "adsb": "ADSB", "mlat" : "MLAT" };
 	var trafficBaseUrl = 'php/ogntraffic.php?v=' + navplanVersion;
-    var adsbExchangeBaseUrl = 'https://www.navplan.ch/v2/php/Navplan/Traffic/TrafficService.php?action=readadsbextrafficwithdetails'; // &minlon=6.921691064453124&minlat=46.61094866382615&maxlon=7.922820214843749&maxlat=47.20901611815029
+    var adsbExchangeBaseUrl = 'https://www.navplan.ch/v2/php/Navplan/Traffic/RestService/TrafficService.php?action=readadsbextrafficwithdetails'; // &minlon=6.921691064453124&minlat=46.61094866382615&maxlon=7.922820214843749&maxlat=47.20901611815029
     var acCache = new AircraftCache();
     var lastExtent = undefined;
     var acAddressMasklist = ["4B3416"];
@@ -71,7 +71,7 @@ function trafficService($http)
 	{
         var waitDataSec = 1;
 
-        if (lastExtent && lastExtent[0] == extent[0] && lastExtent[1] == extent[1] && lastExtent[2] == extent[2] && lastExtent[3] == extent[3])
+        if (lastExtent && lastExtent[0] === extent[0] && lastExtent[1] === extent[1] && lastExtent[2] === extent[2] && lastExtent[3] === extent[3])
             waitDataSec = 0;
 
         lastExtent = extent;
@@ -245,11 +245,11 @@ function trafficService($http)
 
         function parseAdsbExchangePositions(acPos) {
             var pos = new AircraftPosition();
-            pos.longitude = acPos.position.pos[0];
-            pos.latitude = acPos.position.pos[1];
+            pos.longitude = acPos.position[0][0];
+            pos.latitude = acPos.position[0][1];
             pos.method = acPos.method;
-            pos.altitude = acPos.position.alt[0] ? ft2m(acPos.position.alt[0]) : undefined;
-            pos.timestamp = acPos.position.time;
+            pos.altitude = acPos.position[1] ? ft2m(acPos.position[1][0]) : undefined;
+            pos.timestamp = acPos.position[2];
             pos.receivedTimestamp = acPos.timestamp;
             pos.receiver = acPos.receiver;
 
