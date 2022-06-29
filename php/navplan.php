@@ -392,7 +392,7 @@ function deleteNavplan($navplan_id, $email, $token)
 function escapeNavplanData($conn, $globalData)
 {
     $nav["id"] = mysqli_real_escape_string($conn, $globalData["navplan"]["id"]);
-    $nav["title"] = mysqli_real_escape_string($conn, $globalData["navplan"]["title"]);
+    $nav["title"] = mysqli_real_escape_string($conn, $globalData["navplan"]["title"] ?? '');
     $nav["aircraft_speed"] = mysqli_real_escape_string($conn, $globalData["aircraft"]["speed"]);
     $nav["aircraft_consumption"] = mysqli_real_escape_string($conn, $globalData["aircraft"]["consumption"]);
     $nav["extra_fuel"] = mysqli_real_escape_string($conn, $globalData["fuel"]["extraTime"]);
