@@ -418,9 +418,9 @@ function escapeWaypointData($conn, $waypoint)
     $wp["latitude"] = mysqli_real_escape_string($conn, $waypoint["latitude"]);
     $wp["longitude"] = mysqli_real_escape_string($conn, $waypoint["longitude"]);
     $wp["alt"] = mysqli_real_escape_string($conn, $waypoint["alt"]);
-    $wp["isminalt"] = isset($waypoint["isminalt"]) ? '1' : '0';
-    $wp["ismaxalt"] = isset($waypoint["ismaxalt"]) ? '1' : '0';
-    $wp["isaltatlegstart"] = isset($waypoint["isaltatlegstart"]) ? '1' : '0';
+    $wp["isminalt"] = isset($waypoint["isminalt"]) && intval($waypoint["isminalt"]) === 1 ? '1' : '0';
+    $wp["ismaxalt"] = isset($waypoint["ismaxalt"]) && intval($waypoint["ismaxalt"]) === 1 ? '1' : '0';
+    $wp["isaltatlegstart"] = isset($waypoint["isaltatlegstart"]) && intval($waypoint["isaltatlegstart"]) === 1 ? '1' : '0';
     $wp["remark"] = mysqli_real_escape_string($conn, $waypoint["remark"]);
     $wp["supp_info"] = mysqli_real_escape_string($conn, $waypoint["supp_info"]);
 
