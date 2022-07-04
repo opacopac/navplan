@@ -335,9 +335,9 @@ function buildGeonamesList($result, $renameDuplicates, $lonLat)
             "id" => intval($rs["id"]),
             "name" => $rs["name"],
             "wpname" => $rs["wpname"],
-            "country" => isset($rs["country"]) ? $rs["country"] : "",
-            "admin1" => isset($rs["admin1"]) ? $rs["admin1"] : "",
-            "admin2" => isset($rs["admin2"]) ? $rs["admin2"] : "",
+            "country" => $rs["country"] ?? "",
+            "admin1" => $rs["admin1"] ?? "",
+            "admin2" => $rs["admin2"] ?? "",
             "frequency" => $rs["frequency"],
             "callsign" => $rs["callsign"],
             "airport_icao" => $rs["airport_icao"],
@@ -456,7 +456,7 @@ function loadNotamList($lon, $lat, $minNotamTime, $maxNotamTime)
 
         // TODO: use same filters in notam.php
         // filter by max FL195
-        if (isset($notam["geometry"]) && isset($notam["geometry"]["bottom"]) >= NOTAM_MAX_BOTTOM_FL)
+        if (isset($notam["geometry"]) && isset($notam["geometry"]["bottom"]) && $notam["geometry"]["bottom"] >= NOTAM_MAX_BOTTOM_FL)
             continue;
 
         // filter by notam type (no KKKK)
