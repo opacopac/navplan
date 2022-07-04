@@ -18,15 +18,15 @@ switch ($_SERVER['REQUEST_METHOD'])
         {
             readNavplan(
                 checkId(intval($_GET["id"])),
-                checkEscapeEmail($conn, $_COOKIE["email"]),
-                checkEscapeToken($conn, $_COOKIE["token"])
+                checkEscapeEmail($conn, $_COOKIE["email"] ?? null),
+                checkEscapeToken($conn, $_COOKIE["token"] ?? null)
             );
         }
         else
         {
             readNavplanList(
-                checkEscapeEmail($conn, $_COOKIE["email"]),
-                checkEscapeToken($conn, $_COOKIE["token"])
+                checkEscapeEmail($conn, $_COOKIE["email"] ?? null),
+                checkEscapeToken($conn, $_COOKIE["token"] ?? null)
             );
         }
         break;
@@ -42,8 +42,8 @@ switch ($_SERVER['REQUEST_METHOD'])
         {
             createNavplan(
                 escapeNavplanData($conn, $input["globalData"]),
-                checkEscapeEmail($conn, $_COOKIE["email"]),
-                checkEscapeToken($conn, $_COOKIE["token"])
+                checkEscapeEmail($conn, $_COOKIE["email"] ?? null),
+                checkEscapeToken($conn, $_COOKIE["token"] ?? null)
             );
         }
         break;
@@ -51,15 +51,15 @@ switch ($_SERVER['REQUEST_METHOD'])
         $input = json_decode(file_get_contents('php://input'), true);
         updateNavplan(
             escapeNavplanData($conn, $input["globalData"]),
-            checkEscapeEmail($conn, $_COOKIE["email"]),
-            checkEscapeToken($conn, $_COOKIE["token"])
+            checkEscapeEmail($conn, $_COOKIE["email"] ?? null),
+            checkEscapeToken($conn, $_COOKIE["token"] ?? null)
         );
         break;
     case 'DELETE':
         deleteNavplan(
             checkId(intval($_GET["id"])),
-            checkEscapeEmail($conn, $_COOKIE["email"]),
-            checkEscapeToken($conn, $_COOKIE["token"])
+            checkEscapeEmail($conn, $_COOKIE["email"] ?? null),
+            checkEscapeToken($conn, $_COOKIE["token"] ?? null)
         );
         break;
     default:
