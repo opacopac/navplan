@@ -127,7 +127,7 @@ function loadNotamList($icaoList, $startTimestamp, $endTimestamp)
 
         // TODO: use same filters in geopoint.php
         // filter by max FL195
-        if (isset($notam["geometry"]) && isset($notam["geometry"]["bottom"]) >= NOTAM_MAX_BOTTOM_FL)
+        if (isset($notam["geometry"]) && isset($notam["geometry"]["bottom"]) && $notam["geometry"]["bottom"] >= NOTAM_MAX_BOTTOM_FL)
             continue;
 
         // filter by notam type (no KKKK)
