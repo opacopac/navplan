@@ -14,23 +14,23 @@
             {
                 readUserTrack(
                     checkId(intval($_GET["id"])),
-                    checkEscapeEmail($conn, $_COOKIE["email"]),
-                    checkEscapeToken($conn, $_COOKIE["token"])
+                    checkEscapeEmail($conn, $_COOKIE["email"] ?? null),
+                    checkEscapeToken($conn, $_COOKIE["token"] ?? null)
                 );
             }
             else
             {
                 readUserTrackList(
-                    checkEscapeEmail($conn, $_COOKIE["email"]),
-                    checkEscapeToken($conn, $_COOKIE["token"])
+                    checkEscapeEmail($conn, $_COOKIE["email"] ?? null),
+                    checkEscapeToken($conn, $_COOKIE["token"] ?? null)
                 );
             }
             break;
         case 'POST':
             $input = json_decode(file_get_contents('php://input'), true);
             createUserTrack(
-                checkEscapeEmail($conn, $_COOKIE["email"]),
-                checkEscapeToken($conn, $_COOKIE["token"]),
+                checkEscapeEmail($conn, $_COOKIE["email"] ?? null),
+                checkEscapeToken($conn, $_COOKIE["token"] ?? null),
                 checkNumeric($input["timestamp"]),
                 checkEscapeString($conn, $input["name"], 1, 100),
                 checkEscapeString($conn, json_encode($input["positions"], JSON_NUMERIC_CHECK), 1, NULL)
@@ -39,8 +39,8 @@
         case 'PUT':
             $input = json_decode(file_get_contents('php://input'), true);
             updateUserTrack(
-                checkEscapeEmail($conn, $_COOKIE["email"]),
-                checkEscapeToken($conn, $_COOKIE["token"]),
+                checkEscapeEmail($conn, $_COOKIE["email"] ?? null),
+                checkEscapeToken($conn, $_COOKIE["token"] ?? null),
                 checkId($input["id"]),
                 checkEscapeString($conn, $input["name"], 1, 100)
             );
@@ -48,8 +48,8 @@
         case 'DELETE':
             deleteUserTrack(
                 checkId(intval($_GET["id"])),
-                checkEscapeEmail($conn, $_COOKIE["email"]),
-                checkEscapeToken($conn, $_COOKIE["token"])
+                checkEscapeEmail($conn, $_COOKIE["email"] ?? null),
+                checkEscapeToken($conn, $_COOKIE["token"] ?? null)
             );
             break;
         default:
