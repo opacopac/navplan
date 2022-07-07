@@ -46,8 +46,7 @@
 			$resultcode = -3;
 			$message = "error: invalid format of email or password";
 		}
-
-		if (!$resultcode)
+		else
 		{
 			// check duplicate email
 			$query = "SELECT id FROM users WHERE email='" . $email . "'";
@@ -61,7 +60,7 @@
 			else
 			{
 				// hash pw
-				$pw_hash = crypt($password);
+				$pw_hash = password_hash($password,  CRYPT_MD5);
 				
 				// create token
 				$token = createToken();
@@ -118,7 +117,7 @@
 			$pw_hash_db = $row["pw_hash"];
 			
 			// compare pw hashes
-			if ($pw_hash_db === crypt($password, $pw_hash_db))
+			if (password_verify($password, $pw_hash_db))
 			{
 				$token = $row["token"];
 				
@@ -184,7 +183,7 @@
 			$password = generateRandomPw(8);
 
 			// hash pw
-			$pw_hash = crypt($password);
+			$pw_hash = password_hash($password,  CRYPT_MD5);
 			
 			// save hashed pw
 			$query = "UPDATE users SET pw_hash='" . $pw_hash . "' WHERE email='" . $email . "'";
@@ -263,10 +262,10 @@
 			$pw_hash_db = $row["pw_hash"];
 			
 			// compare pw hashes
-			if ($pw_hash_db === crypt($oldpassword, $pw_hash_db))
+			if (password_verify($oldpassword, $pw_hash_db))
 			{
 				// hash new pw
-				$newpw_hash = crypt($newpassword);
+				$newpw_hash = password_hash($newpassword,  CRYPT_MD5);
 
 				// save new pw
 				$query = "UPDATE users SET pw_hash='" . $newpw_hash . "' WHERE email='" . $email . "'";
@@ -318,20 +317,18 @@
 	
 	function checkEmailFormat($email)
 	{
-		if (!filter_var($email, FILTER_VALIDATE_EMAIL)
-			|| strlen($email > 100))
+		if (filter_var($email, FILTER_VALIDATE_EMAIL) === false || strlen($email) > 100)
 		{
 			return false;
 		}
-		
+
 		return true;
 	}
 	
 	
 	function checkPwFormat($password)
 	{
-		if (strlen($password) < 6
-			|| strlen($password) > 50)
+		if (strlen($password) < 6 || strlen($password) > 50)
 		{
 			return false;
 		}
