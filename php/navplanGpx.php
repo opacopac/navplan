@@ -134,8 +134,28 @@ function getWpType($waypoint)
         case 'report':
             return "Fix";
         case 'navaid':
-            return $waypoint["navaid"]["type"];
+            $vorSuffixes = ['VOR-DME', 'DVOR-DME', 'VOR','DVOR', 'TACAN', 'VORTAC', 'DVORTAC'];
+            foreach ($vorSuffixes as $vorSuffix) {
+                if (endsWith($waypoint["checkpoint"], $vorSuffix)) {
+                    return "VOR";
+                }
+            }
+
+            $ndbSuffixes = ['NDB'];
+            foreach ($ndbSuffixes as $ndbSuffix) {
+                if (endsWith($waypoint["checkpoint"], $ndbSuffix)) {
+                    return "NDB";
+                }
+            }
+
+            return "Waypoint";
         default:
             return "Waypoint";
     }
+}
+
+
+function endsWith($haystack, $needle) {
+    $length = strlen($needle);
+    return $length > 0 ? substr($haystack, -$length) === $needle : true;
 }
