@@ -60,7 +60,7 @@
 			else
 			{
 				// hash pw
-				$pw_hash = password_hash($password,  CRYPT_MD5);
+				$pw_hash = password_hash($password,  PASSWORD_DEFAULT);
 				
 				// create token
 				$token = createToken();
@@ -183,7 +183,7 @@
 			$password = generateRandomPw(8);
 
 			// hash pw
-			$pw_hash = password_hash($password,  CRYPT_MD5);
+			$pw_hash = password_hash($password,  PASSWORD_DEFAULT);
 			
 			// save hashed pw
 			$query = "UPDATE users SET pw_hash='" . $pw_hash . "' WHERE email='" . $email . "'";
@@ -265,7 +265,7 @@
 			if (password_verify($oldpassword, $pw_hash_db))
 			{
 				// hash new pw
-				$newpw_hash = password_hash($newpassword,  CRYPT_MD5);
+				$newpw_hash = password_hash($newpassword,  PASSWORD_DEFAULT);
 
 				// save new pw
 				$query = "UPDATE users SET pw_hash='" . $newpw_hash . "' WHERE email='" . $email . "'";
