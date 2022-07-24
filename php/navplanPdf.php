@@ -311,26 +311,26 @@ function getFuelTime($index)
     switch ($index)
     {
         case 0: // trip time
-            $time = $fuel["tripTime"];
+            $time = intval($fuel["tripTime"]);
             break;
         case 1: // alternate time
-            $time = $fuel["alternateTime"];
+            $time = intval($fuel["alternateTime"]);
             break;
         case 2: // reserve time
-            $time = $fuel["reserveTime"];
+            $time = intval($fuel["reserveTime"]);
             break;
         case 3: // minimum time
             if ($fuel["tripTime"] > 0 || $fuel["alternateTime"] > 0)
-                $time = $fuel["tripTime"] + $fuel["alternateTime"] + $fuel["reserveTime"];
+                $time = intval($fuel["tripTime"]) + intval($fuel["alternateTime"]) + intval($fuel["reserveTime"]);
             else
                 $time = 0;
             break;
         case 4: // extra time
-            $time = $fuel["extraTime"];
+            $time = intval($fuel["extraTime"]);
             break;
         case 5: // block time
             if ($fuel["tripTime"] > 0 || $fuel["alternateTime"] > 0)
-                $time = $fuel["tripTime"] + $fuel["alternateTime"] + $fuel["reserveTime"] + $fuel["extraTime"];
+                $time = intval($fuel["tripTime"]) + intval($fuel["alternateTime"]) + intval($fuel["reserveTime"]) + intval($fuel["extraTime"]);
             else
                 $time = 0;
             break;

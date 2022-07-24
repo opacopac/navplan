@@ -25,7 +25,7 @@ exit;
 
 function createFplXml($data)
 {
-    $routeTitle = getTitle($data["navplan"]["title"]) ?? "";
+    $routeTitle = getTitle($data["navplan"]["title"] ?? "");
     $waypoints = getWaypoints($data["navplan"]);
 
 

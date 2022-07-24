@@ -460,7 +460,7 @@ function loadNotamList($lon, $lat, $minNotamTime, $maxNotamTime)
             continue;
 
         // filter by notam type (no KKKK)
-        if ($notam["Qcode"] == "KKKK")
+        if (isset($notam["Qcode"]) && $notam["Qcode"] === "KKKK")
             continue;
 
         $notamList[] = $notam;
