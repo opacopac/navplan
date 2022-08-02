@@ -1,5 +1,5 @@
 // version
-var navplanVersion = "1.5at"; // must be the same as in version.txt
+var navplanVersion = "1.5au"; // must be the same as in version.txt
 
 
 // js error handler
@@ -60,6 +60,7 @@ navplanApp.config(function($routeProvider) {
 		.when("/traffic",  { templateUrl: 'map/map.html?v=' + navplanVersion, controller: 'mapCtrl', showtraffic: true })
 		.when("/share/:shareid",  { templateUrl: 'map/map.html?v=' + navplanVersion, controller: 'mapCtrl' })
 		.when("/lonlatzoom/:lonlatzoom",  { templateUrl: 'map/map.html?v=' + navplanVersion, controller: 'mapCtrl' })
+		.when("/traffic/lonlatzoom/:lonlatzoom",  { templateUrl: 'map/map.html?v=' + navplanVersion, controller: 'mapCtrl', showtraffic: true })
 		.when("/waypoints",  { templateUrl: 'waypoints/waypoints.html?v=' + navplanVersion, controller: 'waypointCtrl' })
 		.when("/tracks",  { templateUrl: 'tracks/tracks.html?v=' + navplanVersion, controller: 'trackCtrl' })
 		.when("/login",  { templateUrl: 'login/login.html?v=' + navplanVersion, controller: 'loginCtrl' })
