@@ -1,5 +1,5 @@
 // version
-var navplanVersion = "1.5au"; // must be the same as in version.txt
+var navplanVersion = "1.5av"; // must be the same as in version.txt
 
 
 // js error handler
