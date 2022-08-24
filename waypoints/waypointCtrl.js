@@ -48,7 +48,7 @@ function waypointCtrl($scope, $http, geopointService, fuelService, userService, 
                 .then(
                     function(response) // success
                     {
-                        if (response && response.data && response.data.success == 1) {
+                        if (response && response.data && response.data.success === 1) {
                             $scope.readNavplanList();
                             $scope.showSuccessMessage("Route successfully updated!");
                         }
@@ -103,7 +103,7 @@ function waypointCtrl($scope, $http, geopointService, fuelService, userService, 
                         .then(
                             function (response) // success
                             {
-                                if (response && response.data && response.data.success == 1) {
+                                if (response && response.data && response.data.success === 1) {
                                     $scope.readNavplanList();
                                     $scope.showSuccessMessage("Route successfully deleted!");
                                 }
@@ -153,7 +153,7 @@ function waypointCtrl($scope, $http, geopointService, fuelService, userService, 
 
     $scope.onReverseWaypointsClicked = function ()
     {
-        if ($scope.globalData.navplan.waypoints.length == 0)
+        if ($scope.globalData.navplan.waypoints.length === 0)
             return;
 
         var wpTmp = [];
@@ -187,6 +187,23 @@ function waypointCtrl($scope, $http, geopointService, fuelService, userService, 
 	{
 		return fuelService.getFuelByTime(time, $scope.globalData.aircraft.consumption);
 	};
+
+
+    $scope.tripDist = function()
+    {
+        const wps = $scope.globalData.navplan.waypoints;
+
+        let tripDist = 0;
+        for (let i = 0; i < wps.length; i++) {
+            const wp = wps[i];
+
+            if (wp.dist) {
+                tripDist += wp.dist;
+            }
+        }
+
+        return tripDist;
+    }
 	
 	
 	$scope.formatHourMin = function(minutes)
