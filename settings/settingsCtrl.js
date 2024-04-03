@@ -38,4 +38,10 @@ function settingsCtrl($scope, globalData)
 
         return polyCoordList.join(",");
     }
+
+
+	$scope.convertReserveTimeToInteger = function()
+	{
+		$scope.globalData.fuel.reserveTime = parseInt($scope.globalData.fuel.reserveTime);
+	};
 }

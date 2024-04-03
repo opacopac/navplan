@@ -12,6 +12,12 @@
 				<input type="text" id="maxTrafficAltitudeFt" class="form-control" ng-model="globalData.settings.maxTrafficAltitudeFt">
 			</div>
 		</div>
+		<div class="form-group">
+			<label for="reserveTime" class="control-label col-sm-3">Reserve Time (min)</label>
+			<div class="col-sm-2">
+				<input type="text" id="reserveTime" class="form-control" ng-model="globalData.fuel.reserveTime" ng-change="convertReserveTimeToInteger()">
+			</div>
+		</div>
 	</div>
 	<div ng-show="isSelf(globalData.user.email)"><!-- internal use only -->
 		Click History (internal use only):<br />
