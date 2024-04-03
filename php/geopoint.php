@@ -45,13 +45,13 @@ function searchByName($search, $email, $token)
     $query .= "   NULL AS country,";
     $query .= "   NULL AS admin1,";
     $query .= "   NULL AS admin2,";
-    $query .= "   (" . getFrequencySubquery("openaip_airports.id") . ") AS frequency,";
-    $query .= "   (" . getCallsignSubquery("openaip_airports.id", "openaip_airports.country") . ") AS callsign,";
+    $query .= "   (" . getFrequencySubquery("ad.id") . ") AS frequency,";
+    $query .= "   (" . getCallsignSubquery("ad.id", "ad.country") . ") AS callsign,";
     $query .= "   icao AS airport_icao,";
     $query .= "   latitude,";
     $query .= "   longitude,";
     $query .= "   elevation";
-    $query .= " FROM openaip_airports";
+    $query .= " FROM openaip_airports2 ad";
     $query .= " WHERE";
     $query .= "   icao LIKE '" . $search . "%'";
     $query .= "   OR name LIKE '" . $search . "%'";
@@ -77,7 +77,7 @@ function searchByName($search, $email, $token)
     $query .= "   latitude,";
     $query .= "   longitude,";
     $query .= "   elevation";
-    $query .= " FROM openaip_navaids";
+    $query .= " FROM openaip_navaids2";
     $query .= " WHERE";
     $query .= "   kuerzel LIKE '" . $search . "%'";
     $query .= "   OR name LIKE '" . $search . "%'";
@@ -182,7 +182,7 @@ function searchByPosition($lat, $lon, $rad, $minNotamTime, $maxNotamTime, $email
 
     // cols: sortorder, type, id, name, frequency, callsign, latitude, longitude, elevation
 
-    //$query .= "SELECT 1 AS sortOrder, 'airport' AS type, id, CONCAT(name, ' (', icao ,')') AS name, icao as wpname, NULL AS frequency, NULL AS callsign, icao AS airport_icao, latitude, longitude, elevation FROM openaip_airports WHERE";
+    //$query .= "SELECT 1 AS sortOrder, 'airport' AS type, id, CONCAT(name, ' (', icao ,')') AS name, icao as wpname, NULL AS frequency, NULL AS callsign, icao AS airport_icao, latitude, longitude, elevation FROM openaip_airports2 WHERE";
 
     $query =  "SELECT";
     $query .= "   1 AS sortOrder,";
@@ -196,7 +196,7 @@ function searchByPosition($lat, $lon, $rad, $minNotamTime, $maxNotamTime, $email
     $query .= "   latitude,";
     $query .= "   longitude,";
     $query .= "   elevation";
-    $query .= " FROM openaip_airports WHERE";
+    $query .= " FROM openaip_airports2 WHERE";
     $query .= "   latitude > " . ($lat - $rad);
     $query .= "   AND latitude < " . ($lat + $rad);
     $query .= "   AND longitude > " . ($lon - $rad);
@@ -204,7 +204,7 @@ function searchByPosition($lat, $lon, $rad, $minNotamTime, $maxNotamTime, $email
 
     $query .= " UNION ";
 
-    $query .= "SELECT 2 AS sortOrder, 'navaid' AS type, id, CONCAT(name, ' (', type, ')') AS name, CONCAT(kuerzel, ' ', type) AS wpname, frequency, kuerzel AS callsign, NULL AS airport_icao, latitude, longitude, elevation FROM openaip_navaids WHERE";
+    $query .= "SELECT 2 AS sortOrder, 'navaid' AS type, id, CONCAT(name, ' (', type, ')') AS name, CONCAT(kuerzel, ' ', type) AS wpname, frequency, kuerzel AS callsign, NULL AS airport_icao, latitude, longitude, elevation FROM openaip_navaids2 WHERE";
     $query .= " latitude > " . ($lat - $rad);
     $query .= " AND latitude < " . ($lat + $rad);
     $query .= " AND longitude > " . ($lon - $rad);
@@ -266,11 +266,12 @@ function searchByPosition($lat, $lon, $rad, $minNotamTime, $maxNotamTime, $email
 }
 
 
-function getFrequencySubquery($airportIdFieldName)
+function getFrequencySubquery($airportIdFieldName): string
 {
-    $query  = "SELECT frequency FROM openaip_radios AS rad";
+    $query  = "SELECT frequency FROM openaip_radios2 AS rad";
     $query .= " WHERE rad.airport_id = " . $airportIdFieldName . "";
     $query .= " ORDER BY";
+    $query .= "  CASE WHEN rad.is_primary = TRUE THEN 1 ELSE 2 END,";
     $query .= "  CASE WHEN rad.category = 'COMMUNICATION' THEN 1 WHEN rad.category = 'OTHER' THEN 2 ELSE 3 END,";
     $query .= "  CASE WHEN rad.type = 'TOWER' THEN 1 WHEN rad.type = 'CTAF' THEN 2 WHEN rad.type = 'OTHER' THEN 3 ELSE 4 END";
     $query .= " LIMIT 1";
@@ -279,7 +280,7 @@ function getFrequencySubquery($airportIdFieldName)
 }
 
 
-function getCallsignSubquery($airportIdFieldName, $airportCountryFieldName)
+function getCallsignSubquery($airportIdFieldName, $airportCountryFieldName): string
 {
     $query  = "SELECT ";
     $query .= " (CASE rad.type";
@@ -290,12 +291,14 @@ function getCallsignSubquery($airportIdFieldName, $airportCountryFieldName)
     $query .= "   WHEN 'GROUND' THEN 'GND'";
     $query .= "   WHEN 'AFIS' THEN 'AFIS'";
     $query .= "   WHEN 'CTAF' THEN CASE WHEN " . $airportCountryFieldName . " = 'CH' THEN 'AD' ELSE 'CTAF' END";
-    $query .= "   WHEN 'OTHER' THEN CASE WHEN rad.description LIKE 'AD%' THEN 'AD' ELSE rad.typespec END";
-    $query .= "   ELSE ''";
+    //$query .= "   WHEN 'OTHER' THEN CASE WHEN rad.name LIKE 'AD%' THEN 'AD' ELSE '' END";
+    //$query .= "   ELSE ''";
+    $query .= "   ELSE CASE WHEN rad.name LIKE 'AD%' THEN 'AD' ELSE '' END";
     $query .= " END) AS callsign";
-    $query .= " FROM openaip_radios AS rad";
+    $query .= " FROM openaip_radios2 AS rad";
     $query .= " WHERE rad.airport_id = " . $airportIdFieldName . "";
     $query .= " ORDER BY";
+    $query .= "  CASE WHEN rad.is_primary = TRUE THEN 1 ELSE 2 END,";
     $query .= "  CASE WHEN rad.category = 'COMMUNICATION' THEN 1 WHEN rad.category = 'OTHER' THEN 2 ELSE 3 END,";
     $query .= "  CASE WHEN rad.type = 'TOWER' THEN 1 WHEN rad.type = 'CTAF' THEN 2 WHEN rad.type = 'OTHER' THEN 3 ELSE 4 END";
     $query .= " LIMIT 1";
@@ -304,7 +307,7 @@ function getCallsignSubquery($airportIdFieldName, $airportCountryFieldName)
 }
 
 
-function getGeonamesFilterQuery()
+function getGeonamesFilterQuery(): string
 {
     $query  = "((feature_class = 'P')"; // populated place
     $query .= " OR (feature_class = 'T')"; // any terrain
@@ -322,7 +325,7 @@ function getGeonamesFilterQuery()
 }
 
 
-function buildGeonamesList($result, $renameDuplicates, $lonLat)
+function buildGeonamesList($result, $renameDuplicates, $lonLat): array
 {
     $terrainHelper = new TerrainHelper();
 
@@ -338,7 +341,7 @@ function buildGeonamesList($result, $renameDuplicates, $lonLat)
             "country" => $rs["country"] ?? "",
             "admin1" => $rs["admin1"] ?? "",
             "admin2" => $rs["admin2"] ?? "",
-            "frequency" => $rs["frequency"],
+            "frequency" => formatFrequency($rs["frequency"]),
             "callsign" => $rs["callsign"],
             "airport_icao" => $rs["airport_icao"],
             "latitude" => floatval($rs["latitude"]),
@@ -391,7 +394,7 @@ function buildGeonamesList($result, $renameDuplicates, $lonLat)
 }
 
 
-function findDuplicates($geonames)
+function findDuplicates($geonames): array
 {
     $duplicateNameIdx = array();
     $duplicateAdmin1Idx = array();

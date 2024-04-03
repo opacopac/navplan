@@ -239,12 +239,14 @@ function terrainService($http)
                     break;
                 case "TMZ":
                 case "RMZ":
-                case "FIS":
+                case "FIZ":
+                case "ATZ":
                     polyline.setAttribute("style", "fill:rgba(23, 128, 194, 0.2); stroke:rgba(23, 128, 194, 0.8); stroke-width:3px");
                     polyline.setAttribute("stroke-dasharray", "3, 7");
                     break;
                 case "GLIDING":
                 case "WAVE":
+                case "SPORT":
                     polyline.setAttribute("style", "fill:rgba(0, 150, 64, 0.2); stroke:rgba(0, 150, 64, 0.8); stroke-width:3px");
                     break;
                 default :
@@ -290,12 +292,16 @@ function terrainService($http)
                     break;
                 case "TMZ":
                 case "RMZ":
-                case "FIS":
+                case "FIZ":
+                case "ATZ":
                     addText(svg, cat, x, y, charWidth3, height, colorBlue);
                     break;
                 case "GLIDING":
                 case "WAVE":
                     addText(svg, "GLD", x, y, charWidth3, height, colorGreen);
+                    break;
+                case "SPORT":
+                    addText(svg, cat, x, y, charWidth3, height, colorGreen);
                     break;
             }
 

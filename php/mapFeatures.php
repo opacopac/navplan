@@ -3,6 +3,10 @@ require_once "config.php";
 require_once "helper.php";
 require_once "terrainHelper.php";
 
+/*ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);*/
+
 const MAX_BOTTOM_ALT_FL = 200;
 
 // open db connection
@@ -49,7 +53,7 @@ function getNavaids($extent)
 {
     global $conn;
 
-    $query = "SELECT * FROM openaip_navaids WHERE MBRIntersects(lonlat, " . $extent . ")";
+    $query = "SELECT * FROM openaip_navaids2 WHERE MBRIntersects(lonlat, " . $extent . ")";
 
     $result = $conn->query($query);
 
@@ -73,7 +77,7 @@ function getNavaids($extent)
             "latitude" => reduceDegAccuracy($rs["latitude"], "NAVAID"),
             "longitude" => reduceDegAccuracy($rs["longitude"], "NAVAID"),
             "elevation" => floatval($rs["elevation"]),
-            "frequency" => $rs["frequency"],
+            "frequency" => formatFrequency($rs["frequency"]),
             "unit" => $unit,
             "declination" => floatval($rs["declination"]),
             "truenorth" => intval($rs["truenorth"])
@@ -89,7 +93,7 @@ function getAirports($extent, $email)
     global $conn;
 
     // load airports
-    $query  = "SELECT * FROM openaip_airports WHERE MBRIntersects(lonlat, " . $extent . ")";
+    $query  = "SELECT * FROM openaip_airports2 WHERE MBRIntersects(lonlat, " . $extent . ")";
 
     $result = $conn->query($query);
 
@@ -138,23 +142,10 @@ function getAirports($extent, $email)
 
 
     // load runways
-    $query  = "SELECT";
-    $query .= "  rwy.airport_id,";
-    $query .= "  rwy.name,";
-    $query .= "  rwy.surface,";
-    $query .= "  rwy.length,";
-    $query .= "  rwy.width,";
-    $query .= "  rwy.direction1,";
-    $query .= "  rwy.direction2,";
-    $query .= "  rwy.tora1,";
-    $query .= "  rwy.tora2,";
-    $query .= "  rwy.lda1,";
-    $query .= "  rwy.lda2,";
-    $query .= "  rwy.papi1,";
-    $query .= "  rwy.papi2";
-    $query .= " FROM openaip_runways AS rwy ";
-    $query .= " WHERE rwy.operations = 'ACTIVE' AND airport_id IN (" . $apIdList . ")";
-    $query .= " ORDER BY rwy.length DESC, rwy.surface ASC, rwy.id ASC";
+    $query  = "SELECT *";
+    $query .= " FROM openaip_runways2";
+    $query .= " WHERE operations = 'ACTIVE' AND airport_id IN (" . $apIdList . ")";
+    $query .= " ORDER BY length DESC, surface ASC, name ASC";
 
     $result = $conn->query($query);
 
@@ -168,14 +159,10 @@ function getAirports($extent, $email)
             "surface" => $rs["surface"],
             "length" => floatval($rs["length"]),
             "width" => floatval($rs["width"]),
-            "direction1" => intval($rs["direction1"]),
-            "direction2" => intval($rs["direction2"]),
-            "tora1" => intvalOrNull($rs["tora1"]),
-            "tora2" => intvalOrNull($rs["tora2"]),
-            "lda1" => intvalOrNull($rs["lda1"]),
-            "lda2" => intvalOrNull($rs["lda2"]),
-            "papi1" => intvalOrNull($rs["papi1"]),
-            "papi2" => intvalOrNull($rs["papi2"])
+            "direction" => intval($rs["direction"]),
+            "tora" => intvalOrNull($rs["tora"]),
+            "lda" => intvalOrNull($rs["lda"]),
+            "papi" => intvalOrNull($rs["papi"])
         );
 
         // add to airport object
@@ -196,13 +183,15 @@ function getAirports($extent, $email)
     $query .= "  rad.category,";
     $query .= "  rad.frequency,";
     $query .= "  rad.type,";
-    $query .= "  rad.typespec,";
-    $query .= "  rad.description,";
+    $query .= "  rad.name,";
+    $query .= "  rad.is_primary,";
+    $query .= "  (CASE WHEN rad.is_primary = 1 THEN 1 ELSE 2 END) AS sortorder0,";
     $query .= "  (CASE WHEN rad.category = 'COMMUNICATION' THEN 1 WHEN rad.category = 'OTHER' THEN 2 WHEN rad.category = 'INFORMATION' THEN 3 ELSE 4 END) AS sortorder1,";
     $query .= "  (CASE WHEN rad.type = 'TOWER' THEN 1 WHEN rad.type = 'CTAF' THEN 2 WHEN rad.type = 'INFO' THEN 3 WHEN rad.type = 'OTHER' THEN 4 ELSE 5 END) AS sortorder2";
-    $query .= " FROM openaip_radios AS rad ";
+    $query .= " FROM openaip_radios2 AS rad ";
     $query .= " WHERE airport_id IN (" . $apIdList . ")";
     $query .= " ORDER BY";
+    $query .= "   sortorder0 ASC,";
     $query .= "   sortorder1 ASC,";
     $query .= "   sortorder2 ASC,";
     $query .= "   frequency ASC";
@@ -216,10 +205,10 @@ function getAirports($extent, $email)
     {
         $radio = array(
             "category" => $rs["category"],
-            "frequency" => $rs["frequency"],
+            "frequency" => formatFrequency($rs["frequency"]),
             "type" => $rs["type"],
-            "typespec" => $rs["typespec"],
-            "description" => $rs["description"]
+            "name" => $rs["name"],
+            "is_primary" => $rs["is_primary"]
         );
 
         // add to airport object
@@ -367,25 +356,11 @@ function getAirspaces($extent)
     global $conn;
 
     // load airspaces
-    $query  = "SELECT";
-    $query .= "  air.id,";
-    $query .= "  air.aip_id,";
-    $query .= "  air.category,";
-    $query .= "  air.country, ";
-    $query .= "  air.name,";
-    $query .= "  air.alt_top_reference,";
-    $query .= "  air.alt_top_height,";
-    $query .= "  air.alt_top_unit,";
-    $query .= "  air.alt_bottom_reference,";
-    $query .= "  air.alt_bottom_height,";
-    $query .= "  air.alt_bottom_unit,";
-    $query .= "  air.polygon";
-    $query .= " FROM openaip_airspace AS air";
+    $query =  "SELECT * FROM openaip_airspace2";
     $query .= " WHERE";
     $query .= "  MBRIntersects(extent, " . $extent . ")";
     $query .= "    AND";
-    $query .= "  (air.alt_bottom_height < " . MAX_BOTTOM_ALT_FL . " OR air.alt_bottom_unit <> 'FL')";
-
+    $query .= "  (alt_bottom_height < " . MAX_BOTTOM_ALT_FL . " OR alt_bottom_unit <> 'FL')";
 
     $result = $conn->query($query);
 
@@ -400,10 +375,10 @@ function getAirspaces($extent)
         $polygon = convertDbPolygonToArray($rs["polygon"]);
 
         // build airspace object
-        $airspaces[$rs["aip_id"]] = array(
+        $airspaces[$rs["id"]] = array(
             "id" => intval($rs["id"]),
-            "aip_id" => intval($rs["aip_id"]),
             "category" => $rs["category"],
+            "class" => $rs["class"],
             "country" => $rs["country"],
             "name" => $rs["name"],
             "alt" => array(

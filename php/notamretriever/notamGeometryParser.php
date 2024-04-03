@@ -212,7 +212,7 @@ class NotamGeometryParser
         // load from db
         $query = "SELECT 'fir' AS type, icao, ST_AsText(polygon) AS polygon, NULL AS lonlat FROM icao_fir WHERE icao IN ('" . join("','", $icaoList) . "')"
             . " UNION "
-            . "SELECT 'ad' AS type, icao, NULL AS polygon, ST_AsText(lonlat) as lonlat FROM openaip_airports WHERE icao IN ('" . join("','", $icaoList) . "')";
+            . "SELECT 'ad' AS type, icao, NULL AS polygon, ST_AsText(lonlat) as lonlat FROM openaip_airports2 WHERE icao IN ('" . join("','", $icaoList) . "')";
 
         $result = $this->conn->query($query);
 
@@ -687,7 +687,7 @@ class NotamGeometryParser
 
             if (array_key_exists($notamType, $typeCatDict) && $notam["dbExtent"])
             {
-                $query = "SELECT '" . $index . "' AS notamindex, asp.name AS name, asp.polygon AS polygon FROM openaip_airspace AS asp"
+                $query = "SELECT '" . $index . "' AS notamindex, asp.name AS name, asp.polygon AS polygon FROM openaip_airspace2 AS asp"
                     . " LEFT JOIN icao_fir AS fir ON fir.icao = '" . $notam["icao"] . "'"
                     . " WHERE ST_INTERSECTS(" . $notam["dbExtent"] . ", asp.extent) AND asp.category IN('" . join("','", $typeCatDict[$notamType]) . "')"
                     . " AND (ST_INTERSECTS(asp.extent, fir.polygon) OR fir.icao IS NULL)";

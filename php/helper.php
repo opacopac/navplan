@@ -548,7 +548,7 @@ function createRandomString($len)
 }
 
 
-function zeroPad($number, $digits)
+function zeroPad($number, $digits): string
 {
     $numstr = '' . $number;
 
@@ -556,6 +556,19 @@ function zeroPad($number, $digits)
         $numstr = "0" . $numstr;
 
     return $numstr;
+}
+
+
+function formatFrequency($number): string
+{
+    if (!is_numeric($number)) {
+        return '';
+    }
+
+    $number = floatval($number);
+    $numberStr = number_format($number, 3, '.', '');
+
+    return zeroPad($numberStr, 7);
 }
 
 

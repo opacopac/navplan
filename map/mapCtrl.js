@@ -1156,7 +1156,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 
         function getMainFrequency(airport)
         {
-            if (!airport || !airport.radios || airport.radios.length == 0)
+            if (!airport || !airport.radios || airport.radios.length === 0)
                 return '';
             else
                 return airport.radios[0].frequency;
@@ -1165,7 +1165,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
 
         function getMainCallsign(airport)
         {
-            if (!airport || !airport.radios || airport.radios.length == 0)
+            if (!airport || !airport.radios || airport.radios.length === 0)
                 return '';
 
             return getCallsign(airport.radios[0], airport.country);
@@ -1184,19 +1184,24 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
                 case "GROUND" : return "GND";
                 case "DELIVERY" : return "DEL";
                 case "CTAF" :
-                    if (country == "CH") // spezialregel nur für country = CH
+                    if (country === "CH") // spezialregel nur für country = CH
                         return "AD";
                     else
                         return "CTAF";
                 case "AFIS" : return "AFIS";
-                case "OTHER" :
+                /*case "OTHER" :
                 {
-                    if (radio.description.toUpperCase().indexOf("AD") == 0) // starts with AD...
+                    if (radio.description.toUpperCase().indexOf("AD") === 0) // starts with AD...
                         return "AD";
                     else
                         return radio.typespec;
+                }*/
+                default : {
+                    if (radio.name.toUpperCase().indexOf("AD") === 0) // starts with AD...
+                        return "AD";
+                    else
+                        return radio.type;
                 }
-                default : return radio.type;
             }
         }
 
@@ -1219,7 +1224,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
                 {
                     var rwy = airport.runways[i];
 
-                    if (rwy.name.toString().indexOf("GLD") == -1 || airport.runways.length == 1) // skip GLD strip unless it's the only rwy
+                    if (rwy.name.toString().indexOf("GLD") === -1 || airport.runways.length === 1) // skip GLD strip unless it's the only rwy
                         runwayStringList.push(rwy.name);
                 }
 
@@ -1235,7 +1240,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
                 {
                     var radio = airport.radios[i];
                     var callsign = getCallsign(radio, airport.country);
-                    if ((radio.type != "GLIDING" && radio.type != "INFO" && radio.type != "FIS" && callsign != "VDF") || airport.radios.length == 1) // skip GLD, FIS, VDF freq unless it's the only frequency
+                    if ((radio.type !== "GLIDING" && radio.type !== "INFO" && radio.type !== "FIS" && callsign !== "VDF") || airport.radios.length === 1) // skip GLD, FIS, VDF freq unless it's the only frequency
                         radioStringList.push(callsign + ":" + radio.frequency);
                 }
 

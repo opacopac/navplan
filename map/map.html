@@ -76,17 +76,20 @@
 						<td>{{ runway.name }}</td>
 						<td>{{ runway.surface }}</td>
 						<td>{{ getDimensionsString(runway) }}</td>
-						<td>{{ runway.tora1 ? runway.tora1 : '-' }} / {{ runway.tora2 ? runway.tora2 : '-'  }}</td>
-						<td>{{ runway.lda1 ? runway.lda1 : '-' }} / {{ runway.lda2 ? runway.lda2 : '-'  }}</td>
-						<td>{{ runway.papi1 ? 'y' : '-' }} / {{ runway.papi2 ? 'y' : '-'  }}</td>
+						<td>{{ runway.tora ? runway.tora : '-' }}</td>
+						<td>{{ runway.lda ? runway.lda : '-' }}</td>
+						<td>{{ runway.papi ? 'y' : '-' }}</td>
 					</tr>
 				</table>
 				<table class="table table-striped table-condensed" ng-show="globalData.selectedWp.airport.radios.length > 0">
 					<tr>
-						<th colspan="2">Frequency</th>
+						<th>Name</th>
+						<th>Type</th>
+						<th>Frequency</th>
 					</tr>
 					<tr ng-repeat="radio in globalData.selectedWp.airport.radios">
-						<td>{{ radio.description ? radio.description : radio.type }}</td>
+						<td>{{ radio.name }}</td>
+						<td>{{ radio.type }}</td>
 						<td>{{ radio.frequency }}</td>
 					</tr>
 				</table>

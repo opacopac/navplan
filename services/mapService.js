@@ -383,7 +383,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 
 
             // rwy icon
-            if (ap.runways && ap.runways.length > 0 && ap.type != "AD_CLOSED" && ap.type != "HELI_CIVIL" && ap.type != "HELI_MIL")
+            if (ap.runways && ap.runways.length > 0 && ap.type !== "AD_CLOSED" && ap.type !== "HELI_CIVIL" && ap.type !== "HELI_MIL")
             {
                 var rwyFeature = new ol.Feature({
                     geometry: new ol.geom.Point(ol.proj.fromLonLat([ap.longitude, ap.latitude]))
@@ -400,7 +400,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 
 
             //  parachute feature
-            if (ap.mapfeatures && ap.mapfeatures.length > 0 && ap.mapfeatures[0].type == "PARACHUTE")
+            if (ap.mapfeatures && ap.mapfeatures.length > 0 && ap.mapfeatures[0].type === "PARACHUTE")
             {
                 var parachuteFeature = new ol.Feature({
                     geometry: new ol.geom.Point(ol.proj.fromLonLat([ap.longitude, ap.latitude]))
@@ -421,23 +421,23 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
             var textColor = "#451A57";
             var src;
 
-            if (ad_type == "APT" || ad_type == "INTL_APT")
+            if (ad_type === "APT" || ad_type === "INTL_APT")
                 src = 'icon/ad_civ.png';
-            else if (ad_type == "AF_CIVIL" || ad_type == "GLIDING" || ad_type == "LIGHT_AIRCRAFT" || ad_type == "AF_MOUNTAIN")
+            else if (ad_type === "AF_CIVIL" || ad_type === "GLIDING" || ad_type === "LIGHT_AIRCRAFT" || ad_type === "AF_MOUNTAIN")
                 src = 'icon/ad_civ_nofac.png';
-            else if (ad_type == "AF_MIL_CIVIL")
+            else if (ad_type === "AF_MIL_CIVIL")
                 src = 'icon/ad_civmil.png';
-            else if (ad_type == "HELI_CIVIL" || ad_type == "HELI_MOUNTAIN" || ad_type == "HELI_HOSPITAL")
+            else if (ad_type === "HELI_CIVIL" || ad_type === "HELI_MOUNTAIN" || ad_type === "HELI_HOSPITAL")
                 src = 'icon/ad_heli.png';
-            else if (ad_type == "HELI_MIL")
+            else if (ad_type === "HELI_MIL")
                 src = 'icon/ad_heli_mil.png';
-            else if (ad_type == "AF_WATER")
+            else if (ad_type === "AF_WATER")
                 src = 'icon/ad_water.png';
-            else if (ad_type == "AD_MIL") {
+            else if (ad_type === "AD_MIL") {
                 src = 'icon/ad_mil.png';
                 textColor = "#AE1E22";
             }
-            else if (ad_type == "AD_CLOSED") {
+            else if (ad_type === "AD_CLOSED") {
                 src = 'icon/ad_closed.png';
                 name = '';
             }
@@ -472,15 +472,15 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 
             var src;
             var rwy_surface = rwy.surface ? rwy.surface : undefined;
-            var rwy_direction = rwy.direction1 ? rwy.direction1 : undefined;
+            var rwy_direction = rwy.direction ? rwy.direction : undefined;
 
             // no rwy for mountain landing sites
             if (ad_type === "AF_MOUNTAIN" || ad_type === "HELI_MOUNTAIN")
                 return;
 
-            if (ad_type == "AD_MIL")
+            if (ad_type === "AD_MIL")
                 src = 'icon/rwy_mil.png';
-            else if (rwy_surface == "ASPH" || rwy_surface == "CONC")
+            else if (rwy_surface === "ASPH" || rwy_surface === "CONC")
                 src = 'icon/rwy_concrete.png';
             else if (rwy_surface !== "WATE")
                 src = 'icon/rwy_grass.png';
@@ -638,7 +638,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
                 {
                     src = "icon/wind_" + windrange[i][1] + "kt.png";
 
-                    if (i == 0)
+                    if (i === 0)
                         rot = 0;
 
                     break;
@@ -820,27 +820,27 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
             {
                 var src, textOffsetY;
 
-                if (navaid_type == "NDB") {
+                if (navaid_type === "NDB") {
                     src = 'icon/navaid_ndb.png';
                     textOffsetY = 33;
                 }
-                else if (navaid_type == "VOR-DME" || navaid_type == "DVOR-DME") {
+                else if (navaid_type === "VOR-DME" || navaid_type === "DVOR-DME") {
                     src = 'icon/navaid_vor-dme.png';
                     textOffsetY = 20;
                 }
-                else if (navaid_type == "VOR" || navaid_type == "DVOR") {
+                else if (navaid_type === "VOR" || navaid_type === "DVOR") {
                     src = 'icon/navaid_vor.png';
                     textOffsetY = 20;
                 }
-                else if (navaid_type == "DME") {
+                else if (navaid_type === "DME") {
                     src = 'icon/navaid_dme.png';
                     textOffsetY = 20;
                 }
-                else if (navaid_type == "TACAN") {
+                else if (navaid_type === "TACAN") {
                     src = 'icon/navaid_tacan.png';
                     textOffsetY = 25;
                 }
-                else if (navaid_type == "VORTAC" || navaid_type == "DVORTAC") {
+                else if (navaid_type === "VORTAC" || navaid_type === "DVORTAC") {
                     src = 'icon/navaid_vortac.png';
                     textOffsetY = 25;
                 }
@@ -881,9 +881,9 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 
             var feature;
 
-            if (rp.type == "POINT")
+            if (rp.type === "POINT")
                 feature = createReportingPointFeature(rp);
-            else if (rp.type == "SECTOR")
+            else if (rp.type === "SECTOR")
                 feature = createReportingSectorFeature(rp);
             else
                 continue;
@@ -1087,7 +1087,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 
 
         function createAirspaceStyle(category) {
-            if (category == "CTR") {
+            if (category === "CTR") {
                 return new ol.style.Style({
                     fill: new ol.style.Fill({
                         color: 'rgba(152, 206, 235, 0.3)'
@@ -1099,7 +1099,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
                     })
                 });
             }
-            else if (category == "A") {
+            else if (category === "A") {
                 return new ol.style.Style({
                     stroke: new ol.style.Stroke({
                         color: 'rgba(174, 30, 34, 0.8)',
@@ -1107,7 +1107,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
                     })
                 });
             }
-            else if (category == "B" || category == "C" || category == "D") {
+            else if (category === "B" || category === "C" || category === "D") {
                 return new ol.style.Style({
                     stroke: new ol.style.Stroke({
                         color: 'rgba(23, 128, 194, 0.8)',
@@ -1115,7 +1115,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
                     })
                 });
             }
-            else if (category == "E") {
+            else if (category === "E") {
                 return new ol.style.Style({
                     stroke: new ol.style.Stroke({
                         color: 'rgba(23, 128, 194, 0.8)',
@@ -1123,7 +1123,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
                     })
                 });
             }
-            else if (category == "DANGER" || category == "RESTRICTED" || category == "PROHIBITED") {
+            else if (category === "DANGER" || category === "RESTRICTED" || category === "PROHIBITED") {
                 return new ol.style.Style({
                     stroke: new ol.style.Stroke({
                         color: 'rgba(174, 30, 34, 0.8)',
@@ -1131,7 +1131,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
                     })
                 });
             }
-            else if (category == "TMZ" || category == "RMZ" || category == "FIZ") {
+            else if (category === "TMZ" || category === "RMZ" || category === "FIZ" || category === "ATZ") {
                 return new ol.style.Style({
                     /*fill: new ol.style.Fill({
                      color: 'rgba(152, 206, 235, 0.3)'
@@ -1144,7 +1144,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
                     })
                 });
             }
-            else if (category == "FIR" || category == "UIR") {
+            else if (category === "FIR" || category === "UIR") {
                 return new ol.style.Style({
                     /*fill: new ol.style.Fill({
                      color: 'rgba(152, 206, 235, 0.3)'
@@ -1156,7 +1156,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
                     })
                 });
             }
-            else if (category == "GLIDING" || category == "WAVE") {
+            else if (category === "GLIDING" || category === "WAVE" || category === "SPORT") {
                 return new ol.style.Style({
                     stroke: new ol.style.Stroke({
                         color: 'rgba(0, 150, 64, 0.8)',
@@ -1889,7 +1889,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 			geopoints = geopoints.splice(0, maxPoints);
 
 		// add clickpoint if no points found
-		if (clickPixel && geopoints.length == 0)
+		if (clickPixel && geopoints.length === 0)
 			geopoints.push(getCoordinateGeopoint(clickLonLat));
 
 		var airspaceSelection = getAirspacesAtLatLon(clickLonLat);
@@ -1960,30 +1960,6 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 				asList[i].alt.bottom_replace = undefined;
 			}
 
-			// check exclusions
-			/*for (i = 0; i < asList.length; i++)
-			{
-				if (asList[i].exclude_aip_id)
-				{
-					for (var j = 0; j < asList.length; j++)
-					{
-						if (asList[j].aip_id == asList[i].exclude_aip_id)
-						{
-							var as1b = getAirspaceHeight(asList[i].alt.bottom);
-							var as1t = getAirspaceHeight(asList[i].alt.top);
-							var as2b = getAirspaceHeight(asList[j].alt.bottom);
-							var as2t = getAirspaceHeight(asList[j].alt.top);
-
-							if (as1b <= as2b && as1t >= as2t) // as1 completely embraces as2
-								asList[j].hide = true;
-							else if (as1b <= as2b && as1t <= as2t && as1t > as2b) // as1 pushes from below into as2
-								asList[j].alt.bottom_replace = asList[i].alt.top;
-						}
-					}
-				}
-			}*/
-
-
 			// sort airspaces top to bottom
 			asList.sort(airspaceComparer);
 
@@ -2003,7 +1979,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
         {
             var bottomComp = heightComparerBottom2Top(as1.alt.bottom, as2.alt.bottom);
 
-            if (bottomComp != 0)
+            if (bottomComp !== 0)
                 return bottomComp;
             else
                 return heightComparerBottom2Top(as1.alt.top, as2.alt.top);
@@ -2013,10 +1989,10 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
         function heightComparerBottom2Top(alt1, alt2)
         {
             // AGL first
-            if (alt1.ref == "GND" && alt2.ref != "GND")
+            if (alt1.ref === "GND" && alt2.ref !== "GND")
                 return -1;
 
-            if (alt1.ref != "GND" && alt2.ref == "GND")
+            if (alt1.ref !== "GND" && alt2.ref === "GND")
                 return 1;
 
             return getAirspaceHeight(alt1) - getAirspaceHeight(alt2);
@@ -2025,7 +2001,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 
         function getAirspaceHeight(height)
 		{
-			if (height.unit == 'FL')
+			if (height.unit === 'FL')
 				return height.height * 100;
 			else
 				return height.height;
@@ -2034,7 +2010,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 
 		function isHigherOrEqual(alt1, alt2)
         {
-            if (alt1.ref != alt2.ref && (alt1.ref == 'GND' || alt2.ref == 'GND')) // don't mix reference planes
+            if (alt1.ref !== alt2.ref && (alt1.ref === 'GND' || alt2.ref === 'GND')) // don't mix reference planes
                 return false;
 
             return (getAirspaceHeight(alt1) >= getAirspaceHeight(alt2));
@@ -2073,7 +2049,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 
                 for (i = 0; i < asByCat[cat].length; i++)
                 {
-                    if (i == 0)
+                    if (i === 0)
                         currentAs = createAirspaceInfo(asByCat[cat][i]);
 
                     if (i < asByCat[cat].length - 1)
@@ -2234,7 +2210,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 
 		function setLabelCoordinates(geopoints, rotationRad)
 		{
-			if (geopoints.length == 0)
+			if (geopoints.length === 0)
 				return;
 
 			var radiusPixel = 100;
@@ -2484,6 +2460,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
                     case 'UIR':
 					case 'GLIDING':
                     case 'WAVE':
+                    case 'SPORT':
                         return 'airspace-overlay-green';
 					default:
 						return 'airspace-overlay-blue';
@@ -2510,6 +2487,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
                     case 'TMZ':
                     case 'RMZ':
                     case 'FIZ':
+                    case 'ATZ':
 						classStyle = "airspace-class-blue";
 						break;
                     case 'FIR':
@@ -2534,6 +2512,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
                         break;
                     case 'GLIDING':
                     case 'WAVE':
+                    case 'SPORT':
                         classStyle = "airspace-class-green";
                         catText = "GLD";
                         break;
@@ -2553,7 +2532,6 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 			{
 				var classStyle;
 				var text = airspace.name;
-				//text += '(' + airspace.aip_id + ')';
 
 				switch (airspace.category)
 				{
@@ -2567,6 +2545,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
                     case 'UIR':
 					case 'GLIDING':
                     case 'WAVE':
+                    case 'SPORT':
 						classStyle = "airspace-name-green";
 						break;
 					default:
@@ -2792,12 +2771,12 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 
 			for (var i = 0; i < newPoints.length; i++)
 			{
-				if ((newPoints[i][0] == oldPoints[i][0] && newPoints[i][1] == oldPoints[i][1]) || (newPoints[i][0] == oldPoints[i][0] && newPoints[i][1] == oldPoints[i][1]))
+				if ((newPoints[i][0] === oldPoints[i][0] && newPoints[i][1] === oldPoints[i][1]) || (newPoints[i][0] === oldPoints[i][0] && newPoints[i][1] === oldPoints[i][1]))
 					continue;
 
 				var latLon = getLatLonCoordinates(newPoints[i]);
 				var feature = findSnapFeature(newPoints[i]);
-				var isInsert = !(oldPoints.length == newPoints.length);
+				var isInsert = !(oldPoints.length === newPoints.length);
 
 				onTrackModifyEndCallback(feature, latLon, i, isInsert);
 				break;
@@ -3051,7 +3030,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
     {
         for (var i = 0; i < chartLayerCache.chartLayers.length; i++)
         {
-            if (chartLayerCache.chartLayers[i].chartId == closerFeature.closeChartId)
+            if (chartLayerCache.chartLayers[i].chartId === closerFeature.closeChartId)
             {
                 var closingChartLayer = chartLayerCache.chartLayers[i];
 
@@ -3190,7 +3169,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 		{
 			var color;
 
-			if (trafficType == "OWN")
+			if (trafficType === "OWN")
 				color = "#0000FF";
 			else
 				color = "#FF0000";
@@ -3365,7 +3344,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
             regStripped = registration.toUpperCase().replace(/[^A-Z0-9]/g, '');
             callStripped = callsign.toUpperCase().replace(/[^A-Z0-9]/g, '');
 
-            return regStripped == callStripped;
+            return regStripped === callStripped;
         }
 	}
 

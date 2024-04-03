@@ -201,7 +201,7 @@ class TerrainHelper
 
     //region PRIVATE FUNCTIONS
 
-    private function getTerrainFilePath($position)
+    private function getTerrainFilePath($position): string
     {
         $lon = $position[0];
         $lat = $position[1];
@@ -237,7 +237,7 @@ class TerrainHelper
     }
 
 
-    private function getSeekPos($position)
+    private function getSeekPos($position): int
     {
         $lonProc = $position[0] - floor($position[0]);
         $latProc = $position[1] - floor($position[1]);
@@ -262,12 +262,12 @@ class TerrainHelper
     }
 
 
-    private function getLegAirspaces($pos1, $pos2)
+    private function getLegAirspaces($pos1, $pos2): array
     {
-        $query = "SELECT air.* ";
-        $query .= " FROM openaip_airspace AS air";
+        $query = "SELECT * ";
+        $query .= " FROM openaip_airspace2";
         $query .= " WHERE";
-        $query .= "  air.category NOT IN ('FIR', 'UIR') ";
+        $query .= "  category NOT IN ('FIR', 'UIR') ";
         $query .= "    AND ";
         $query .= "  ST_INTERSECTS(ST_GEOMFROMTEXT('LINESTRING(" . $pos1[0] . " " . $pos1[1] . "," .  $pos2[0] . " " . $pos2[1] . ")'), extent) LIMIT " . self::MAX_AIRSPACES_PER_LEG;
         $result = $this->conn->query($query);
