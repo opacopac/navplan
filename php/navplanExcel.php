@@ -518,7 +518,7 @@ for ($i = 28; $i <= 33; $i++)
 
 $objPHPExcel->getActiveSheet()->setCellValue("K28", "=IF(triptime1<>\"\",1/24/60*triptime1,\"\")"); // trip
 $objPHPExcel->getActiveSheet()->setCellValue("K29", "=IF(alternatetime1>0,1/24/60*alternatetime1,\"\")"); // alternate
-$objPHPExcel->getActiveSheet()->setCellValue("K30", "=1/24/60*45"); // reserve
+$objPHPExcel->getActiveSheet()->setCellValue("K30", getReserveTimeFormula()); // reserve
 $objPHPExcel->getActiveSheet()->setCellValue("K31", "=IF(AND(K28<>\"\",K29<>\"\"),SUM(K28:K30),\"\")"); // minimum
 $objPHPExcel->getActiveSheet()->setCellValue("K32", getExtraFuelString()); // extra
 $objPHPExcel->getActiveSheet()->setCellValue("K33", "=IF(K31<>\"\",SUM(K31:K32),\"\")"); // block
@@ -604,6 +604,16 @@ function getFuelConsumptionString()
         return "";
 
     return $aircraft["consumption"];
+}
+
+
+function getReserveTimeFormula()
+{
+    global $fuel;
+
+    $reserveTimeMinutes = isset($fuel["reserveTime"]) && !empty($fuel["reserveTime"]) ? intval($fuel["reserveTime"]) : 45;
+
+    return "=1/24/60*" . $reserveTimeMinutes;
 }
 
 
