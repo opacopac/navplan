@@ -249,11 +249,13 @@
 
         //Prisdorf>APRS,TCPIP*,qAC,GLIDERN1:/220102h5340.77NI00945.97E&000/000/A=000075 v0.2.4.ARM CPU:0.5 RAM:771.5/972.2MB NTP:0.8ms/-7.0ppm +37.4C RF:+0.35dB
         //FLRDD95E5>APRS,qAS,BOBERG:/220043h5330.69N/01009.30E'000/000/A=000016 !W47! id06DD95E5 -019fpm +0.0rot 36.2dB 0e +0.4kHz gps3x4
+        // more examples, see https://github.com/glidernet/ogn-aprs-protocol/tree/master/valid_messages
 
         // $stealthflag_mask = 0b10000000;
         // $notrackingflag_mask = 0b01000000;
 
-        $pattern_aprs = "^(?P<callsign>.+?)>APRS,.+,"
+        $pattern_aprs = "^(?P<callsign>.+?)>"
+            . "(?P<protocol>\w+),.+,"
             . "(?P<receiver>.+?):\/"
             . "(?P<time>\d{6})+h"
             . "(?P<latitude>\d{4}\.\d{2})"
@@ -271,7 +273,8 @@
             . "(?P<longitude_enhancement>\d))!)?\s"
             . "(?P<comment>.*)$";
 
-        $pattern_aircraft = "id(?P<details>\w{2})(?P<id>\w+?)\s"
+        $pattern_aircraft = "id(?P<details>\w{2})(?P<id>\w+?)(\s.*|$)";
+        $pattern_aircraft_bak = "id(?P<details>\w{2})(?P<id>\w+?)\s"
             . "(?P<climb_rate>[+-]\d+?)fpm\s"
             . "(?P<turn_rate>[+-][\d.]+?)rot\s"
             . "(?:FL(?P<flight_level>[\d.]+)\s)?"
