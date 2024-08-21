@@ -307,7 +307,7 @@
             {
                 preg_match('/' . $pattern_aprs . '/', $line, $matches);
 
-                if (preg_match('/' . $pattern_aircraft . '/', $matches["comment"], $matches2))
+                if (isset($matches["comment"]) && preg_match('/' . $pattern_aircraft . '/', $matches["comment"], $matches2))
                 {
                     $lat = convertToDec("0" . $matches["latitude"] . $matches["latitude_enhancement"], $matches["latitude_sign"]);
                     $lon = convertToDec($matches["longitude"] . $matches["longitude_enhancement"], $matches["longitude_sign"]);
