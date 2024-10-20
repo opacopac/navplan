@@ -177,9 +177,10 @@ function waypointCtrl($scope, $http, geopointService, fuelService, userService, 
 	};
 
 
-    $scope.updateFuelCalc = function()
+    $scope.updateWaypointsAndFuelCalc = function()
     {
-        fuelService.updateFuelCalc($scope.globalData.fuel, $scope.globalData.navplan.waypoints, $scope.globalData.navplan.alternate, $scope.globalData.aircraft);
+        $scope.updateWaypoints();
+        $scope.discardCache();
     }
 	
 	
