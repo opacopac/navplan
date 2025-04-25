@@ -404,33 +404,74 @@ function terrainService($http)
 
         var currentDist = 0;
         var yOffset = [40, 80];
+        var maxelevation_m = terrain.maxelevation_m + 1000; // Same as in getTerrainSvg
 
         for (var i = 0; i < terrain.legs.length; i++)
         {
             var leg = terrain.legs[i];
             var legDistPercent = 100 / terrain.totaldistance_m * leg.distance_m;
 
+            // Get waypoint altitudes if available
+            var wp1Alt = getWaypointAltitudeMeters(waypoints[i]);
+            var wp2Alt = getWaypointAltitudeMeters(waypoints[i+1]);
+            
+            // Calculate y-coordinates based on altitude if available
+            var y1, y2;
+            if (wp1Alt !== null) {
+                var pt1 = getPointArray(currentDist * terrain.totaldistance_m / 100, wp1Alt, terrain.totaldistance_m, maxelevation_m, IMAGE_HEIGHT_PX, IMAGE_HEIGHT_PX);
+                y1 = pt1[1];
+            } else {
+                y1 = yOffset[0]; // Fallback to fixed offset
+            }
+            
+            if (wp2Alt !== null) {
+                var pt2 = getPointArray((currentDist + legDistPercent) * terrain.totaldistance_m / 100, wp2Alt, terrain.totaldistance_m, maxelevation_m, IMAGE_HEIGHT_PX, IMAGE_HEIGHT_PX);
+                y2 = pt2[1];
+            } else {
+                y2 = yOffset[0]; // Fallback to fixed offset
+            }
+
             // line
             var line = document.createElementNS(SVG_NS, "line");
             line.setAttribute("x1", currentDist.toString() + "%");
             line.setAttribute("x2", (currentDist + legDistPercent).toString() + "%");
-            line.setAttribute("y1", "40"); // TODO: temp
-            line.setAttribute("y2", "40"); // TODO: temp
+            line.setAttribute("y1", y1);
+            line.setAttribute("y2", y2);
             line.setAttribute("style", "stroke:rgba(255, 0, 255, 1.0); stroke-width:5px;");
             line.setAttribute("shape-rendering", "crispEdges");
             svg.appendChild(line);
 
-            addRouteDot(svg, currentDist, yOffset[0], waypoints[i], wpClickCallback);
-            addRouteDotPlumline(svg, currentDist, yOffset[0], IMAGE_HEIGHT_PX);
+            // Use the calculated y-coordinate for the dot if available
+            var dotY = (wp1Alt !== null) ? y1 : yOffset[0];
+            addRouteDot(svg, currentDist, dotY, waypoints[i], wpClickCallback);
+            addRouteDotPlumline(svg, currentDist, dotY, IMAGE_HEIGHT_PX);
             addWaypointLabel(svg, currentDist, yOffset[i % 2], waypoints[i], (i == 0) ? "start" : "middle", wpClickCallback);
 
             currentDist += legDistPercent;
         }
 
         // final dot
-        addRouteDot(svg, 100, yOffset[0], waypoints[i], wpClickCallback);
-        addRouteDotPlumline(svg, 100, yOffset[0], IMAGE_HEIGHT_PX);
+        var finalWpAlt = getWaypointAltitudeMeters(waypoints[waypoints.length - 1]);
+        var finalDotY;
+        if (finalWpAlt !== null) {
+            var finalPt = getPointArray(currentDist * terrain.totaldistance_m / 100, finalWpAlt, terrain.totaldistance_m, maxelevation_m, IMAGE_HEIGHT_PX, IMAGE_HEIGHT_PX);
+            finalDotY = finalPt[1];
+        } else {
+            finalDotY = yOffset[0];
+        }
+        
+        addRouteDot(svg, 100, finalDotY, waypoints[i], wpClickCallback);
+        addRouteDotPlumline(svg, 100, finalDotY, IMAGE_HEIGHT_PX);
         addWaypointLabel(svg, currentDist, yOffset[(waypoints.length - 1) % 2], waypoints[waypoints.length - 1], "end", wpClickCallback);
+        
+        // Helper function to get waypoint altitude in meters
+        function getWaypointAltitudeMeters(waypoint) {
+            if (waypoint && waypoint.alt && !isNaN(parseFloat(waypoint.alt))) {
+                // Convert altitude from feet to meters
+                return ft2m(parseFloat(waypoint.alt));
+            }
+            return null;
+        }
 
 
         function addRouteDot(svg, cxProc, cy, waypoint, clickCallback)
@@ -454,8 +495,8 @@ function terrainService($http)
             var line = document.createElementNS(SVG_NS, "line");
             line.setAttribute("x1", cxProc.toString() + "%");
             line.setAttribute("x2", cxProc.toString() + "%");
-            line.setAttribute("y1", cy); // TODO: temp
-            line.setAttribute("y2", height); // TODO: temp
+            line.setAttribute("y1", cy);
+            line.setAttribute("y2", height);
             line.setAttribute("style", "stroke:#FF00FF; stroke-width:1px;");
             line.setAttribute("shape-rendering", "crispEdges");
             line.setAttribute("stroke-dasharray", "3, 5");
