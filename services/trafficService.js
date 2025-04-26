@@ -12,7 +12,7 @@ function trafficService($http)
     var dataSources = { "ogn": "OGN", "adsbexchange": "ADSBX" };
     var positionMethod = { "flarm": "FLARM", "adsb": "ADSB", "mlat" : "MLAT" };
 	var trafficBaseUrl = 'php/ogntraffic.php?v=' + navplanVersion;
-    var adsbExchangeBaseUrl = 'https://www.navplan.ch/v2/php/Navplan/Traffic/Traffic.php?action=readadsbextrafficwithdetails'; // &minlon=6.921691064453124&minlat=46.61094866382615&maxlon=7.922820214843749&maxlat=47.20901611815029
+    var adsbExchangeBaseUrl = 'https://www.navplan.ch/v2/php/Navplan/Traffic/Traffic.php?param=adsbex_details'; // &minlon=6.921691064453124&minlat=46.61094866382615&maxlon=7.922820214843749&maxlat=47.20901611815029
     var acCache = new AircraftCache();
     var lastExtent = undefined;
     var acAddressMasklist = ["4B3416", "3DEE2A"];
