@@ -135,6 +135,10 @@
 
         foreach ($aclist as $ac)
         {
+            if (strlen($ac["id"]) > 6) {
+                continue; // e.g. for non ICAO hex identifiers
+            }
+
             $icaohex = checkEscapeString($conn, strtoupper($ac["id"]), 1, 6);
             array_push($icaolist, $icaohex);
         }
