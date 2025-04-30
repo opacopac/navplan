@@ -7,6 +7,7 @@ RUN a2enmod rewrite
 
 # Install system dependencies for PHP extensions and cleanup
 RUN apt-get update && apt-get install -y \
+    curl \
     libmagickwand-dev \
     libjpeg-dev \
     libfreetype6-dev \
@@ -31,8 +32,10 @@ RUN mkdir -p /var/log/navplan/ /var/www/html/tmp/ && chmod -R 777 /var/log/navpl
 
 # Copy sample data
 COPY charts ./charts
-#COPY maptiles ./
-#COPY terraintiles ./
+RUN mkdir -p terraintiles && \
+    for tile in N46E006 N46E007 N46E008 N46E009 N46E010 N47E006 N47E007 N47E008 N47E009 N47E010; do \
+        curl -o ./terraintiles/${tile}.hgt https://www.navplan.ch/terraintiles/${tile}.hgt; \
+    done
 
 # Copy php files
 COPY php ./php
