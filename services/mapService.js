@@ -317,6 +317,9 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 
         function isLocalTile(z, y, x)
         {
+            if (isLocalhost())
+                return false;
+
             if (z <= 6)
                 return true;
 

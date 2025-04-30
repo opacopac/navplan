@@ -1,0 +1,47 @@
+services:
+    navplan1_persistence:
+        build:
+            context: persistence
+        container_name: navplan1_persistence
+        environment:
+            MARIADB_ROOT_PASSWORD_FILE: /run/secrets/db_root_pw
+            MARIADB_USER: tschanz_navfpl
+            MARIADB_PASSWORD_FILE: /run/secrets/db_navplan_pw
+        secrets:
+            - db_root_pw
+            - db_navplan_pw
+        ports:
+            - 3307:3306
+        volumes:
+            - navplan1_data:/var/lib/mysql
+
+    navplan1_phpmyadmin:
+        image: phpmyadmin
+        container_name: navplan1_phpmyadmin
+        environment:
+            PMA_HOST: navplan1_persistence
+            UPLOAD_LIMIT: 300M
+        ports:
+            - 8081:80
+        depends_on:
+            - navplan1_persistence
+
+    navplan1_backend:
+        build:
+            context: ./
+        container_name: navplan1_backend
+        ports:
+            - 8080:80
+        depends_on:
+            - navplan1_persistence
+        volumes:
+            - navplan1_data:/var/log/navplan
+
+volumes:
+    navplan1_data:
+
+secrets:
+    db_root_pw:
+        file: ./secrets/db_root_pw.txt
+    db_navplan_pw:
+        file: ./secrets/db_navplan_pw.txt

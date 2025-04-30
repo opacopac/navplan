@@ -634,6 +634,12 @@ function isSelf2(email)
 }
 
 
+function isLocalhost()
+{
+    return (window.location.hostname === "localhost");
+}
+
+
 function getMorseString(text)
 {
     var morse = {

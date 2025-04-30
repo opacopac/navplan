@@ -3,15 +3,15 @@
 
 	$host = "www.navplan.ch";
 
-    if(empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == "off" || $_SERVER['HTTP_HOST'] != $host)
-    {
-        $redirect = 'https://' . $host . $_SERVER['REQUEST_URI'];
-        header('HTTP/1.1 301 Moved Permanently');
-        header('Location: ' . $redirect);
-    }
-    else
-    {
-        header("Cache-Control: public, max-age=60"); // max 1 min (must be public for appcache to work)
+    // skip redirect for localhost
+    if (!str_starts_with($_SERVER['HTTP_HOST'], 'localhost')) {
+        if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == "off" || $_SERVER['HTTP_HOST'] != $host) {
+            $redirect = 'https://' . $host . $_SERVER['REQUEST_URI'];
+            header('HTTP/1.1 301 Moved Permanently');
+            header('Location: ' . $redirect);
+        } else {
+            header("Cache-Control: public, max-age=60"); // max 1 min (must be public for appcache to work)
+        }
     }
 ?><!DOCTYPE HTML>
 <html lang="de" data-ng-app="navplanApp" data-ng-controller="navplanCtrl">

@@ -211,7 +211,7 @@ function checkToken($token)
     if (!$token)
         die("token is null");
 
-    return checkString($token, 1, 100);
+    return checkString($token, 1, 200);
 }
 
 

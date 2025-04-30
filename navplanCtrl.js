@@ -286,6 +286,12 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
     };
 
 
+	$scope.isLocalhost = function()
+	{
+		return isLocalhost();
+	}
+
+
 	$scope.hasLastTrack = function()
 	{
 		return (localStorage.getItem('lasttrack') !== null);
