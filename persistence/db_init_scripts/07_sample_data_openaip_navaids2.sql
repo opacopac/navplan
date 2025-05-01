@@ -1,0 +1,46 @@
+-- phpMyAdmin SQL Dump
+-- version 5.2.2
+-- https://www.phpmyadmin.net/
+--
+-- Host: navplan_persistence
+-- Erstellungszeit: 01. Mai 2025 um 11:48
+-- Server-Version: 10.6.21-MariaDB-ubu2004
+-- PHP-Version: 8.2.28
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+--
+-- Datenbank: `tschanz_navplan`
+--
+use `tschanz_navplan`;
+
+--
+-- Daten für Tabelle `openaip_navaids2`
+--
+
+INSERT INTO `openaip_navaids2` (`id`, `type`, `country`, `name`, `kuerzel`, `latitude`, `longitude`, `elevation`, `frequency`, `declination`, `truenorth`, `zoommin`, `geohash`, `lonlat`, `created_at`) VALUES
+(1, 'DME', 'XX', 'CORVATSCH', 'CVA', 46.4181, 9.82167, 3276, '112.05', 3.31884, 0, 7, 'dbaaacdacccccbc', 0x000000000101000000f7174b7eb1a4234017832dd882354740, '2025-01-21 16:03:04'),
+(2, 'DME', 'XX', 'HOCHWALD', 'HOC', 47.4667, 7.665, 727, '113.2', 2.8314, 0, 8, 'dbaaacbdbcccaad', 0x000000000101000000295c8fc2f5a81e40ebbbbbbbbbbb4740, '2025-01-21 16:03:04'),
+(3, 'DVOR-DME', 'XX', 'KLOTEN', 'KLO', 47.4572, 8.54556, 420, '114.85', 3.04755, 0, 6, 'dbaaacdbabbdbbd', 0x0000000001010000005b86ca0e5317214056b9fd4186ba4740, '2025-01-21 16:03:04'),
+(4, 'DME', 'XX', 'LA DOLE', 'LDL', 46.4246, 6.09897, 1689, '115.9', 3, 0, 7, 'dbaaacbaacacadd', 0x0000000001010000008ea066f958651840b7de29a859364740, '2025-01-21 16:03:04'),
+(5, 'DME', 'XX', 'LA PRAZ', 'LAP', 46.6761, 6.41333, 1286, '110.65', 2.51616, 0, 8, 'dbaaacbacbbaccd', 0x000000000101000000820d74da40a719408c5713cf8a564740, '2025-01-21 16:03:04'),
+(6, 'DME', 'XX', 'MT. PELERIN', 'PEL', 46.4971, 6.81914, 1079, '111.85', 3, 0, 9, 'dbaaacbaccbccaa', 0x0000000001010000006fa34a58cc461b40a5063a6da03f4740, '2025-01-21 16:03:04'),
+(7, 'DVOR-DME', 'XX', 'PASSEIRY', 'PAS', 46.1636, 6, 418, '116.6', 2.41366, 0, 0, 'dbaaacabbcbaadb', 0x0000000001010000000000000000001840f3bd7935f1144740, '2025-01-21 16:03:04'),
+(8, 'DVOR-DME', 'XX', 'SION', 'SIO', 46.2156, 7.28889, 478, '112.15', 2.72644, 0, 7, 'dbaaacadbadbdcd', 0x0000000001010000008ad2277dd2271d40c5ca0e53971b4740, '2025-01-21 16:03:04'),
+(9, 'DME', 'XX', 'TRASADINGEN', 'TRA', 47.6894, 8.43694, 549, '114.3', 3.02528, 0, 8, 'dbaaacbdddcdccd', 0x0000000001010000007c1da62eb7df2040dfa52eb73fd84740, '2025-01-21 16:03:04'),
+(10, 'DME', 'XX', 'WEISSFLUHGIPFEL', 'WFJ', 46.8344, 9.795, 2806, '113.75', 3.3267, 0, 8, 'dbaaacdadccdbcd', 0x000000000101000000d7a3703d0a972340a29b5713cf6a4740, '2025-01-21 16:03:04'),
+(11, 'VOR-DME', 'XX', 'WILLISAU', 'WIL', 47.1783, 7.90583, 725, '116.9', 2.88718, 0, 6, 'dbaaacbdcaaddcc', 0x0000000001010000003a2cf9c5929f1f40d8396da0d3964740, '2025-01-21 16:03:04'),
+(12, 'DVOR-DME', 'XX', 'ZURICH EAST', 'ZUE', 47.5922, 8.81778, 516, '110.05', 3.11646, 0, 8, 'dbaaacdbbcbabdb', 0x00000000010100000005e7d5c4b3a22140373412f0cdcb4740, '2025-01-21 16:03:04');
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

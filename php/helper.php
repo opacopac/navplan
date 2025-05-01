@@ -321,6 +321,9 @@ function convertDbPolygonToArray($polygonDbText)
 
 function reduceDegAccuracy($value, $type)
 {
+    if (!is_numeric($value))
+        return $value;
+
     switch ($type)
     {
         case "AIRSPACE":
