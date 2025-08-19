@@ -43,7 +43,7 @@ The data used on this website could be outdated, inaccurate, or contain errors. 
 * Install Docker (e.g. use Docker Desktop: https://www.docker.com/get-started/)
 * Clone the navplan repository from Github:
   * git clone https://github.com/opacopac/navplan.git
-* In your working directory create two secret files containing the db password string (no newline!) for the db users:
+* In your working directory create a sub-directory './secrets/' with two files containing the db password string (no newline!) for the db users:
   * ./secrets/db_root_pw.txt
   * ./secrets/db_navplan_pw.txt
 * Edit the ./php/config.php file to set the correct db host, user and password, e.g.
