@@ -585,7 +585,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
     {
         // https://ww8.fltplan.com
         // garminpilot://flightplan?route=KPHL+41.2666/-73.566+KJFK&speed=112&altitude=07500&aircraft=HBCGI&fuelmeasuretype=volume&burnrate=6&fuel=
-        var $wpList = waypointService.createAtcWpList($scope.globalData.navplan.waypoints);
+        var $wpList = waypointService.createGarminPilotWpList($scope.globalData.navplan.waypoints);
         $scope.globalData.openInAppGarminPilotLink = "garminpilot://flightplan"
             + "?route=" + $wpList.join("+")
             + "&speed=" + $scope.globalData.aircraft.speed
@@ -609,7 +609,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 
     $scope.copyWaypoints = function()
     {
-        var wpList = waypointService.createAtcWpList($scope.globalData.navplan.waypoints);
+        var wpList = waypointService.createIcaoFlightPlanWpList($scope.globalData.navplan.waypoints);
         $scope.globalData.copyWaypointsText = wpList.join(" ");
         //$scope.globalData.copyWaypointsText = "LSZB LSGE 4716N/00733E WIL LSGL LSGN";
 

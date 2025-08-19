@@ -15,7 +15,8 @@ function waypointService(mapService)
     // service api
 	return {
 		recalcWaypoints: recalcWaypoints,
-        createAtcWpList: createAtcWpList,
+        createIcaoFlightPlanWpList: createIcaoFlightPlanWpList,
+        createGarminPilotWpList: createGarminPilotWpList
 	};
 
 
@@ -131,7 +132,7 @@ function waypointService(mapService)
 	}
 
 
-    function createAtcWpList(wps) {
+    function createIcaoFlightPlanWpList(wps) {
         var atcWpList = [];
 
         for (var i = 0; i < wps.length; i++) {
@@ -152,6 +153,25 @@ function waypointService(mapService)
                 var wpText = zeroPad(latDeg, 2) + zeroPad(latMin, 2) + latSign
                     + zeroPad(lonDeg, 3) + zeroPad(lonMin, 2) + lonSign;
 
+                atcWpList.push(wpText);
+            }
+        }
+
+        return atcWpList;
+    }
+
+
+    function createGarminPilotWpList(wps) {
+        var atcWpList = [];
+
+        for (var i = 0; i < wps.length; i++) {
+            var wp = wps[i];
+            if (wp.type === 'airport' && wp.checkpoint.length === 4) {
+                atcWpList.push(wp.checkpoint);
+            } else if (wp.type === 'navaid' && wp.callsign.length === 3 && wp.checkpoint.substring("VOR") > 0) {
+                atcWpList.push(wp.callsign);
+            } else {
+                var wpText = roundToDigits(wp.latitude, 4) + '/' + roundToDigits(wp.longitude, 4);
                 atcWpList.push(wpText);
             }
         }
