@@ -585,9 +585,9 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
     {
         // https://ww8.fltplan.com
         // garminpilot://flightplan?route=KPHL+41.2666/-73.566+KJFK&speed=112&altitude=07500&aircraft=HBCGI&fuelmeasuretype=volume&burnrate=6&fuel=
-        var $wpList = waypointService.createGarminPilotWpList($scope.globalData.navplan.waypoints);
+        var $wpListGp = waypointService.createGarminPilotWpList($scope.globalData.navplan.waypoints);
         $scope.globalData.openInAppGarminPilotLink = "garminpilot://flightplan"
-            + "?route=" + $wpList.join("+")
+            + "?route=" + $wpListGp.join("+")
             + "&speed=" + $scope.globalData.aircraft.speed
             + "&altitude="
             + "&aircraft="
@@ -597,8 +597,9 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 
         // https://foreflight.com/support/app-urls/
         // foreflightmobile://maps/search?q=KISM+OCF+NITTS+KSRQ+100kts+25lph+8000ft
+        var wpListFf = waypointService.createIcaoFlightPlanWpList($scope.globalData.navplan.waypoints);
         $scope.globalData.openInAppForeflightLink = "foreflightmobile://maps/search"
-            + "?q=" + $wpList.join("+")
+            + "?q=" + wpListFf.join("+")
             + "+" + $scope.globalData.aircraft.speed + "kts"
             + "+" + $scope.globalData.aircraft.consumption + "lph";
             //+ "+8000ft";
