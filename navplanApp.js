@@ -107,16 +107,6 @@ navplanApp.config(function($provide) {
 });
 
 
-// add sanitization for links to external flight apps
-navplanApp.config([
-    '$compileProvider',
-    function($compileProvider) {
-        $compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|mailto|garminpilot):/);
-        // Angular before v1.2 uses $compileProvider.urlSanitizationWhitelist(...)
-    }
-]);
-
-
 // global data object
 navplanApp
 	.factory('globalData', globalData);
