@@ -581,6 +581,24 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 	};
 
 
+    $scope.copyWaypointsExport = function()
+    {
+        $scope.globalData.copyWaypointsText = "LSZB LSGE 4716N/00733E LSGL LSGN"; // TODO
+        $scope.globalData.garminPilotExportLink = { "href": "flightplan?route=KPHL+41.2666/-73.566+KJFK&speed=112&altitude=07500&aircraft=HBCGI&fuelmeasuretype=volume&burnrate=6&fuel=" }
+        $scope.globalData.foreflightExportLink = { "href": "import?route=KPHL+41.2666/-73.566+KJFK&speed=112&altitude=07500&aircraft=HBCGI&fuelmeasuretype=volume&burnrate=6&fuel=" }
+        $('#copyWaypointsDialog').modal('show');
+    }
+
+
+    $scope.copyWaypointsToClipboard = function() {
+        var textarea = document.getElementById('waypointsTextarea');
+        textarea.select();
+        textarea.setSelectionRange(0, 99999); // For mobile devices
+
+        document.execCommand('copy');
+    };
+
+
 	$scope.backupSelectedWaypoint = function()
 	{
 		$scope.globalData.wpBackup = {

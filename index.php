@@ -104,6 +104,7 @@
 							<li><a href="#" onclick="return false;" ng-click="exportKml()"><i class="fa fa-globe fa-fw"></i>&nbsp; KML (Google Earth)</a></li>
                             <li><a href="#" onclick="return false;" ng-click="exportGpx()"><i class="fa fa-map-marker fa-fw"></i>&nbsp; GPX (Airnav Pro, SkyDemon, etc.)</a></li>
                             <li><a href="#" onclick="return false;" ng-click="exportGarminFpl()"><i class="fa fa-map-marker fa-fw"></i>&nbsp; FPL (Garmin, Foreflight, etc.)</a></li>
+                            <li><a href="#" onclick="return false;" ng-click="copyWaypointsExport()"><i class="fa fa-map-marker fa-fw"></i>&nbsp; Copy Waypoints (ATC Flightplan, GarminPilot, Foreflight, etc.)</a></li>
 							<!--<li><a>Share current Navplan on...</a></li>
 							<li><a href="#" onclick="return false;" ng-click="onShareClicked('facebook')"><i class="fa fa-facebook fa-fw"></i>&nbsp;  Facebook</a></li>
 							<li><a href="#" onclick="return false;" ng-click="onShareClicked('twitter')"><i class="fa fa-twitter fa-fw"></i>&nbsp;  Twitter</a></li>
@@ -270,6 +271,30 @@
                     </div>
                     <div class="modal-body">
                         File: <a href="{{ globalData.downloadLink.href }}" type="{{ globalData.downloadLink.mimeType }}" download="{{ globalData.downloadLink.filename }}" target="_blank">{{ globalData.downloadLink.text }}</a> (click to download)
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- copy waypoints dialog -->
+        <div class="modal fade" id="copyWaypointsDialog" tabindex="-1" role="dialog" aria-labelledby="copyWaypointsModeLabel">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="copyWaypointsModeLabel">Copy Waypoints</h4>
+                    </div>
+                    <div class="modal-body">
+                        <p>
+                            Waypoints:
+                            <textarea id="waypointsTextarea" class="form-control" rows="3">{{ globalData.copyWaypointsText }}</textarea>
+                        </p>
+                        <button class="btn btn-primary" ng-click="copyWaypointsToClipboard()">Copy Waypoints to Clipboard</button>
+                        <p>&nbsp;&nbsp;&nbsp;<b>OR</b></p>
+                        <p>Garmin Pilot: <a href="garminpilot://{{ globalData.garminPilotExportLink.href }}" target="_blank">TBD</a> (click to open in GarminPilot)</p>
+                        <p>Foreflight: <a href="foreflight://{{ globalData.foreflightExportLink.href }}" target="_blank">TBD</a> (click to open in Foreflight)</p>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
