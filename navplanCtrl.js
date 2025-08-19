@@ -583,15 +583,20 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 
     $scope.openInApp = function()
     {
+        // TODO: calculate links based on current navplan
         $scope.globalData.openInAppGarminPilotLink = "garminpilot://flightplan?route=KPHL+41.2666/-73.566+KJFK&speed=112&altitude=07500&aircraft=HBCGI&fuelmeasuretype=volume&burnrate=6&fuel=";
         $scope.globalData.openInAppForeflightLink = "foreflightmobile://maps/search?q=KISM+OCF+NITTS+KSRQ+100kts+25lph+8000ft";
+
         $('#openInAppDialog').modal('show');
     }
 
 
     $scope.copyWaypoints = function()
     {
-        $scope.globalData.copyWaypointsText = "LSZB LSGE 4716N/00733E LSGL LSGN"; // TODO
+        var wpList = waypointService.createAtcWpList($scope.globalData.navplan.waypoints);
+        $scope.globalData.copyWaypointsText = wpList.join(" ");
+        //$scope.globalData.copyWaypointsText = "LSZB LSGE 4716N/00733E WIL LSGL LSGN";
+
         $('#copyWaypointsDialog').modal('show');
     }
 

@@ -14,7 +14,8 @@ function waypointService(mapService)
 
     // service api
 	return {
-		recalcWaypoints: recalcWaypoints
+		recalcWaypoints: recalcWaypoints,
+        createAtcWpList: createAtcWpList,
 	};
 
 
@@ -128,4 +129,33 @@ function waypointService(mapService)
 		else
 			return eet;
 	}
+
+
+    function createAtcWpList(wps) {
+        var atcWpList = [];
+
+        for (var i = 0; i < wps.length; i++) {
+            var wp = wps[i];
+            if (wp.type === 'airport' && wp.checkpoint.length === 4) {
+                atcWpList.push(wp.checkpoint);
+            } else if (wp.type === 'navaid' && wp.callsign.length === 3 && wp.checkpoint.substring("VOR") > 0) {
+                atcWpList.push(wp.callsign);
+            } else {
+                var latSign = wp.latitude < 0 ? 'S' : 'N';
+                var latDeg = Math.abs(Math.floor(wp.latitude));
+                var latMin = Math.floor((wp.latitude - latDeg) * 60);
+
+                var lonSign = wp.longitude < 0 ? 'W' : 'E';
+                var lonDeg = Math.abs(Math.floor(wp.longitude));
+                var lonMin = Math.floor((wp.longitude - lonDeg) * 60);
+
+                var wpText = zeroPad(latDeg, 2) + zeroPad(latMin, 2) + latSign
+                    + zeroPad(lonDeg, 3) + zeroPad(lonMin, 2) + lonSign;
+
+                atcWpList.push(wpText);
+            }
+        }
+
+        return atcWpList;
+    }
 }
