@@ -104,7 +104,7 @@
 							<li><a href="#" onclick="return false;" ng-click="exportKml()"><i class="fa fa-globe fa-fw"></i>&nbsp; KML (Google Earth)</a></li>
                             <li><a href="#" onclick="return false;" ng-click="exportGpx()"><i class="fa fa-map-marker fa-fw"></i>&nbsp; GPX (Airnav Pro, SkyDemon, etc.)</a></li>
                             <li><a href="#" onclick="return false;" ng-click="exportGarminFpl()"><i class="fa fa-map-marker fa-fw"></i>&nbsp; FPL (Garmin, Foreflight, etc.)</a></li>
-                            <li><a href="#" onclick="return false;" ng-click="openInApp()"><i class="fa fa-external-link-square fa-fw"></i>&nbsp; Open in app (Garmin Pilot, Foreflight)</a></li>
+                            <li><a href="#" onclick="return false;" ng-click="openInApp()"><i class="fa fa-external-link-square fa-fw"></i>&nbsp; Open in app (Foreflight, Garmin Pilot)</a></li>
                             <li><a href="#" onclick="return false;" ng-click="copyWaypoints()"><i class="fa fa-copy fa-fw"></i>&nbsp; Copy to clipboard (ICAO Flight Plan, misc. apps)</a></li>
 							<!--<li><a>Share current Navplan on...</a></li>
 							<li><a href="#" onclick="return false;" ng-click="onShareClicked('facebook')"><i class="fa fa-facebook fa-fw"></i>&nbsp;  Facebook</a></li>
@@ -288,8 +288,8 @@
                         <h4 class="modal-title" id="openInAppModeLabel">Open in 3rd Party App</h4>
                     </div>
                     <div class="modal-body">
-                        <p><a href="{{ globalData.openInAppGarminPilotLink }}" target="_blank">Garmin Pilot</a> (click to open in GarminPilot app)</p>
-                        <p><a href="{{ globalData.openInAppForeflightLink }}" target="_blank">Foreflight</a> (click to open in Foreflight app)</p>
+                        <p><a href="{{ globalData.openInAppForeflightLink }}" target="_blank">Open in Foreflight</a> (app must be installed on the same device)</p>
+                        <p><a href="{{ globalData.openInAppGarminPilotLink }}" target="_blank">Open in Garmin Pilot</a> (app must be installed on the same device)</p>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>

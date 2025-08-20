@@ -592,7 +592,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
             + "&altitude="
             + "&aircraft="
             + "&fuelmeasuretype=volume"
-            + "&burnrate=" + Math.ceil($scope.globalData.aircraft.consumption * 0.264172) // convert lph to gph
+            + "&burnrate=" + roundToDigits(lph2gph($scope.globalData.aircraft.consumption), 1)
             + "&fuel=";
 
         // https://foreflight.com/support/app-urls/
@@ -601,7 +601,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
         $scope.globalData.openInAppForeflightLink = "foreflightmobile://maps/search"
             + "?q=" + wpListFf.join("+")
             + "+" + $scope.globalData.aircraft.speed + "kts"
-            + "+" + $scope.globalData.aircraft.consumption + "lph";
+            + "+" + roundToDigits(lph2gph($scope.globalData.aircraft.consumption), 1) + "gph"; // lph doesn't work...
             //+ "+8000ft";
 
         $('#openInAppDialog').modal('show');

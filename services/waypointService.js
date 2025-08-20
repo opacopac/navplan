@@ -133,31 +133,18 @@ function waypointService(mapService)
 
 
     function createIcaoFlightPlanWpList(wps) {
-        var atcWpList = [];
+        const atcWpList = [];
 
-        for (var i = 0; i < wps.length; i++) {
-            var wp = wps[i];
+        for (let i = 0; i < wps.length; i++) {
+            const wp = wps[i];
             if (wp.type === 'airport' && wp.airport_icao) {
                 atcWpList.push(wp.airport_icao);
             } else if (wp.type === 'navaid' && wp.callsign.length === 3 && wp.checkpoint.indexOf("VOR") >= 0) {
                 atcWpList.push(wp.callsign);
             } else {
-                var absLat = Math.abs(wp.latitude);
-                var latDeg = Math.floor(absLat);
-                var latMin = Math.floor((absLat - latDeg) * 60);
-                var latSign = wp.latitude < 0 ? 'S' : 'N';
-                var latDegText = zeroPad(latDeg, 2);
-                var latMinText = zeroPad(latMin, 2);
-
-                var absLon = Math.abs(wp.longitude);
-                var lonDeg = Math.floor(absLon);
-                var lonMin = Math.floor((absLon - lonDeg) * 60);
-                var lonSign = wp.longitude < 0 ? 'W' : 'E';
-                var lonDegText = zeroPad(lonDeg, 3);
-                var lonMinText = zeroPad(lonMin, 2);
-
-                var wpText = latDegText + latMinText + latSign
-                    + lonDegText + lonMinText + lonSign;
+                const signDms = getSignDegMinFromLonLat(wp.longitude, wp.latitude);
+                const wpText = signDms.latDegText + signDms.latMinText + signDms.latSign
+                    + signDms.lonDegText + signDms.lonMinText + signDms.lonSign;
 
                 atcWpList.push(wpText);
             }
@@ -168,16 +155,16 @@ function waypointService(mapService)
 
 
     function createGarminPilotWpList(wps) {
-        var atcWpList = [];
+        const atcWpList = [];
 
-        for (var i = 0; i < wps.length; i++) {
-            var wp = wps[i];
+        for (let i = 0; i < wps.length; i++) {
+            const wp = wps[i];
             if (wp.type === 'airport' && wp.airport_icao) {
                 atcWpList.push(wp.airport_icao);
             /*} else if (wp.type === 'navaid' && wp.callsign.length === 3 && wp.checkpoint.indexOf("VOR") >= 0) {
                 atcWpList.push(wp.callsign);*/ // TODO: routes with coordinate wps after a VOR are not imported into garmin pilot...
             } else {
-                var wpText = roundToDigits(wp.latitude, 4) + '/' + roundToDigits(wp.longitude, 4);
+                const wpText = roundToDigits(wp.latitude, 4) + '/' + roundToDigits(wp.longitude, 4);
                 atcWpList.push(wpText);
             }
         }
