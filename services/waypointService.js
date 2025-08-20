@@ -137,10 +137,10 @@ function waypointService(mapService)
 
         for (var i = 0; i < wps.length; i++) {
             var wp = wps[i];
-            if (wp.airport && wp.airport.icao) {
-                atcWpList.push(wp.airport.icao);
-            } else if (wp.navaid && wp.navaid.type.indexOf("VOR") >= 0) {
-                atcWpList.push(wp.navaid.kuerzel);
+            if (wp.type === 'airport' && wp.airport_icao) {
+                atcWpList.push(wp.airport_icao);
+            } else if (wp.type === 'navaid' && wp.callsign.length === 3 && wp.checkpoint.indexOf("VOR") >= 0) {
+                atcWpList.push(wp.callsign);
             } else {
                 var latSign = wp.latitude < 0 ? 'S' : 'N';
                 var latDeg = Math.abs(Math.floor(wp.latitude));
@@ -166,10 +166,10 @@ function waypointService(mapService)
 
         for (var i = 0; i < wps.length; i++) {
             var wp = wps[i];
-            if (wp.airport && wp.airport.icao) {
-                atcWpList.push(wp.airport.icao);
-            } else if (wp.navaid && wp.navaid.type.indexOf("VOR") >= 0) {
-                atcWpList.push(wp.navaid.kuerzel);
+            if (wp.type === 'airport' && wp.airport_icao) {
+                atcWpList.push(wp.airport_icao);
+            } else if (wp.type === 'navaid' && wp.callsign.length === 3 && wp.checkpoint.indexOf("VOR") >= 0) {
+                atcWpList.push(wp.callsign);
             } else {
                 var wpText = roundToDigits(wp.latitude, 4) + '/' + roundToDigits(wp.longitude, 4);
                 atcWpList.push(wpText);

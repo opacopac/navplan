@@ -105,7 +105,7 @@
                             <li><a href="#" onclick="return false;" ng-click="exportGpx()"><i class="fa fa-map-marker fa-fw"></i>&nbsp; GPX (Airnav Pro, SkyDemon, etc.)</a></li>
                             <li><a href="#" onclick="return false;" ng-click="exportGarminFpl()"><i class="fa fa-map-marker fa-fw"></i>&nbsp; FPL (Garmin, Foreflight, etc.)</a></li>
                             <li><a href="#" onclick="return false;" ng-click="openInApp()"><i class="fa fa-external-link-square fa-fw"></i>&nbsp; Open in app (Garmin Pilot, Foreflight)</a></li>
-                            <li><a href="#" onclick="return false;" ng-click="copyWaypoints()"><i class="fa fa-copy fa-fw"></i>&nbsp; Copy to clipboard (ATC Flight Plan, misc. apps)</a></li>
+                            <li><a href="#" onclick="return false;" ng-click="copyWaypoints()"><i class="fa fa-copy fa-fw"></i>&nbsp; Copy to clipboard (ICAO Flight Plan, misc. apps)</a></li>
 							<!--<li><a>Share current Navplan on...</a></li>
 							<li><a href="#" onclick="return false;" ng-click="onShareClicked('facebook')"><i class="fa fa-facebook fa-fw"></i>&nbsp;  Facebook</a></li>
 							<li><a href="#" onclick="return false;" ng-click="onShareClicked('twitter')"><i class="fa fa-twitter fa-fw"></i>&nbsp;  Twitter</a></li>
