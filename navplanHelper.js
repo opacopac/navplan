@@ -294,6 +294,36 @@ function getLonLatFromGradMinSec(latGrad, latMin, latSec, latDir, lonGrad, lonMi
 }
 
 
+function getSignDegMinFromLonLat(longitude, latitude) {
+    const absLat = Math.abs(latitude);
+    const latDeg = Math.floor(absLat);
+    const latMin = Math.floor((absLat - latDeg) * 60);
+    const latSign = latitude < 0 ? 'S' : 'N';
+    const latDegText = zeroPad(latDeg, 2);
+    const latMinText = zeroPad(latMin, 2);
+
+    const absLon = Math.abs(longitude);
+    const lonDeg = Math.floor(absLon);
+    const lonMin = Math.floor((absLon - lonDeg) * 60);
+    const lonSign = longitude < 0 ? 'W' : 'E';
+    const lonDegText = zeroPad(lonDeg, 3);
+    const lonMinText = zeroPad(lonMin, 2);
+
+    return {
+        latDeg: latDeg,
+        latMin: latMin,
+        latDegText: latDegText,
+        latMinText: latMinText,
+        latSign: latSign,
+        lonDeg: lonDeg,
+        lonMin: lonMin,
+        lonDegText: lonDegText,
+        lonMinText: lonMinText,
+        lonSign: lonSign,
+    }
+}
+
+
 function shrinkPositions(positions)
 {
 	var shrinkedpos = [];
@@ -420,6 +450,11 @@ function deg2rad(deg)
 function rad2deg(rad)
 {
 	return rad / (2 * Math.PI) * 360;
+}
+
+
+function lph2gph(fuel_lph) {
+    return fuel_lph * 0.264172;
 }
 
 

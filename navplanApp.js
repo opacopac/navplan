@@ -1,5 +1,5 @@
 // version
-var navplanVersion = "1.5bd"; // must be the same as in version.txt
+var navplanVersion = "1.5bf"; // must be the same as in version.txt
 
 
 // js error handler
@@ -105,6 +105,15 @@ navplanApp.config(function($provide) {
 		};
 	}]);
 });
+
+
+// add sanitization for links to external flight apps
+navplanApp.config([
+    '$compileProvider',
+    function($compileProvider) {
+        $compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|mailto|garminpilot|foreflightmobile):/);
+    }
+]);
 
 
 // global data object

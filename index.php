@@ -104,6 +104,8 @@
 							<li><a href="#" onclick="return false;" ng-click="exportKml()"><i class="fa fa-globe fa-fw"></i>&nbsp; KML (Google Earth)</a></li>
                             <li><a href="#" onclick="return false;" ng-click="exportGpx()"><i class="fa fa-map-marker fa-fw"></i>&nbsp; GPX (Airnav Pro, SkyDemon, etc.)</a></li>
                             <li><a href="#" onclick="return false;" ng-click="exportGarminFpl()"><i class="fa fa-map-marker fa-fw"></i>&nbsp; FPL (Garmin, Foreflight, etc.)</a></li>
+                            <li><a href="#" onclick="return false;" ng-click="openInApp()"><i class="fa fa-external-link-square fa-fw"></i>&nbsp; Open in app (Foreflight, Garmin Pilot)</a></li>
+                            <li><a href="#" onclick="return false;" ng-click="copyWaypoints()"><i class="fa fa-copy fa-fw"></i>&nbsp; Copy to clipboard (ICAO Flight Plan, misc. apps)</a></li>
 							<!--<li><a>Share current Navplan on...</a></li>
 							<li><a href="#" onclick="return false;" ng-click="onShareClicked('facebook')"><i class="fa fa-facebook fa-fw"></i>&nbsp;  Facebook</a></li>
 							<li><a href="#" onclick="return false;" ng-click="onShareClicked('twitter')"><i class="fa fa-twitter fa-fw"></i>&nbsp;  Twitter</a></li>
@@ -270,6 +272,43 @@
                     </div>
                     <div class="modal-body">
                         File: <a href="{{ globalData.downloadLink.href }}" type="{{ globalData.downloadLink.mimeType }}" download="{{ globalData.downloadLink.filename }}" target="_blank">{{ globalData.downloadLink.text }}</a> (click to download)
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- open in app dialog -->
+        <div class="modal fade" id="openInAppDialog" tabindex="-1" role="dialog" aria-labelledby="openInAppModeLabel">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="openInAppModeLabel">Open in 3rd Party App</h4>
+                    </div>
+                    <div class="modal-body">
+                        <p><a href="{{ globalData.openInAppForeflightLink }}" target="_blank">Open in Foreflight</a> (app must be installed on the same device)</p>
+                        <p><a href="{{ globalData.openInAppGarminPilotLink }}" target="_blank">Open in Garmin Pilot</a> (app must be installed on the same device)</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- copy waypoints dialog -->
+        <div class="modal fade" id="copyWaypointsDialog" tabindex="-1" role="dialog" aria-labelledby="copyWaypointsModeLabel">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="copyWaypointsModeLabel">Copy Route</h4>
+                    </div>
+                    <div class="modal-body">
+                        <p>Route:</p>
+                        <textarea id="waypointsTextarea" class="form-control" rows="3">{{ globalData.copyWaypointsText }}</textarea>
+                        <button class="btn btn-default" ng-click="copyWaypointsToClipboard()"><i class="fa fa-copy fa-fw"></i> Copy to clipboard</button>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>

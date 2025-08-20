@@ -14,7 +14,9 @@ function waypointService(mapService)
 
     // service api
 	return {
-		recalcWaypoints: recalcWaypoints
+		recalcWaypoints: recalcWaypoints,
+        createIcaoFlightPlanWpList: createIcaoFlightPlanWpList,
+        createGarminPilotWpList: createGarminPilotWpList
 	};
 
 
@@ -128,4 +130,45 @@ function waypointService(mapService)
 		else
 			return eet;
 	}
+
+
+    function createIcaoFlightPlanWpList(wps) {
+        const atcWpList = [];
+
+        for (let i = 0; i < wps.length; i++) {
+            const wp = wps[i];
+            if (wp.type === 'airport' && wp.airport_icao) {
+                atcWpList.push(wp.airport_icao);
+            } else if (wp.type === 'navaid' && wp.callsign.length === 3 && wp.checkpoint.indexOf("VOR") >= 0) {
+                atcWpList.push(wp.callsign);
+            } else {
+                const signDms = getSignDegMinFromLonLat(wp.longitude, wp.latitude);
+                const wpText = signDms.latDegText + signDms.latMinText + signDms.latSign
+                    + signDms.lonDegText + signDms.lonMinText + signDms.lonSign;
+
+                atcWpList.push(wpText);
+            }
+        }
+
+        return atcWpList;
+    }
+
+
+    function createGarminPilotWpList(wps) {
+        const atcWpList = [];
+
+        for (let i = 0; i < wps.length; i++) {
+            const wp = wps[i];
+            if (wp.type === 'airport' && wp.airport_icao) {
+                atcWpList.push(wp.airport_icao);
+            /*} else if (wp.type === 'navaid' && wp.callsign.length === 3 && wp.checkpoint.indexOf("VOR") >= 0) {
+                atcWpList.push(wp.callsign);*/ // TODO: routes with coordinate wps after a VOR are not imported into garmin pilot...
+            } else {
+                const wpText = roundToDigits(wp.latitude, 4) + '/' + roundToDigits(wp.longitude, 4);
+                atcWpList.push(wpText);
+            }
+        }
+
+        return atcWpList;
+    }
 }

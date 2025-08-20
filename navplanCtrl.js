@@ -581,6 +581,52 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 	};
 
 
+    $scope.openInApp = function()
+    {
+        // https://ww8.fltplan.com
+        // garminpilot://flightplan?route=KPHL+41.2666/-73.566+KJFK&speed=112&altitude=07500&aircraft=HBCGI&fuelmeasuretype=volume&burnrate=6&fuel=
+        var $wpListGp = waypointService.createGarminPilotWpList($scope.globalData.navplan.waypoints);
+        $scope.globalData.openInAppGarminPilotLink = "garminpilot://flightplan"
+            + "?route=" + $wpListGp.join("+")
+            + "&speed=" + $scope.globalData.aircraft.speed
+            + "&altitude="
+            + "&aircraft="
+            + "&fuelmeasuretype=volume"
+            + "&burnrate=" + roundToDigits(lph2gph($scope.globalData.aircraft.consumption), 1)
+            + "&fuel=";
+
+        // https://foreflight.com/support/app-urls/
+        // foreflightmobile://maps/search?q=KISM+OCF+NITTS+KSRQ+100kts+25lph+8000ft
+        var wpListFf = waypointService.createIcaoFlightPlanWpList($scope.globalData.navplan.waypoints);
+        $scope.globalData.openInAppForeflightLink = "foreflightmobile://maps/search"
+            + "?q=" + wpListFf.join("+")
+            + "+" + $scope.globalData.aircraft.speed + "kts"
+            + "+" + roundToDigits(lph2gph($scope.globalData.aircraft.consumption), 1) + "gph"; // lph doesn't work...
+            //+ "+8000ft";
+
+        $('#openInAppDialog').modal('show');
+    }
+
+
+    $scope.copyWaypoints = function()
+    {
+        var wpList = waypointService.createIcaoFlightPlanWpList($scope.globalData.navplan.waypoints);
+        $scope.globalData.copyWaypointsText = wpList.join(" ");
+        //$scope.globalData.copyWaypointsText = "LSZB LSGE 4716N/00733E WIL LSGL LSGN";
+
+        $('#copyWaypointsDialog').modal('show');
+    }
+
+
+    $scope.copyWaypointsToClipboard = function() {
+        var textarea = document.getElementById('waypointsTextarea');
+        textarea.select();
+        textarea.setSelectionRange(0, 99999); // For mobile devices
+
+        document.execCommand('copy');
+    };
+
+
 	$scope.backupSelectedWaypoint = function()
 	{
 		$scope.globalData.wpBackup = {
