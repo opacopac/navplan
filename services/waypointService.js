@@ -174,8 +174,8 @@ function waypointService(mapService)
             var wp = wps[i];
             if (wp.type === 'airport' && wp.airport_icao) {
                 atcWpList.push(wp.airport_icao);
-            } else if (wp.type === 'navaid' && wp.callsign.length === 3 && wp.checkpoint.indexOf("VOR") >= 0) {
-                atcWpList.push(wp.callsign);
+            /*} else if (wp.type === 'navaid' && wp.callsign.length === 3 && wp.checkpoint.indexOf("VOR") >= 0) {
+                atcWpList.push(wp.callsign);*/ // TODO: routes with coordinate wps after a VOR are not imported into garmin pilot...
             } else {
                 var wpText = roundToDigits(wp.latitude, 4) + '/' + roundToDigits(wp.longitude, 4);
                 atcWpList.push(wpText);
