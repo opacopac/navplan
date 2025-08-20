@@ -142,17 +142,19 @@ function waypointService(mapService)
             } else if (wp.type === 'navaid' && wp.callsign.length === 3 && wp.checkpoint.indexOf("VOR") >= 0) {
                 atcWpList.push(wp.callsign);
             } else {
-                var latDeg = Math.floor(wp.latitude);
-                var latMin = Math.floor((wp.latitude - latDeg) * 60);
+                var absLat = Math.abs(wp.latitude);
+                var latDeg = Math.floor(absLat);
+                var latMin = Math.floor((absLat - latDeg) * 60);
                 var latSign = wp.latitude < 0 ? 'S' : 'N';
-                var latDegText = zeroPad(Math.abs(latDeg).toString(), 2);
-                var latMinText = zeroPad(Math.abs(latMin).toString(), 2);
+                var latDegText = zeroPad(latDeg, 2);
+                var latMinText = zeroPad(latMin, 2);
 
-                var lonDeg = Math.floor(wp.longitude);
-                var lonMin = Math.floor((wp.longitude - lonDeg) * 60);
+                var absLon = Math.abs(wp.longitude);
+                var lonDeg = Math.floor(absLon);
+                var lonMin = Math.floor((absLon - lonDeg) * 60);
                 var lonSign = wp.longitude < 0 ? 'W' : 'E';
-                var lonDegText = zeroPad(Math.abs(lonDeg).toString(), 3);
-                var lonMinText = zeroPad(Math.abs(lonMin).toString(), 2);
+                var lonDegText = zeroPad(lonDeg, 3);
+                var lonMinText = zeroPad(lonMin, 2);
 
                 var wpText = latDegText + latMinText + latSign
                     + lonDegText + lonMinText + lonSign;
