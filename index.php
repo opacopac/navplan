@@ -289,7 +289,7 @@
                     </div>
                     <div class="modal-body">
                         <p><a href="{{ globalData.openInAppForeflightLink }}" target="_blank">Open in Foreflight</a> (app must be installed on the same device)</p>
-                        <p><a href="{{ globalData.openInAppGarminPilotLink }}" target="_blank">Open in Garmin Pilot</a> (app must be installed on the same device)</p>
+                        <p><a href="{{ globalData.openInAppGarminPilotLink }}" target="_blank">Open in Garmin Pilot</a> (app must be running and installed on the same device)</p>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
