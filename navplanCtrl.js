@@ -824,6 +824,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 			callsign: wp_data.callsign,
 			checkpoint: wp_data.checkpoint,
 			airport_icao: wp_data.airport_icao,
+            airport_type: wp_data.airport_type,
 			latitude: wp_data.latitude,
 			longitude: wp_data.longitude,
 			charts: wp_data.charts,

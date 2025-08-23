@@ -1070,6 +1070,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
                 callsign: getMainCallsign(feature.airport),
                 checkpoint: feature.airport.icao ? feature.airport.icao : feature.airport.name,
                 airport_icao: feature.airport.icao,
+                airport_type: feature.airport.type,
                 latitude: feature.airport.latitude,
                 longitude: feature.airport.longitude,
                 mt: '',

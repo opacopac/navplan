@@ -159,7 +159,8 @@ function waypointService(mapService)
 
         for (let i = 0; i < wps.length; i++) {
             const wp = wps[i];
-            if (wp.type === 'airport' && wp.airport_icao) {
+            if (wp.type === 'airport' && wp.airport_icao  && wp.airport_type !== 'AD_CLOSED' && wp.airport_type !== 'HELI_MOUNTAIN'
+                && wp.airport_type !== 'HELI_HOSPITAL' && wp.airport_type !== 'AF_MOUNTAIN') {
                 atcWpList.push(wp.airport_icao);
             /*} else if (wp.type === 'navaid' && wp.callsign.length === 3 && wp.checkpoint.indexOf("VOR") >= 0) {
                 atcWpList.push(wp.callsign);*/ // TODO: routes with coordinate wps after a VOR are not imported into garmin pilot...
