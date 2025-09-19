@@ -575,7 +575,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
             if (!weatherInfo)
                 return;
 
-            var wx_cond = weatherInfo.wx ? weatherInfo.wx : "";
+            var wx_cond = weatherInfo.wxString ? weatherInfo.wxString : "";
             var src;
 
             switch (weatherInfo.cover)
