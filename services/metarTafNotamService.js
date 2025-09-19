@@ -11,7 +11,7 @@ function metarTafNotamService($http, $sce)
 {
     var EXTENT_OVERSIZE_FACTOR = 1.3;
     var WEATHER_MAXAGE = 5 * 60 * 1000; // 5 min
-    var metarTafBaseUrl = 'https://www.aviationweather.gov/cgi-bin/json/MetarJSON.php?taf=true&density=all&bbox='; //6.0,44.0,10.0,48.0';
+    var metarTafBaseUrl = 'https://aviationweather.gov/api/data/metar?format=json&taf=true&bbox='; //44.0,6.0,48.0,10.0';
     var notamBaseUrl2 = 'php/notam.php?v=' + navplanVersion;
 	var weatherInfoCache = new WeatherInfoCache(undefined, undefined, undefined);
 	var areaNotamCache = new AreaNotamCache(undefined, []);
@@ -38,14 +38,6 @@ function metarTafNotamService($http, $sce)
         this.extent = extent;
         this.timestamp = timestamp;
         this.weatherInfos = weatherInfos;
-    }
-
-
-    function WeatherInfo(weatherInfoJson)
-    {
-        this.properties = weatherInfoJson.properties;
-        this.geometry = weatherInfoJson.geometry;
-        this.type = weatherInfoJson.type;
     }
 
 
@@ -116,20 +108,20 @@ function metarTafNotamService($http, $sce)
 
     function loadAreaWeatherInfos(extent, successCallback, errorCallback)
     {
-        var url = metarTafBaseUrl + extent[0] + "," + extent[1] + "," + extent[2] + "," + extent[3];
+        var url = metarTafBaseUrl + extent[1] + "," + extent[0] + "," + extent[3] + "," + extent[2];
 
         $sce.trustAsResourceUrl(url);
 
-        $http.jsonp(url, {jsonpCallbackParam: 'jsonp'})
+        $http.get(url)
             .then(
                 function (response) // success
                 {
-                    if (response && response.data && response.data.features)
+                    if (response && response.data)
                     {
-                        cacheWeatherInfos(extent, response.data.features);
+                        cacheWeatherInfos(extent, response.data);
 
                         if (successCallback)
-                            successCallback(response.data.features);
+                            successCallback(response.data);
                     }
                     else
                     {
@@ -158,7 +150,7 @@ function metarTafNotamService($http, $sce)
         var weatherInfoList = [];
 
         for (var i = 0; i < WeatherInfoListJson.length; i++)
-            weatherInfoList.push(new WeatherInfo(WeatherInfoListJson[i]));
+            weatherInfoList.push(WeatherInfoListJson[i]);
 
         weatherInfoCache = new WeatherInfoCache(extent, Date.now(), weatherInfoList);
     }
@@ -166,27 +158,29 @@ function metarTafNotamService($http, $sce)
 
 	function getTafAgeString(weatherInfo)
     {
-        if (!weatherInfo || !weatherInfo.properties || !weatherInfo.properties.rawTaf)
+        if (!weatherInfo || !weatherInfo.rawTaf)
             return;
 
-        var matches = weatherInfo.properties.rawTaf.match(/^TAF( [A-Z]{3})? [A-Z]{4} (\d\d)(\d\d)(\d\d)Z.*$/);
+        var matches = weatherInfo.rawTaf.match(/^TAF( [A-Z]{3})? [A-Z]{4} (\d\d)(\d\d)(\d\d)Z.*$/);
 
-        if (!matches || matches.length != 5)
+        if (!matches || matches.length !== 5)
             return;
 
         var d = new Date();
         var datestring = d.getFullYear() + "-" + zeroPad(d.getMonth() + 1) + "-" + matches[2] + "T" + matches[3] + ":" + matches[4] + ":00Z";
 
-        return getAgeString(datestring);
+        return getHourMinAgeString(Date.parse(datestring));
     }
 
 
-    function getAgeString(datestring)
+    function getAgeString(obsTime)
     {
-        if (!datestring)
+        if (!obsTime)
             return;
 
-        return getHourMinAgeString(Date.parse(datestring));
+        var d = new Date(parseInt(obsTime, 10) * 1000);
+
+        return getHourMinAgeString(d);
     }
 
 
@@ -220,7 +214,7 @@ function metarTafNotamService($http, $sce)
         var uncachedAdList = getUncachedAdNotamList(adList);
 
         // everything already cached => just return areanotamlist
-        if (!loadExtent && uncachedAdList.length == 0)
+        if (!loadExtent && uncachedAdList.length === 0)
         {
             addAirportNotams();
 
@@ -243,7 +237,7 @@ function metarTafNotamService($http, $sce)
             {
                 var ad = adList[i];
 
-                if (!ad.icao || ad.icao == "")
+                if (!ad.icao || ad.icao === "")
                     continue;
 
                 if (!locationNotamCache.notamByIcao[ad.icao])
@@ -375,10 +369,10 @@ function metarTafNotamService($http, $sce)
         if (!notam || !notam["isICAO"])
             return "";
 
-        if (notam.Qcode.indexOf("XX") == 0)
+        if (notam.Qcode.indexOf("XX") === 0)
             return "";
 
-        if (notam.Qcode.indexOf("XX") == 2)
+        if (notam.Qcode.indexOf("XX") === 2)
             return notam.Subject;
 
         return notam.Subject + " " + notam.Modifier;
@@ -401,7 +395,7 @@ function metarTafNotamService($http, $sce)
                 var fromText = getLtString(d1);
 
                 var tillText;
-                if (result2[1] != "PERM")
+                if (result2[1] !== "PERM")
                 {
                     var d2 = getUtcDate(result2);
                     tillText = getLtString(d2);

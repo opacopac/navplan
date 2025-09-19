@@ -531,7 +531,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
         for (var i = 0; i < weatherInfoList.length; i++)
         {
             var weatherInfo = weatherInfoList[i];
-            var icao = weatherInfo.properties.id;
+            var icao = weatherInfo.icaoId;
             var ap = mapFeatureService.getAirportByIcao(icao);
 
             if (!ap)
@@ -575,10 +575,10 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
             if (!weatherInfo)
                 return;
 
-            var wx_cond = weatherInfo.properties.wx ? weatherInfo.properties.wx : "";
+            var wx_cond = weatherInfo.wx ? weatherInfo.wx : "";
             var src;
 
-            switch (weatherInfo.properties.cover)
+            switch (weatherInfo.cover)
             {
                 case "CAVOK" :
                 case "SKC" :
@@ -631,12 +631,12 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
                 return;
 
             var src;
-            var rot = weatherInfo.properties.wdir ? deg2rad(weatherInfo.properties.wdir + 90) + map.getView().getRotation() : undefined;
+            var rot = weatherInfo.wdir ? deg2rad(weatherInfo.wdir + 90) + map.getView().getRotation() : undefined;
             var windrange = [[0, "0"], [2, "1-2"], [7, "5"], [12, "10"], [17, "15"], [22, "20"], [27, "25"], [32, "30"], [37, "35"], [42, "40"], [47, "45"], [55, "50"], [65, "60"], [75, "70"], [85, "80"], [95, "90"], [105, "100"]];
 
             for (var i = 0; i < windrange.length; i++)
             {
-                if (weatherInfo.properties.wspd <= windrange[i][0])
+                if (weatherInfo.wspd <= windrange[i][0])
                 {
                     src = "icon/wind_" + windrange[i][1] + "kt.png";
 
