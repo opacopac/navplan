@@ -76,7 +76,7 @@ navplanApp.config(function($sceDelegateProvider) {
     $sceDelegateProvider.resourceUrlWhitelist([
         // Allow same origin resource loads.
         'self',
-        'https://www.aviationweather.gov/cgi-bin/json/**',
+        'https://aviationweather.gov/api/data/**',
         'https://public-api.adsbexchange.com/VirtualRadar/**',
 		'https://global.adsbexchange.com/VirtualRadar/**',
         'https://v4p4sz5ijk.execute-api.us-east-1.amazonaws.com/anbdata/states/notams/**'
