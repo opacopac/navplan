@@ -405,7 +405,7 @@ class NotamGeometryParser
     private function getNotamDbExtent($notam, $locationExtent)
     {
         // polygon geometry
-        if ($notam["geometry"] && $notam["geometry"]["polygon"])
+        if (isset($notam["geometry"]) && isset($notam["geometry"]["polygon"]))
         {
             $this->logger->writelog("DEBUG", "using polygon geometry as db extent");
 
@@ -414,7 +414,7 @@ class NotamGeometryParser
 
 
         // circle geometry
-        if ($notam["geometry"] && $notam["geometry"]["center"])
+        if (isset($notam["geometry"]) && isset($notam["geometry"]["center"]))
         {
             $this->logger->writelog("DEBUG", "using circle geometry as db extent");
 
@@ -427,7 +427,7 @@ class NotamGeometryParser
 
 
         // circle from qline
-        if ($notam["isICAO"])
+        if (isset($notam["isICAO"]) && $notam["isICAO"])
         {
             $geometry = $this->tryParseQlineCircle($notam["all"]);
 

@@ -81,9 +81,6 @@ foreach ($chunkedCountryList as $countryChunk) {
         $queryParts = [];
         foreach ($notamList as $notam)
         {
-            $dbExtent = $notam["dbExtent"];
-            unset($notam["dbExtent"]);
-
             $queryParts[] = "('"
                 . checkEscapeString($conn, $notam["id"], 0, 20) . "','"
                 . checkEscapeString($conn, $notam["StateCode"], 0, 10) . "','"
