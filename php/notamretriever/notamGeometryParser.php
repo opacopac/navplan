@@ -135,7 +135,7 @@ class NotamGeometryParser
             foreach ($notamChunk as &$notam) {
                 $notamContent = json_decode($notam["notam"], JSON_NUMERIC_CHECK);
                 $notam["geometry"] = $this->parseNotamGeometry($notamContent);
-                $notam["dbExtent"] = $this->getNotamDbExtent($notam, $extentList[$notam["icao"]]);
+                $notam["dbExtent"] = $this->getNotamDbExtent($notam, $extentList[$notam["icao"]] ?? null);
             }
 
             $this->logger->writelog("INFO", "try to find matching airspace...");
@@ -405,7 +405,7 @@ class NotamGeometryParser
     private function getNotamDbExtent($notam, $locationExtent)
     {
         // polygon geometry
-        if (isset($notam["geometry"]) && isset($notam["geometry"]["polygon"]))
+        if (isset($notam["geometry"]["polygon"]))
         {
             $this->logger->writelog("DEBUG", "using polygon geometry as db extent");
 
@@ -414,7 +414,7 @@ class NotamGeometryParser
 
 
         // circle geometry
-        if (isset($notam["geometry"]) && isset($notam["geometry"]["center"]))
+        if (isset($notam["geometry"]["center"]))
         {
             $this->logger->writelog("DEBUG", "using circle geometry as db extent");
 
@@ -442,7 +442,7 @@ class NotamGeometryParser
 
 
         // ad notam
-        if ($locationExtent["type"] == "ad")
+        if (isset($locationExtent["type"]) && $locationExtent["type"] == "ad")
         {
             $this->logger->writelog("DEBUG", "using ad coordinates + 5nm as db extent");
 
@@ -454,7 +454,7 @@ class NotamGeometryParser
 
 
         // fir notam
-        if ($locationExtent["type"] == "fir")
+        if (isset($locationExtent["type"]) && $locationExtent["type"] == "fir")
         {
             $this->logger->writelog("DEBUG", "using fir polygon geometry as db extent");
 
@@ -734,7 +734,7 @@ class NotamGeometryParser
                 $bottom = $notam["geometry"] && $notam["geometry"]["bottom"] ? $notam["geometry"]["bottom"] : NULL;
                 $polygon = convertDbPolygonToArray($rs["polygon"]);
 
-                if (!$notam["airspaceGeometry"])
+                if (!isset($notam["airspaceGeometry"]))
                     $notam["airspaceGeometry"] = [];
 
                 $notam["airspaceGeometry"][] = array("polygon" => $polygon, "top" => $top, "bottom" => $bottom);
@@ -773,7 +773,7 @@ class NotamGeometryParser
     }
 
 
-    private function isAreaNameMatch($airspaceName, $notamText)
+    private function isAreaNameMatch($airspaceName, $notamText): bool
     {
         // try formats like LS-D15 Rossboden - Chur  or  LI R108/B-Colico bis (approx confine stato)
         $regExpAreaName = '/^([^\d]+\d+)[^\w\d]*([\w]{0,2}(?=)([^\w]|$))?/i';
@@ -781,12 +781,12 @@ class NotamGeometryParser
 
         if ($result && count($matches) > 0)
         {
-            $areaName = $this->simplifyText($matches[1] . $matches[2]);
+            $areaName = $this->simplifyText($matches[1] . ($matches[2] ?? ''));
             $simpleNotamText = $this->simplifyText($notamText);
 
             $this->logger->writelog("DEBUG", "numeric airspace id found, search for '" . $areaName . "' in simplifyed notam text...");
 
-            if (strpos($simpleNotamText, $areaName) !== false)
+            if (str_contains($simpleNotamText, $areaName))
             {
                 $this->logger->writelog("DEBUG", "...found");
                 return true;
@@ -808,7 +808,7 @@ class NotamGeometryParser
 
             $this->logger->writelog("DEBUG", "text airspace name found, search for '" . $areaName . "' in simplifyed notam text...");
 
-            if (strpos($simpleNotamText, $areaName) !== false)
+            if (str_contains($simpleNotamText, $areaName))
             {
                 $this->logger->writelog("DEBUG", "...found");
                 return true;
