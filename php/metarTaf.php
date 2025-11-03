@@ -29,6 +29,9 @@ curl_close($ch);
 if ($httpcode === 200 && $response !== false) {
     header("Content-Type: application/json");
     echo $response;
+} elseif ($httpcode === 204) { // No Content
+    header("Content-Type: application/json");
+    echo json_encode([]); // return empty array
 } else {
     http_response_code(500);
     echo json_encode(["error" => "Failed to fetch METAR data"]);

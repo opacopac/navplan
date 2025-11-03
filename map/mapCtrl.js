@@ -1198,7 +1198,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
                         return radio.typespec;
                 }*/
                 default : {
-                    if (radio.name.toUpperCase().indexOf("AD") === 0) // starts with AD...
+                    if (radio.name && radio.name.toUpperCase().indexOf("AD") === 0) // starts with AD...
                         return "AD";
                     else
                         return radio.type;
