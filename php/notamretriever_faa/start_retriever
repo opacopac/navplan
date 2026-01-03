@@ -1,0 +1,5 @@
+cd /home/tschanz/www/navplan.ch/branch/php/notamretriever_faa
+./start_downloader $1 >>../../logs/faanotamretriever.log 2>>../../logs/faanotamretriever.log
+php FaaNotamsImporter.php $1 >>../../logs/faanotamretriever.log 2>>../../logs/faanotamretriever.log
+php NotamGeometryParserFaa.php $1 >>../../logs/faanotamretriever.log 2>>../../logs/faanotamretriever.log
+php ../../../v2/php/Navplan/Notam/IcaoImporter/NotamGeometryParser.php $1 >>../../logs/faanotamretriever.log 2>>../../logs/faanotamretriever.log
