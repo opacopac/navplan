@@ -36,9 +36,11 @@ services:
             - navplan1_persistence
         volumes:
             - navplan1_data:/var/log/navplan
+            - navplan1_tmp:/var/www/html/tmp
 
 volumes:
     navplan1_data:
+    navplan1_tmp:
 
 secrets:
     db_root_pw:

@@ -435,8 +435,8 @@ function loadNotamList($lon, $lat, $minNotamTime, $maxNotamTime)
     global $conn;
 
 
-    $query = "SELECT ntm.notam AS notam FROM icao_notam AS ntm"
-        . " INNER JOIN icao_notam_geometry geo ON geo.icao_notam_id = ntm.id "
+    $query = "SELECT ntm.notam AS notam FROM faa_notam AS ntm"
+        . " INNER JOIN faa_notam_geometry geo ON geo.icao_notam_id = ntm.id "
         . " INNER JOIN icao_fir fir ON fir.statecode = ntm.country"
         . " LEFT JOIN icao_fir fir2 ON fir2.icao = ntm.icao"
         . " WHERE ST_INTERSECTS(geo.extent,". getDbPointStringFromLonLat([$lon, $lat]) . ")"
