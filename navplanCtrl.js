@@ -879,7 +879,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 	$scope.initGlobalData();
 	$scope.initUser();
 	$scope.initDisclaimer();
-	$scope.showErrorMessage("WARNING: NOTAMS are currently not up-to-date, please us official sources instead!"); // TODO: remove
+	//$scope.showErrorMessage("WARNING: NOTAMS are currently not up-to-date, please us official sources instead!"); // TODO: remove
 
 	// event listeners
 	window.addEventListener("beforeunload", $scope.onLeaving);
