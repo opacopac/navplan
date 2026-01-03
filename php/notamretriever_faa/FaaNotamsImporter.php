@@ -254,12 +254,14 @@ class FaaNotamsImporter
 
 // If run directly from command line
 if (php_sapi_name() === 'cli' && basename(__FILE__) === basename($_SERVER['PHP_SELF'])) {
-    echo "=== FAA NOTAMs Importer ===\n\n";
+    echo "=== FAA NOTAMs Importer ===\n";
+    echo "Started: " . date('Y-m-d H:i:s') . "\n\n";
 
     $importer = new FaaNotamsImporter();
     $result = $importer->processAllFiles();
 
     echo "\n=== Done ===\n";
+    echo "Finished: " . date('Y-m-d H:i:s') . "\n";
     exit($result['failed'] > 0 ? 1 : 0);
 }
 

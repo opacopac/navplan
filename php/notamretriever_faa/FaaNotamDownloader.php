@@ -633,7 +633,8 @@ class FaaNotamDownloader
 
 // If run directly from command line
 if (php_sapi_name() === 'cli' && basename(__FILE__) === basename($_SERVER['PHP_SELF'])) {
-    echo "=== FAA NOTAMs Downloader ===\n\n";
+    echo "=== FAA NOTAMs Downloader ===\n";
+    echo "Started: " . date('Y-m-d H:i:s') . "\n\n";
 
     // Parse command line arguments
     // Usage: php FaaNotamDownloader.php <clientId> <clientSecret> [environment]
@@ -668,9 +669,11 @@ if (php_sapi_name() === 'cli' && basename(__FILE__) === basename($_SERVER['PHP_S
 
         if ($result) {
             echo "\n=== Success ===\n";
+            echo "Finished: " . date('Y-m-d H:i:s') . "\n";
             exit(0);
         } else {
             echo "\n=== Failed ===\n";
+            echo "Finished: " . date('Y-m-d H:i:s') . "\n";
             exit(1);
         }
 
