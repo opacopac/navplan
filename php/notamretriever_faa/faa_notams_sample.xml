@@ -1,0 +1,553 @@
+<?xml version="1.0"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+	<soap:Body>
+		<ns3:FeatureCollection xmlns="http://www.aixm.aero/schema/5.1/message" xmlns:aixm="http://www.aixm.aero/schema/5.1" xmlns:event="http://www.aixm.aero/schema/5.1/event" xmlns:gts="http://www.isotc211.org/2005/gts" xmlns:gco="http://www.isotc211.org/2005/gco" xmlns:gmd="http://www.isotc211.org/2005/gmd" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:gss="http://www.isotc211.org/2005/gss" xmlns:gsr="http://www.isotc211.org/2005/gsr" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:fnse="http://www.aixm.aero/schema/5.1/extensions/FAA/FNSE" xmlns:fns="urn:us.gov.dot.faa.aim.fns" xmlns:ns1="http://www.opengis.net/ows/1.1" xmlns:ns3="http://www.opengis.net/wfs/2.0" xmlns:ns4="http://www.opengis.net/fes/2.0" xmlns:ns14="http://www.opengis.net/wfs-util/2.0" numberReturned="65995" timeStamp="2026-01-03T10:00:07.272Z">
+
+			<!-- example: USA (local and icao format) -->		
+			<aixm:member>
+				<AIXMBasicMessage gml:id="NMS_ID_1765992358219212">
+					<gml:boundedBy xsi:nil="true"/>
+					<hasMember>
+						<event:Event gml:id="Event_1_1765992358219212">
+							<gml:identifier codeSpace="urn:uuid:">85ae5f40-13a8-4001-a0fd-940b66a2e238</gml:identifier>
+							<gml:boundedBy xsi:nil="true"/>
+							<event:timeSlice>
+								<event:EventTimeSlice gml:id="Event_TS_1_1765992358219212">
+									<gml:validTime>
+										<gml:TimePeriod gml:id="Event_TS_TP_1_1765992358219212">
+											<gml:beginPosition>2025-12-04T23:06:00.000Z</gml:beginPosition>
+											<gml:endPosition indeterminatePosition="unknown">2028-05-10T20:00:00.000Z</gml:endPosition>
+										</gml:TimePeriod>
+									</gml:validTime>
+									<aixm:interpretation>BASELINE</aixm:interpretation>
+									<aixm:sequenceNumber>1</aixm:sequenceNumber>
+									<aixm:correctionNumber>0</aixm:correctionNumber>
+									<event:scenario>6000</event:scenario>
+									<event:textNOTAM>
+										<event:NOTAM gml:id="NOTAM_1_1765992358219212">
+											<event:series>A</event:series>
+											<event:number>1811</event:number>
+											<event:year>2025</event:year>
+											<event:type>N</event:type>
+											<event:issued>2025-12-04T23:08:00.000Z</event:issued>
+											<event:affectedFIR>KZHU</event:affectedFIR>
+											<event:selectionCode>QPICH</event:selectionCode>
+											<event:traffic>I</event:traffic>
+											<event:purpose>NBO</event:purpose>
+											<event:scope>A</event:scope>
+											<event:minimumFL>000</event:minimumFL>
+											<event:maximumFL>999</event:maximumFL>
+											<event:location>SAT</event:location>
+											<event:effectiveStart>202512042306</event:effectiveStart>
+											<event:effectiveEnd>202805102000EST</event:effectiveEnd>
+											<event:text>SAT IAP SAN ANTONIO INTL, SAN ANTONIO, TX.
+RNAV (RNP) Z RWY 22, AMDT 3...
+RNP 0.15 DA 1130/HAT 360, VIS ALL CATS 1. TEMPORARY CRANE, 1115
+MSL, 1.35NM SW OF RWY 22.</event:text>
+											<event:translation>
+												<event:NOTAMTranslation gml:id="NT02_1765992358219212">
+													<event:type>OTHER:ICAO</event:type>
+													<event:formattedText>
+														<html:div xmlns:html="http://www.w3.org/1999/xhtml">&lt;pre&gt;
+A1811/25 NOTAMN
+Q) KZHU/QPICH/I/NBO/A/000/999/
+A) KSAT
+B) 2512042306
+C) 2805102000 EST
+E) SAT IAP SAN ANTONIO INTL, SAN ANTONIO, TX.
+RNAV (RNP) Z RWY 22, AMDT 3...
+RNP 0.15 DA 1130/HAT 360, VIS ALL CATS 1. TEMPORARY CRANE, 1115
+MSL, 1.35NM SW OF RWY 22.
+&lt;/pre&gt;</html:div>
+													</event:formattedText>
+												</event:NOTAMTranslation>
+											</event:translation>
+										</event:NOTAM>
+									</event:textNOTAM>
+									<event:extension>
+										<fnse:EventExtension gml:id="ext_01_1765992358219212">
+											<fnse:classification>INTL</fnse:classification>
+											<fnse:accountId>KSAT</fnse:accountId>
+											<fnse:xoveraccountID>FDC</fnse:xoveraccountID>
+											<fnse:xovernotamID>5/4942</fnse:xovernotamID>
+											<fnse:airportname>SAN ANTONIO INTL</fnse:airportname>
+											<fnse:originID>KSAT</fnse:originID>
+											<fnse:lastUpdated>2025-12-04T23:08:00.000Z</fnse:lastUpdated>
+											<fnse:icaoLocation>KSAT</fnse:icaoLocation>
+										</fnse:EventExtension>
+									</event:extension>
+								</event:EventTimeSlice>
+							</event:timeSlice>
+						</event:Event>
+					</hasMember>
+				</AIXMBasicMessage>
+			</aixm:member>
+
+			<!-- example: USA (only local format) -->
+			<aixm:member>
+				<AIXMBasicMessage gml:id="NMS_ID_1765991700377674">
+					<gml:boundedBy xsi:nil="true"/>
+					<hasMember>
+						<event:Event gml:id="Event_1_1765991700377674">
+							<gml:identifier codeSpace="urn:uuid:">49a0f317-879d-490a-8b60-b3de5609a28c</gml:identifier>
+							<gml:boundedBy xsi:nil="true"/>
+							<event:timeSlice>
+								<event:EventTimeSlice gml:id="Event_TS_1_1765991700377674">
+									<gml:validTime>
+										<gml:TimePeriod gml:id="Event_TS_TP_1_1765991700377674">
+											<gml:beginPosition>2025-12-17T16:49:00.000Z</gml:beginPosition>
+											<gml:endPosition>2026-01-31T23:59:00.000Z</gml:endPosition>
+										</gml:TimePeriod>
+									</gml:validTime>
+									<aixm:interpretation>BASELINE</aixm:interpretation>
+									<aixm:sequenceNumber>1</aixm:sequenceNumber>
+									<aixm:correctionNumber>0</aixm:correctionNumber>
+									<event:scenario>114</event:scenario>
+									<event:textNOTAM>
+										<event:NOTAM gml:id="NOTAM_1_1765991700377674">
+											<event:number>17</event:number>
+											<event:year>2025</event:year>
+											<event:type>N</event:type>
+											<event:issued>2025-12-17T17:14:00.000Z</event:issued>
+											<event:location>CNM</event:location>
+											<event:effectiveStart>202512171649</event:effectiveStart>
+											<event:effectiveEnd>202601312359</event:effectiveEnd>
+											<event:text>OBST TOWER LGT (ASR 1322104) 321828.80N1034144.20W (28.86NM E CNM) 3946.94FT (299FT AGL) U/S</event:text>
+											<event:translation>
+												<event:NOTAMTranslation gml:id="NT01_1765991700377674">
+													<event:type>LOCAL_FORMAT</event:type>
+													<event:simpleText>!CNM 12/017 CNM OBST TOWER LGT (ASR 1322104) 321828.80N1034144.20W (28.86NM E CNM) 3946.94FT (299FT AGL) U/S 2512171649-2601312359</event:simpleText>
+												</event:NOTAMTranslation>
+											</event:translation>
+										</event:NOTAM>
+									</event:textNOTAM>
+									<event:extension>
+										<fnse:EventExtension gml:id="ext_01_1765991700377674">
+											<fnse:classification>DOM</fnse:classification>
+											<fnse:accountId>CNM</fnse:accountId>
+											<fnse:airportname>CAVERN CITY AIR TRML</fnse:airportname>
+											<fnse:lastUpdated>2025-12-17T17:14:00.000Z</fnse:lastUpdated>
+											<fnse:icaoLocation>KCNM</fnse:icaoLocation>
+										</fnse:EventExtension>
+									</event:extension>
+								</event:EventTimeSlice>
+							</event:timeSlice>
+						</event:Event>
+					</hasMember>
+				</AIXMBasicMessage>
+			</aixm:member>			
+
+			<!-- example: switzerland (UAV) -->
+			<aixm:member>
+				<AIXMBasicMessage gml:id="NMS_ID_1765992334847744">
+					<gml:boundedBy xsi:nil="true"/>
+					<hasMember>
+						<event:Event gml:id="Event_1_1765992334847744">
+							<gml:identifier codeSpace="urn:uuid:">1fd6ef77-6f70-4b29-b678-e37db8311479</gml:identifier>
+							<gml:boundedBy xsi:nil="true"/>
+							<event:timeSlice>
+								<event:EventTimeSlice gml:id="Event_TS_1_1765992334847744">
+									<gml:validTime>
+										<gml:TimePeriod gml:id="Event_TS_TP_1_1765992334847744">
+											<gml:beginPosition>2025-10-20T12:59:00.000Z</gml:beginPosition>
+											<gml:endPosition>2026-01-20T16:15:00.000Z</gml:endPosition>
+										</gml:TimePeriod>
+									</gml:validTime>
+									<aixm:interpretation>BASELINE</aixm:interpretation>
+									<aixm:sequenceNumber>1</aixm:sequenceNumber>
+									<aixm:correctionNumber>0</aixm:correctionNumber>
+									<event:scenario>6000</event:scenario>
+									<event:textNOTAM>
+										<event:NOTAM gml:id="NOTAM_1_1765992334847744">
+											<event:series>W</event:series>
+											<event:number>3449</event:number>
+											<event:year>2025</event:year>
+											<event:type>N</event:type>
+											<event:issued>2025-10-20T12:59:00.000Z</event:issued>
+											<event:affectedFIR>LSAS</event:affectedFIR>
+											<event:selectionCode>QWULW</event:selectionCode>
+											<event:traffic>V</event:traffic>
+											<event:purpose>BO</event:purpose>
+											<event:scope>W</event:scope>
+											<event:minimumFL>000</event:minimumFL>
+											<event:maximumFL>022</event:maximumFL>
+											<event:coordinates>4710N00930E</event:coordinates>
+											<event:radius>004</event:radius>
+											<event:location>LSAS</event:location>
+											<event:effectiveStart>202510201259</event:effectiveStart>
+											<event:effectiveEnd>202601201615</event:effectiveEnd>
+											<event:schedule>OCT 20-25 27-NOV 01 03-08 10-15 17-22 24-29 DEC 01-06 08-13 15-20 22-27 29-31 HJ, 2026 JAN 01-03 05-10 12-17 19-20 HJ</event:schedule>
+											<event:text>UNMANNED ACFT ACT WILL TAKE PLACE OVER RHINE VALLEY
+BTN BUCHS, VADUZ, SEVELEN AND ESCHEN,
+RADIUS 6.0KM (471026N0092955E RADIUS 3.3NM).
+FOR INFO AND POSS COOR CTC +385 91 956 5459 OR ROUTES(A)JEDSY.COM</event:text>
+											<event:lowerLimit>GND</event:lowerLimit>
+											<event:upperLimit>2150FT AMSL</event:upperLimit>
+											<event:translation>
+												<event:NOTAMTranslation gml:id="NT02_1765992334847744">
+													<event:type>OTHER:ICAO</event:type>
+													<event:formattedText>
+														<html:div xmlns:html="http://www.w3.org/1999/xhtml">&lt;pre&gt;
+W3449/25 NOTAMN
+Q) LSAS/QWULW/V/BO/W/000/022/4710N00930E004
+A) LSAS B) 2510201259 C) 2601201615
+D) OCT 20-25 27-NOV 01 03-08 10-15 17-22 24-29 DEC 01-06 08-13 15-20
+22-27 29-31 HJ, 2026 JAN 01-03 05-10 12-17 19-20 HJ
+E) UNMANNED ACFT ACT WILL TAKE PLACE OVER RHINE VALLEY
+BTN BUCHS, VADUZ, SEVELEN AND ESCHEN,
+RADIUS 6.0KM (471026N0092955E RADIUS 3.3NM).
+FOR INFO AND POSS COOR CTC +385 91 956 5459 OR ROUTES(A)JEDSY.COM
+F) GND
+G) 2150FT AMSL
+&lt;/pre&gt;</html:div>
+													</event:formattedText>
+												</event:NOTAMTranslation>
+											</event:translation>
+										</event:NOTAM>
+									</event:textNOTAM>
+									<event:extension>
+										<fnse:EventExtension gml:id="ext_01_1765992334847744">
+											<fnse:classification>INTL</fnse:classification>
+											<fnse:accountId>LSSNYNYX</fnse:accountId>
+											<fnse:airportname>SWITZERLAND (FIR/UIR)</fnse:airportname>
+											<fnse:originID>LSSNYNYX</fnse:originID>
+											<fnse:lastUpdated>2025-10-20T12:59:00.000Z</fnse:lastUpdated>
+											<fnse:icaoLocation>LSAS</fnse:icaoLocation>
+										</fnse:EventExtension>
+									</event:extension>
+								</event:EventTimeSlice>
+							</event:timeSlice>
+						</event:Event>
+					</hasMember>
+				</AIXMBasicMessage>
+			</aixm:member>
+			
+			<!-- example: germany (windmills) -->
+			<aixm:member>
+				<AIXMBasicMessage gml:id="NMS_ID_1765992331820836">
+					<gml:boundedBy xsi:nil="true"/>
+					<hasMember>
+						<event:Event gml:id="Event_1_1765992331820836">
+							<gml:identifier codeSpace="urn:uuid:">7c53467c-ecb5-4338-b47f-b299e56c2a66</gml:identifier>
+							<gml:boundedBy xsi:nil="true"/>
+							<event:timeSlice>
+								<event:EventTimeSlice gml:id="Event_TS_1_1765992331820836">
+									<gml:validTime>
+										<gml:TimePeriod gml:id="Event_TS_TP_1_1765992331820836">
+											<gml:beginPosition>2025-11-01T00:00:00.000Z</gml:beginPosition>
+											<gml:endPosition>2026-01-28T23:59:00.000Z</gml:endPosition>
+										</gml:TimePeriod>
+									</gml:validTime>
+									<aixm:interpretation>BASELINE</aixm:interpretation>
+									<aixm:sequenceNumber>1</aixm:sequenceNumber>
+									<aixm:correctionNumber>0</aixm:correctionNumber>
+									<event:scenario>5000</event:scenario>
+									<event:textNOTAM>
+										<event:NOTAM gml:id="NOTAM_1_1765992331820836">
+											<event:series>F</event:series>
+											<event:number>2932</event:number>
+											<event:year>2025</event:year>
+											<event:type>N</event:type>
+											<event:issued>2025-10-07T05:50:00.000Z</event:issued>
+											<event:affectedFIR>EDMM</event:affectedFIR>
+											<event:selectionCode>QOBCE</event:selectionCode>
+											<event:traffic>IV</event:traffic>
+											<event:purpose>M</event:purpose>
+											<event:scope>E</event:scope>
+											<event:minimumFL>000</event:minimumFL>
+											<event:maximumFL>016</event:maximumFL>
+											<event:coordinates>5113N01256E</event:coordinates>
+											<event:radius>001</event:radius>
+											<event:location>EDMM</event:location>
+											<event:effectiveStart>202511010000</event:effectiveStart>
+											<event:effectiveEnd>202601282359</event:effectiveEnd>
+											<event:text>2 WINDMILLS PSN 2.5NM SE OF MUTZSCHEN, 511327N 0125531E.
+ELEV 1512FT/810FT AGL. DAY AND NIGHT MARKED.</event:text>
+											<event:translation>
+												<event:NOTAMTranslation gml:id="NT02_1765992331820836">
+													<event:type>OTHER:ICAO</event:type>
+													<event:formattedText>
+														<html:div xmlns:html="http://www.w3.org/1999/xhtml">&lt;pre&gt;
+F2932/25 NOTAMN
+Q) EDMM/QOBCE/IV/M  /E /000/016/5113N01256E001
+A) EDMM B) 2511010000 C) 2601282359
+E) 2 WINDMILLS PSN 2.5NM SE OF MUTZSCHEN, 511327N 0125531E.
+ELEV 1512FT/810FT AGL. DAY AND NIGHT MARKED.
+&lt;/pre&gt;</html:div>
+													</event:formattedText>
+												</event:NOTAMTranslation>
+											</event:translation>
+										</event:NOTAM>
+									</event:textNOTAM>
+									<event:extension>
+										<fnse:EventExtension gml:id="ext_01_1765992331820836">
+											<fnse:classification>MIL</fnse:classification>
+											<fnse:accountId>EDDZYNYX</fnse:accountId>
+											<fnse:airportname>MUNCHEN ACC/FIC</fnse:airportname>
+											<fnse:originID>EUECYIYN</fnse:originID>
+											<fnse:lastUpdated>2025-10-07T05:50:00.000Z</fnse:lastUpdated>
+											<fnse:icaoLocation>EDMM</fnse:icaoLocation>
+										</fnse:EventExtension>
+									</event:extension>
+								</event:EventTimeSlice>
+							</event:timeSlice>
+						</event:Event>
+					</hasMember>
+				</AIXMBasicMessage>
+			</aixm:member>
+
+			<!-- sample: france (aerobatics) -->
+						<aixm:member>
+				<AIXMBasicMessage gml:id="NMS_ID_1765992333545718">
+					<gml:boundedBy xsi:nil="true"/>
+					<hasMember>
+						<event:Event gml:id="Event_1_1765992333545718">
+							<gml:identifier codeSpace="urn:uuid:">83c7cee6-4a9b-42c6-9135-bf0bff12a7d5</gml:identifier>
+							<gml:boundedBy xsi:nil="true"/>
+							<event:timeSlice>
+								<event:EventTimeSlice gml:id="Event_TS_1_1765992333545718">
+									<gml:validTime>
+										<gml:TimePeriod gml:id="Event_TS_TP_1_1765992333545718">
+											<gml:beginPosition>2025-07-01T00:00:00.000Z</gml:beginPosition>
+											<gml:endPosition indeterminatePosition="unknown"/>
+										</gml:TimePeriod>
+									</gml:validTime>
+									<aixm:interpretation>BASELINE</aixm:interpretation>
+									<aixm:sequenceNumber>1</aixm:sequenceNumber>
+									<aixm:correctionNumber>0</aixm:correctionNumber>
+									<event:scenario>6000</event:scenario>
+									<event:textNOTAM>
+										<event:NOTAM gml:id="NOTAM_1_1765992333545718">
+											<event:series>W</event:series>
+											<event:number>1335</event:number>
+											<event:year>2025</event:year>
+											<event:type>N</event:type>
+											<event:issued>2025-06-20T07:20:00.000Z</event:issued>
+											<event:affectedFIR>LFFF</event:affectedFIR>
+											<event:selectionCode>QWBXX</event:selectionCode>
+											<event:traffic>IV</event:traffic>
+											<event:purpose>M</event:purpose>
+											<event:scope>W</event:scope>
+											<event:minimumFL>025</event:minimumFL>
+											<event:maximumFL>055</event:maximumFL>
+											<event:coordinates>4656N00304E</event:coordinates>
+											<event:radius>005</event:radius>
+											<event:location>LFFF</event:location>
+											<event:effectiveStart>202507010000</event:effectiveStart>
+											<event:effectiveEnd>PERM</event:effectiveEnd>
+											<event:text>AEROBATICS ACTIVITY NR6457 'SAINCAIZE' (58) WITHDRAWN
+PSN : 465600N 0030400E
+REF ENR5.5</event:text>
+											<event:lowerLimit>2500FT AGL</event:lowerLimit>
+											<event:upperLimit>4500FT AGL</event:upperLimit>
+											<event:translation>
+												<event:NOTAMTranslation gml:id="NT02_1765992333545718">
+													<event:type>OTHER:ICAO</event:type>
+													<event:formattedText>
+														<html:div xmlns:html="http://www.w3.org/1999/xhtml">&lt;pre&gt;
+W1335/25 NOTAMN
+Q) LFFF/QWBXX/IV/M  /W /025/055/4656N00304E005
+A) LFFF B) 2507010000 C) PERM
+E) AEROBATICS ACTIVITY NR6457 &amp;apos;SAINCAIZE&amp;apos; (58) WITHDRAWN
+PSN : 465600N 0030400E
+REF ENR5.5
+F) 2500FT AGL G) 4500FT AGL
+&lt;/pre&gt;</html:div>
+													</event:formattedText>
+												</event:NOTAMTranslation>
+											</event:translation>
+										</event:NOTAM>
+									</event:textNOTAM>
+									<event:extension>
+										<fnse:EventExtension gml:id="ext_01_1765992333545718">
+											<fnse:classification>INTL</fnse:classification>
+											<fnse:accountId>LFFAYNYX</fnse:accountId>
+											<fnse:airportname>PARIS (FIC/ACC/UAC)</fnse:airportname>
+											<fnse:originID>EUECYIYN</fnse:originID>
+											<fnse:lastUpdated>2025-06-20T07:21:00.000Z</fnse:lastUpdated>
+											<fnse:icaoLocation>LFFF</fnse:icaoLocation>
+										</fnse:EventExtension>
+									</event:extension>
+								</event:EventTimeSlice>
+							</event:timeSlice>
+						</event:Event>
+					</hasMember>
+				</AIXMBasicMessage>
+			</aixm:member>
+			
+			<!-- sample: italy (wind turbines) -->
+						<aixm:member>
+				<AIXMBasicMessage gml:id="NMS_ID_1765992304269122">
+					<gml:boundedBy xsi:nil="true"/>
+					<hasMember>
+						<event:Event gml:id="Event_1_1765992304269122">
+							<gml:identifier codeSpace="urn:uuid:">7b3e1c9c-1f56-4139-89b6-d6b7262f88a8</gml:identifier>
+							<gml:boundedBy xsi:nil="true"/>
+							<event:timeSlice>
+								<event:EventTimeSlice gml:id="Event_TS_1_1765992304269122">
+									<gml:validTime>
+										<gml:TimePeriod gml:id="Event_TS_TP_1_1765992304269122">
+											<gml:beginPosition>2024-04-29T19:46:00.000Z</gml:beginPosition>
+											<gml:endPosition indeterminatePosition="unknown"/>
+										</gml:TimePeriod>
+									</gml:validTime>
+									<aixm:interpretation>BASELINE</aixm:interpretation>
+									<aixm:sequenceNumber>1</aixm:sequenceNumber>
+									<aixm:correctionNumber>0</aixm:correctionNumber>
+									<event:scenario>5000</event:scenario>
+									<event:textNOTAM>
+										<event:NOTAM gml:id="NOTAM_1_1765992304269122">
+											<event:series>M</event:series>
+											<event:number>2178</event:number>
+											<event:year>2024</event:year>
+											<event:type>N</event:type>
+											<event:issued>2024-04-29T19:46:00.000Z</event:issued>
+											<event:affectedFIR>LIXX</event:affectedFIR>
+											<event:selectionCode>QOBCH</event:selectionCode>
+											<event:traffic>IV</event:traffic>
+											<event:purpose>M</event:purpose>
+											<event:scope>E</event:scope>
+											<event:minimumFL>000</event:minimumFL>
+											<event:maximumFL>035</event:maximumFL>
+											<event:coordinates>4125N01455E</event:coordinates>
+											<event:radius>005</event:radius>
+											<event:location>LIBB</event:location>
+											<event:effectiveStart>202404291946</event:effectiveStart>
+											<event:effectiveEnd>PERM</event:effectiveEnd>
+											<event:text>LOW FLYING ZONE BOAT CENTRO SUD OBSTACLES
+(EXCEPT MOLISE TACTICAL AREAS)
+WIND TURBINE IDENT '44649'
+PSN COORD (WGS-84) CHG: 412523N 0145518E
+REF MILAIP ENR 5.4.4 ITEM 1 VERTICAL OBSTACLES 
+(HIGHER THAN 180 FT</event:text>
+											<event:translation>
+												<event:NOTAMTranslation gml:id="NT02_1765992304269122">
+													<event:type>OTHER:ICAO</event:type>
+													<event:formattedText>
+														<html:div xmlns:html="http://www.w3.org/1999/xhtml">&lt;pre&gt;
+M2178/24 NOTAMN
+Q) LIXX/QOBCH/IV/M/E/000/035/4125N01455E005
+A) LIRR LIBB
+B) 2404291946 C) PERM
+E) LOW FLYING ZONE BOAT CENTRO SUD OBSTACLES
+(EXCEPT MOLISE TACTICAL AREAS)
+WIND TURBINE IDENT &amp;apos;44649&amp;apos;
+PSN COORD (WGS-84) CHG: 412523N 0145518E
+REF MILAIP ENR 5.4.4 ITEM 1 VERTICAL OBSTACLES 
+(HIGHER THAN 180 FT
+&lt;/pre&gt;</html:div>
+													</event:formattedText>
+												</event:NOTAMTranslation>
+											</event:translation>
+										</event:NOTAM>
+									</event:textNOTAM>
+									<event:extension>
+										<fnse:EventExtension gml:id="ext_01_1765992304269122">
+											<fnse:classification>MIL</fnse:classification>
+											<fnse:accountId>LIICYNYX</fnse:accountId>
+											<fnse:airportname>BRINDISI ACC (COM CENTRE)</fnse:airportname>
+											<fnse:originID>LIICYNYX</fnse:originID>
+											<fnse:lastUpdated>2024-04-29T19:46:00.000Z</fnse:lastUpdated>
+											<fnse:icaoLocation>LIBB</fnse:icaoLocation>
+										</fnse:EventExtension>
+									</event:extension>
+								</event:EventTimeSlice>
+							</event:timeSlice>
+						</event:Event>
+					</hasMember>
+				</AIXMBasicMessage>
+			</aixm:member>
+			
+			<!-- sample: austria -->
+			<aixm:member>
+				<AIXMBasicMessage gml:id="NMS_ID_1765992313352307">
+					<gml:boundedBy xsi:nil="true"/>
+					<hasMember>
+						<event:Event gml:id="Event_1_1765992313352307">
+							<gml:identifier codeSpace="urn:uuid:">8f395eee-a18a-4395-b669-5616f6cf5212</gml:identifier>
+							<gml:boundedBy xsi:nil="true"/>
+							<event:timeSlice>
+								<event:EventTimeSlice gml:id="Event_TS_1_1765992313352307">
+									<gml:validTime>
+										<gml:TimePeriod gml:id="Event_TS_TP_1_1765992313352307">
+											<gml:beginPosition>2025-06-28T00:00:00.000Z</gml:beginPosition>
+											<gml:endPosition indeterminatePosition="unknown">2025-09-26T12:00:00.000Z</gml:endPosition>
+										</gml:TimePeriod>
+									</gml:validTime>
+									<aixm:interpretation>BASELINE</aixm:interpretation>
+									<aixm:sequenceNumber>1</aixm:sequenceNumber>
+									<aixm:correctionNumber>0</aixm:correctionNumber>
+									<event:scenario>6000</event:scenario>
+									<event:textNOTAM>
+										<event:NOTAM gml:id="NOTAM_1_1765992313352307">
+											<event:series>B</event:series>
+											<event:number>1390</event:number>
+											<event:year>2025</event:year>
+											<event:type>N</event:type>
+											<event:issued>2025-06-27T09:29:00.000Z</event:issued>
+											<event:affectedFIR>LOVV</event:affectedFIR>
+											<event:selectionCode>QOBCE</event:selectionCode>
+											<event:traffic>IV</event:traffic>
+											<event:purpose>M</event:purpose>
+											<event:scope>AE</event:scope>
+											<event:minimumFL>000</event:minimumFL>
+											<event:maximumFL>030</event:maximumFL>
+											<event:coordinates>4716N01119E</event:coordinates>
+											<event:radius>001</event:radius>
+											<event:location>LOWI</event:location>
+											<event:effectiveStart>202506280000</event:effectiveStart>
+											<event:effectiveEnd>202509261200EST</event:effectiveEnd>
+											<event:text>TEMPORARY CABLEWAY FOR MATERIAL TRANSPORT ERECTED AREA
+HECHENBERG - KRANEBITTEN 
+BOTTOM STATION           SUMMIT STATION
+471613N 0111841E         471615N 0111840E 
+            ELEV AT THE BASE: 
+770M/2527FT AMSL        892M/2927FT AMSL
+MAX HGT: 24M/79FT AGL
+LENGTH OF CABLEWAY APRX: 180M 
+NIGHT MARKING: NO
+DAY MARKING  : NO</event:text>
+											<event:translation>
+												<event:NOTAMTranslation gml:id="NT02_1765992313352307">
+													<event:type>OTHER:ICAO</event:type>
+													<event:formattedText>
+														<html:div xmlns:html="http://www.w3.org/1999/xhtml">&lt;pre&gt;
+B1390/25 NOTAMN
+Q) LOVV/QOBCE/IV/M  /AE/000/030/4716N01119E001
+A) LOWI B) 2506280000 C) 2509261200 EST
+E) TEMPORARY CABLEWAY FOR MATERIAL TRANSPORT ERECTED AREA
+HECHENBERG - KRANEBITTEN 
+BOTTOM STATION           SUMMIT STATION
+471613N 0111841E         471615N 0111840E 
+            ELEV AT THE BASE: 
+770M/2527FT AMSL        892M/2927FT AMSL
+MAX HGT: 24M/79FT AGL
+LENGTH OF CABLEWAY APRX: 180M 
+NIGHT MARKING: NO
+DAY MARKING  : NO
+&lt;/pre&gt;</html:div>
+													</event:formattedText>
+												</event:NOTAMTranslation>
+											</event:translation>
+										</event:NOTAM>
+									</event:textNOTAM>
+									<event:extension>
+										<fnse:EventExtension gml:id="ext_01_1765992313352307">
+											<fnse:classification>INTL</fnse:classification>
+											<fnse:accountId>LOWWYNYX</fnse:accountId>
+											<fnse:airportname>INNSBRUCK</fnse:airportname>
+											<fnse:originID>EUECYIYN</fnse:originID>
+											<fnse:lastUpdated>2025-06-27T09:29:00.000Z</fnse:lastUpdated>
+											<fnse:icaoLocation>LOWI</fnse:icaoLocation>
+										</fnse:EventExtension>
+									</event:extension>
+								</event:EventTimeSlice>
+							</event:timeSlice>
+						</event:Event>
+					</hasMember>
+				</AIXMBasicMessage>
+			</aixm:member>
+
+		</ns3:FeatureCollection>
+	</soap:Body>
+</soap:Envelope>
