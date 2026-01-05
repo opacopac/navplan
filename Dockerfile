@@ -22,7 +22,7 @@ RUN pecl install imagick && docker-php-ext-enable imagick \
     && docker-php-ext-enable mysqli
 
 # Allow PDF processing in ImageMagick
-RUN sed -i 's|<policy domain="coder" rights="none" pattern="PDF" />|<policy domain="coder" rights="read" pattern="PDF" />|' /etc/ImageMagick-6/policy.xml
+RUN sed -i 's|<policy domain="coder" rights="none" pattern="PDF" />|<policy domain="coder" rights="read" pattern="PDF" />|' /etc/ImageMagick-7/policy.xml
 
 # Set PHP file upload parameters
 RUN echo "upload_max_filesize=50M\npost_max_size=50M" > /usr/local/etc/php/conf.d/uploads.ini
