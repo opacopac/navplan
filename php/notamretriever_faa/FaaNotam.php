@@ -14,6 +14,7 @@ class FaaNotam
     public ?string $series = null;
     public ?string $number = null;
     public ?string $year = null;
+    public ?string $type = null; // N = New, R = Replace, C = Cancel
     public ?string $simpleText = null; // For LOCAL_FORMAT NOTAMs
 
     // Fields used for Q-code and classification
