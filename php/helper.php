@@ -211,7 +211,7 @@ function checkToken($token)
     if (!$token)
         die("token is null");
 
-    return checkString($token, 1, 100);
+    return checkString($token, 1, 200);
 }
 
 
@@ -321,6 +321,9 @@ function convertDbPolygonToArray($polygonDbText)
 
 function reduceDegAccuracy($value, $type)
 {
+    if (!is_numeric($value))
+        return $value;
+
     switch ($type)
     {
         case "AIRSPACE":

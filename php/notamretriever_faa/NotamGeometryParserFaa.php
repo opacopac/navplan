@@ -1,10 +1,10 @@
 <?php
-include_once "../config.php";
-include_once "../helper.php";
-include_once "../logger.php";
+require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../helper.php';
+require_once __DIR__ . '/../logger.php';
 
 // TODO
-$parser = new NotamGeometryParser();
+$parser = new NotamGeometryParserFaa();
 
 if ($_GET["testnotamid"])
     $parser->test($_GET["testnotamid"]);
@@ -12,7 +12,7 @@ else
     $parser->go();
 
 
-class NotamGeometryParser
+class NotamGeometryParserFaa
 {
     //region FIELDS
 
@@ -160,7 +160,7 @@ class NotamGeometryParser
 
 
     private function loadNotams($lastNotamId, $maxCount) {
-        $query = "SELECT id, icao, notam FROM icao_notam";
+        $query = "SELECT id, icao, notam FROM faa_notam";
         $query .= " WHERE id > '" . $lastNotamId . "'";
         $query .= " ORDER BY id ASC";
         $query .= " LIMIT " . $maxCount;
@@ -180,7 +180,7 @@ class NotamGeometryParser
 
 
     private function loadNotamByKey($notamKey) {
-        $query = "SELECT id, icao, notam FROM icao_notam";
+        $query = "SELECT id, icao, notam FROM faa_notam";
         $query .= " WHERE notam_id = '" . $notamKey . "'";
         $result = $this->conn->query($query);
 
@@ -240,7 +240,7 @@ class NotamGeometryParser
     {
         $this->logger->writelog("INFO", "clear geometry table...");
 
-        $query = "TRUNCATE TABLE icao_notam_geometry";
+        $query = "TRUNCATE TABLE faa_notam_geometry";
         $result = $this->conn->query($query);
 
         if ($result === FALSE)
@@ -265,7 +265,7 @@ class NotamGeometryParser
         }
 
         if (count($queryParts) > 0) {
-            $query = "INSERT INTO icao_notam_geometry (icao_notam_id, geometry, extent) VALUES " . join(",", $queryParts);
+            $query = "INSERT INTO faa_notam_geometry (icao_notam_id, geometry, extent) VALUES " . join(",", $queryParts);
             $result = $this->conn->query($query);
 
             if ($result === FALSE)
@@ -472,7 +472,7 @@ class NotamGeometryParser
     // detect polygon in notam text: 463447N0062121E, 341640N0992240W, without coordinates in brackets
     private function tryParsePolygon($text)
     {
-        $regExp = "/(" . NotamGeometryParser::REGEXP_PART_NOBRACKETS_NUMS . "(" . NotamGeometryParser::REGEXP_PART_COORDPAIR . "))+?/im";
+        $regExp = "/(" . NotamGeometryParserFaa::REGEXP_PART_NOBRACKETS_NUMS . "(" . NotamGeometryParserFaa::REGEXP_PART_COORDPAIR . "))+?/im";
         $result = preg_match_all($regExp, $text, $matches, PREG_SET_ORDER);
 
         if ($result && count($matches) >= 3)
@@ -497,7 +497,7 @@ class NotamGeometryParser
     // e.g. ... 472401N0083320E 472315N0082918E 471935N0083439E 472103N0083855E 472119N0083657E 472137N0083602E 472215N0083450E (CENTER POINT 472209N0083406E RADIUS 3.5 NM) ...
     private function tryParsePolygon2($text)
     {
-        $regExp = "/" . NotamGeometryParser::REGEXP_PART_COORDPAIR . "/im";
+        $regExp = "/" . NotamGeometryParserFaa::REGEXP_PART_COORDPAIR . "/im";
 
         // try without text in brackets
         $textNoBrackets = $this->getNonBracketText($text);
@@ -542,7 +542,7 @@ class NotamGeometryParser
     // detect circle in notam text: 462340N0070230E RADIUS 3.0 NM
     private function tryParseCircleVariant1($text)
     {
-        $regExp = "/" . NotamGeometryParser::REGEXP_PART_COORDPAIR . NotamGeometryParser::REGEXP_PART_NOBRACKETS_NUMS . NotamGeometryParser::REGEXP_PART_RADIUS . NotamGeometryParser::REGEXP_PART_NOBRACKETS_NUMS . NotamGeometryParser::REGEXP_PART_RADVAL . "/im";
+        $regExp = "/" . NotamGeometryParserFaa::REGEXP_PART_COORDPAIR . NotamGeometryParserFaa::REGEXP_PART_NOBRACKETS_NUMS . NotamGeometryParserFaa::REGEXP_PART_RADIUS . NotamGeometryParserFaa::REGEXP_PART_NOBRACKETS_NUMS . NotamGeometryParserFaa::REGEXP_PART_RADVAL . "/im";
         $result = preg_match($regExp, $text, $matches);
 
         if ($result)
@@ -565,7 +565,7 @@ class NotamGeometryParser
     // detect circle in notam text: 3NM RADIUS OF 522140N 0023246W
     private function tryParseCircleVariant2($text)
     {
-        $regExp = "/" . NotamGeometryParser::REGEXP_PART_RADVAL . NotamGeometryParser::REGEXP_PART_NOBRACKETS_NUMS . NotamGeometryParser::REGEXP_PART_RADIUS . NotamGeometryParser::REGEXP_PART_NOBRACKETS_NUMS . NotamGeometryParser::REGEXP_PART_COORDPAIR . "/im";
+        $regExp = "/" . NotamGeometryParserFaa::REGEXP_PART_RADVAL . NotamGeometryParserFaa::REGEXP_PART_NOBRACKETS_NUMS . NotamGeometryParserFaa::REGEXP_PART_RADIUS . NotamGeometryParserFaa::REGEXP_PART_NOBRACKETS_NUMS . NotamGeometryParserFaa::REGEXP_PART_COORDPAIR . "/im";
         $result = preg_match($regExp, $text, $matches);
 
         if ($result)
@@ -588,7 +588,7 @@ class NotamGeometryParser
     // detect circle in notam text: RADIUS 2NM CENTERED ON 473814N 0101548E
     private function tryParseCircleVariant3($text)
     {
-        $regExp = "/" . NotamGeometryParser::REGEXP_PART_RADIUS . NotamGeometryParser::REGEXP_PART_NOBRACKETS_NUMS . NotamGeometryParser::REGEXP_PART_RADVAL . NotamGeometryParser::REGEXP_PART_NOBRACKETS_NUMS . NotamGeometryParser::REGEXP_PART_COORDPAIR . "/im";
+        $regExp = "/" . NotamGeometryParserFaa::REGEXP_PART_RADIUS . NotamGeometryParserFaa::REGEXP_PART_NOBRACKETS_NUMS . NotamGeometryParserFaa::REGEXP_PART_RADVAL . NotamGeometryParserFaa::REGEXP_PART_NOBRACKETS_NUMS . NotamGeometryParserFaa::REGEXP_PART_COORDPAIR . "/im";
         $result = preg_match($regExp, $text, $matches);
 
         if ($result)

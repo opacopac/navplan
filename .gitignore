@@ -12,3 +12,7 @@
 /v2/
 /php/fpdf_BAK/
 /terraintiles/
+/secrets/
+/tmp/
+/php/notamretriever_faa/tmp/
+/php/notamretriever_faa/start_downloader

@@ -179,7 +179,8 @@ function readNavplanWaypoints($navplanId)
     global $conn;
 
     // get navplan waypoints
-    $query = "SELECT wp.type, wp.freq, wp.callsign, wp.checkpoint, wp.alt, wp.isminalt, wp.ismaxalt, wp.isaltatlegstart, wp.remark, wp.supp_info, wp.latitude, wp.longitude, wp.airport_icao, wp.is_alternate FROM navplan_waypoints AS wp";
+    $query = "SELECT wp.*, ad.type AS ad_type FROM navplan_waypoints AS wp";
+    $query .= " LEFT JOIN openaip_airports2 AS ad ON ad.icao = wp.airport_icao";
     $query .= " WHERE wp.navplan_id = '" . $navplanId . "'";
     $query .= " ORDER BY wp.sortorder ASC";
 
@@ -197,6 +198,7 @@ function readNavplanWaypoints($navplanId)
             "callsign" => $row["callsign"],
             "checkpoint" => $row["checkpoint"],
             "airport_icao" => $row["airport_icao"],
+            "airport_type" => $row["ad_type"],
             "latitude" => floatval($row["latitude"]),
             "longitude" => floatval($row["longitude"]),
             "alt" => $row["alt"],

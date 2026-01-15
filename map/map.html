@@ -252,14 +252,14 @@
 <div id="metartaf-popup" class="ol-popup ol-popup-metartaf" style="visibility: hidden">
 	<a href="#" id="metartaf-popup-closer" class="ol-popup-closer" ng-click="$event.preventDefault(); onCloseOverlayClicked()"></a>
 	<div id="metartaf-popup-content">
-		<h4>METAR / TAF {{ selectedMetarTaf.properties.id }}</h4>
-		<p ng-show="selectedMetarTaf.properties.rawOb" >
-            METAR {{ selectedMetarTaf.properties.rawOb }}
+		<h4>METAR / TAF {{ selectedMetarTaf.icaoId }}</h4>
+		<p ng-show="selectedMetarTaf.rawOb" >
+            METAR {{ selectedMetarTaf.rawOb }}
             <br />
-			<i>({{ getAgeString(selectedMetarTaf.properties.obsTime); }} old)</i>
+			<i>({{ getAgeString(selectedMetarTaf.obsTime); }} old)</i>
 		</p>
-		<p ng-show="selectedMetarTaf.properties.rawTaf" >
-            {{ selectedMetarTaf.properties.rawTaf }}
+		<p ng-show="selectedMetarTaf.rawTaf" >
+            {{ selectedMetarTaf.rawTaf }}
             <br />
 			<i>({{ getTafAgeString(selectedMetarTaf); }} old)</i>
 		</p>

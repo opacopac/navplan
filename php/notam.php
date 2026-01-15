@@ -87,7 +87,7 @@ function getIcaoListByExtent($extentSql) // TODO: return only ICAOs
 
     $query = "SELECT DISTINCT icao FROM icao_fir WHERE ST_INTERSECTS(polygon, " . $extentSql . ") AND icao <> ''";
     $query .= " UNION ";
-    $query .= "SELECT DISTINCT icao FROM openaip_airports WHERE ST_INTERSECTS(lonlat, " . $extentSql . ") AND icao <> ''";
+    $query .= "SELECT DISTINCT icao FROM openaip_airports2 WHERE ST_INTERSECTS(lonlat, " . $extentSql . ") AND icao <> ''";
 
     $result = $conn->query($query);
 
@@ -107,8 +107,8 @@ function loadNotamList($icaoList, $startTimestamp, $endTimestamp)
 {
     global $conn;
 
-    $query = "SELECT ntm.notam AS notam, geo.geometry AS geometry, ST_AsText(geo.extent) AS extent FROM icao_notam AS ntm"
-        . " INNER JOIN icao_notam_geometry AS geo ON geo.icao_notam_id = ntm.id"
+    $query = "SELECT ntm.notam AS notam, geo.geometry AS geometry, ST_AsText(geo.extent) AS extent FROM faa_notam AS ntm"
+        . " INNER JOIN faa_notam_geometry AS geo ON geo.icao_notam_id = ntm.id"
         . " WHERE icao IN ('" .  join("','", $icaoList) . "')"
         . " AND startdate <= '" . getDbTimeString($endTimestamp) . "'"
         . " AND enddate >= '" . getDbTimeString($startTimestamp) . "'";
