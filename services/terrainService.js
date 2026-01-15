@@ -402,75 +402,221 @@ function terrainService($http)
             return;
         }
 
-        var currentDist = 0;
         var yOffset = [40, 80];
         var maxelevation_m = terrain.maxelevation_m + 1000; // Same as in getTerrainSvg
 
+        // Build array of cumulative distances for each waypoint
+        var wpDistances = [0];
+        var cumulativeDist = 0;
         for (var i = 0; i < terrain.legs.length; i++)
+        {
+            cumulativeDist += terrain.legs[i].distance_m;
+            wpDistances.push(cumulativeDist);
+        }
+
+        // Get terrain elevation at each waypoint position
+        var wpTerrainElevations = getTerrainElevationsAtWaypoints(terrain.elevations_m, wpDistances);
+
+        // Collect raw waypoint altitudes (null if not set)
+        // Also track isaltatlegstart flag for each waypoint
+        var rawAltitudes = [];
+        var isAtLegStart = [];
+        for (i = 0; i < waypoints.length; i++)
+        {
+            rawAltitudes.push(getWaypointAltitudeMeters(waypoints[i], wpTerrainElevations[i]));
+            isAtLegStart.push(waypoints[i] && waypoints[i].isaltatlegstart ? true : false);
+        }
+
+        // Force first and last waypoints to ground level (terrain elevation)
+        // This ensures the route starts and ends on the ground
+        rawAltitudes[0] = wpTerrainElevations[0];
+        rawAltitudes[waypoints.length - 1] = wpTerrainElevations[waypoints.length - 1];
+
+        // Interpolate missing altitudes between waypoints that have them
+        var interpolatedAltitudes = interpolateAltitudes(rawAltitudes, wpDistances, isAtLegStart, wpTerrainElevations);
+
+        // Route always has altitudes now (at minimum, ground level at start/end)
+        var hasAnyAltitude = true;
+
+        // Draw route
+        var currentDistPercent = 0;
+
+        for (i = 0; i < terrain.legs.length; i++)
         {
             var leg = terrain.legs[i];
             var legDistPercent = 100 / terrain.totaldistance_m * leg.distance_m;
 
-            // Get waypoint altitudes if available
-            var wp1Alt = getWaypointAltitudeMeters(waypoints[i]);
-            var wp2Alt = getWaypointAltitudeMeters(waypoints[i+1]);
-            
-            // Calculate y-coordinates based on altitude if available
+            // Get y-coordinates for this leg
             var y1, y2;
-            if (wp1Alt !== null) {
-                var pt1 = getPointArray(currentDist * terrain.totaldistance_m / 100, wp1Alt, terrain.totaldistance_m, maxelevation_m, IMAGE_HEIGHT_PX, IMAGE_HEIGHT_PX);
+            if (hasAnyAltitude && interpolatedAltitudes[i] !== null)
+            {
+                var pt1 = getPointArray(wpDistances[i], interpolatedAltitudes[i], terrain.totaldistance_m, maxelevation_m, IMAGE_HEIGHT_PX, IMAGE_HEIGHT_PX);
                 y1 = pt1[1];
-            } else {
+            }
+            else
+            {
                 y1 = yOffset[0]; // Fallback to fixed offset
             }
-            
-            if (wp2Alt !== null) {
-                var pt2 = getPointArray((currentDist + legDistPercent) * terrain.totaldistance_m / 100, wp2Alt, terrain.totaldistance_m, maxelevation_m, IMAGE_HEIGHT_PX, IMAGE_HEIGHT_PX);
+
+            if (hasAnyAltitude && interpolatedAltitudes[i + 1] !== null)
+            {
+                var pt2 = getPointArray(wpDistances[i + 1], interpolatedAltitudes[i + 1], terrain.totaldistance_m, maxelevation_m, IMAGE_HEIGHT_PX, IMAGE_HEIGHT_PX);
                 y2 = pt2[1];
-            } else {
+            }
+            else
+            {
                 y2 = yOffset[0]; // Fallback to fixed offset
             }
 
             // line
             var line = document.createElementNS(SVG_NS, "line");
-            line.setAttribute("x1", currentDist.toString() + "%");
-            line.setAttribute("x2", (currentDist + legDistPercent).toString() + "%");
+            line.setAttribute("x1", currentDistPercent.toString() + "%");
+            line.setAttribute("x2", (currentDistPercent + legDistPercent).toString() + "%");
             line.setAttribute("y1", y1);
             line.setAttribute("y2", y2);
             line.setAttribute("style", "stroke:rgba(255, 0, 255, 1.0); stroke-width:5px;");
             line.setAttribute("shape-rendering", "crispEdges");
             svg.appendChild(line);
 
-            // Use the calculated y-coordinate for the dot if available
-            var dotY = (wp1Alt !== null) ? y1 : yOffset[0];
-            addRouteDot(svg, currentDist, dotY, waypoints[i], wpClickCallback);
-            addRouteDotPlumline(svg, currentDist, dotY, IMAGE_HEIGHT_PX);
-            addWaypointLabel(svg, currentDist, yOffset[i % 2], waypoints[i], (i == 0) ? "start" : "middle", wpClickCallback);
+            // Waypoint dot and label
+            addRouteDot(svg, currentDistPercent, y1, waypoints[i], wpClickCallback);
+            addRouteDotPlumline(svg, currentDistPercent, y1, IMAGE_HEIGHT_PX);
+            addWaypointLabel(svg, currentDistPercent, yOffset[i % 2], waypoints[i], (i == 0) ? "start" : "middle", wpClickCallback);
 
-            currentDist += legDistPercent;
+            currentDistPercent += legDistPercent;
         }
 
-        // final dot
-        var finalWpAlt = getWaypointAltitudeMeters(waypoints[waypoints.length - 1]);
-        var finalDotY;
-        if (finalWpAlt !== null) {
-            var finalPt = getPointArray(currentDist * terrain.totaldistance_m / 100, finalWpAlt, terrain.totaldistance_m, maxelevation_m, IMAGE_HEIGHT_PX, IMAGE_HEIGHT_PX);
-            finalDotY = finalPt[1];
-        } else {
-            finalDotY = yOffset[0];
+        // Final waypoint dot
+        var finalY = hasAnyAltitude && interpolatedAltitudes[waypoints.length - 1] !== null
+            ? getPointArray(wpDistances[waypoints.length - 1], interpolatedAltitudes[waypoints.length - 1], terrain.totaldistance_m, maxelevation_m, IMAGE_HEIGHT_PX, IMAGE_HEIGHT_PX)[1]
+            : yOffset[0];
+
+        addRouteDot(svg, 100, finalY, waypoints[waypoints.length - 1], wpClickCallback);
+        addRouteDotPlumline(svg, 100, finalY, IMAGE_HEIGHT_PX);
+        addWaypointLabel(svg, currentDistPercent, yOffset[(waypoints.length - 1) % 2], waypoints[waypoints.length - 1], "end", wpClickCallback);
+
+        // Helper function to get terrain elevation at each waypoint from the elevations array
+        function getTerrainElevationsAtWaypoints(elevations_m, distances)
+        {
+            var result = [];
+            for (var wpIdx = 0; wpIdx < distances.length; wpIdx++)
+            {
+                var targetDist = distances[wpIdx];
+                var elevation = 0;
+
+                // Find the elevation entry closest to this distance
+                for (var j = 0; j < elevations_m.length; j++)
+                {
+                    if (elevations_m[j][0] <= targetDist)
+                    {
+                        elevation = elevations_m[j][1];
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                result.push(elevation);
+            }
+            return result;
         }
-        
-        addRouteDot(svg, 100, finalDotY, waypoints[i], wpClickCallback);
-        addRouteDotPlumline(svg, 100, finalDotY, IMAGE_HEIGHT_PX);
-        addWaypointLabel(svg, currentDist, yOffset[(waypoints.length - 1) % 2], waypoints[waypoints.length - 1], "end", wpClickCallback);
-        
-        // Helper function to get waypoint altitude in meters
-        function getWaypointAltitudeMeters(waypoint) {
-            if (waypoint && waypoint.alt && !isNaN(parseFloat(waypoint.alt))) {
+
+        // Helper function to get waypoint altitude in meters (AMSL)
+        function getWaypointAltitudeMeters(waypoint, terrainElevation)
+        {
+            if (waypoint && waypoint.alt && !isNaN(parseFloat(waypoint.alt)))
+            {
                 // Convert altitude from feet to meters
+                // Note: Currently assumes AMSL. For AGL support, would add terrainElevation here
                 return ft2m(parseFloat(waypoint.alt));
             }
             return null;
+        }
+
+        // Interpolate missing altitudes between waypoints that have defined altitudes
+        // isAtLegStart: array of booleans indicating if altitude is "at leg start" (vs "at leg end")
+        // terrainElevations: terrain elevation at each waypoint (for ground reference)
+        function interpolateAltitudes(altitudes, distances, isAtLegStart, terrainElevations)
+        {
+            var result = altitudes.slice(); // Copy array
+
+            // Find segments where we need to interpolate
+            var i = 0;
+            while (i < result.length)
+            {
+                if (result[i] === null)
+                {
+                    // Find the previous waypoint with altitude
+                    var prevIdx = -1;
+                    for (var j = i - 1; j >= 0; j--)
+                    {
+                        if (result[j] !== null)
+                        {
+                            prevIdx = j;
+                            break;
+                        }
+                    }
+
+                    // Find the next waypoint with altitude
+                    var nextIdx = -1;
+                    for (j = i + 1; j < result.length; j++)
+                    {
+                        if (result[j] !== null)
+                        {
+                            nextIdx = j;
+                            break;
+                        }
+                    }
+
+                    // Interpolate if we have both bounds
+                    if (prevIdx >= 0 && nextIdx >= 0)
+                    {
+                        var prevAlt = result[prevIdx];
+                        var nextAlt = result[nextIdx];
+                        var prevDist = distances[prevIdx];
+                        var nextDist = distances[nextIdx];
+                        var totalDist = nextDist - prevDist;
+
+                        // Check isaltatlegstart flags to determine interpolation behavior
+                        // If prev altitude is "at leg start", it applies from that waypoint onward
+                        // If next altitude is "at leg end", it applies up to that waypoint
+                        var prevIsAtStart = isAtLegStart[prevIdx];
+                        var nextIsAtEnd = !isAtLegStart[nextIdx];
+
+                        // Linear interpolation for all waypoints in between
+                        for (j = prevIdx + 1; j < nextIdx; j++)
+                        {
+                            var ratio = (distances[j] - prevDist) / totalDist;
+                            result[j] = prevAlt + (nextAlt - prevAlt) * ratio;
+                        }
+                        i = nextIdx;
+                    }
+                    else if (prevIdx >= 0)
+                    {
+                        // No next altitude - use the previous altitude for remaining waypoints
+                        result[i] = result[prevIdx];
+                        i++;
+                    }
+                    else if (nextIdx >= 0)
+                    {
+                        // No previous altitude - use the next altitude for earlier waypoints
+                        result[i] = result[nextIdx];
+                        i++;
+                    }
+                    else
+                    {
+                        // No altitudes defined at all - fall back to terrain elevation
+                        result[i] = terrainElevations[i];
+                        i++;
+                    }
+                }
+                else
+                {
+                    i++;
+                }
+            }
+
+            return result;
         }
 
 
