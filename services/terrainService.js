@@ -418,17 +418,25 @@ function terrainService($http)
         var wpTerrainElevations = getTerrainElevationsAtWaypoints(terrain.elevations_m, wpDistances);
 
         // Collect raw waypoint altitudes (null if not set)
+        // Also track isaltatlegstart flag for each waypoint
         var rawAltitudes = [];
+        var isAtLegStart = [];
         for (i = 0; i < waypoints.length; i++)
         {
             rawAltitudes.push(getWaypointAltitudeMeters(waypoints[i], wpTerrainElevations[i]));
+            isAtLegStart.push(waypoints[i] && waypoints[i].isaltatlegstart ? true : false);
         }
 
-        // Interpolate missing altitudes between waypoints that have them
-        var interpolatedAltitudes = interpolateAltitudes(rawAltitudes, wpDistances);
+        // Force first and last waypoints to ground level (terrain elevation)
+        // This ensures the route starts and ends on the ground
+        rawAltitudes[0] = wpTerrainElevations[0];
+        rawAltitudes[waypoints.length - 1] = wpTerrainElevations[waypoints.length - 1];
 
-        // Check if any waypoint has an altitude set
-        var hasAnyAltitude = rawAltitudes.some(function(alt) { return alt !== null; });
+        // Interpolate missing altitudes between waypoints that have them
+        var interpolatedAltitudes = interpolateAltitudes(rawAltitudes, wpDistances, isAtLegStart, wpTerrainElevations);
+
+        // Route always has altitudes now (at minimum, ground level at start/end)
+        var hasAnyAltitude = true;
 
         // Draw route
         var currentDistPercent = 0;
@@ -526,7 +534,9 @@ function terrainService($http)
         }
 
         // Interpolate missing altitudes between waypoints that have defined altitudes
-        function interpolateAltitudes(altitudes, distances)
+        // isAtLegStart: array of booleans indicating if altitude is "at leg start" (vs "at leg end")
+        // terrainElevations: terrain elevation at each waypoint (for ground reference)
+        function interpolateAltitudes(altitudes, distances, isAtLegStart, terrainElevations)
         {
             var result = altitudes.slice(); // Copy array
 
@@ -567,6 +577,12 @@ function terrainService($http)
                         var nextDist = distances[nextIdx];
                         var totalDist = nextDist - prevDist;
 
+                        // Check isaltatlegstart flags to determine interpolation behavior
+                        // If prev altitude is "at leg start", it applies from that waypoint onward
+                        // If next altitude is "at leg end", it applies up to that waypoint
+                        var prevIsAtStart = isAtLegStart[prevIdx];
+                        var nextIsAtEnd = !isAtLegStart[nextIdx];
+
                         // Linear interpolation for all waypoints in between
                         for (j = prevIdx + 1; j < nextIdx; j++)
                         {
@@ -589,7 +605,8 @@ function terrainService($http)
                     }
                     else
                     {
-                        // No altitudes defined at all
+                        // No altitudes defined at all - fall back to terrain elevation
+                        result[i] = terrainElevations[i];
                         i++;
                     }
                 }
