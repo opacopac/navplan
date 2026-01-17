@@ -146,6 +146,12 @@ class FaaNotamsImporter
         try {
             // Parse XML file using stream-based XMLReader
             $faaNotams = $this->parser->parseXmlFile($filePath);
+            
+            // Filter out cancelled NOTAMs (type 'C')
+            $faaNotams = array_filter($faaNotams, function($notam) {
+                return $notam->type !== 'C';
+            });
+            
             $result['notamCount'] = count($faaNotams);
 
             if (empty($faaNotams)) {

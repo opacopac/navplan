@@ -137,6 +137,7 @@ class FaaNotamXmlParser
         $notam->series = $this->getElementValue($notamElement, 'event:series');
         $notam->number = $this->getElementValue($notamElement, 'event:number');
         $notam->year = $this->getElementValue($notamElement, 'event:year');
+        $notam->type = $this->getElementValue($notamElement, 'event:type');
 
         // Classification and location fields
         $notam->issued = $this->getElementValue($notamElement, 'event:issued');
