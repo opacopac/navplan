@@ -263,7 +263,7 @@ if (php_sapi_name() === 'cli' && basename(__FILE__) === basename($_SERVER['PHP_S
     echo "=== FAA NOTAMs Importer ===\n";
     echo "Started: " . date('Y-m-d H:i:s') . "\n\n";
 
-    $importer = new FaaNotamsImporter();
+    $importer = new FaaNotamsImporter(null, true);
     $result = $importer->processAllFiles();
 
     echo "\n=== Done ===\n";
