@@ -402,34 +402,29 @@ function terrainService($http)
             return;
         }
 
-        var currentDist = 0;
-        var yOffset = [40, 80];
         var maxelevation_m = terrain.maxelevation_m + 1000; // Same as in getTerrainSvg
+        var labelOffsetAbove = -25;
+        var labelOffsetBelow = 35;
+
+        // Calculate effective altitudes for each waypoint considering:
+        // 1. isaltatlegstart: altitude applies to arrival (end of previous leg)
+        // 2. isminalt/ismaxalt: only used to constrain interpolated values
+        var wpAltitudes = calculateWaypointAltitudes(waypoints, terrain);
+
+        var currentDist = 0;
 
         for (var i = 0; i < terrain.legs.length; i++)
         {
             var leg = terrain.legs[i];
             var legDistPercent = 100 / terrain.totaldistance_m * leg.distance_m;
 
-            // Get waypoint altitudes if available
-            var wp1Alt = getWaypointAltitudeMeters(waypoints[i]);
-            var wp2Alt = getWaypointAltitudeMeters(waypoints[i+1]);
-            
-            // Calculate y-coordinates based on altitude if available
-            var y1, y2;
-            if (wp1Alt !== null) {
-                var pt1 = getPointArray(currentDist * terrain.totaldistance_m / 100, wp1Alt, terrain.totaldistance_m, maxelevation_m, IMAGE_HEIGHT_PX, IMAGE_HEIGHT_PX);
-                y1 = pt1[1];
-            } else {
-                y1 = yOffset[0]; // Fallback to fixed offset
-            }
-            
-            if (wp2Alt !== null) {
-                var pt2 = getPointArray((currentDist + legDistPercent) * terrain.totaldistance_m / 100, wp2Alt, terrain.totaldistance_m, maxelevation_m, IMAGE_HEIGHT_PX, IMAGE_HEIGHT_PX);
-                y2 = pt2[1];
-            } else {
-                y2 = yOffset[0]; // Fallback to fixed offset
-            }
+            // Get departure altitude from this waypoint and arrival altitude at next
+            var departureAlt = wpAltitudes[i].departure;
+            var arrivalAlt = wpAltitudes[i + 1].arrival;
+
+            // Calculate y-coordinates
+            var y1 = altitudeToY(departureAlt, currentDist, terrain, maxelevation_m);
+            var y2 = altitudeToY(arrivalAlt, currentDist + legDistPercent, terrain, maxelevation_m);
 
             // line
             var line = document.createElementNS(SVG_NS, "line");
@@ -441,36 +436,206 @@ function terrainService($http)
             line.setAttribute("shape-rendering", "crispEdges");
             svg.appendChild(line);
 
-            // Use the calculated y-coordinate for the dot if available
-            var dotY = (wp1Alt !== null) ? y1 : yOffset[0];
+            // Use the departure altitude for the dot position
+            var dotY = y1;
             addRouteDot(svg, currentDist, dotY, waypoints[i], wpClickCallback);
             addRouteDotPlumline(svg, currentDist, dotY, IMAGE_HEIGHT_PX);
-            addWaypointLabel(svg, currentDist, yOffset[i % 2], waypoints[i], (i == 0) ? "start" : "middle", wpClickCallback);
+
+            // Alternate label position: above for even indices, below for odd
+            var labelAbove = (i % 2 === 0);
+            addWaypointLabel(svg, currentDist, dotY, waypoints[i], (i == 0) ? "start" : "middle", labelAbove, wpClickCallback);
 
             currentDist += legDistPercent;
         }
 
-        // final dot
-        var finalWpAlt = getWaypointAltitudeMeters(waypoints[waypoints.length - 1]);
-        var finalDotY;
-        if (finalWpAlt !== null) {
-            var finalPt = getPointArray(currentDist * terrain.totaldistance_m / 100, finalWpAlt, terrain.totaldistance_m, maxelevation_m, IMAGE_HEIGHT_PX, IMAGE_HEIGHT_PX);
-            finalDotY = finalPt[1];
-        } else {
-            finalDotY = yOffset[0];
-        }
-        
-        addRouteDot(svg, 100, finalDotY, waypoints[i], wpClickCallback);
+        // final waypoint
+        var finalIndex = waypoints.length - 1;
+        var finalArrivalAlt = wpAltitudes[finalIndex].arrival;
+        var finalDotY = altitudeToY(finalArrivalAlt, 100, terrain, maxelevation_m);
+
+        addRouteDot(svg, 100, finalDotY, waypoints[finalIndex], wpClickCallback);
         addRouteDotPlumline(svg, 100, finalDotY, IMAGE_HEIGHT_PX);
-        addWaypointLabel(svg, currentDist, yOffset[(waypoints.length - 1) % 2], waypoints[waypoints.length - 1], "end", wpClickCallback);
-        
-        // Helper function to get waypoint altitude in meters
-        function getWaypointAltitudeMeters(waypoint) {
-            if (waypoint && waypoint.alt && !isNaN(parseFloat(waypoint.alt))) {
-                // Convert altitude from feet to meters
-                return ft2m(parseFloat(waypoint.alt));
+
+        // Alternate label for final waypoint
+        var finalLabelAbove = (finalIndex % 2 === 0);
+        addWaypointLabel(svg, 100, finalDotY, waypoints[finalIndex], "end", finalLabelAbove, wpClickCallback);
+
+
+        // Convert altitude to Y pixel coordinate
+        function altitudeToY(alt_m, distPercent, terrain, maxelevation_m)
+        {
+            if (alt_m !== null) {
+                var pt = getPointArray(distPercent * terrain.totaldistance_m / 100, alt_m, terrain.totaldistance_m, maxelevation_m, IMAGE_HEIGHT_PX, IMAGE_HEIGHT_PX);
+                return pt[1];
             }
-            return null;
+            return 40; // Fallback if no altitude
+        }
+
+
+        // Calculate departure and arrival altitudes for each waypoint
+        // Handles isaltatlegstart, isminalt, ismaxalt properly
+        function calculateWaypointAltitudes(waypoints, terrain)
+        {
+            var result = [];
+            var numWaypoints = waypoints.length;
+
+            // Initialize result structure
+            for (var i = 0; i < numWaypoints; i++) {
+                result.push({
+                    departure: null,  // altitude when leaving this waypoint
+                    arrival: null,    // altitude when arriving at this waypoint
+                    isFixed: false,   // true if this is a fixed (non-interpolated) altitude
+                    minAlt: null,     // minimum altitude constraint (meters)
+                    maxAlt: null      // maximum altitude constraint (meters)
+                });
+            }
+
+            // First pass: identify fixed altitudes and constraints
+            for (i = 0; i < numWaypoints; i++) {
+                var wp = waypoints[i];
+                var altFt = parseFloat(wp.alt);
+
+                if (wp.alt && !isNaN(altFt)) {
+                    var alt_m = ft2m(altFt);
+
+                    if (wp.isminalt) {
+                        // This is a minimum altitude constraint
+                        result[i].minAlt = alt_m;
+                    } else if (wp.ismaxalt) {
+                        // This is a maximum altitude constraint
+                        result[i].maxAlt = alt_m;
+                    } else if (wp.isaltatlegstart) {
+                        // Altitude applies to arrival at this waypoint (end of previous leg)
+                        result[i].arrival = alt_m;
+                        result[i].isFixed = true;
+                    } else {
+                        // Regular fixed altitude - applies to both arrival and departure
+                        result[i].departure = alt_m;
+                        result[i].arrival = alt_m;
+                        result[i].isFixed = true;
+                    }
+                }
+            }
+
+            // Second pass: interpolate missing altitudes between fixed points
+            // Find segments between fixed altitudes and interpolate
+            interpolateMissingAltitudes(result, waypoints, terrain);
+
+            // Third pass: apply min/max constraints to interpolated values
+            for (i = 0; i < numWaypoints; i++) {
+                if (result[i].minAlt !== null) {
+                    if (result[i].arrival !== null && result[i].arrival < result[i].minAlt) {
+                        result[i].arrival = result[i].minAlt;
+                    }
+                    if (result[i].departure !== null && result[i].departure < result[i].minAlt) {
+                        result[i].departure = result[i].minAlt;
+                    }
+                }
+                if (result[i].maxAlt !== null) {
+                    if (result[i].arrival !== null && result[i].arrival > result[i].maxAlt) {
+                        result[i].arrival = result[i].maxAlt;
+                    }
+                    if (result[i].departure !== null && result[i].departure > result[i].maxAlt) {
+                        result[i].departure = result[i].maxAlt;
+                    }
+                }
+
+                // If we still have null values, use terrain-based fallback
+                if (result[i].arrival === null) {
+                    result[i].arrival = getTerrainAltitudeAtWaypoint(i, terrain, waypoints) + ft2m(1000);
+                }
+                if (result[i].departure === null) {
+                    result[i].departure = result[i].arrival;
+                }
+            }
+
+            return result;
+        }
+
+
+        // Interpolate altitudes for waypoints without fixed altitudes
+        function interpolateMissingAltitudes(result, waypoints, terrain)
+        {
+            var numWaypoints = waypoints.length;
+
+            // Calculate cumulative distances for interpolation
+            var distances = [0];
+            var totalDist = 0;
+            for (var i = 0; i < terrain.legs.length; i++) {
+                totalDist += terrain.legs[i].distance_m;
+                distances.push(totalDist);
+            }
+
+            // For each waypoint without a fixed altitude, interpolate from surrounding fixed points
+            for (i = 0; i < numWaypoints; i++) {
+                if (result[i].isFixed) continue;
+
+                // Find previous fixed point
+                var prevFixed = -1;
+                var prevAlt = null;
+                for (var j = i - 1; j >= 0; j--) {
+                    if (result[j].isFixed || result[j].departure !== null) {
+                        prevFixed = j;
+                        prevAlt = result[j].departure !== null ? result[j].departure : result[j].arrival;
+                        break;
+                    }
+                }
+
+                // Find next fixed point
+                var nextFixed = -1;
+                var nextAlt = null;
+                for (j = i + 1; j < numWaypoints; j++) {
+                    if (result[j].isFixed || result[j].arrival !== null) {
+                        nextFixed = j;
+                        nextAlt = result[j].arrival !== null ? result[j].arrival : result[j].departure;
+                        break;
+                    }
+                }
+
+                // Interpolate
+                if (prevAlt !== null && nextAlt !== null) {
+                    // Linear interpolation between two fixed points
+                    var prevDist = distances[prevFixed];
+                    var nextDist = distances[nextFixed];
+                    var currDist = distances[i];
+                    var fraction = (currDist - prevDist) / (nextDist - prevDist);
+                    var interpolatedAlt = prevAlt + fraction * (nextAlt - prevAlt);
+
+                    if (result[i].arrival === null) result[i].arrival = interpolatedAlt;
+                    if (result[i].departure === null) result[i].departure = interpolatedAlt;
+                } else if (prevAlt !== null) {
+                    // Only previous fixed point exists
+                    if (result[i].arrival === null) result[i].arrival = prevAlt;
+                    if (result[i].departure === null) result[i].departure = prevAlt;
+                } else if (nextAlt !== null) {
+                    // Only next fixed point exists
+                    if (result[i].arrival === null) result[i].arrival = nextAlt;
+                    if (result[i].departure === null) result[i].departure = nextAlt;
+                }
+            }
+        }
+
+
+        // Get terrain elevation at a waypoint index (fallback)
+        function getTerrainAltitudeAtWaypoint(wpIndex, terrain, waypoints)
+        {
+            // Calculate distance to this waypoint
+            var dist = 0;
+            for (var i = 0; i < wpIndex && i < terrain.legs.length; i++) {
+                dist += terrain.legs[i].distance_m;
+            }
+
+            // Find closest elevation point
+            var closestElevation = 0;
+            var minDiff = Infinity;
+            for (i = 0; i < terrain.elevations_m.length; i++) {
+                var diff = Math.abs(terrain.elevations_m[i][0] - dist);
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    closestElevation = terrain.elevations_m[i][1];
+                }
+            }
+            return closestElevation;
         }
 
 
@@ -505,7 +670,7 @@ function terrainService($http)
         }
 
 
-        function addWaypointLabel(svg, xProc, y, waypoint, textAnchor, clickCallback)
+        function addWaypointLabel(svg, xProc, dotY, waypoint, textAnchor, labelAbove, clickCallback)
         {
             var transformX;
 
@@ -522,16 +687,23 @@ function terrainService($http)
                     break;
             }
 
+            // Position label above or below the dot
+            var labelY = labelAbove ? (dotY + labelOffsetAbove) : (dotY + labelOffsetBelow);
+
+            // Clamp labelY to stay within visible area
+            if (labelY < 15) labelY = 15;
+            if (labelY > IMAGE_HEIGHT_PX - 5) labelY = IMAGE_HEIGHT_PX - 5;
+
             // glow around label
             var labelGlow = document.createElementNS(SVG_NS, "text");
             labelGlow.setAttribute("x", xProc.toString() + "%");
-            labelGlow.setAttribute("y", y);
+            labelGlow.setAttribute("y", labelY);
             labelGlow.setAttribute("style", "stroke:#FFFFFF; stroke-width:5px; fill:#FFFFFF; cursor: pointer");
             labelGlow.setAttribute("text-anchor", textAnchor);
             labelGlow.setAttribute("font-family", "Calibri,sans-serif");
             labelGlow.setAttribute("font-weight", "bold");
             labelGlow.setAttribute("font-size", "15px");
-            labelGlow.setAttribute("transform", "translate(" + transformX + ", -15)");
+            labelGlow.setAttribute("transform", "translate(" + transformX + ", 0)");
             labelGlow.textContent = waypoint.checkpoint;
 
             svg.appendChild(labelGlow);
@@ -539,13 +711,13 @@ function terrainService($http)
             // label
             var label = document.createElementNS(SVG_NS, "text");
             label.setAttribute("x", xProc.toString() + "%");
-            label.setAttribute("y", y);
+            label.setAttribute("y", labelY);
             label.setAttribute("style", "stroke:none; fill:#660066; cursor: pointer");
             label.setAttribute("text-anchor", textAnchor);
             label.setAttribute("font-family", "Calibri,sans-serif");
             label.setAttribute("font-weight", "bold");
             label.setAttribute("font-size", "15px");
-            label.setAttribute("transform", "translate(" + transformX + ", -15)");
+            label.setAttribute("transform", "translate(" + transformX + ", 0)");
             label.textContent = waypoint.checkpoint;
 
             if (clickCallback)
