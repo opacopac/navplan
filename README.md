@@ -46,7 +46,7 @@ The data used on this website could be outdated, inaccurate, or contain errors. 
 * In your working directory create a sub-directory './secrets/' with two files containing the db password string (no newline!) for the db users:
   * ./secrets/db_root_pw.txt
   * ./secrets/db_navplan_pw.txt
-* Edit the ./php/config.php file to set the correct db host, user and password, e.g.
+* Create the file ./php/config.php (e.g. copy from ./php/config_sample.php) and set the correct db host, user and password, e.g.
   * $db_host = "navplan1_persistence";
   * $db_name = "tschanz_navplan";
   * $db_user = "tschanz_navfpl";

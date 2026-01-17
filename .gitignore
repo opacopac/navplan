@@ -9,6 +9,7 @@
 /data_import/openaip_navaids*
 /data_import/vfrm_charts_pdf*
 /php/config_orig.php
+/php/config.php
 /v2/
 /php/fpdf_BAK/
 /terraintiles/
