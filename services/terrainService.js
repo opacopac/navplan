@@ -402,8 +402,9 @@ function terrainService($http)
             return;
         }
 
-        var yOffset = [0, 40];
-        var maxelevation_m = terrain.maxelevation_m + 1000; // Same as in getTerrainSvg
+        const labelYOffsets = [0, 40];
+        const altGroundLevel = 0;
+        const maxelevation_m = terrain.maxelevation_m + 1000; // Same as in getTerrainSvg
 
         // Build array of cumulative distances for each waypoint
         var wpDistances = [0];
@@ -455,8 +456,7 @@ function terrainService($http)
             }
             else
             {
-                // TODO
-                y1 = yOffset[0]; // Fallback to fixed offset
+                y1 = altGroundLevel;
             }
 
             if (hasAnyAltitude && interpolatedAltitudes[i + 1] !== null)
@@ -466,8 +466,7 @@ function terrainService($http)
             }
             else
             {
-                // TODO
-                y2 = yOffset[0]; // Fallback to fixed offset
+                y2 = altGroundLevel;
             }
 
             // line
@@ -483,7 +482,7 @@ function terrainService($http)
             // Waypoint dot and label
             addRouteDot(svg, currentDistPercent, y1, waypoints[i], wpClickCallback);
             addRouteDotPlumline(svg, currentDistPercent, y1, IMAGE_HEIGHT_PX);
-            addWaypointLabel(svg, currentDistPercent, y1 + yOffset[i % 2], waypoints[i], (i === 0) ? "start" : "middle", wpClickCallback);
+            addWaypointLabel(svg, currentDistPercent, y1 + labelYOffsets[i % 2], waypoints[i], (i === 0) ? "start" : "middle", wpClickCallback);
 
             currentDistPercent += legDistPercent;
         }
@@ -491,11 +490,11 @@ function terrainService($http)
         // Final waypoint dot
         var finalY = hasAnyAltitude && interpolatedAltitudes[waypoints.length - 1] !== null
             ? getPointArray(wpDistances[waypoints.length - 1], interpolatedAltitudes[waypoints.length - 1], terrain.totaldistance_m, maxelevation_m, IMAGE_HEIGHT_PX, IMAGE_HEIGHT_PX)[1]
-            : yOffset[0]; // TODO
+            : altGroundLevel;
 
         addRouteDot(svg, 100, finalY, waypoints[waypoints.length - 1], wpClickCallback);
         addRouteDotPlumline(svg, 100, finalY, IMAGE_HEIGHT_PX);
-        addWaypointLabel(svg, currentDistPercent, finalY + yOffset[(waypoints.length - 1) % 2], waypoints[waypoints.length - 1], "end", wpClickCallback);
+        addWaypointLabel(svg, currentDistPercent, finalY + labelYOffsets[(waypoints.length - 1) % 2], waypoints[waypoints.length - 1], "end", wpClickCallback);
 
         // Helper function to get terrain elevation at each waypoint from the elevations array
         function getTerrainElevationsAtWaypoints(elevations_m, distances)
