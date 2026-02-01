@@ -403,7 +403,6 @@ function terrainService($http)
         }
 
         const labelYOffsets = [0, 40];
-        const altGroundLevel = 0;
         const maxelevation_m = terrain.maxelevation_m + 1000; // Same as in getTerrainSvg
 
         // Build array of cumulative distances for each waypoint
@@ -456,7 +455,7 @@ function terrainService($http)
             }
             else
             {
-                y1 = altGroundLevel;
+                y1 = 0;
             }
 
             if (hasAnyAltitude && interpolatedAltitudes[i + 1] !== null)
@@ -466,7 +465,7 @@ function terrainService($http)
             }
             else
             {
-                y2 = altGroundLevel;
+                y2 = 0;
             }
 
             // line
@@ -490,7 +489,7 @@ function terrainService($http)
         // Final waypoint dot
         var finalY = hasAnyAltitude && interpolatedAltitudes[waypoints.length - 1] !== null
             ? getPointArray(wpDistances[waypoints.length - 1], interpolatedAltitudes[waypoints.length - 1], terrain.totaldistance_m, maxelevation_m, IMAGE_HEIGHT_PX, IMAGE_HEIGHT_PX)[1]
-            : altGroundLevel;
+            : 0;
 
         addRouteDot(svg, 100, finalY, waypoints[waypoints.length - 1], wpClickCallback);
         addRouteDotPlumline(svg, 100, finalY, IMAGE_HEIGHT_PX);
