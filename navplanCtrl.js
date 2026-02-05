@@ -339,6 +339,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 	$scope.onOkEditWpClicked = function()
 	{
 		$scope.globalData.wpBackup = undefined;
+		$scope.updateWaypoints();
 	};
 	
 	

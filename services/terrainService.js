@@ -479,8 +479,16 @@ function terrainService($http)
             var result = [];
             var numWaypoints = waypoints.length;
 
+            // Calculate cumulative distances
+            var distances = [0];
+            var totalDist = 0;
+            for (var i = 0; i < terrain.legs.length; i++) {
+                totalDist += terrain.legs[i].distance_m;
+                distances.push(totalDist);
+            }
+
             // Initialize result structure
-            for (var i = 0; i < numWaypoints; i++) {
+            for (i = 0; i < numWaypoints; i++) {
                 result.push({
                     departure: null,  // altitude when leaving this waypoint
                     arrival: null,    // altitude when arriving at this waypoint
@@ -498,31 +506,86 @@ function terrainService($http)
                 if (wp.alt && !isNaN(altFt)) {
                     var alt_m = ft2m(altFt);
 
+                    // Check for min/max constraints (can have both)
                     if (wp.isminalt) {
-                        // This is a minimum altitude constraint
                         result[i].minAlt = alt_m;
-                    } else if (wp.ismaxalt) {
-                        // This is a maximum altitude constraint
+                    }
+                    if (wp.ismaxalt) {
                         result[i].maxAlt = alt_m;
-                    } else if (wp.isaltatlegstart) {
-                        // Altitude applies to arrival at this waypoint (end of previous leg)
-                        result[i].arrival = alt_m;
-                        result[i].isFixed = true;
-                    } else {
-                        // Regular fixed altitude - applies to both arrival and departure
-                        result[i].departure = alt_m;
-                        result[i].arrival = alt_m;
-                        result[i].isFixed = true;
+                    }
+
+                    // If neither min nor max, treat as fixed altitude
+                    if (!wp.isminalt && !wp.ismaxalt) {
+                        if (wp.isaltatlegstart) {
+                            // Altitude applies to START of leg arriving here = DEPARTURE from previous waypoint
+                            if (i > 0) {
+                                result[i - 1].departure = alt_m;
+                            }
+                            // Also mark this waypoint's arrival since we're at this altitude when arriving
+                            result[i].arrival = alt_m;
+                            result[i].isFixed = true;
+                        } else {
+                            // Regular fixed altitude - applies to both arrival and departure
+                            result[i].departure = alt_m;
+                            result[i].arrival = alt_m;
+                            result[i].isFixed = true;
+                        }
                     }
                 }
             }
 
-            // Second pass: interpolate missing altitudes between fixed points
-            // Find segments between fixed altitudes and interpolate
-            interpolateMissingAltitudes(result, waypoints, terrain);
+            // Ensure first and last waypoints have baseline altitudes if not fixed
+            // Use terrain elevation as baseline
+            if (!result[0].isFixed && result[0].departure === null) {
+                var startTerrain = getTerrainAltitudeAtWaypoint(0, terrain);
+                result[0].departure = startTerrain;
+                result[0].arrival = startTerrain;
+                result[0].isFixed = true;
+            }
+            if (!result[numWaypoints - 1].isFixed && result[numWaypoints - 1].arrival === null) {
+                var endTerrain = getTerrainAltitudeAtWaypoint(numWaypoints - 1, terrain);
+                result[numWaypoints - 1].departure = endTerrain;
+                result[numWaypoints - 1].arrival = endTerrain;
+                result[numWaypoints - 1].isFixed = true;
+            }
 
-            // Third pass: apply min/max constraints to interpolated values
+            // Second pass: interpolate between fixed points
+            interpolateMissingAltitudes(result, distances);
+
+            // Third pass: apply min/max constraints ONLY if violated
+            applyConstraints(result);
+
+            // Fourth pass: mark constrained waypoints as resolved anchors,
+            // then re-interpolate so unconstrained waypoints between
+            // constrained ones get smooth values instead of dropping to ground
             for (i = 0; i < numWaypoints; i++) {
+                if (result[i].minAlt !== null || result[i].maxAlt !== null) {
+                    // Constrained waypoint is now an anchor for interpolation
+                    result[i].isFixed = true;
+                }
+            }
+            interpolateMissingAltitudes(result, distances);
+
+            // Fifth pass: re-apply constraints after second interpolation
+            applyConstraints(result);
+
+            // Final fallback for any remaining nulls
+            for (i = 0; i < numWaypoints; i++) {
+                if (result[i].arrival === null) {
+                    result[i].arrival = getTerrainAltitudeAtWaypoint(i, terrain) + ft2m(500);
+                }
+                if (result[i].departure === null) {
+                    result[i].departure = result[i].arrival;
+                }
+            }
+
+            return result;
+        }
+
+
+        function applyConstraints(result)
+        {
+            for (var i = 0; i < result.length; i++) {
                 if (result[i].minAlt !== null) {
                     if (result[i].arrival !== null && result[i].arrival < result[i].minAlt) {
                         result[i].arrival = result[i].minAlt;
@@ -539,42 +602,24 @@ function terrainService($http)
                         result[i].departure = result[i].maxAlt;
                     }
                 }
-
-                // If we still have null values, use terrain-based fallback
-                if (result[i].arrival === null) {
-                    result[i].arrival = getTerrainAltitudeAtWaypoint(i, terrain, waypoints) + ft2m(1000);
-                }
-                if (result[i].departure === null) {
-                    result[i].departure = result[i].arrival;
-                }
             }
-
-            return result;
         }
 
 
         // Interpolate altitudes for waypoints without fixed altitudes
-        function interpolateMissingAltitudes(result, waypoints, terrain)
+        function interpolateMissingAltitudes(result, distances)
         {
-            var numWaypoints = waypoints.length;
-
-            // Calculate cumulative distances for interpolation
-            var distances = [0];
-            var totalDist = 0;
-            for (var i = 0; i < terrain.legs.length; i++) {
-                totalDist += terrain.legs[i].distance_m;
-                distances.push(totalDist);
-            }
+            var numWaypoints = result.length;
 
             // For each waypoint without a fixed altitude, interpolate from surrounding fixed points
-            for (i = 0; i < numWaypoints; i++) {
+            for (var i = 0; i < numWaypoints; i++) {
                 if (result[i].isFixed) continue;
 
                 // Find previous fixed point
                 var prevFixed = -1;
                 var prevAlt = null;
                 for (var j = i - 1; j >= 0; j--) {
-                    if (result[j].isFixed || result[j].departure !== null) {
+                    if (result[j].isFixed) {
                         prevFixed = j;
                         prevAlt = result[j].departure !== null ? result[j].departure : result[j].arrival;
                         break;
@@ -585,7 +630,7 @@ function terrainService($http)
                 var nextFixed = -1;
                 var nextAlt = null;
                 for (j = i + 1; j < numWaypoints; j++) {
-                    if (result[j].isFixed || result[j].arrival !== null) {
+                    if (result[j].isFixed) {
                         nextFixed = j;
                         nextAlt = result[j].arrival !== null ? result[j].arrival : result[j].departure;
                         break;
@@ -593,31 +638,31 @@ function terrainService($http)
                 }
 
                 // Interpolate
-                if (prevAlt !== null && nextAlt !== null) {
+                if (prevAlt !== null && nextAlt !== null && prevFixed >= 0 && nextFixed >= 0) {
                     // Linear interpolation between two fixed points
                     var prevDist = distances[prevFixed];
                     var nextDist = distances[nextFixed];
                     var currDist = distances[i];
-                    var fraction = (currDist - prevDist) / (nextDist - prevDist);
+                    var fraction = (nextDist > prevDist) ? (currDist - prevDist) / (nextDist - prevDist) : 0;
                     var interpolatedAlt = prevAlt + fraction * (nextAlt - prevAlt);
 
-                    if (result[i].arrival === null) result[i].arrival = interpolatedAlt;
-                    if (result[i].departure === null) result[i].departure = interpolatedAlt;
+                    result[i].arrival = interpolatedAlt;
+                    result[i].departure = interpolatedAlt;
                 } else if (prevAlt !== null) {
-                    // Only previous fixed point exists
-                    if (result[i].arrival === null) result[i].arrival = prevAlt;
-                    if (result[i].departure === null) result[i].departure = prevAlt;
+                    // Only previous fixed point exists - maintain altitude
+                    result[i].arrival = prevAlt;
+                    result[i].departure = prevAlt;
                 } else if (nextAlt !== null) {
-                    // Only next fixed point exists
-                    if (result[i].arrival === null) result[i].arrival = nextAlt;
-                    if (result[i].departure === null) result[i].departure = nextAlt;
+                    // Only next fixed point exists - maintain altitude
+                    result[i].arrival = nextAlt;
+                    result[i].departure = nextAlt;
                 }
             }
         }
 
 
         // Get terrain elevation at a waypoint index (fallback)
-        function getTerrainAltitudeAtWaypoint(wpIndex, terrain, waypoints)
+        function getTerrainAltitudeAtWaypoint(wpIndex, terrain)
         {
             // Calculate distance to this waypoint
             var dist = 0;
