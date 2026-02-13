@@ -21,6 +21,7 @@ function terrainService($http)
     var SERVICE_CEILING_FT = 13000; // TODO: get from global $scope
     var ROC_SEA_LEVEL_FTPM = 700; // TODO: dito
     var ROD_FTPM = 500; // TODO: dito
+    var GROUND_SPEED_KT = 100; // TODO: dito
 
 
     // return api reference
@@ -719,5 +720,74 @@ function terrainService($http)
         var pt = getPointArray(dist_m, height_m, maxdistance_m, maxelevation_m, imageWidthPx, imageHeightPx);
 
         return pt[0] + "," + pt[1] + " ";
+    }
+
+
+    function calcLegsAltitudeMetaData(waypoints, terrain) {
+        for (let i = terrain.legs.length - 1; i >= 0; i--) {
+            const leg = terrain.legs[i];
+            const prevLeg = i > 0 ? terrain.legs[i - 1] : null;
+            const wp = waypoints[i + 1];
+
+            // prio 1: altitudes defined by user
+            const wpAlt = wp.alt ? parseFloat(wp.alt) : null;
+            if (wp.isaltatlegstart && isWpMinAlt(wp)) {
+                leg.legStartMinAltFt = wpAlt;
+            }
+            if (wp.isaltatlegstart && isWpMaxAlt(wp)) {
+                leg.legStartMaxAltFt = wpAlt;
+            }
+            if (!wp.isaltatlegstart && isWpMinAlt(wp)) {
+                leg.legEndMinAltFt = wpAlt;
+            }
+            if (!wp.isaltatlegstart && isWpMaxAlt(wp)) {
+                leg.legEndMaxAltFt = wpAlt;
+            }
+
+            // first/last wp (for type airport): override by ground level
+            const isFirstLeg = i === 0;
+            const isLastLeg = i === terrain.legs.length - 1;
+            const isAirport = wp.type === "airport";
+            if (isFirstLeg && isAirport) {
+                leg.legStartMinAltFt = m2ft(terrain.elevations_m[0][1]);
+                leg.legStartMaxAltFt = leg.legStartMinAltFt;
+            }
+            if (isLastLeg && isAirport) {
+                leg.legEndMinAltFt = m2ft(terrain.elevations_m[terrain.elevations_m.length - 1][1]);
+                leg.legEndMaxAltFt = leg.legEndMinAltFt;
+            }
+
+            // prio 2a: terrain clearance
+            const minTerrainAltFt = ft2m(leg.maxelevation_m) + TERRAIN_CLEARANCE_FT;
+            const minTerrainAltFtRounded = Math.ceil(minTerrainAltFt / 100) * 100;
+
+            // prio 2b: climb/descent performance from leg start to end
+            const legTimeMin = m2nautmile(leg.distance_m) / GROUND_SPEED_KT * 60;
+            const legStartMinClimbAltFt = calcClimbStartingAltFt(leg.legEndMinAltFt, legTimeMin, ROC_SEA_LEVEL_FTPM, ROD_FTPM);
+            if (leg.legStartMinAltFt === null) {
+                leg.legStartMinAltFt = Math.max(minTerrainAltFtRounded, legStartMinClimbAltFt);
+            }
+
+            const legStartMaxDecentAltFt = calcDescentStartingAltFt(leg.legEndMaxAltFt, legTimeMin, ROC_SEA_LEVEL_FTPM, ROD_FTPM);
+            if (leg.legStartMaxAltFt === null) {
+                leg.legStartMaxAltFt = Math.max(minTerrainAltFtRounded, legStartMaxDecentAltFt);
+            }
+
+            // copy values to previous leg
+            if (prevLeg) {
+                prevLeg.legEndMinAltFt = leg.legStartMinAltFt;
+                prevLeg.legEndMaxAltFt = leg.legStartMaxAltFt;
+            }
+        }
+    }
+
+
+    function isWpMinAlt(waypoint) {
+        return waypoint.alt && (waypoint.isminalt || (!waypoint.isminalt && !waypoint.ismaxalt));
+    }
+
+
+    function isWpMaxAlt(waypoint) {
+        return waypoint.alt && (waypoint.ismaxalt || (!waypoint.isminalt && !waypoint.ismaxalt));
     }
 }

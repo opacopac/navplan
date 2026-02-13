@@ -436,6 +436,12 @@ function nautmile2m(distance_nm)
 }
 
 
+function m2nautmile(distance_m)
+{
+    return distance_m / 1852;
+}
+
+
 function kmh2kt(speed_kmh)
 {
     return speed_kmh / 1.852;
@@ -754,7 +760,7 @@ function calcAbsoluteCeiling(rocSeaLevelFt, serviceCeilingFt) {
 
 
 function calcMinutesToClimbFromSeaLevel(altitudeFt, rocSeaLevelFt, serviceCeilingFt) {
-    var absoluteCeilingFt = calcAbsoluteCeiling(rocSeaLevelFt, serviceCeilingFt);
+    const absoluteCeilingFt = calcAbsoluteCeiling(rocSeaLevelFt, serviceCeilingFt);
     if (altitudeFt >= absoluteCeilingFt) {
         return Number.POSITIVE_INFINITY; // Cannot climb above absolute ceiling
     }
@@ -764,30 +770,30 @@ function calcMinutesToClimbFromSeaLevel(altitudeFt, rocSeaLevelFt, serviceCeilin
 
 
 function calcMinutesToClimb(lowerAltFt, upperAltFt, rocSeaLevelFt, serviceCeilingFt) {
-    var lowerMinutes = calcMinutesToClimbFromSeaLevel(lowerAltFt, rocSeaLevelFt, serviceCeilingFt);
-    var upperMinutes = calcMinutesToClimbFromSeaLevel(upperAltFt, rocSeaLevelFt, serviceCeilingFt);
+    const lowerMinutes = calcMinutesToClimbFromSeaLevel(lowerAltFt, rocSeaLevelFt, serviceCeilingFt);
+    const upperMinutes = calcMinutesToClimbFromSeaLevel(upperAltFt, rocSeaLevelFt, serviceCeilingFt);
 
     return upperMinutes - lowerMinutes;
 }
 
 
 function calcMinutesToDescent(upperAltFt, lowerAltFt, rodFtPm) {
-    var altitudeDiffFt = upperAltFt - lowerAltFt;
-    
+    const altitudeDiffFt = upperAltFt - lowerAltFt;
+
     return altitudeDiffFt / rodFtPm;
 }
 
 
 function calcClimbTargetAltFt(startingAltFt, timeMin, rocSeaLevelFt, serviceCeilingFt) {
-    var absoluteCeilingFt = calcAbsoluteCeiling(rocSeaLevelFt, serviceCeilingFt);
-    
+    const absoluteCeilingFt = calcAbsoluteCeiling(rocSeaLevelFt, serviceCeilingFt);
+
     return (absoluteCeilingFt - startingAltFt) * (1 - Math.exp(-timeMin * rocSeaLevelFt / absoluteCeilingFt));
 }
 
 
 function calcClimbStartingAltFt(targetAltFt, timeMin, rocSeaLevelFt, serviceCeilingFt) {
-    var absoluteCeilingFt = calcAbsoluteCeiling(rocSeaLevelFt, serviceCeilingFt);
-    
+    const absoluteCeilingFt = calcAbsoluteCeiling(rocSeaLevelFt, serviceCeilingFt);
+
     return absoluteCeilingFt - (absoluteCeilingFt - targetAltFt) * Math.exp(timeMin * rocSeaLevelFt / absoluteCeilingFt);
 }
 
