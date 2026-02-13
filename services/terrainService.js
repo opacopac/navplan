@@ -110,6 +110,9 @@ function terrainService($http)
         addSvgGrid(svg, maxelevation_m);
         addRoute(svg, terrain, waypoints, wpClickCallback);
 
+        debugger;
+        calcLegsAltitudeMetaData(waypoints, terrain);
+
         return svg;
     }
 
@@ -728,6 +731,7 @@ function terrainService($http)
             const leg = terrain.legs[i];
             const prevLeg = i > 0 ? terrain.legs[i - 1] : null;
             const wp = waypoints[i + 1];
+            const prevWp = waypoints[i];
 
             // prio 1: altitudes defined by user
             const wpAlt = wp.alt ? parseFloat(wp.alt) : null;
@@ -747,29 +751,28 @@ function terrainService($http)
             // first/last wp (for type airport): override by ground level
             const isFirstLeg = i === 0;
             const isLastLeg = i === terrain.legs.length - 1;
-            const isAirport = wp.type === "airport";
-            if (isFirstLeg && isAirport) {
+            if (isFirstLeg && prevWp.type === "airport") {
                 leg.legStartMinAltFt = m2ft(terrain.elevations_m[0][1]);
                 leg.legStartMaxAltFt = leg.legStartMinAltFt;
             }
-            if (isLastLeg && isAirport) {
+            if (isLastLeg && wp.type === "airport") {
                 leg.legEndMinAltFt = m2ft(terrain.elevations_m[terrain.elevations_m.length - 1][1]);
                 leg.legEndMaxAltFt = leg.legEndMinAltFt;
             }
 
             // prio 2a: terrain clearance
-            const minTerrainAltFt = ft2m(leg.maxelevation_m) + TERRAIN_CLEARANCE_FT;
+            const minTerrainAltFt = m2ft(leg.maxelevation_m) + TERRAIN_CLEARANCE_FT;
             const minTerrainAltFtRounded = Math.ceil(minTerrainAltFt / 100) * 100;
 
             // prio 2b: climb/descent performance from leg start to end
-            const legTimeMin = m2nautmile(leg.distance_m) / GROUND_SPEED_KT * 60;
-            const legStartMinClimbAltFt = calcClimbStartingAltFt(leg.legEndMinAltFt, legTimeMin, ROC_SEA_LEVEL_FTPM, ROD_FTPM);
-            if (leg.legStartMinAltFt === null) {
+            const legTimeMin = m2nautmile(leg.distance_m) / GROUND_SPEED_KT * 60; // TODO: get from navplan time
+            const legStartMinClimbAltFt = calcClimbStartingAltFt(leg.legEndMinAltFt, legTimeMin, ROC_SEA_LEVEL_FTPM, SERVICE_CEILING_FT);
+            if (!leg.legStartMinAltFt) {
                 leg.legStartMinAltFt = Math.max(minTerrainAltFtRounded, legStartMinClimbAltFt);
             }
 
-            const legStartMaxDecentAltFt = calcDescentStartingAltFt(leg.legEndMaxAltFt, legTimeMin, ROC_SEA_LEVEL_FTPM, ROD_FTPM);
-            if (leg.legStartMaxAltFt === null) {
+            const legStartMaxDecentAltFt = calcDescentStartingAltFt(leg.legEndMaxAltFt, legTimeMin, ROD_FTPM);
+            if (!leg.legStartMaxAltFt) {
                 leg.legStartMaxAltFt = Math.max(minTerrainAltFtRounded, legStartMaxDecentAltFt);
             }
 
