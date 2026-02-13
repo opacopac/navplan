@@ -17,7 +17,7 @@ function terrainService($http)
     var ID_TEXTBG_BLUE = "textBgBlue";
     var ID_TEXTBG_RED = "textBgRed";
     var ID_TEXTBG_GREEN = "textBgGreeen";
-    var SERVICE_CEILING_ROC_FTPM = 100;
+    var TERRAIN_CLEARANCE_FT = 1000;
     var SERVICE_CEILING_FT = 13000; // TODO: get from global $scope
     var ROC_SEA_LEVEL_FTPM = 700; // TODO: dito
     var ROD_FTPM = 500; // TODO: dito
@@ -719,51 +719,5 @@ function terrainService($http)
         var pt = getPointArray(dist_m, height_m, maxdistance_m, maxelevation_m, imageWidthPx, imageHeightPx);
 
         return pt[0] + "," + pt[1] + " ";
-    }
-
-    function calcAbsoluteCeiling(rocSeaLevelFt, serviceCeilingFt) {
-        return (rocSeaLevelFt * serviceCeilingFt) / (rocSeaLevelFt - 100);
-    }
-
-    function calcMinutesToClimbFromSeaLevel(altitudeFt, rocSeaLevelFt, serviceCeilingFt) {
-        var absoluteCeilingFt = calcAbsoluteCeiling(rocSeaLevelFt, serviceCeilingFt);
-        if (altitudeFt >= absoluteCeilingFt) {
-            return Number.POSITIVE_INFINITY; // Cannot climb above absolute ceiling
-        }
-
-        return absoluteCeilingFt / rocSeaLevelFt * Math.log(absoluteCeilingFt / (absoluteCeilingFt - altitudeFt));
-    }
-
-    function calcMinutesToClimb(lowerAltFt, upperAltFt, rocSeaLevelFt, serviceCeilingFt) {
-        var lowerMinutes = calcMinutesToClimbFromSeaLevel(lowerAltFt, rocSeaLevelFt, serviceCeilingFt);
-        var upperMinutes = calcMinutesToClimbFromSeaLevel(upperAltFt, rocSeaLevelFt, serviceCeilingFt);
-
-        return upperMinutes - lowerMinutes;
-    }
-
-    function calcMinutesToDescent(upperAltFt, lowerAltFt, rodFtPm) {
-        var altitudeDiffFt = upperAltFt - lowerAltFt;
-     
-        return altitudeDiffFt / rodFtPm;
-    }
-
-    function calcClimbTargetAltFt(startingAltFt, timeMin, rocSeaLevelFt, serviceCeilingFt) {
-        var absoluteCeilingFt = calcAbsoluteCeiling(rocSeaLevelFt, serviceCeilingFt);
-        
-        return (absoluteCeilingFt - startingAltFt) * (1 - Math.exp(-timeMin * rocSeaLevelFt / absoluteCeilingFt));
-    }
-
-    function calcClimbStartingAltFt(targetAltFt, timeMin, rocSeaLevelFt, serviceCeilingFt) {
-        var absoluteCeilingFt = calcAbsoluteCeiling(rocSeaLevelFt, serviceCeilingFt);
-        
-        return absoluteCeilingFt - (absoluteCeilingFt - targetAltFt) * Math.exp(timeMin * rocSeaLevelFt / absoluteCeilingFt);
-    }
-
-    function calcDescentTargetAltFt(startingAltFt, timeMin, rocSeaLevelFt, serviceCeilingFt) {
-        return Math.max(0, startingAltFt - timeMin * ROD_FTPM);
-    }
-
-    function calcDescentStartingAltFt(targetAltFt, timeMin, rocSeaLevelFt, serviceCeilingFt) {
-        return targetAltFt + timeMin * ROD_FTPM;
     }
 }

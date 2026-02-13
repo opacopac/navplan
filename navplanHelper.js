@@ -5,6 +5,7 @@
 //region CONSTANTS
 
 var TMP_DIR = 'tmp/';
+var SERVICE_CEILING_ROC_FTPM = 100;
 
 //endregion
 
@@ -740,6 +741,64 @@ function regexMatchAll(regex, text)
     }
 
     return res;
+}
+
+//endregion
+
+
+//region CLIMNB / DESCENT CALCULATIONS
+
+function calcAbsoluteCeiling(rocSeaLevelFt, serviceCeilingFt) {
+    return (rocSeaLevelFt * serviceCeilingFt) / (rocSeaLevelFt - SERVICE_CEILING_ROC_FTPM);
+}
+
+
+function calcMinutesToClimbFromSeaLevel(altitudeFt, rocSeaLevelFt, serviceCeilingFt) {
+    var absoluteCeilingFt = calcAbsoluteCeiling(rocSeaLevelFt, serviceCeilingFt);
+    if (altitudeFt >= absoluteCeilingFt) {
+        return Number.POSITIVE_INFINITY; // Cannot climb above absolute ceiling
+    }
+
+    return absoluteCeilingFt / rocSeaLevelFt * Math.log(absoluteCeilingFt / (absoluteCeilingFt - altitudeFt));
+}
+
+
+function calcMinutesToClimb(lowerAltFt, upperAltFt, rocSeaLevelFt, serviceCeilingFt) {
+    var lowerMinutes = calcMinutesToClimbFromSeaLevel(lowerAltFt, rocSeaLevelFt, serviceCeilingFt);
+    var upperMinutes = calcMinutesToClimbFromSeaLevel(upperAltFt, rocSeaLevelFt, serviceCeilingFt);
+
+    return upperMinutes - lowerMinutes;
+}
+
+
+function calcMinutesToDescent(upperAltFt, lowerAltFt, rodFtPm) {
+    var altitudeDiffFt = upperAltFt - lowerAltFt;
+    
+    return altitudeDiffFt / rodFtPm;
+}
+
+
+function calcClimbTargetAltFt(startingAltFt, timeMin, rocSeaLevelFt, serviceCeilingFt) {
+    var absoluteCeilingFt = calcAbsoluteCeiling(rocSeaLevelFt, serviceCeilingFt);
+    
+    return (absoluteCeilingFt - startingAltFt) * (1 - Math.exp(-timeMin * rocSeaLevelFt / absoluteCeilingFt));
+}
+
+
+function calcClimbStartingAltFt(targetAltFt, timeMin, rocSeaLevelFt, serviceCeilingFt) {
+    var absoluteCeilingFt = calcAbsoluteCeiling(rocSeaLevelFt, serviceCeilingFt);
+    
+    return absoluteCeilingFt - (absoluteCeilingFt - targetAltFt) * Math.exp(timeMin * rocSeaLevelFt / absoluteCeilingFt);
+}
+
+
+function calcDescentTargetAltFt(startingAltFt, timeMin, rodFtPm) {
+    return Math.max(0, startingAltFt - timeMin * rodFtPm);
+}
+
+
+function calcDescentStartingAltFt(targetAltFt, timeMin, rodFtPm) {
+    return targetAltFt + timeMin * rodFtPm;
 }
 
 //endregion
