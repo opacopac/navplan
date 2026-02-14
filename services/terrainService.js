@@ -733,48 +733,58 @@ function terrainService($http)
             const wp = waypoints[i + 1];
             const prevWp = waypoints[i];
 
-            // prio 1: altitudes defined by user
+            // altitudes defined by user
             const wpAlt = wp.alt ? parseFloat(wp.alt) : null;
-            if (wp.isaltatlegstart && isWpMinAlt(wp)) {
-                leg.legStartMinAltFt = wpAlt;
+            const userLegStartMinAltFt = wp.isaltatlegstart && isWpMinAlt(wp) ? wpAlt : null;
+            const userLegStartMaxAltFt = wp.isaltatlegstart && isWpMaxAlt(wp) ? wpAlt : null;
+            const userLegEndMinAltFt = !wp.isaltatlegstart && isWpMinAlt(wp) ? wpAlt : null;
+            const userLegEndMaxAltFt = !wp.isaltatlegstart && isWpMaxAlt(wp) ? wpAlt : null;
+            if (!leg.legStartMinAltFt || leg.legStartMinAltFt < userLegStartMinAltFt) {
+                leg.legStartMinAltFt = userLegStartMinAltFt;
             }
-            if (wp.isaltatlegstart && isWpMaxAlt(wp)) {
-                leg.legStartMaxAltFt = wpAlt;
+            if (!leg.legStartMaxAltFt || leg.legStartMaxAltFt > userLegStartMaxAltFt) {
+                leg.legStartMaxAltFt = userLegStartMaxAltFt;
             }
-            if (!wp.isaltatlegstart && isWpMinAlt(wp)) {
-                leg.legEndMinAltFt = wpAlt;
+            if (!leg.legEndMinAltFt || leg.legEndMinAltFt < userLegEndMinAltFt) {
+                leg.legEndMinAltFt = userLegEndMinAltFt;
             }
-            if (!wp.isaltatlegstart && isWpMaxAlt(wp)) {
-                leg.legEndMaxAltFt = wpAlt;
+            if (!leg.legEndMaxAltFt || leg.legEndMaxAltFt > userLegEndMaxAltFt) {
+                leg.legEndMaxAltFt = userLegEndMaxAltFt;
             }
 
-            // first/last wp (for type airport): override by ground level
-            const isFirstLeg = i === 0;
-            const isLastLeg = i === terrain.legs.length - 1;
-            if (isFirstLeg && prevWp.type === "airport") {
+            // first/last wp to/from airport: set alt to ground level
+            const isFirstLegFromAirport = (i === 0 && prevWp.type === "airport");
+            const isLastLegToAirport = (i === terrain.legs.length - 1 && wp.type === "airport");
+
+            if (isFirstLegFromAirport) {
                 leg.legStartMinAltFt = m2ft(terrain.elevations_m[0][1]);
                 leg.legStartMaxAltFt = leg.legStartMinAltFt;
             }
-            if (isLastLeg && wp.type === "airport") {
+
+            if (isLastLegToAirport) {
                 leg.legEndMinAltFt = m2ft(terrain.elevations_m[terrain.elevations_m.length - 1][1]);
                 leg.legEndMaxAltFt = leg.legEndMinAltFt;
             }
 
-            // prio 2a: terrain clearance
+            // terrain clearance
             const minTerrainAltFt = m2ft(leg.maxelevation_m) + TERRAIN_CLEARANCE_FT;
             const minTerrainAltFtRounded = Math.ceil(minTerrainAltFt / 100) * 100;
 
-            // prio 2b: climb/descent performance from leg start to end
+            // climb/descent performance from leg start to end
             const legTimeMin = m2nautmile(leg.distance_m) / GROUND_SPEED_KT * 60; // TODO: get from navplan time
             const legStartMinClimbAltFt = calcClimbStartingAltFt(leg.legEndMinAltFt, legTimeMin, ROC_SEA_LEVEL_FTPM, SERVICE_CEILING_FT);
-            if (!leg.legStartMinAltFt) {
-                leg.legStartMinAltFt = Math.max(minTerrainAltFtRounded, legStartMinClimbAltFt);
+            const legStartMaxDecentAltFt = calcDescentStartingAltFt(leg.legEndMaxAltFt, legTimeMin, ROD_FTPM);
+
+            const legStartMinAltFt = Math.max(minTerrainAltFtRounded, legStartMinClimbAltFt);
+            if (!leg.legStartMinAltFt || leg.legStartMinAltFt < legStartMinAltFt) {
+                leg.legStartMinAltFt = legStartMinAltFt;
             }
 
-            const legStartMaxDecentAltFt = calcDescentStartingAltFt(leg.legEndMaxAltFt, legTimeMin, ROD_FTPM);
-            if (!leg.legStartMaxAltFt) {
-                leg.legStartMaxAltFt = Math.max(minTerrainAltFtRounded, legStartMaxDecentAltFt);
+            const legStartMaxAltFt = Math.max(minTerrainAltFtRounded, legStartMaxDecentAltFt);
+            if (!leg.legStartMaxAltFt || leg.legStartMaxAltFt > legStartMaxAltFt) {
+                leg.legStartMaxAltFt = legStartMaxAltFt;
             }
+
 
             // copy values to previous leg
             if (prevLeg) {
