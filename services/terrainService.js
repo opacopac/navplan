@@ -17,7 +17,7 @@ function terrainService($http)
     var ID_TEXTBG_BLUE = "textBgBlue";
     var ID_TEXTBG_RED = "textBgRed";
     var ID_TEXTBG_GREEN = "textBgGreeen";
-    var TERRAIN_CLEARANCE_FT = 1000;
+    var MIN_TERRAIN_CLEARANCE_FT = 1000;
 
 
     // return api reference
@@ -104,7 +104,7 @@ function terrainService($http)
         addElevationPolygon(svg, terrain, maxelevation_m, imageWidthPx, imageHeightPx);
         addAirspacePolygons(svg, terrain, maxelevation_m, imageWidthPx, imageHeightPx);
         addSvgGrid(svg, maxelevation_m);
-        addRoute(svg, terrain, waypoints, wpClickCallback);
+        //addRoute(svg, terrain, waypoints, wpClickCallback);
 
         debugger;
         calcLegsAltitudeMetaData(waypoints, aircraft, terrain);
@@ -774,7 +774,7 @@ function terrainService($http)
             }
 
             // terrain clearance
-            const minTerrainAltFt = m2ft(leg.maxelevation_m) + TERRAIN_CLEARANCE_FT;
+            const minTerrainAltFt = m2ft(leg.maxelevation_m) + MIN_TERRAIN_CLEARANCE_FT;
             const minTerrainAltFtRounded = Math.ceil(minTerrainAltFt / 100) * 100;
 
             // climb/descent performance from leg start to end
@@ -821,20 +821,43 @@ function terrainService($http)
 
         const maxelevation_ft = m2ft(maxelevation_m);
 
-        let currentDist = 0;
+        let currentDistPercent = 0;
+        let currentAltFt = m2ft(terrain.elevations_m[0][1]); // Start at terrain elevation of first point
+        let nextAltFt = currentAltFt;
         for (let i = 0; i < terrain.legs.length; i++)
         {
             const leg = terrain.legs[i];
             const legDistPercent = 100 / terrain.totaldistance_m * leg.distance_m;
-            const legX1Percent = currentDist;
-            const legX2Percent = currentDist + legDistPercent;
-            // var elevationPercent = 100 * (1 - i / maxelevation_ft);
-            const legMinY1Percent = 100 * (1 - leg.legStartMinAltFt / maxelevation_ft);
-            const legMinY2Percent = 100 * (1 - leg.legEndMinAltFt / maxelevation_ft);
-            const legMaxY1Percent = 100 * (1 - leg.legStartMaxAltFt / maxelevation_ft);
-            const legMaxY2Percent = 100 * (1 - leg.legEndMaxAltFt / maxelevation_ft);
+            const legX1Percent = currentDistPercent;
+            const legX2Percent = currentDistPercent + legDistPercent;
+
+            if (leg.legEndMinAltFt > currentAltFt) {
+                nextAltFt = leg.legEndMinAltFt;
+            } else if (leg.legEndMaxAltFt < currentAltFt) {
+                nextAltFt = leg.legEndMaxAltFt;
+            }
+            const legY1Percent = 100 * (1 - currentAltFt / maxelevation_ft);
+            const legY2Percent = 100 * (1 - nextAltFt / maxelevation_ft);
+
+            // line
+            var line = document.createElementNS(SVG_NS, "line");
+            line.setAttribute("x1", legX1Percent.toString() + "%");
+            line.setAttribute("x2", legX2Percent.toString() + "%");
+            line.setAttribute("y1", legY1Percent.toString() + "%");
+            line.setAttribute("y2", legY2Percent.toString() + "%");
+            line.setAttribute("style", "stroke:rgba(255, 0, 255, 1.0); stroke-width:5px;");
+            line.setAttribute("shape-rendering", "crispEdges");
+            svg.appendChild(line);
+
+            // Waypoint dot and label
+            addRouteDot(svg, currentDistPercent, legY1Percent, waypoints[i], wpClickCallback);
+            addRouteDotPlumline(svg, currentDistPercent, legY1Percent, IMAGE_HEIGHT_PX);
+            addWaypointLabel(svg, currentDistPercent, legY1Percent, waypoints[i], (i === 0) ? "start" : "middle", wpClickCallback); // TODO: alternate label y pos
 
             // min line
+            /*const legMinY1Percent = 100 * (1 - leg.legStartMinAltFt / maxelevation_ft);
+            const legMinY2Percent = 100 * (1 - leg.legEndMinAltFt / maxelevation_ft);
+
             const line = document.createElementNS(SVG_NS, "line");
             line.setAttribute("x1", legX1Percent.toString() + "%");
             line.setAttribute("y1", legMinY1Percent.toString() + "%");
@@ -842,9 +865,12 @@ function terrainService($http)
             line.setAttribute("y2", legMinY2Percent.toString() + "%");
             line.setAttribute("style", "stroke:rgba(0, 0, 255, 1.0); stroke-width:3px;");
             line.setAttribute("shape-rendering", "crispEdges");
-            svg.appendChild(line);
+            svg.appendChild(line);*/
 
             // max line
+            /*const legMaxY1Percent = 100 * (1 - leg.legStartMaxAltFt / maxelevation_ft);
+            const legMaxY2Percent = 100 * (1 - leg.legEndMaxAltFt / maxelevation_ft);
+
             const line2 = document.createElementNS(SVG_NS, "line");
             line2.setAttribute("x1", legX1Percent.toString() + "%");
             line2.setAttribute("y1", legMaxY1Percent.toString() + "%");
@@ -852,13 +878,100 @@ function terrainService($http)
             line2.setAttribute("y2", legMaxY2Percent.toString() + "%");
             line2.setAttribute("style", "stroke:rgba(255, 0, 0, 1.0); stroke-width:2px;");
             line2.setAttribute("shape-rendering", "crispEdges");
-            svg.appendChild(line2);
+            svg.appendChild(line2);*/
 
-            /*addRouteDot(svg, currentDist, labelYOffsets[0], waypoints[i], wpClickCallback);
-            addRouteDotPlumline(svg, currentDist, labelYOffsets[0], IMAGE_HEIGHT_PX);
-            addWaypointLabel(svg, currentDist, labelYOffsets[i % 2], waypoints[i], (i == 0) ? "start" : "middle", wpClickCallback);*/
+            currentDistPercent += legDistPercent;
+            currentAltFt = nextAltFt;
+        }
 
-            currentDist += legDistPercent;
+
+        // final dot
+        const legY2Percent = 100 * (1 - currentAltFt / maxelevation_ft);
+        const lastWp = waypoints[waypoints.length - 1];
+
+        addRouteDot(svg, 100, legY2Percent, lastWp, wpClickCallback);
+        addRouteDotPlumline(svg, 100, legY2Percent, IMAGE_HEIGHT_PX);
+        addWaypointLabel(svg, currentDistPercent, legY2Percent, lastWp, "end", wpClickCallback);
+
+
+        function addRouteDot(svg, cxPercent, cyPercent, waypoint, clickCallback)
+        {
+            var dot = document.createElementNS(SVG_NS, "circle");
+            dot.setAttribute("cx", cxPercent.toString() + "%");
+            dot.setAttribute("cy", cyPercent.toString() + "%");
+            dot.setAttribute("r", "6");
+            dot.setAttribute("style", "stroke:#FF00FF; stroke-width:0px; fill:rgba(255, 0, 255, 1.0); cursor: pointer");
+            dot.setAttribute("shape-rendering", "crispEdges");
+
+            if (clickCallback)
+                dot.addEventListener("click", function() { clickCallback(waypoint); });
+
+            svg.appendChild(dot);
+        }
+
+
+        function addRouteDotPlumline(svg, cxPercent, cyPercent, height)
+        {
+            var line = document.createElementNS(SVG_NS, "line");
+            line.setAttribute("x1", cxPercent.toString() + "%");
+            line.setAttribute("x2", cxPercent.toString() + "%");
+            line.setAttribute("y1", cyPercent.toString() + "%");
+            line.setAttribute("y2", height);
+            line.setAttribute("style", "stroke:#FF00FF; stroke-width:1px;");
+            line.setAttribute("shape-rendering", "crispEdges");
+            line.setAttribute("stroke-dasharray", "3, 5");
+
+            svg.appendChild(line);
+        }
+
+
+        function addWaypointLabel(svg, xPercent, yPercent, waypoint, textAnchor, clickCallback)
+        {
+            var transformX;
+
+            switch (textAnchor)
+            {
+                case "start":
+                    transformX = 7;
+                    break;
+                case "end":
+                    transformX = -7;
+                    break;
+                default:
+                    transformX = 0;
+                    break;
+            }
+
+            // glow around label
+            var labelGlow = document.createElementNS(SVG_NS, "text");
+            labelGlow.setAttribute("x", xPercent.toString() + "%");
+            labelGlow.setAttribute("y", yPercent.toString() + "%");
+            labelGlow.setAttribute("style", "stroke:#FFFFFF; stroke-width:5px; fill:#FFFFFF; cursor: pointer");
+            labelGlow.setAttribute("text-anchor", textAnchor);
+            labelGlow.setAttribute("font-family", "Calibri,sans-serif");
+            labelGlow.setAttribute("font-weight", "bold");
+            labelGlow.setAttribute("font-size", "15px");
+            labelGlow.setAttribute("transform", "translate(" + transformX + ", -15)");
+            labelGlow.textContent = waypoint.checkpoint;
+
+            svg.appendChild(labelGlow);
+
+            // label
+            var label = document.createElementNS(SVG_NS, "text");
+            label.setAttribute("x", xPercent.toString() + "%");
+            label.setAttribute("y", yPercent.toString() + "%");
+            label.setAttribute("style", "stroke:none; fill:#660066; cursor: pointer");
+            label.setAttribute("text-anchor", textAnchor);
+            label.setAttribute("font-family", "Calibri,sans-serif");
+            label.setAttribute("font-weight", "bold");
+            label.setAttribute("font-size", "15px");
+            label.setAttribute("transform", "translate(" + transformX + ", -15)");
+            label.textContent = waypoint.checkpoint;
+
+            if (clickCallback)
+                label.addEventListener("click", function() { clickCallback(waypoint); });
+
+            svg.appendChild(label);
         }
     }
 }
