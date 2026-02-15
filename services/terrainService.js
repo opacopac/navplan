@@ -852,7 +852,7 @@ function terrainService($http)
             // Waypoint dot and label
             addRouteDot(svg, currentDistPercent, legY1Percent, waypoints[i], wpClickCallback);
             addRouteDotPlumline(svg, currentDistPercent, legY1Percent, IMAGE_HEIGHT_PX);
-            addWaypointLabel(svg, currentDistPercent, legY1Percent, waypoints[i], (i === 0) ? "start" : "middle", wpClickCallback); // TODO: alternate label y pos
+            addWaypointLabel(svg, currentDistPercent, legY1Percent, waypoints[i], (i === 0) ? "start" : "middle", (i % 2) === 1, wpClickCallback); // TODO: alternate label y pos
 
             // min line
             /*const legMinY1Percent = 100 * (1 - leg.legStartMinAltFt / maxelevation_ft);
@@ -887,11 +887,12 @@ function terrainService($http)
 
         // final dot
         const legY2Percent = 100 * (1 - currentAltFt / maxelevation_ft);
-        const lastWp = waypoints[waypoints.length - 1];
+        const lastIdx = waypoints.length - 1;
+        const lastWp = waypoints[lastIdx];
 
         addRouteDot(svg, 100, legY2Percent, lastWp, wpClickCallback);
         addRouteDotPlumline(svg, 100, legY2Percent, IMAGE_HEIGHT_PX);
-        addWaypointLabel(svg, currentDistPercent, legY2Percent, lastWp, "end", wpClickCallback);
+        addWaypointLabel(svg, currentDistPercent, legY2Percent, lastWp, "end", lastIdx % 2 === 1, wpClickCallback);
 
 
         function addRouteDot(svg, cxPercent, cyPercent, waypoint, clickCallback)
@@ -925,9 +926,9 @@ function terrainService($http)
         }
 
 
-        function addWaypointLabel(svg, xPercent, yPercent, waypoint, textAnchor, clickCallback)
+        function addWaypointLabel(svg, xPercent, yPercent, waypoint, textAnchor, isOddWp, clickCallback)
         {
-            var transformX;
+            var transformX, transformY;
 
             switch (textAnchor)
             {
@@ -942,6 +943,12 @@ function terrainService($http)
                     break;
             }
 
+            if (isOddWp) {
+                transformY = 25;
+            } else {
+                transformY = -15;
+            }
+
             // glow around label
             var labelGlow = document.createElementNS(SVG_NS, "text");
             labelGlow.setAttribute("x", xPercent.toString() + "%");
@@ -951,7 +958,7 @@ function terrainService($http)
             labelGlow.setAttribute("font-family", "Calibri,sans-serif");
             labelGlow.setAttribute("font-weight", "bold");
             labelGlow.setAttribute("font-size", "15px");
-            labelGlow.setAttribute("transform", "translate(" + transformX + ", -15)");
+            labelGlow.setAttribute("transform", "translate(" + transformX + ", " + transformY + ")");
             labelGlow.textContent = waypoint.checkpoint;
 
             svg.appendChild(labelGlow);
@@ -965,7 +972,7 @@ function terrainService($http)
             label.setAttribute("font-family", "Calibri,sans-serif");
             label.setAttribute("font-weight", "bold");
             label.setAttribute("font-size", "15px");
-            label.setAttribute("transform", "translate(" + transformX + ", -15)");
+            label.setAttribute("transform", "translate(" + transformX + ", " + transformY + ")");
             label.textContent = waypoint.checkpoint;
 
             if (clickCallback)
