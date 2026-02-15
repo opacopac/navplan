@@ -69,7 +69,11 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 			{
 				id: '',
 				speed: 100,
-				consumption: 20
+				consumption: 20,
+				serviceCeilingFt: 13000,
+				rocSeaLevelFpm: 700,
+				rodFpm: 500,
+				climbSpeedKt: 75,
 			};
 			$scope.globalData.fuel =
 			{

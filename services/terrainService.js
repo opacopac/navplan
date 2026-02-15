@@ -18,11 +18,6 @@ function terrainService($http)
     var ID_TEXTBG_RED = "textBgRed";
     var ID_TEXTBG_GREEN = "textBgGreeen";
     var TERRAIN_CLEARANCE_FT = 1000;
-    var SERVICE_CEILING_FT = 13000; // TODO: get from global $scope
-    var ROC_SEA_LEVEL_FTPM = 700; // TODO: dito
-    var ROD_FTPM = 1000; // TODO: dito
-    var GROUND_SPEED_KT = 100; // TODO: dito
-    var CLIMB_SPEED_KT = 75; // TODO: dito
 
 
     // return api reference
@@ -31,11 +26,11 @@ function terrainService($http)
     };
 
 
-    function updateTerrain(waypoints, wpClickCallback, successCallback, errorCallback)
+    function updateTerrain(waypoints, aircraft, wpClickCallback, successCallback, errorCallback)
     {
-        getElevations(waypoints, showTerrain, errorCallback);
+        getElevations(waypoints, aircraft, showTerrain, errorCallback);
 
-        function showTerrain(terrain)
+        function showTerrain(terrain, aircraft)
         {
             var container = document.getElementById("terrainContainer");
 
@@ -43,7 +38,7 @@ function terrainService($http)
                 return;
 
             var imageWitdhPx = container.clientWidth;
-            var svg = getTerrainSvg(waypoints, terrain, terrain.maxelevation_m + 1000, imageWitdhPx, IMAGE_HEIGHT_PX, wpClickCallback);
+            var svg = getTerrainSvg(waypoints, terrain, aircraft, terrain.maxelevation_m + 1000, imageWitdhPx, IMAGE_HEIGHT_PX, wpClickCallback);
 
             while (container.firstChild)
                 container.removeChild(container.firstChild);
@@ -56,17 +51,17 @@ function terrainService($http)
     }
 
 
-    function getElevations(waypoints, successCallback, errorCallback)
+    function getElevations(waypoints, aircraft, successCallback, errorCallback)
     {
         var positions = [];
         for (var i = 0; i < waypoints.length; i++)
             positions.push([waypoints[i].longitude, waypoints[i].latitude]);
 
-        loadTerrain(positions, successCallback, errorCallback);
+        loadTerrain(positions, aircraft, successCallback, errorCallback);
     }
 
 
-    function loadTerrain(positions, successCallback, errorCallback)
+    function loadTerrain(positions, aircraft, successCallback, errorCallback)
     {
         $http.post(BASE_URL, obj2json({ positions: positions }))
             .then(
@@ -75,7 +70,7 @@ function terrainService($http)
                     if (response && response.data && response.data.terrain)
                     {
                         if (successCallback)
-                            successCallback(response.data.terrain);
+                            successCallback(response.data.terrain, aircraft);
                     }
                     else
                     {
@@ -96,7 +91,7 @@ function terrainService($http)
     }
 
 
-    function getTerrainSvg(waypoints, terrain, maxelevation_m, imageWidthPx, imageHeightPx, wpClickCallback)
+    function getTerrainSvg(waypoints, terrain, aircraft, maxelevation_m, imageWidthPx, imageHeightPx, wpClickCallback)
     {
         var svg = document.createElementNS(SVG_NS, "svg");
         svg.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
@@ -112,7 +107,7 @@ function terrainService($http)
         addRoute(svg, terrain, waypoints, wpClickCallback);
 
         debugger;
-        calcLegsAltitudeMetaData(waypoints, terrain);
+        calcLegsAltitudeMetaData(waypoints, aircraft, terrain);
         addRoute2(svg, terrain, waypoints, wpClickCallback, maxelevation_m);
 
         return svg;
@@ -728,7 +723,7 @@ function terrainService($http)
     }
 
 
-    function calcLegsAltitudeMetaData(waypoints, terrain) {
+    function calcLegsAltitudeMetaData(waypoints, aircraft, terrain) {
         for (let i = terrain.legs.length - 1; i >= 0; i--) {
             const leg = terrain.legs[i];
             const prevLeg = i > 0 ? terrain.legs[i - 1] : null;
@@ -783,10 +778,10 @@ function terrainService($http)
             const minTerrainAltFtRounded = Math.ceil(minTerrainAltFt / 100) * 100;
 
             // climb/descent performance from leg start to end
-            const legDescentTimeMin = wp.dist / GROUND_SPEED_KT * 60 + (wp.vacTime ? wp.vacTime : 0);
-            const legClimbTimeMin = legDescentTimeMin * (GROUND_SPEED_KT / CLIMB_SPEED_KT);
-            const legStartMinClimbAltFt = calcClimbStartingAltFt(leg.legEndMinAltFt, legClimbTimeMin, ROC_SEA_LEVEL_FTPM, SERVICE_CEILING_FT);
-            const legStartMaxDecentAltFt = calcDescentStartingAltFt(leg.legEndMaxAltFt, legDescentTimeMin, ROD_FTPM);
+            const legDescentTimeMin = wp.dist / aircraft.speed * 60 + (wp.vacTime ? wp.vacTime : 0);
+            const legClimbTimeMin = legDescentTimeMin * (aircraft.speed / aircraft.climbSpeedKt);
+            const legStartMinClimbAltFt = calcClimbStartingAltFt(leg.legEndMinAltFt, legClimbTimeMin, aircraft.rocSeaLevelFpm, aircraft.serviceCeilingFt);
+            const legStartMaxDecentAltFt = calcDescentStartingAltFt(leg.legEndMaxAltFt, legDescentTimeMin, aircraft.rodFpm);
 
             const legStartMinAltFt = Math.max(minTerrainAltFtRounded, legStartMinClimbAltFt);
             if (!isFirstLegFromAirport && (!leg.legStartMinAltFt || leg.legStartMinAltFt < legStartMinAltFt)) {
