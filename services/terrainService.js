@@ -777,6 +777,14 @@ function terrainService($http)
             const minTerrainAltFt = m2ft(leg.maxelevation_m) + MIN_TERRAIN_CLEARANCE_FT;
             const minTerrainAltFtRounded = Math.ceil(minTerrainAltFt / 100) * 100;
 
+            if (!leg.legEndMinAltFt) {
+                leg.legEndMinAltFt = minTerrainAltFtRounded;
+            }
+
+            if (!leg.legEndMaxAltFt) {
+                leg.legEndMaxAltFt = minTerrainAltFtRounded;
+            }
+
             // climb/descent performance from leg start to end
             const legDescentTimeMin = wp.dist / aircraft.speed * 60 + (wp.vacTime ? wp.vacTime : 0);
             const legClimbTimeMin = legDescentTimeMin * (aircraft.speed / aircraft.climbSpeedKt);
@@ -792,7 +800,6 @@ function terrainService($http)
             if (!isFirstLegFromAirport && (!leg.legStartMaxAltFt || leg.legStartMaxAltFt > legStartMaxAltFt)) {
                 leg.legStartMaxAltFt = legStartMaxAltFt;
             }
-
 
             // copy values to previous leg
             if (prevLeg) {
