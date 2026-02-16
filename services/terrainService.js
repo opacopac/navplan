@@ -730,14 +730,14 @@ function terrainService($http)
             const wp = waypoints[i + 1];
             const prevWp = waypoints[i];
 
-            // altitudes defined by user
+            // get altitudes defined by user
             const wpAlt = wp.alt ? parseFloat(wp.alt) : null;
             const userLegStartMinAltFt = wp.isaltatlegstart && isWpMinAlt(wp) ? wpAlt : null;
             const userLegStartMaxAltFt = wp.isaltatlegstart && isWpMaxAlt(wp) ? wpAlt : null;
             const userLegEndMinAltFt = !wp.isaltatlegstart && isWpMinAlt(wp) ? wpAlt : null;
             const userLegEndMaxAltFt = !wp.isaltatlegstart && isWpMaxAlt(wp) ? wpAlt : null;
 
-            // leg start altitudes
+            // set leg start altitudes
             if (userLegStartMinAltFt && (!leg.legStartMinAltFt || leg.legStartMinAltFt < userLegStartMinAltFt)) {
                 leg.legStartMinAltFt = userLegStartMinAltFt;
             }
@@ -745,7 +745,7 @@ function terrainService($http)
                 leg.legStartMaxAltFt = userLegStartMaxAltFt;
             }
 
-            // leg end altitudes
+            // set leg end altitudes
             if (userLegEndMinAltFt && (!leg.legEndMinAltFt || leg.legEndMinAltFt < userLegEndMinAltFt)) {
                 leg.legEndMinAltFt = userLegEndMinAltFt;
             }
@@ -759,7 +759,7 @@ function terrainService($http)
                 leg.legEndMinAltFt = userLegEndMaxAltFt;
             }
 
-            // first/last wp to/from airport: set alt to ground level
+            // first/last wp from/to airport: set alt to ground level
             const isFirstLegFromAirport = (i === 0 && prevWp.type === "airport");
             const isLastLegToAirport = (i === terrain.legs.length - 1 && wp.type === "airport");
 
@@ -777,6 +777,7 @@ function terrainService($http)
             const minTerrainAltFt = m2ft(leg.maxelevation_m) + MIN_TERRAIN_CLEARANCE_FT;
             const minTerrainAltFtRounded = Math.ceil(minTerrainAltFt / 100) * 100;
 
+            // if no leg end alt is defined yet (e.g. no destination airport), set it according to terrain clearance.
             if (!leg.legEndMinAltFt) {
                 leg.legEndMinAltFt = minTerrainAltFtRounded;
             }
@@ -785,13 +786,13 @@ function terrainService($http)
                 leg.legEndMaxAltFt = minTerrainAltFtRounded;
             }
 
-            // climb/descent performance from leg start to end
+            // calculate climb/descent performance backwards from leg end to start and set if not defined by user above
             const legDescentTimeMin = wp.dist / aircraft.speed * 60 + (wp.vacTime ? wp.vacTime : 0);
             const legClimbTimeMin = legDescentTimeMin * (aircraft.speed / aircraft.climbSpeedKt);
             const legStartMinClimbAltFt = calcClimbStartingAltFt(leg.legEndMinAltFt, legClimbTimeMin, aircraft.rocSeaLevelFpm, aircraft.serviceCeilingFt);
             const legStartMaxDecentAltFt = calcDescentStartingAltFt(leg.legEndMaxAltFt, legDescentTimeMin, aircraft.rodFpm);
 
-            const legStartMinAltFt = Math.max(minTerrainAltFtRounded, legStartMinClimbAltFt);
+            const legStartMinAltFt = legStartMinClimbAltFt < leg.legEndMinAltFt ? Math.max(minTerrainAltFtRounded, legStartMinClimbAltFt) : minTerrainAltFtRounded;
             if (!isFirstLegFromAirport && (!leg.legStartMinAltFt || leg.legStartMinAltFt < legStartMinAltFt)) {
                 leg.legStartMinAltFt = legStartMinAltFt;
             }
@@ -861,7 +862,7 @@ function terrainService($http)
             addRouteDotPlumline(svg, currentDistPercent, legY1Percent, IMAGE_HEIGHT_PX);
             addWaypointLabel(svg, currentDistPercent, legY1Percent, waypoints[i], (i === 0) ? "start" : "middle", (i % 2) === 1, wpClickCallback); // TODO: alternate label y pos
 
-            // min line
+            // TODO: debug, min line
             /*const legMinY1Percent = 100 * (1 - leg.legStartMinAltFt / maxelevation_ft);
             const legMinY2Percent = 100 * (1 - leg.legEndMinAltFt / maxelevation_ft);
 
@@ -874,7 +875,7 @@ function terrainService($http)
             line.setAttribute("shape-rendering", "crispEdges");
             svg.appendChild(line);*/
 
-            // max line
+            // TODO: debug, max line
             /*const legMaxY1Percent = 100 * (1 - leg.legStartMaxAltFt / maxelevation_ft);
             const legMaxY2Percent = 100 * (1 - leg.legEndMaxAltFt / maxelevation_ft);
 
