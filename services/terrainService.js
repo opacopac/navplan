@@ -18,6 +18,7 @@ function terrainService($http)
     var ID_TEXTBG_RED = "textBgRed";
     var ID_TEXTBG_GREEN = "textBgGreeen";
     var MIN_TERRAIN_CLEARANCE_FT = 1000;
+    var IMAGE_HEADROOM_M = 1000;
 
 
     // return api reference
@@ -38,7 +39,7 @@ function terrainService($http)
                 return;
 
             const imageWitdhPx = container.clientWidth;
-            const maxAltitudeM = Math.max(terrain.maxelevation_m + MIN_TERRAIN_CLEARANCE_FT, getHighestWpAltM(waypoints));
+            const maxAltitudeM = Math.max(terrain.maxelevation_m, getHighestWpAltM(waypoints)) + IMAGE_HEADROOM_M;
             const svg = getTerrainSvg(waypoints, terrain, aircraft, maxAltitudeM, imageWitdhPx, IMAGE_HEIGHT_PX, wpClickCallback);
 
             while (container.firstChild)
@@ -422,7 +423,7 @@ function terrainService($http)
         }
 
         const labelYOffsets = [0, 40];
-        const maxelevation_m = terrain.maxelevation_m + 1000; // Same as in getTerrainSvg
+        const maxelevation_m = terrain.maxelevation_m + IMAGE_HEADROOM_M; // Same as in getTerrainSvg
 
         // Build array of cumulative distances for each waypoint
         var wpDistances = [0];
