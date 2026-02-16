@@ -32,13 +32,14 @@ function terrainService($http)
 
         function showTerrain(terrain, aircraft)
         {
-            var container = document.getElementById("terrainContainer");
+            const container = document.getElementById("terrainContainer");
 
             if (!container)
                 return;
 
-            var imageWitdhPx = container.clientWidth;
-            var svg = getTerrainSvg(waypoints, terrain, aircraft, terrain.maxelevation_m + 1000, imageWitdhPx, IMAGE_HEIGHT_PX, wpClickCallback);
+            const imageWitdhPx = container.clientWidth;
+            const maxAltitudeM = Math.max(terrain.maxelevation_m + MIN_TERRAIN_CLEARANCE_FT, getHighestWpAltM(waypoints));
+            const svg = getTerrainSvg(waypoints, terrain, aircraft, maxAltitudeM, imageWitdhPx, IMAGE_HEIGHT_PX, wpClickCallback);
 
             while (container.firstChild)
                 container.removeChild(container.firstChild);
@@ -48,6 +49,18 @@ function terrainService($http)
             if (successCallback)
                 successCallback();
         }
+    }
+
+
+    function getHighestWpAltM(waypoints) {
+        let highestAltFt = 0;
+        for (const wp of waypoints) {
+            if (wp.alt && parseFloat(wp.alt) > highestAltFt) {
+                highestAltFt = parseFloat(wp.alt);
+            }
+        }
+
+        return ft2m(highestAltFt);
     }
 
 
