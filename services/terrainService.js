@@ -891,10 +891,16 @@ function terrainService($http)
             const legX2Percent = currentDistPercent + legDistPercent;
 
             if (leg.endAlt.minAltFt > currentAltFt) {
-                /*const legClimbTimeMin = calcLegClimbTimeMin(waypoints[i + 1], aircraft);
+                const legClimbTimeMin = calcLegClimbTimeMin(waypoints[i + 1], aircraft);
                 const maxClimbAltFt = calcClimbTargetAltFt(currentAltFt, legClimbTimeMin, aircraft.rocSeaLevelFpm, aircraft.serviceCeilingFt);
-                nextAltFt = Math.min(leg.endAlt.minAltFt, maxClimbAltFt);*/
-                nextAltFt = leg.endAlt.minAltFt;
+                nextAltFt = Math.min(leg.endAlt.minAltFt, maxClimbAltFt);
+                if (nextAltFt < leg.endAlt.minUserAltFt) {
+                    nextAltFt = leg.endAlt.minAltFt;
+                    leg.warning = 'Climb performance may be insufficient to reach minimum altitude at end of leg';
+                } else if (nextAltFt < leg.endAlt.minTerrainAltFt) {
+                    nextAltFt = leg.endAlt.minAltFt;
+                    leg.warning = 'Below minimum terrain clearance ' + MIN_TERRAIN_CLEARANCE_FT + ' ft';
+                }
             } else if (leg.endAlt.maxAltFt < currentAltFt) {
                 /*const legDescentTimeMin = calcLegDescentTimeMin(waypoints[i + 1], aircraft);
                 const minDescentAltFt = calcDescentTargetAltFt(currentAltFt, legDescentTimeMin, aircraft.rodFpm);
@@ -914,10 +920,17 @@ function terrainService($http)
             line.setAttribute("shape-rendering", "crispEdges");
             svg.appendChild(line);
 
-            // Waypoint dot and label
+            //waypoint dot and label
             addRouteDot(svg, currentDistPercent, legY1Percent, waypoints[i], wpClickCallback);
             addRouteDotPlumline(svg, currentDistPercent, legY1Percent, IMAGE_HEIGHT_PX);
             addWaypointLabel(svg, currentDistPercent, legY1Percent, waypoints[i], (i === 0) ? "start" : "middle", (i % 2) === 1, wpClickCallback); // TODO: alternate label y pos
+
+            // warning
+            if (leg.warning) {
+                const xPercent = (legX1Percent + legX2Percent) / 2;
+                const yPercent = (legY1Percent + legY2Percent) / 2;
+                addRouteWarning(svg, xPercent, yPercent, leg.warning);
+            }
 
             // TODO: debug, min line
             /*const legMinY1Percent = 100 * (1 - leg.startAlt.minAltFt / maxelevation_ft);
@@ -960,9 +973,34 @@ function terrainService($http)
         addWaypointLabel(svg, currentDistPercent, legY2Percent, lastWp, "end", lastIdx % 2 === 1, wpClickCallback);
 
 
+        function addRouteWarning(svg, xPercent, yPercent, message)
+        {
+            const icon = document.createElementNS(SVG_NS, "path");
+            icon.setAttribute("d", "M569.517 440.013C587.975 472.007 564.806 512 527.94 512H48.054c-36.937 0-59.999-40.055-41.577-71.987L246.423 23.985c18.467-32.009 64.72-31.951 83.154 0l239.94 416.028zM288 354c-25.405 0-46 20.595-46 46s20.595 46 46 46 46-20.595 46-46-20.595-46-46-46zm-43.673-165.346l7.418 136c.347 6.364 5.609 11.346 11.982 11.346h48.546c6.373 0 11.635-4.982 11.982-11.346l7.418-136c.375-6.874-5.098-12.654-11.982-12.654h-63.383c-6.884 0-12.356 5.78-11.981 12.654z");
+            icon.setAttribute("fill", "#FFCC00");
+
+            // title for tooltip
+            const title = document.createElementNS(SVG_NS, "title");
+            title.textContent = message;
+            icon.appendChild(title);
+
+            const innerSvg = document.createElementNS(SVG_NS, "svg");
+            innerSvg.setAttribute("x", xPercent.toString() + "%");
+            innerSvg.setAttribute("y", yPercent.toString() + "%");
+            innerSvg.setAttribute("viewBox", "0 0 576 512");
+            innerSvg.setAttribute("width", "24px");
+            innerSvg.setAttribute("height", "24px");
+            innerSvg.setAttribute("transform", "translate(-12, -12)"); // center the icon on the point
+            innerSvg.setAttribute("style", "overflow: visible; cursor: help");
+            innerSvg.appendChild(icon);
+
+            svg.appendChild(innerSvg);
+        }
+
+
         function addRouteDot(svg, cxPercent, cyPercent, waypoint, clickCallback)
         {
-            var dot = document.createElementNS(SVG_NS, "circle");
+            const dot = document.createElementNS(SVG_NS, "circle");
             dot.setAttribute("cx", cxPercent.toString() + "%");
             dot.setAttribute("cy", cyPercent.toString() + "%");
             dot.setAttribute("r", "6");
@@ -978,7 +1016,7 @@ function terrainService($http)
 
         function addRouteDotPlumline(svg, cxPercent, cyPercent, height)
         {
-            var line = document.createElementNS(SVG_NS, "line");
+            const line = document.createElementNS(SVG_NS, "line");
             line.setAttribute("x1", cxPercent.toString() + "%");
             line.setAttribute("x2", cxPercent.toString() + "%");
             line.setAttribute("y1", cyPercent.toString() + "%");
@@ -993,7 +1031,7 @@ function terrainService($http)
 
         function addWaypointLabel(svg, xPercent, yPercent, waypoint, textAnchor, isOddWp, clickCallback)
         {
-            var transformX, transformY;
+            let transformX, transformY;
 
             switch (textAnchor)
             {
@@ -1015,7 +1053,7 @@ function terrainService($http)
             }
 
             // glow around label
-            var labelGlow = document.createElementNS(SVG_NS, "text");
+            const labelGlow = document.createElementNS(SVG_NS, "text");
             labelGlow.setAttribute("x", xPercent.toString() + "%");
             labelGlow.setAttribute("y", yPercent.toString() + "%");
             labelGlow.setAttribute("style", "stroke:#FFFFFF; stroke-width:5px; fill:#FFFFFF; cursor: pointer");
@@ -1029,7 +1067,7 @@ function terrainService($http)
             svg.appendChild(labelGlow);
 
             // label
-            var label = document.createElementNS(SVG_NS, "text");
+            const label = document.createElementNS(SVG_NS, "text");
             label.setAttribute("x", xPercent.toString() + "%");
             label.setAttribute("y", yPercent.toString() + "%");
             label.setAttribute("style", "stroke:none; fill:#660066; cursor: pointer");
