@@ -802,11 +802,8 @@ function terrainService($http)
             // terrain clearance
             const minTerrainAltFt = m2ft(leg.maxelevation_m) + MIN_TERRAIN_CLEARANCE_FT;
             const minTerrainAltFtRounded = Math.ceil(minTerrainAltFt / 100) * 100;
-            leg.startAlt.minTerrainAltFt = minTerrainAltFtRounded;
+            leg.minTerrainAltFt = minTerrainAltFtRounded;
             // if no leg end alt is defined yet (e.g. no destination airport), set it according to terrain clearance.
-            if (!leg.endAlt.minTerrainAltFt) {
-                leg.endAlt.minTerrainAltFt = minTerrainAltFtRounded;
-            }
             if (!leg.endAlt.minAltFt) {
                 leg.endAlt.minAltFt = minTerrainAltFtRounded;
             }
@@ -845,7 +842,6 @@ function terrainService($http)
             maxAltFt: null,
             minUserAltFt: null,
             maxUserAltFt: null,
-            minTerrainAltFt: null,
         }
     }
 
@@ -895,18 +891,18 @@ function terrainService($http)
                 const maxClimbAltFt = calcClimbTargetAltFt(currentAltFt, legClimbTimeMin, aircraft.rocSeaLevelFpm, aircraft.serviceCeilingFt);
                 nextAltFt = Math.min(leg.endAlt.minAltFt, maxClimbAltFt);
                 if (nextAltFt < leg.endAlt.minUserAltFt) {
-                    nextAltFt = leg.endAlt.minAltFt;
                     leg.warning = 'Climb performance may be insufficient to reach minimum altitude at end of leg';
-                } else if (nextAltFt < leg.endAlt.minTerrainAltFt) {
                     nextAltFt = leg.endAlt.minAltFt;
-                    leg.warning = 'Below minimum terrain clearance ' + MIN_TERRAIN_CLEARANCE_FT + ' ft';
                 }
             } else if (leg.endAlt.maxAltFt < currentAltFt) {
-                /*const legDescentTimeMin = calcLegDescentTimeMin(waypoints[i + 1], aircraft);
-                const minDescentAltFt = calcDescentTargetAltFt(currentAltFt, legDescentTimeMin, aircraft.rodFpm);
-                nextAltFt = Math.max(leg.endAlt.maxAltFt, minDescentAltFt);*/
                 nextAltFt = leg.endAlt.maxAltFt;
             }
+
+            if (i > 0 && i < terrain.legs.length - 1 && (currentAltFt < leg.minTerrainAltFt || nextAltFt < leg.minTerrainAltFt)) {
+                leg.warning = 'Below minimum terrain clearance ' + MIN_TERRAIN_CLEARANCE_FT + ' ft';
+                nextAltFt = leg.endAlt.minAltFt;
+            }
+
             const legY1Percent = 100 * (1 - currentAltFt / maxelevation_ft);
             const legY2Percent = 100 * (1 - nextAltFt / maxelevation_ft);
 
@@ -979,7 +975,6 @@ function terrainService($http)
             icon.setAttribute("d", "M569.517 440.013C587.975 472.007 564.806 512 527.94 512H48.054c-36.937 0-59.999-40.055-41.577-71.987L246.423 23.985c18.467-32.009 64.72-31.951 83.154 0l239.94 416.028zM288 354c-25.405 0-46 20.595-46 46s20.595 46 46 46 46-20.595 46-46-20.595-46-46-46zm-43.673-165.346l7.418 136c.347 6.364 5.609 11.346 11.982 11.346h48.546c6.373 0 11.635-4.982 11.982-11.346l7.418-136c.375-6.874-5.098-12.654-11.982-12.654h-63.383c-6.884 0-12.356 5.78-11.981 12.654z");
             icon.setAttribute("fill", "#FFCC00");
 
-            // title for tooltip
             const title = document.createElementNS(SVG_NS, "title");
             title.textContent = message;
             icon.appendChild(title);
