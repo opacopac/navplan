@@ -642,7 +642,7 @@ function terrainService($http)
 
         function addRouteDot(svg, cxProc, cy, waypoint, clickCallback)
         {
-            var dot = document.createElementNS(SVG_NS, "circle");
+            const dot = document.createElementNS(SVG_NS, "circle");
             dot.setAttribute("cx", cxProc.toString() + "%");
             dot.setAttribute("cy", cy);
             dot.setAttribute("r", "6");
@@ -658,7 +658,7 @@ function terrainService($http)
 
         function addRouteDotPlumline(svg, cxProc, cy, height)
         {
-            var line = document.createElementNS(SVG_NS, "line");
+            const line = document.createElementNS(SVG_NS, "line");
             line.setAttribute("x1", cxProc.toString() + "%");
             line.setAttribute("x2", cxProc.toString() + "%");
             line.setAttribute("y1", cy);
@@ -673,7 +673,7 @@ function terrainService($http)
 
         function addWaypointLabel(svg, xProc, y, waypoint, textAnchor, clickCallback)
         {
-            var transformX;
+            let transformX;
 
             switch (textAnchor)
             {
@@ -689,7 +689,7 @@ function terrainService($http)
             }
 
             // glow around label
-            var labelGlow = document.createElementNS(SVG_NS, "text");
+            const labelGlow = document.createElementNS(SVG_NS, "text");
             labelGlow.setAttribute("x", xProc.toString() + "%");
             labelGlow.setAttribute("y", y);
             labelGlow.setAttribute("style", "stroke:#FFFFFF; stroke-width:5px; fill:#FFFFFF; cursor: pointer");
@@ -703,7 +703,7 @@ function terrainService($http)
             svg.appendChild(labelGlow);
 
             // label
-            var label = document.createElementNS(SVG_NS, "text");
+            const label = document.createElementNS(SVG_NS, "text");
             label.setAttribute("x", xProc.toString() + "%");
             label.setAttribute("y", y);
             label.setAttribute("style", "stroke:none; fill:#660066; cursor: pointer");
@@ -723,15 +723,15 @@ function terrainService($http)
 
     function getPointArray(dist_m, height_m, maxdistance_m, maxelevation_m, imageWidthPx, imageHeightPx)
     {
-        var x = Math.round(dist_m / maxdistance_m * imageWidthPx);
-        var y = Math.round((maxelevation_m - height_m) / maxelevation_m * imageHeightPx);
+        const x = Math.round(dist_m / maxdistance_m * imageWidthPx);
+        const y = Math.round((maxelevation_m - height_m) / maxelevation_m * imageHeightPx);
 
         return [x, y];
     }
 
     function getPointString(dist_m, height_m, maxdistance_m, maxelevation_m, imageWidthPx, imageHeightPx)
     {
-        var pt = getPointArray(dist_m, height_m, maxdistance_m, maxelevation_m, imageWidthPx, imageHeightPx);
+        const pt = getPointArray(dist_m, height_m, maxdistance_m, maxelevation_m, imageWidthPx, imageHeightPx);
 
         return pt[0] + "," + pt[1] + " ";
     }
@@ -743,34 +743,42 @@ function terrainService($http)
             const prevLeg = i > 0 ? terrain.legs[i - 1] : null;
             const wp = waypoints[i + 1];
             const prevWp = waypoints[i];
+            
+            // init leg start/end
+            leg.startAlt = initAltMetaData();
+            
+            if (!leg.endAlt) {
+                leg.endAlt = initAltMetaData();
+            }
+            
 
             // get altitudes defined by user
             const wpAlt = wp.alt ? parseFloat(wp.alt) : null;
-            const userLegStartMinAltFt = wp.isaltatlegstart && isWpMinAlt(wp) ? wpAlt : null;
-            const userLegStartMaxAltFt = wp.isaltatlegstart && isWpMaxAlt(wp) ? wpAlt : null;
-            const userLegEndMinAltFt = !wp.isaltatlegstart && isWpMinAlt(wp) ? wpAlt : null;
-            const userLegEndMaxAltFt = !wp.isaltatlegstart && isWpMaxAlt(wp) ? wpAlt : null;
+            leg.startAlt.minUserAltFt = wp.isaltatlegstart && isWpMinAlt(wp) ? wpAlt : null;
+            leg.startAlt.maxUserAltFt = wp.isaltatlegstart && isWpMaxAlt(wp) ? wpAlt : null;
+            leg.endAlt.minUserAltFt = !wp.isaltatlegstart && isWpMinAlt(wp) ? wpAlt : null;
+            leg.endAlt.maxUserAltFt = !wp.isaltatlegstart && isWpMaxAlt(wp) ? wpAlt : null;
 
             // set leg start altitudes
-            if (userLegStartMinAltFt && (!leg.legStartMinAltFt || leg.legStartMinAltFt < userLegStartMinAltFt)) {
-                leg.legStartMinAltFt = userLegStartMinAltFt;
+            if (leg.startAlt.minUserAltFt && (!leg.startAlt.minAltFt || leg.startAlt.minAltFt < leg.startAlt.minUserAltFt)) {
+                leg.startAlt.minAltFt = leg.startAlt.minUserAltFt;
             }
-            if (userLegStartMaxAltFt && (!leg.legStartMaxAltFt || leg.legStartMaxAltFt > userLegStartMaxAltFt)) {
-                leg.legStartMaxAltFt = userLegStartMaxAltFt;
+            if (leg.startAlt.maxUserAltFt && (!leg.startAlt.maxAltFt || leg.startAlt.maxAltFt > leg.startAlt.maxUserAltFt)) {
+                leg.startAlt.maxAltFt = leg.startAlt.maxUserAltFt;
             }
 
             // set leg end altitudes
-            if (userLegEndMinAltFt && (!leg.legEndMinAltFt || leg.legEndMinAltFt < userLegEndMinAltFt)) {
-                leg.legEndMinAltFt = userLegEndMinAltFt;
+            if (leg.endAlt.minUserAltFt && (!leg.endAlt.minAltFt || leg.endAlt.minAltFt < leg.endAlt.minUserAltFt)) {
+                leg.endAlt.minAltFt = leg.endAlt.minUserAltFt;
             }
-            if (userLegEndMaxAltFt && (!leg.legEndMaxAltFt || leg.legEndMaxAltFt > userLegEndMaxAltFt)) {
-                leg.legEndMaxAltFt = userLegEndMaxAltFt;
+            if (leg.endAlt.maxUserAltFt && (!leg.endAlt.maxAltFt || leg.endAlt.maxAltFt > leg.endAlt.maxUserAltFt)) {
+                leg.endAlt.maxAltFt = leg.endAlt.maxUserAltFt;
             }
-            if (userLegEndMinAltFt && leg.legEndMaxAltFt && leg.legEndMaxAltFt < userLegEndMinAltFt) {
-                leg.legEndMaxAltFt = userLegEndMinAltFt;
+            if (leg.endAlt.minUserAltFt && leg.endAlt.maxAltFt && leg.endAlt.maxAltFt < leg.endAlt.minUserAltFt) {
+                leg.endAlt.maxAltFt = leg.endAlt.minUserAltFt;
             }
-            if (userLegEndMaxAltFt && leg.legEndMinAltFt && leg.legEndMinAltFt > userLegEndMaxAltFt) {
-                leg.legEndMinAltFt = userLegEndMaxAltFt;
+            if (leg.endAlt.maxUserAltFt && leg.endAlt.minAltFt && leg.endAlt.minAltFt > leg.endAlt.maxUserAltFt) {
+                leg.endAlt.minAltFt = leg.endAlt.maxUserAltFt;
             }
 
             // first/last wp from/to airport: set alt to ground level
@@ -778,49 +786,66 @@ function terrainService($http)
             const isLastLegToAirport = (i === terrain.legs.length - 1 && wp.type === "airport");
 
             if (isFirstLegFromAirport) {
-                leg.legStartMinAltFt = m2ft(terrain.elevations_m[0][1]);
-                leg.legStartMaxAltFt = leg.legStartMinAltFt;
+                leg.startAlt.minUserAltFt = m2ft(terrain.elevations_m[0][1]);
+                leg.startAlt.maxUserAltFt = leg.startAlt.minUserAltFt;
+                leg.startAlt.minAltFt = leg.startAlt.minUserAltFt;
+                leg.startAlt.maxAltFt = leg.startAlt.maxUserAltFt;
             }
 
             if (isLastLegToAirport) {
-                leg.legEndMinAltFt = m2ft(terrain.elevations_m[terrain.elevations_m.length - 1][1]);
-                leg.legEndMaxAltFt = leg.legEndMinAltFt;
+                leg.endAlt.minUserAltFt = m2ft(terrain.elevations_m[terrain.elevations_m.length - 1][1]);
+                leg.endAlt.maxUserAltFt = leg.endAlt.minUserAltFt;
+                leg.endAlt.minAltFt = leg.endAlt.minUserAltFt;
+                leg.endAlt.maxAltFt = leg.endAlt.maxUserAltFt;
             }
 
             // terrain clearance
             const minTerrainAltFt = m2ft(leg.maxelevation_m) + MIN_TERRAIN_CLEARANCE_FT;
             const minTerrainAltFtRounded = Math.ceil(minTerrainAltFt / 100) * 100;
-
+            leg.startAlt.minTerrainAltFt = minTerrainAltFtRounded;
             // if no leg end alt is defined yet (e.g. no destination airport), set it according to terrain clearance.
-            if (!leg.legEndMinAltFt) {
-                leg.legEndMinAltFt = minTerrainAltFtRounded;
+            if (!leg.endAlt.minTerrainAltFt) {
+                leg.endAlt.minTerrainAltFt = minTerrainAltFtRounded;
             }
-
-            if (!leg.legEndMaxAltFt) {
-                leg.legEndMaxAltFt = minTerrainAltFtRounded;
+            if (!leg.endAlt.minAltFt) {
+                leg.endAlt.minAltFt = minTerrainAltFtRounded;
+            }
+            if (!leg.endAlt.maxAltFt) {
+                leg.endAlt.maxAltFt = minTerrainAltFtRounded;
             }
 
             // calculate climb/descent performance backwards from leg end to start and set if not defined by user above
             const legDescentTimeMin = calcLegDescentTimeMin(wp, aircraft);
             const legClimbTimeMin = calcLegClimbTimeMin(wp, aircraft);
-            const legStartMinClimbAltFt = calcClimbStartingAltFt(leg.legEndMinAltFt, legClimbTimeMin, aircraft.rocSeaLevelFpm, aircraft.serviceCeilingFt);
-            const legStartMaxDecentAltFt = calcDescentStartingAltFt(leg.legEndMaxAltFt, legDescentTimeMin, aircraft.rodFpm);
+            const legStartMinClimbAltFt = calcClimbStartingAltFt(leg.endAlt.minAltFt, legClimbTimeMin, aircraft.rocSeaLevelFpm, aircraft.serviceCeilingFt);
+            const legStartMaxDecentAltFt = calcDescentStartingAltFt(leg.endAlt.maxAltFt, legDescentTimeMin, aircraft.rodFpm);
 
-            const legStartMinAltFt = legStartMinClimbAltFt < leg.legEndMinAltFt ? Math.max(minTerrainAltFtRounded, legStartMinClimbAltFt) : minTerrainAltFtRounded;
-            if (!isFirstLegFromAirport && (!leg.legStartMinAltFt || leg.legStartMinAltFt < legStartMinAltFt)) {
-                leg.legStartMinAltFt = legStartMinAltFt;
+            const legStartMinAltFt = legStartMinClimbAltFt < leg.endAlt.minAltFt ? Math.max(minTerrainAltFtRounded, legStartMinClimbAltFt) : minTerrainAltFtRounded;
+            if (!isFirstLegFromAirport && (!leg.startAlt.minAltFt || leg.startAlt.minAltFt < legStartMinAltFt)) {
+                leg.startAlt.minAltFt = legStartMinAltFt;
             }
 
             const legStartMaxAltFt = Math.max(minTerrainAltFtRounded, legStartMaxDecentAltFt);
-            if (!isFirstLegFromAirport && (!leg.legStartMaxAltFt || leg.legStartMaxAltFt > legStartMaxAltFt)) {
-                leg.legStartMaxAltFt = legStartMaxAltFt;
+            if (!isFirstLegFromAirport && (!leg.startAlt.maxAltFt || leg.startAlt.maxAltFt > legStartMaxAltFt)) {
+                leg.startAlt.maxAltFt = legStartMaxAltFt;
             }
 
             // copy values to previous leg
             if (prevLeg) {
-                prevLeg.legEndMinAltFt = leg.legStartMinAltFt;
-                prevLeg.legEndMaxAltFt = leg.legStartMaxAltFt;
+                prevLeg.endAlt = leg.startAlt;
+                prevLeg.endAlt = leg.startAlt;
             }
+        }
+    }
+    
+    
+    function initAltMetaData() {
+        return {
+            minAltFt: null,
+            maxAltFt: null,
+            minUserAltFt: null,
+            maxUserAltFt: null,
+            minTerrainAltFt: null,
         }
     }
 
@@ -865,16 +890,16 @@ function terrainService($http)
             const legX1Percent = currentDistPercent;
             const legX2Percent = currentDistPercent + legDistPercent;
 
-            if (leg.legEndMinAltFt > currentAltFt) {
+            if (leg.endAlt.minAltFt > currentAltFt) {
                 /*const legClimbTimeMin = calcLegClimbTimeMin(waypoints[i + 1], aircraft);
                 const maxClimbAltFt = calcClimbTargetAltFt(currentAltFt, legClimbTimeMin, aircraft.rocSeaLevelFpm, aircraft.serviceCeilingFt);
-                nextAltFt = Math.min(leg.legEndMinAltFt, maxClimbAltFt);*/
-                nextAltFt = leg.legEndMinAltFt;
-            } else if (leg.legEndMaxAltFt < currentAltFt) {
+                nextAltFt = Math.min(leg.endAlt.minAltFt, maxClimbAltFt);*/
+                nextAltFt = leg.endAlt.minAltFt;
+            } else if (leg.endAlt.maxAltFt < currentAltFt) {
                 /*const legDescentTimeMin = calcLegDescentTimeMin(waypoints[i + 1], aircraft);
                 const minDescentAltFt = calcDescentTargetAltFt(currentAltFt, legDescentTimeMin, aircraft.rodFpm);
-                nextAltFt = Math.max(leg.legEndMaxAltFt, minDescentAltFt);*/
-                nextAltFt = leg.legEndMaxAltFt;
+                nextAltFt = Math.max(leg.endAlt.maxAltFt, minDescentAltFt);*/
+                nextAltFt = leg.endAlt.maxAltFt;
             }
             const legY1Percent = 100 * (1 - currentAltFt / maxelevation_ft);
             const legY2Percent = 100 * (1 - nextAltFt / maxelevation_ft);
@@ -895,8 +920,8 @@ function terrainService($http)
             addWaypointLabel(svg, currentDistPercent, legY1Percent, waypoints[i], (i === 0) ? "start" : "middle", (i % 2) === 1, wpClickCallback); // TODO: alternate label y pos
 
             // TODO: debug, min line
-            /*const legMinY1Percent = 100 * (1 - leg.legStartMinAltFt / maxelevation_ft);
-            const legMinY2Percent = 100 * (1 - leg.legEndMinAltFt / maxelevation_ft);
+            /*const legMinY1Percent = 100 * (1 - leg.startAlt.minAltFt / maxelevation_ft);
+            const legMinY2Percent = 100 * (1 - leg.endAlt.minAltFt / maxelevation_ft);
 
             const line = document.createElementNS(SVG_NS, "line");
             line.setAttribute("x1", legX1Percent.toString() + "%");
@@ -908,8 +933,8 @@ function terrainService($http)
             svg.appendChild(line);*/
 
             // TODO: debug, max line
-            /*const legMaxY1Percent = 100 * (1 - leg.legStartMaxAltFt / maxelevation_ft);
-            const legMaxY2Percent = 100 * (1 - leg.legEndMaxAltFt / maxelevation_ft);
+            /*const legMaxY1Percent = 100 * (1 - leg.startAlt.maxAltFt / maxelevation_ft);
+            const legMaxY2Percent = 100 * (1 - leg.endAlt.maxAltFt / maxelevation_ft);
 
             const line2 = document.createElementNS(SVG_NS, "line");
             line2.setAttribute("x1", legX1Percent.toString() + "%");
