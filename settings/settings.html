@@ -41,9 +41,10 @@
 			</div>
 		</div>
 		<div class="form-group">
-			<label for="climbSpeed" class="control-label col-sm-3">Climb Speed (kt)</label>
+			<label for="climbSpeed" class="control-label col-sm-3">Climb Speed (% of Cruise Speed)</label>
 			<div class="col-sm-2">
-				<input type="text" id="climbSpeed" class="form-control" ng-model="globalData.aircraft.climbSpeedKt">
+				<input type="text" id="climbSpeed" class="form-control" ng-model="globalData.aircraft.climbSpeedPercent">
+				(<i>{{ getClimbSpeedKts() }} kt</i>)
 			</div>
 		</div>
 	</div>

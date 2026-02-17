@@ -802,7 +802,7 @@ function terrainService($http)
 
             // calculate climb/descent performance backwards from leg end to start and set if not defined by user above
             const legDescentTimeMin = wp.dist / aircraft.speed * 60 + (wp.vacTime ? wp.vacTime : 0);
-            const legClimbTimeMin = legDescentTimeMin * (aircraft.speed / aircraft.climbSpeedKt);
+            const legClimbTimeMin = legDescentTimeMin * (100 / aircraft.climbSpeedPercent);
             const legStartMinClimbAltFt = calcClimbStartingAltFt(leg.legEndMinAltFt, legClimbTimeMin, aircraft.rocSeaLevelFpm, aircraft.serviceCeilingFt);
             const legStartMaxDecentAltFt = calcDescentStartingAltFt(leg.legEndMaxAltFt, legDescentTimeMin, aircraft.rodFpm);
 

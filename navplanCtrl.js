@@ -55,7 +55,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 				$scope.globalData.aircraft.serviceCeilingFt = 13000;
 				$scope.globalData.aircraft.rocSeaLevelFpm = 700;
 				$scope.globalData.aircraft.rodFpm = 500;
-				$scope.globalData.aircraft.climbSpeedKt = 75;
+				$scope.globalData.aircraft.climbSpeedPercent = 75;
 			}
 		}
 		else // load default values
@@ -81,7 +81,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 				serviceCeilingFt: 13000,
 				rocSeaLevelFpm: 700,
 				rodFpm: 500,
-				climbSpeedKt: 75,
+				climbSpeedPercent: 75,
 			};
 			$scope.globalData.fuel =
 			{
