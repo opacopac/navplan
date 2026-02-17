@@ -122,7 +122,7 @@ function terrainService($http)
 
         debugger;
         calcLegsAltitudeMetaData(waypoints, aircraft, terrain);
-        addRoute2(svg, terrain, waypoints, wpClickCallback, maxelevation_m);
+        addRoute2(svg, terrain, waypoints, aircraft, wpClickCallback, maxelevation_m);
 
         return svg;
     }
@@ -801,8 +801,8 @@ function terrainService($http)
             }
 
             // calculate climb/descent performance backwards from leg end to start and set if not defined by user above
-            const legDescentTimeMin = wp.dist / aircraft.speed * 60 + (wp.vacTime ? wp.vacTime : 0);
-            const legClimbTimeMin = legDescentTimeMin * (100 / aircraft.climbSpeedPercent);
+            const legDescentTimeMin = calcLegDescentTimeMin(wp, aircraft);
+            const legClimbTimeMin = calcLegClimbTimeMin(wp, aircraft);
             const legStartMinClimbAltFt = calcClimbStartingAltFt(leg.legEndMinAltFt, legClimbTimeMin, aircraft.rocSeaLevelFpm, aircraft.serviceCeilingFt);
             const legStartMaxDecentAltFt = calcDescentStartingAltFt(leg.legEndMaxAltFt, legDescentTimeMin, aircraft.rodFpm);
 
@@ -835,7 +835,19 @@ function terrainService($http)
     }
 
 
-    function addRoute2(svg, terrain, waypoints, wpClickCallback, maxelevation_m) {
+    function calcLegDescentTimeMin(wp, aircraft) {
+        return wp.dist / aircraft.speed * 60 + (wp.vacTime ? wp.vacTime : 0);
+    }
+
+
+    function calcLegClimbTimeMin(wp, aircraft) {
+        const legDescentTimeMin = calcLegDescentTimeMin(wp, aircraft);
+        return legDescentTimeMin * (100 / aircraft.climbSpeedPercent);
+    }
+
+
+
+    function addRoute2(svg, terrain, waypoints, aircraft, wpClickCallback, maxelevation_m) {
         if (terrain.legs.length !== waypoints.length - 1) {
             logError("number of legs and waypoints don't match");
             return;
@@ -854,8 +866,14 @@ function terrainService($http)
             const legX2Percent = currentDistPercent + legDistPercent;
 
             if (leg.legEndMinAltFt > currentAltFt) {
+                /*const legClimbTimeMin = calcLegClimbTimeMin(waypoints[i + 1], aircraft);
+                const maxClimbAltFt = calcClimbTargetAltFt(currentAltFt, legClimbTimeMin, aircraft.rocSeaLevelFpm, aircraft.serviceCeilingFt);
+                nextAltFt = Math.min(leg.legEndMinAltFt, maxClimbAltFt);*/
                 nextAltFt = leg.legEndMinAltFt;
             } else if (leg.legEndMaxAltFt < currentAltFt) {
+                /*const legDescentTimeMin = calcLegDescentTimeMin(waypoints[i + 1], aircraft);
+                const minDescentAltFt = calcDescentTargetAltFt(currentAltFt, legDescentTimeMin, aircraft.rodFpm);
+                nextAltFt = Math.max(leg.legEndMaxAltFt, minDescentAltFt);*/
                 nextAltFt = leg.legEndMaxAltFt;
             }
             const legY1Percent = 100 * (1 - currentAltFt / maxelevation_ft);

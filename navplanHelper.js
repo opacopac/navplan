@@ -784,27 +784,27 @@ function calcMinutesToDescent(upperAltFt, lowerAltFt, rodFtPm) {
 }
 
 
-function calcClimbTargetAltFt(startingAltFt, timeMin, rocSeaLevelFt, serviceCeilingFt) {
-    const absoluteCeilingFt = calcAbsoluteCeiling(rocSeaLevelFt, serviceCeilingFt);
+function calcClimbTargetAltFt(startingAltFt, timeMin, rocSeaLevelFpm, serviceCeilingFt) {
+    const absoluteCeilingFt = calcAbsoluteCeiling(rocSeaLevelFpm, serviceCeilingFt);
 
-    return (absoluteCeilingFt - startingAltFt) * (1 - Math.exp(-timeMin * rocSeaLevelFt / absoluteCeilingFt));
+    return startingAltFt + (absoluteCeilingFt - startingAltFt) * (1 - Math.exp(-timeMin * rocSeaLevelFpm / absoluteCeilingFt));
 }
 
 
-function calcClimbStartingAltFt(targetAltFt, timeMin, rocSeaLevelFt, serviceCeilingFt) {
-    const absoluteCeilingFt = calcAbsoluteCeiling(rocSeaLevelFt, serviceCeilingFt);
+function calcClimbStartingAltFt(targetAltFt, timeMin, rocSeaLevelFpm, serviceCeilingFt) {
+    const absoluteCeilingFt = calcAbsoluteCeiling(rocSeaLevelFpm, serviceCeilingFt);
 
-    return absoluteCeilingFt - (absoluteCeilingFt - targetAltFt) * Math.exp(timeMin * rocSeaLevelFt / absoluteCeilingFt);
+    return absoluteCeilingFt - (absoluteCeilingFt - targetAltFt) * Math.exp(timeMin * rocSeaLevelFpm / absoluteCeilingFt);
 }
 
 
-function calcDescentTargetAltFt(startingAltFt, timeMin, rodFtPm) {
-    return Math.max(0, startingAltFt - timeMin * rodFtPm);
+function calcDescentTargetAltFt(startingAltFt, timeMin, rodFpm) {
+    return startingAltFt - timeMin * rodFpm;
 }
 
 
-function calcDescentStartingAltFt(targetAltFt, timeMin, rodFtPm) {
-    return targetAltFt + timeMin * rodFtPm;
+function calcDescentStartingAltFt(targetAltFt, timeMin, rodFpm) {
+    return targetAltFt + timeMin * rodFpm;
 }
 
 //endregion
