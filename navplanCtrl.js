@@ -49,6 +49,14 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
             $scope.globalData.downloadLink = {}; // internally used only
             $scope.globalData.fitViewLatLon = undefined; // internally used only
             $scope.globalData.lastActivity = undefined;
+
+			// TODO: temporary for bw-compatibility, when switching between navplan & navplan/brahcn
+			if (!$scope.globalData.aircraft.serviceCeilingFt) {
+				$scope.globalData.aircraft.serviceCeilingFt = 13000;
+				$scope.globalData.aircraft.rocSeaLevelFpm = 700;
+				$scope.globalData.aircraft.rodFpm = 500;
+				$scope.globalData.aircraft.climbSpeedKt = 75;
+			}
 		}
 		else // load default values
 		{
