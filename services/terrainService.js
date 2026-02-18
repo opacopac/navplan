@@ -121,7 +121,6 @@ function terrainService($http)
         addSvgGrid(svg, maxelevation_m);
         //addRoute(svg, terrain, waypoints, wpClickCallback);
 
-        debugger;
         calcLegsAltitudeMetaData(waypoints, aircraft, terrain);
         addRoute2(svg, terrain, waypoints, aircraft, wpClickCallback, maxelevation_m);
 
@@ -897,7 +896,7 @@ function terrainService($http)
             if (!leg.warning) {
                 const terrainClearanceText = "Flight path may be below min. terrain clearance of leg!";
                 const minTerrainAltFtForWarning = leg.minTerrainAltFt - MIN_TERRAIN_CLEARANCE_FT + MIN_TERRAIN_CLEARANCE_FOR_WARNING_FT;
-                if (i > 0 && i < terrain.legs.length - 1 && (currentAltFt < minTerrainAltFtForWarning || nextAltFt < minTerrainAltFtForWarning)) {
+                if (i > 0 && i < terrain.legs.length - 1 && (currentAltFt < minTerrainAltFtForWarning)) {
                     leg.warning = terrainClearanceText;
                 } else if (i === 0 && nextAltFt < minTerrainAltFtForWarning) {
                     leg.warning = terrainClearanceText;
@@ -932,7 +931,7 @@ function terrainService($http)
             }
 
             // TODO: debug, min line
-            const legMinY1Percent = 100 * (1 - leg.startAlt.minAltFt / maxelevation_ft);
+            /*const legMinY1Percent = 100 * (1 - leg.startAlt.minAltFt / maxelevation_ft);
             const legMinY2Percent = 100 * (1 - leg.endAlt.minAltFt / maxelevation_ft);
 
             const line3 = document.createElementNS(SVG_NS, "line");
@@ -942,10 +941,10 @@ function terrainService($http)
             line3.setAttribute("y2", legMinY2Percent.toString() + "%");
             line3.setAttribute("style", "stroke:rgba(0, 0, 255, 1.0); stroke-width:3px;");
             line3.setAttribute("shape-rendering", "crispEdges");
-            svg.appendChild(line3);
+            svg.appendChild(line3);*/
 
             // TODO: debug, max line
-            const legMaxY1Percent = 100 * (1 - leg.startAlt.maxAltFt / maxelevation_ft);
+            /*const legMaxY1Percent = 100 * (1 - leg.startAlt.maxAltFt / maxelevation_ft);
             const legMaxY2Percent = 100 * (1 - leg.endAlt.maxAltFt / maxelevation_ft);
 
             const line2 = document.createElementNS(SVG_NS, "line");
@@ -955,7 +954,7 @@ function terrainService($http)
             line2.setAttribute("y2", legMaxY2Percent.toString() + "%");
             line2.setAttribute("style", "stroke:rgba(255, 0, 0, 1.0); stroke-width:2px;");
             line2.setAttribute("shape-rendering", "crispEdges");
-            svg.appendChild(line2);
+            svg.appendChild(line2);*/
 
             currentDistPercent += legDistPercent;
             currentAltFt = nextAltFt;
