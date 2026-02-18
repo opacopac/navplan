@@ -18,6 +18,7 @@ function terrainService($http)
     var ID_TEXTBG_RED = "textBgRed";
     var ID_TEXTBG_GREEN = "textBgGreeen";
     var MIN_TERRAIN_CLEARANCE_FT = 1000;
+    var MIN_TERRAIN_CLEARANCE_FOR_WARNING_FT = 500;
     var IMAGE_HEADROOM_M = 1000;
 
 
@@ -890,17 +891,24 @@ function terrainService($http)
                 const legClimbTimeMin = calcLegClimbTimeMin(waypoints[i + 1], aircraft);
                 const maxClimbAltFt = calcClimbTargetAltFt(currentAltFt, legClimbTimeMin, aircraft.rocSeaLevelFpm, aircraft.serviceCeilingFt);
                 nextAltFt = Math.min(leg.endAlt.minAltFt, maxClimbAltFt);
-                if (nextAltFt < leg.endAlt.minUserAltFt) {
-                    leg.warning = 'Climb performance may be insufficient to reach minimum altitude at end of leg';
+                if (maxClimbAltFt < leg.endAlt.minUserAltFt || maxClimbAltFt < leg.minTerrainAltFt) {
+                    leg.warning = "Climb performance may be insufficient to reach the altitude before the end of the leg! (update climb performance in ⚙️ Settings)";
                     nextAltFt = leg.endAlt.minAltFt;
                 }
             } else if (leg.endAlt.maxAltFt < currentAltFt) {
                 nextAltFt = leg.endAlt.maxAltFt;
             }
 
-            if (i > 0 && i < terrain.legs.length - 1 && (currentAltFt < leg.minTerrainAltFt || nextAltFt < leg.minTerrainAltFt)) {
-                leg.warning = 'Below minimum terrain clearance ' + MIN_TERRAIN_CLEARANCE_FT + ' ft';
-                nextAltFt = leg.endAlt.minAltFt;
+            if (!leg.warning) {
+                const terrainClearanceText = "Flight path may be below min. terrain clearance of leg!";
+                const minTerrainAltFtForWarning = leg.minTerrainAltFt - MIN_TERRAIN_CLEARANCE_FT + MIN_TERRAIN_CLEARANCE_FOR_WARNING_FT;
+                if (i > 0 && i < terrain.legs.length - 1 && (currentAltFt < minTerrainAltFtForWarning || nextAltFt < minTerrainAltFtForWarning)) {
+                    leg.warning = terrainClearanceText;
+                } else if (i === 0 && nextAltFt < minTerrainAltFtForWarning) {
+                    leg.warning = terrainClearanceText;
+                } else if (i === terrain.legs.length - 1 && currentAltFt < minTerrainAltFtForWarning) {
+                    leg.warning = terrainClearanceText;
+                }
             }
 
             const legY1Percent = 100 * (1 - currentAltFt / maxelevation_ft);
@@ -971,25 +979,22 @@ function terrainService($http)
 
         function addRouteWarning(svg, xPercent, yPercent, message)
         {
-            const icon = document.createElementNS(SVG_NS, "path");
-            icon.setAttribute("d", "M569.517 440.013C587.975 472.007 564.806 512 527.94 512H48.054c-36.937 0-59.999-40.055-41.577-71.987L246.423 23.985c18.467-32.009 64.72-31.951 83.154 0l239.94 416.028zM288 354c-25.405 0-46 20.595-46 46s20.595 46 46 46 46-20.595 46-46-20.595-46-46-46zm-43.673-165.346l7.418 136c.347 6.364 5.609 11.346 11.982 11.346h48.546c6.373 0 11.635-4.982 11.982-11.346l7.418-136c.375-6.874-5.098-12.654-11.982-12.654h-63.383c-6.884 0-12.356 5.78-11.981 12.654z");
-            icon.setAttribute("fill", "#FFCC00");
+            const icon = document.createElementNS(SVG_NS, "text");
+            icon.setAttribute("x", xPercent.toString() + "%");
+            icon.setAttribute("y", yPercent.toString() + "%");
+            icon.setAttribute("style", "stroke:#FFFF00; fill:#FFFF00; cursor: help");
+            icon.setAttribute("text-anchor", "middle");
+            icon.setAttribute("font-family", "Calibri,sans-serif");
+            icon.setAttribute("font-weight", "bold");
+            icon.setAttribute("font-size", "24px");
+            icon.setAttribute("transform", "translate(0 6)");
+            icon.textContent = "⚠️";
 
             const title = document.createElementNS(SVG_NS, "title");
             title.textContent = message;
             icon.appendChild(title);
 
-            const innerSvg = document.createElementNS(SVG_NS, "svg");
-            innerSvg.setAttribute("x", xPercent.toString() + "%");
-            innerSvg.setAttribute("y", yPercent.toString() + "%");
-            innerSvg.setAttribute("viewBox", "0 0 576 512");
-            innerSvg.setAttribute("width", "24px");
-            innerSvg.setAttribute("height", "24px");
-            innerSvg.setAttribute("transform", "translate(-12, -12)"); // center the icon on the point
-            innerSvg.setAttribute("style", "overflow: visible; cursor: help");
-            innerSvg.appendChild(icon);
-
-            svg.appendChild(innerSvg);
+            svg.appendChild(icon);
         }
 
 
