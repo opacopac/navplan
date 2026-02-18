@@ -741,98 +741,93 @@ function terrainService($http)
     function calcLegsAltitudeMetaData(waypoints, aircraft, terrain) {
         for (let i = terrain.legs.length - 1; i >= 0; i--) {
             const leg = terrain.legs[i];
-            const prevLeg = i > 0 ? terrain.legs[i - 1] : null;
+            const nextLeg = i < terrain.legs.length - 1 ? terrain.legs[i + 1] : null;
             const wp = waypoints[i + 1];
             const prevWp = waypoints[i];
-            
-            // init leg start/end
-            leg.startAlt = initAltMetaData();
-            
-            if (!leg.endAlt) {
-                leg.endAlt = initAltMetaData();
-            }
-            
-
-            // get altitudes defined by user
             const wpAlt = wp.alt ? parseFloat(wp.alt) : null;
-            leg.startAlt.minUserAltFt = wp.isaltatlegstart && isWpMinAlt(wp) ? wpAlt : null;
-            leg.startAlt.maxUserAltFt = wp.isaltatlegstart && isWpMaxAlt(wp) ? wpAlt : null;
-            leg.endAlt.minUserAltFt = !wp.isaltatlegstart && isWpMinAlt(wp) ? wpAlt : null;
-            leg.endAlt.maxUserAltFt = !wp.isaltatlegstart && isWpMaxAlt(wp) ? wpAlt : null;
-
-            // set leg start altitudes
-            if (leg.startAlt.minUserAltFt && (!leg.startAlt.minAltFt || leg.startAlt.minAltFt < leg.startAlt.minUserAltFt)) {
-                leg.startAlt.minAltFt = leg.startAlt.minUserAltFt;
-            }
-            if (leg.startAlt.maxUserAltFt && (!leg.startAlt.maxAltFt || leg.startAlt.maxAltFt > leg.startAlt.maxUserAltFt)) {
-                leg.startAlt.maxAltFt = leg.startAlt.maxUserAltFt;
-            }
-
-            // set leg end altitudes
-            if (leg.endAlt.minUserAltFt && (!leg.endAlt.minAltFt || leg.endAlt.minAltFt < leg.endAlt.minUserAltFt)) {
-                leg.endAlt.minAltFt = leg.endAlt.minUserAltFt;
-            }
-            if (leg.endAlt.maxUserAltFt && (!leg.endAlt.maxAltFt || leg.endAlt.maxAltFt > leg.endAlt.maxUserAltFt)) {
-                leg.endAlt.maxAltFt = leg.endAlt.maxUserAltFt;
-            }
-            if (leg.endAlt.minUserAltFt && leg.endAlt.maxAltFt && leg.endAlt.maxAltFt < leg.endAlt.minUserAltFt) {
-                leg.endAlt.maxAltFt = leg.endAlt.minUserAltFt;
-            }
-            if (leg.endAlt.maxUserAltFt && leg.endAlt.minAltFt && leg.endAlt.minAltFt > leg.endAlt.maxUserAltFt) {
-                leg.endAlt.minAltFt = leg.endAlt.maxUserAltFt;
-            }
-
-            // first/last wp from/to airport: set alt to ground level
             const isFirstLegFromAirport = (i === 0 && prevWp.type === "airport");
             const isLastLegToAirport = (i === terrain.legs.length - 1 && wp.type === "airport");
 
-            if (isFirstLegFromAirport) {
-                leg.startAlt.minUserAltFt = m2ft(terrain.elevations_m[0][1]);
-                leg.startAlt.maxUserAltFt = leg.startAlt.minUserAltFt;
-                leg.startAlt.minAltFt = leg.startAlt.minUserAltFt;
-                leg.startAlt.maxAltFt = leg.startAlt.maxUserAltFt;
-            }
-
-            if (isLastLegToAirport) {
-                leg.endAlt.minUserAltFt = m2ft(terrain.elevations_m[terrain.elevations_m.length - 1][1]);
-                leg.endAlt.maxUserAltFt = leg.endAlt.minUserAltFt;
-                leg.endAlt.minAltFt = leg.endAlt.minUserAltFt;
-                leg.endAlt.maxAltFt = leg.endAlt.maxUserAltFt;
-            }
-
-            // terrain clearance
+            // get terrain clearance
             const minTerrainAltFt = m2ft(leg.maxelevation_m) + MIN_TERRAIN_CLEARANCE_FT;
-            const minTerrainAltFtRounded = Math.ceil(minTerrainAltFt / 100) * 100;
-            leg.minTerrainAltFt = minTerrainAltFtRounded;
-            // if no leg end alt is defined yet (e.g. no destination airport), set it according to terrain clearance.
-            if (!leg.endAlt.minAltFt) {
-                leg.endAlt.minAltFt = minTerrainAltFtRounded;
-            }
-            if (!leg.endAlt.maxAltFt) {
-                leg.endAlt.maxAltFt = minTerrainAltFtRounded;
+            leg.minTerrainAltFt = Math.ceil(minTerrainAltFt / 100) * 100;
+
+
+            // leg END
+            leg.endAlt = initAltMetaData();
+
+            // get leg end altitudes defined by user
+            leg.endAlt.minUserAltFt = !wp.isaltatlegstart && isWpMinAlt(wp) ? wpAlt : null;
+            leg.endAlt.maxUserAltFt = !wp.isaltatlegstart && isWpMaxAlt(wp) ? wpAlt : null;
+
+            // clamp leg end altitudes for destination airport to GND
+            if (isLastLegToAirport) {
+                const gndAltFt = m2ft(terrain.elevations_m[terrain.elevations_m.length - 1][1]);
+                leg.endAlt.minUserAltFt = gndAltFt;
+                leg.endAlt.maxUserAltFt = gndAltFt;
             }
 
-            // calculate climb/descent performance backwards from leg end to start and set if not defined by user above
+            // find back propagated altitudes from next leg (if any)
+            const backPropMinAltFt = nextLeg ? nextLeg.startAlt.minAltFt : leg.minTerrainAltFt;
+            const backPropMaxAltFt = nextLeg ? nextLeg.startAlt.maxAltFt : leg.minTerrainAltFt;
+
+            // calculate leg end altitudes by prio
+            calcAltByPrio(leg.endAlt, leg.minTerrainAltFt, backPropMinAltFt, backPropMaxAltFt);
+
+
+            // leg START
+            leg.startAlt = initAltMetaData();
+
+            // get altitudes defined by user
+            leg.startAlt.minUserAltFt = wp.isaltatlegstart && isWpMinAlt(wp) ? wpAlt : null;
+            leg.startAlt.maxUserAltFt = wp.isaltatlegstart && isWpMaxAlt(wp) ? wpAlt : null;
+
+            // clamp leg start altitudes for origin airport to GND
+            if (isFirstLegFromAirport) {
+                const gndAltFt = m2ft(terrain.elevations_m[0][1]);
+                leg.startAlt.minUserAltFt = gndAltFt;
+                leg.startAlt.maxUserAltFt = gndAltFt;
+            }
+
+            // calculate climb/descent performance backwards from leg end to start
             const legDescentTimeMin = calcLegDescentTimeMin(wp, aircraft);
             const legClimbTimeMin = calcLegClimbTimeMin(wp, aircraft);
             const legStartMinClimbAltFt = calcClimbStartingAltFt(leg.endAlt.minAltFt, legClimbTimeMin, aircraft.rocSeaLevelFpm, aircraft.serviceCeilingFt);
             const legStartMaxDecentAltFt = calcDescentStartingAltFt(leg.endAlt.maxAltFt, legDescentTimeMin, aircraft.rodFpm);
 
-            const legStartMinAltFt = legStartMinClimbAltFt < leg.endAlt.minAltFt ? Math.max(minTerrainAltFtRounded, legStartMinClimbAltFt) : minTerrainAltFtRounded;
-            if (!isFirstLegFromAirport && (!leg.startAlt.minAltFt || leg.startAlt.minAltFt < legStartMinAltFt)) {
-                leg.startAlt.minAltFt = legStartMinAltFt;
-            }
+            // calculate leg start altitudes by prio
+            calcAltByPrio(leg.startAlt, leg.minTerrainAltFt, legStartMinClimbAltFt, legStartMaxDecentAltFt);
+        }
+    }
 
-            const legStartMaxAltFt = Math.max(minTerrainAltFtRounded, legStartMaxDecentAltFt);
-            if (!isFirstLegFromAirport && (!leg.startAlt.maxAltFt || leg.startAlt.maxAltFt > legStartMaxAltFt)) {
-                leg.startAlt.maxAltFt = legStartMaxAltFt;
-            }
 
-            // copy values to previous leg
-            if (prevLeg) {
-                prevLeg.endAlt = leg.startAlt;
-                prevLeg.endAlt = leg.startAlt;
-            }
+    function calcAltByPrio(legAlt, legMinTerrainAltFt, backPropMinAltFt, backPropMaxAltFt) {
+        // prio 3: back-propagate from next leg
+        legAlt.minAltFt = backPropMinAltFt;
+        legAlt.maxAltFt = backPropMaxAltFt;
+
+        // prio 2: terrain clearance: override back-propagation if below terrain clearance
+        if (legMinTerrainAltFt > legAlt.minAltFt) {
+            legAlt.minAltFt = legMinTerrainAltFt;
+        }
+        if (legMinTerrainAltFt > legAlt.maxAltFt) {
+            legAlt.maxAltFt = legMinTerrainAltFt;
+        }
+
+        // prio 1: used defined altitudes: override values if above previous min / below previous max
+        if (legAlt.minUserAltFt && legAlt.minUserAltFt > legAlt.minAltFt) {
+            legAlt.minAltFt = legAlt.minUserAltFt;
+        }
+        if (legAlt.maxUserAltFt && legAlt.maxUserAltFt < legAlt.maxAltFt) {
+            legAlt.maxAltFt = legAlt.maxUserAltFt;
+        }
+        // TODO
+        if (legAlt.minUserAltFt && legAlt.minUserAltFt > legAlt.maxAltFt) {
+            legAlt.maxAltFt = legAlt.minUserAltFt;
+        }
+        // TODO
+        if (legAlt.maxUserAltFt && legAlt.maxUserAltFt < legAlt.minAltFt) {
+            legAlt.minAltFt = legAlt.maxUserAltFt;
         }
     }
     
@@ -937,20 +932,20 @@ function terrainService($http)
             }
 
             // TODO: debug, min line
-            /*const legMinY1Percent = 100 * (1 - leg.startAlt.minAltFt / maxelevation_ft);
+            const legMinY1Percent = 100 * (1 - leg.startAlt.minAltFt / maxelevation_ft);
             const legMinY2Percent = 100 * (1 - leg.endAlt.minAltFt / maxelevation_ft);
 
-            const line = document.createElementNS(SVG_NS, "line");
-            line.setAttribute("x1", legX1Percent.toString() + "%");
-            line.setAttribute("y1", legMinY1Percent.toString() + "%");
-            line.setAttribute("x2", legX2Percent.toString() + "%");
-            line.setAttribute("y2", legMinY2Percent.toString() + "%");
-            line.setAttribute("style", "stroke:rgba(0, 0, 255, 1.0); stroke-width:3px;");
-            line.setAttribute("shape-rendering", "crispEdges");
-            svg.appendChild(line);*/
+            const line3 = document.createElementNS(SVG_NS, "line");
+            line3.setAttribute("x1", legX1Percent.toString() + "%");
+            line3.setAttribute("y1", legMinY1Percent.toString() + "%");
+            line3.setAttribute("x2", legX2Percent.toString() + "%");
+            line3.setAttribute("y2", legMinY2Percent.toString() + "%");
+            line3.setAttribute("style", "stroke:rgba(0, 0, 255, 1.0); stroke-width:3px;");
+            line3.setAttribute("shape-rendering", "crispEdges");
+            svg.appendChild(line3);
 
             // TODO: debug, max line
-            /*const legMaxY1Percent = 100 * (1 - leg.startAlt.maxAltFt / maxelevation_ft);
+            const legMaxY1Percent = 100 * (1 - leg.startAlt.maxAltFt / maxelevation_ft);
             const legMaxY2Percent = 100 * (1 - leg.endAlt.maxAltFt / maxelevation_ft);
 
             const line2 = document.createElementNS(SVG_NS, "line");
@@ -960,7 +955,7 @@ function terrainService($http)
             line2.setAttribute("y2", legMaxY2Percent.toString() + "%");
             line2.setAttribute("style", "stroke:rgba(255, 0, 0, 1.0); stroke-width:2px;");
             line2.setAttribute("shape-rendering", "crispEdges");
-            svg.appendChild(line2);*/
+            svg.appendChild(line2);
 
             currentDistPercent += legDistPercent;
             currentAltFt = nextAltFt;
