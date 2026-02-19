@@ -793,6 +793,9 @@ function calcClimbTargetAltFt(startingAltFt, timeMin, rocSeaLevelFpm, serviceCei
 
 function calcClimbStartingAltFt(targetAltFt, timeMin, rocSeaLevelFpm, serviceCeilingFt) {
     const absoluteCeilingFt = calcAbsoluteCeiling(rocSeaLevelFpm, serviceCeilingFt);
+    if (targetAltFt >= absoluteCeilingFt) {
+        return absoluteCeilingFt; // Cannot climb above absolute ceiling
+    }
 
     return absoluteCeilingFt - (absoluteCeilingFt - targetAltFt) * Math.exp(timeMin * rocSeaLevelFpm / absoluteCeilingFt);
 }
