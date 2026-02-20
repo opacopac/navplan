@@ -49,6 +49,14 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
             $scope.globalData.downloadLink = {}; // internally used only
             $scope.globalData.fitViewLatLon = undefined; // internally used only
             $scope.globalData.lastActivity = undefined;
+
+			// TODO: temporary for bw-compatibility, when switching between navplan & navplan/brahcn
+			if (!$scope.globalData.aircraft.serviceCeilingFt) {
+				$scope.globalData.aircraft.serviceCeilingFt = 13000;
+				$scope.globalData.aircraft.rocSeaLevelFpm = 700;
+				$scope.globalData.aircraft.rodFpm = 500;
+				$scope.globalData.aircraft.climbSpeedPercent = 75;
+			}
 		}
 		else // load default values
 		{
@@ -69,7 +77,11 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 			{
 				id: '',
 				speed: 100,
-				consumption: 20
+				consumption: 20,
+				serviceCeilingFt: 13000,
+				rocSeaLevelFpm: 700,
+				rodFpm: 500,
+				climbSpeedPercent: 75,
 			};
 			$scope.globalData.fuel =
 			{
@@ -339,6 +351,7 @@ function navplanCtrl($scope, $http, $timeout, globalData, userService, mapServic
 	$scope.onOkEditWpClicked = function()
 	{
 		$scope.globalData.wpBackup = undefined;
+		$scope.updateWaypoints();
 	};
 	
 	

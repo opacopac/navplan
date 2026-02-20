@@ -17,6 +17,10 @@ function terrainService($http)
     var ID_TEXTBG_BLUE = "textBgBlue";
     var ID_TEXTBG_RED = "textBgRed";
     var ID_TEXTBG_GREEN = "textBgGreeen";
+    var MIN_TERRAIN_CLEARANCE_FT = 1000;
+    var MIN_TERRAIN_CLEARANCE_FOR_WARNING_FT = 500;
+    var IMAGE_HEADROOM_M = 1000;
+
 
     // return api reference
     return {
@@ -24,19 +28,20 @@ function terrainService($http)
     };
 
 
-    function updateTerrain(waypoints, wpClickCallback, successCallback, errorCallback)
+    function updateTerrain(waypoints, aircraft, wpClickCallback, successCallback, errorCallback)
     {
-        getElevations(waypoints, showTerrain, errorCallback);
+        getElevations(waypoints, aircraft, showTerrain, errorCallback);
 
-        function showTerrain(terrain)
+        function showTerrain(terrain, aircraft)
         {
-            var container = document.getElementById("terrainContainer");
+            const container = document.getElementById("terrainContainer");
 
             if (!container)
                 return;
 
-            var imageWitdhPx = container.clientWidth;
-            var svg = getTerrainSvg(waypoints, terrain, terrain.maxelevation_m + 1000, imageWitdhPx, IMAGE_HEIGHT_PX, wpClickCallback);
+            const imageWitdhPx = container.clientWidth;
+            const maxAltitudeM = Math.max(terrain.maxelevation_m, getHighestWpAltM(waypoints)) + IMAGE_HEADROOM_M;
+            const svg = getTerrainSvg(waypoints, terrain, aircraft, maxAltitudeM, imageWitdhPx, IMAGE_HEIGHT_PX, wpClickCallback);
 
             while (container.firstChild)
                 container.removeChild(container.firstChild);
@@ -49,17 +54,29 @@ function terrainService($http)
     }
 
 
-    function getElevations(waypoints, successCallback, errorCallback)
+    function getHighestWpAltM(waypoints) {
+        let highestAltFt = 0;
+        for (const wp of waypoints) {
+            if (wp.alt && parseFloat(wp.alt) > highestAltFt) {
+                highestAltFt = parseFloat(wp.alt);
+            }
+        }
+
+        return ft2m(highestAltFt);
+    }
+
+
+    function getElevations(waypoints, aircraft, successCallback, errorCallback)
     {
         var positions = [];
         for (var i = 0; i < waypoints.length; i++)
             positions.push([waypoints[i].longitude, waypoints[i].latitude]);
 
-        loadTerrain(positions, successCallback, errorCallback);
+        loadTerrain(positions, aircraft, successCallback, errorCallback);
     }
 
 
-    function loadTerrain(positions, successCallback, errorCallback)
+    function loadTerrain(positions, aircraft, successCallback, errorCallback)
     {
         $http.post(BASE_URL, obj2json({ positions: positions }))
             .then(
@@ -68,7 +85,7 @@ function terrainService($http)
                     if (response && response.data && response.data.terrain)
                     {
                         if (successCallback)
-                            successCallback(response.data.terrain);
+                            successCallback(response.data.terrain, aircraft);
                     }
                     else
                     {
@@ -89,7 +106,7 @@ function terrainService($http)
     }
 
 
-    function getTerrainSvg(waypoints, terrain, maxelevation_m, imageWidthPx, imageHeightPx, wpClickCallback)
+    function getTerrainSvg(waypoints, terrain, aircraft, maxelevation_m, imageWidthPx, imageHeightPx, wpClickCallback)
     {
         var svg = document.createElementNS(SVG_NS, "svg");
         svg.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
@@ -102,7 +119,10 @@ function terrainService($http)
         addElevationPolygon(svg, terrain, maxelevation_m, imageWidthPx, imageHeightPx);
         addAirspacePolygons(svg, terrain, maxelevation_m, imageWidthPx, imageHeightPx);
         addSvgGrid(svg, maxelevation_m);
-        addRoute(svg, terrain, waypoints, wpClickCallback);
+        //addRoute(svg, terrain, waypoints, wpClickCallback);
+
+        calcLegsAltitudeMetaData(waypoints, aircraft, terrain);
+        addRoute2(svg, terrain, waypoints, aircraft, wpClickCallback, maxelevation_m);
 
         return svg;
     }
@@ -396,46 +416,233 @@ function terrainService($http)
 
     function addRoute(svg, terrain, waypoints, wpClickCallback)
     {
-        if (terrain.legs.length != waypoints.length - 1)
+        if (terrain.legs.length !== waypoints.length - 1)
         {
             logError("number of legs and waypoints don't match");
             return;
         }
 
-        var currentDist = 0;
-        var yOffset = [40, 80];
+        const labelYOffsets = [0, 40];
+        const maxelevation_m = terrain.maxelevation_m + IMAGE_HEADROOM_M; // Same as in getTerrainSvg
 
+        // Build array of cumulative distances for each waypoint
+        var wpDistances = [0];
+        var cumulativeDist = 0;
         for (var i = 0; i < terrain.legs.length; i++)
+        {
+            cumulativeDist += terrain.legs[i].distance_m;
+            wpDistances.push(cumulativeDist);
+        }
+
+        // Get terrain elevation at each waypoint position
+        var wpTerrainElevations = getTerrainElevationsAtWaypoints(terrain.elevations_m, wpDistances);
+
+        // Collect raw waypoint altitudes (null if not set)
+        // Also track isaltatlegstart flag for each waypoint
+        var rawAltitudes = [];
+        var isAtLegStart = [];
+        for (i = 0; i < waypoints.length; i++)
+        {
+            rawAltitudes.push(getWaypointAltitudeMeters(waypoints[i], wpTerrainElevations[i]));
+            isAtLegStart.push(waypoints[i] && waypoints[i].isaltatlegstart ? true : false);
+        }
+
+        // Force first and last waypoints to ground level (terrain elevation)
+        // This ensures the route starts and ends on the ground
+        rawAltitudes[0] = wpTerrainElevations[0];
+        rawAltitudes[waypoints.length - 1] = wpTerrainElevations[waypoints.length - 1];
+
+        // Interpolate missing altitudes between waypoints that have them
+        var interpolatedAltitudes = interpolateAltitudes(rawAltitudes, wpDistances, isAtLegStart, wpTerrainElevations);
+
+        // Route always has altitudes now (at minimum, ground level at start/end)
+        var hasAnyAltitude = true;
+
+        // Draw route
+        var currentDistPercent = 0;
+
+        for (i = 0; i < terrain.legs.length; i++)
         {
             var leg = terrain.legs[i];
             var legDistPercent = 100 / terrain.totaldistance_m * leg.distance_m;
 
+            // Get y-coordinates for this leg
+            var y1, y2;
+            if (hasAnyAltitude && interpolatedAltitudes[i] !== null)
+            {
+                var pt1 = getPointArray(wpDistances[i], interpolatedAltitudes[i], terrain.totaldistance_m, maxelevation_m, IMAGE_HEIGHT_PX, IMAGE_HEIGHT_PX);
+                y1 = pt1[1];
+            }
+            else
+            {
+                y1 = 0;
+            }
+
+            if (hasAnyAltitude && interpolatedAltitudes[i + 1] !== null)
+            {
+                var pt2 = getPointArray(wpDistances[i + 1], interpolatedAltitudes[i + 1], terrain.totaldistance_m, maxelevation_m, IMAGE_HEIGHT_PX, IMAGE_HEIGHT_PX);
+                y2 = pt2[1];
+            }
+            else
+            {
+                y2 = 0;
+            }
+
             // line
             var line = document.createElementNS(SVG_NS, "line");
-            line.setAttribute("x1", currentDist.toString() + "%");
-            line.setAttribute("x2", (currentDist + legDistPercent).toString() + "%");
-            line.setAttribute("y1", "40"); // TODO: temp
-            line.setAttribute("y2", "40"); // TODO: temp
+            line.setAttribute("x1", currentDistPercent.toString() + "%");
+            line.setAttribute("x2", (currentDistPercent + legDistPercent).toString() + "%");
+            line.setAttribute("y1", y1);
+            line.setAttribute("y2", y2);
             line.setAttribute("style", "stroke:rgba(255, 0, 255, 1.0); stroke-width:5px;");
             line.setAttribute("shape-rendering", "crispEdges");
             svg.appendChild(line);
 
-            addRouteDot(svg, currentDist, yOffset[0], waypoints[i], wpClickCallback);
-            addRouteDotPlumline(svg, currentDist, yOffset[0], IMAGE_HEIGHT_PX);
-            addWaypointLabel(svg, currentDist, yOffset[i % 2], waypoints[i], (i == 0) ? "start" : "middle", wpClickCallback);
+            // Waypoint dot and label
+            addRouteDot(svg, currentDistPercent, y1, waypoints[i], wpClickCallback);
+            addRouteDotPlumline(svg, currentDistPercent, y1, IMAGE_HEIGHT_PX);
+            addWaypointLabel(svg, currentDistPercent, y1 + labelYOffsets[i % 2], waypoints[i], (i === 0) ? "start" : "middle", wpClickCallback);
 
-            currentDist += legDistPercent;
+            currentDistPercent += legDistPercent;
         }
 
-        // final dot
-        addRouteDot(svg, 100, yOffset[0], waypoints[i], wpClickCallback);
-        addRouteDotPlumline(svg, 100, yOffset[0], IMAGE_HEIGHT_PX);
-        addWaypointLabel(svg, currentDist, yOffset[(waypoints.length - 1) % 2], waypoints[waypoints.length - 1], "end", wpClickCallback);
+        // Final waypoint dot
+        var finalY = hasAnyAltitude && interpolatedAltitudes[waypoints.length - 1] !== null
+            ? getPointArray(wpDistances[waypoints.length - 1], interpolatedAltitudes[waypoints.length - 1], terrain.totaldistance_m, maxelevation_m, IMAGE_HEIGHT_PX, IMAGE_HEIGHT_PX)[1]
+            : 0;
+
+        addRouteDot(svg, 100, finalY, waypoints[waypoints.length - 1], wpClickCallback);
+        addRouteDotPlumline(svg, 100, finalY, IMAGE_HEIGHT_PX);
+        addWaypointLabel(svg, currentDistPercent, finalY + labelYOffsets[(waypoints.length - 1) % 2], waypoints[waypoints.length - 1], "end", wpClickCallback);
+
+        // Helper function to get terrain elevation at each waypoint from the elevations array
+        function getTerrainElevationsAtWaypoints(elevations_m, distances)
+        {
+            var result = [];
+            for (var wpIdx = 0; wpIdx < distances.length; wpIdx++)
+            {
+                var targetDist = distances[wpIdx];
+                var elevation = 0;
+
+                // Find the elevation entry closest to this distance
+                for (var j = 0; j < elevations_m.length; j++)
+                {
+                    if (elevations_m[j][0] <= targetDist)
+                    {
+                        elevation = elevations_m[j][1];
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                result.push(elevation);
+            }
+            return result;
+        }
+
+        // Helper function to get waypoint altitude in meters (AMSL)
+        function getWaypointAltitudeMeters(waypoint, terrainElevation)
+        {
+            if (waypoint && waypoint.alt && !isNaN(parseFloat(waypoint.alt)))
+            {
+                // Convert altitude from feet to meters
+                // Note: Currently assumes AMSL. For AGL support, would add terrainElevation here
+                return ft2m(parseFloat(waypoint.alt));
+            }
+            return null;
+        }
+
+        // Interpolate missing altitudes between waypoints that have defined altitudes
+        // isAtLegStart: array of booleans indicating if altitude is "at leg start" (vs "at leg end")
+        // terrainElevations: terrain elevation at each waypoint (for ground reference)
+        function interpolateAltitudes(altitudes, distances, isAtLegStart, terrainElevations)
+        {
+            var result = altitudes.slice(); // Copy array
+
+            // Find segments where we need to interpolate
+            var i = 0;
+            while (i < result.length)
+            {
+                if (result[i] === null)
+                {
+                    // Find the previous waypoint with altitude
+                    var prevIdx = -1;
+                    for (var j = i - 1; j >= 0; j--)
+                    {
+                        if (result[j] !== null)
+                        {
+                            prevIdx = j;
+                            break;
+                        }
+                    }
+
+                    // Find the next waypoint with altitude
+                    var nextIdx = -1;
+                    for (j = i + 1; j < result.length; j++)
+                    {
+                        if (result[j] !== null)
+                        {
+                            nextIdx = j;
+                            break;
+                        }
+                    }
+
+                    // Interpolate if we have both bounds
+                    if (prevIdx >= 0 && nextIdx >= 0)
+                    {
+                        var prevAlt = result[prevIdx];
+                        var nextAlt = result[nextIdx];
+                        var prevDist = distances[prevIdx];
+                        var nextDist = distances[nextIdx];
+                        var totalDist = nextDist - prevDist;
+
+                        // Check isaltatlegstart flags to determine interpolation behavior
+                        // If prev altitude is "at leg start", it applies from that waypoint onward
+                        // If next altitude is "at leg end", it applies up to that waypoint
+                        var prevIsAtStart = isAtLegStart[prevIdx];
+                        var nextIsAtEnd = !isAtLegStart[nextIdx];
+
+                        // Linear interpolation for all waypoints in between
+                        for (j = prevIdx + 1; j < nextIdx; j++)
+                        {
+                            var ratio = (distances[j] - prevDist) / totalDist;
+                            result[j] = prevAlt + (nextAlt - prevAlt) * ratio;
+                        }
+                        i = nextIdx;
+                    }
+                    else if (prevIdx >= 0)
+                    {
+                        // No next altitude - use the previous altitude for remaining waypoints
+                        result[i] = result[prevIdx];
+                        i++;
+                    }
+                    else if (nextIdx >= 0)
+                    {
+                        // No previous altitude - use the next altitude for earlier waypoints
+                        result[i] = result[nextIdx];
+                        i++;
+                    }
+                    else
+                    {
+                        // No altitudes defined at all - fall back to terrain elevation
+                        result[i] = terrainElevations[i];
+                        i++;
+                    }
+                }
+                else
+                {
+                    i++;
+                }
+            }
+
+            return result;
+        }
 
 
         function addRouteDot(svg, cxProc, cy, waypoint, clickCallback)
         {
-            var dot = document.createElementNS(SVG_NS, "circle");
+            const dot = document.createElementNS(SVG_NS, "circle");
             dot.setAttribute("cx", cxProc.toString() + "%");
             dot.setAttribute("cy", cy);
             dot.setAttribute("r", "6");
@@ -451,11 +658,11 @@ function terrainService($http)
 
         function addRouteDotPlumline(svg, cxProc, cy, height)
         {
-            var line = document.createElementNS(SVG_NS, "line");
+            const line = document.createElementNS(SVG_NS, "line");
             line.setAttribute("x1", cxProc.toString() + "%");
             line.setAttribute("x2", cxProc.toString() + "%");
-            line.setAttribute("y1", cy); // TODO: temp
-            line.setAttribute("y2", height); // TODO: temp
+            line.setAttribute("y1", cy);
+            line.setAttribute("y2", height);
             line.setAttribute("style", "stroke:#FF00FF; stroke-width:1px;");
             line.setAttribute("shape-rendering", "crispEdges");
             line.setAttribute("stroke-dasharray", "3, 5");
@@ -466,7 +673,7 @@ function terrainService($http)
 
         function addWaypointLabel(svg, xProc, y, waypoint, textAnchor, clickCallback)
         {
-            var transformX;
+            let transformX;
 
             switch (textAnchor)
             {
@@ -482,7 +689,7 @@ function terrainService($http)
             }
 
             // glow around label
-            var labelGlow = document.createElementNS(SVG_NS, "text");
+            const labelGlow = document.createElementNS(SVG_NS, "text");
             labelGlow.setAttribute("x", xProc.toString() + "%");
             labelGlow.setAttribute("y", y);
             labelGlow.setAttribute("style", "stroke:#FFFFFF; stroke-width:5px; fill:#FFFFFF; cursor: pointer");
@@ -496,7 +703,7 @@ function terrainService($http)
             svg.appendChild(labelGlow);
 
             // label
-            var label = document.createElementNS(SVG_NS, "text");
+            const label = document.createElementNS(SVG_NS, "text");
             label.setAttribute("x", xProc.toString() + "%");
             label.setAttribute("y", y);
             label.setAttribute("style", "stroke:none; fill:#660066; cursor: pointer");
@@ -516,16 +723,359 @@ function terrainService($http)
 
     function getPointArray(dist_m, height_m, maxdistance_m, maxelevation_m, imageWidthPx, imageHeightPx)
     {
-        var x = Math.round(dist_m / maxdistance_m * imageWidthPx);
-        var y = Math.round((maxelevation_m - height_m) / maxelevation_m * imageHeightPx);
+        const x = Math.round(dist_m / maxdistance_m * imageWidthPx);
+        const y = Math.round((maxelevation_m - height_m) / maxelevation_m * imageHeightPx);
 
         return [x, y];
     }
 
     function getPointString(dist_m, height_m, maxdistance_m, maxelevation_m, imageWidthPx, imageHeightPx)
     {
-        var pt = getPointArray(dist_m, height_m, maxdistance_m, maxelevation_m, imageWidthPx, imageHeightPx);
+        const pt = getPointArray(dist_m, height_m, maxdistance_m, maxelevation_m, imageWidthPx, imageHeightPx);
 
         return pt[0] + "," + pt[1] + " ";
+    }
+
+
+    function calcLegsAltitudeMetaData(waypoints, aircraft, terrain) {
+        for (let i = terrain.legs.length - 1; i >= 0; i--) {
+            const leg = terrain.legs[i];
+            const nextLeg = i < terrain.legs.length - 1 ? terrain.legs[i + 1] : null;
+            const wp = waypoints[i + 1];
+            const prevWp = waypoints[i];
+            const wpAlt = wp.alt ? parseFloat(wp.alt) : null;
+            const isFirstLegFromAirport = (i === 0 && prevWp.type === "airport");
+            const isLastLegToAirport = (i === terrain.legs.length - 1 && wp.type === "airport");
+
+            // get terrain clearance
+            const minTerrainAltFt = m2ft(leg.maxelevation_m) + MIN_TERRAIN_CLEARANCE_FT;
+            leg.minTerrainAltFt = Math.ceil(minTerrainAltFt / 100) * 100;
+
+
+            // leg END
+            leg.endAlt = initAltMetaData();
+
+            // get leg end altitudes defined by user
+            leg.endAlt.minUserAltFt = !wp.isaltatlegstart && isWpMinAlt(wp) ? wpAlt : null;
+            leg.endAlt.maxUserAltFt = !wp.isaltatlegstart && isWpMaxAlt(wp) ? wpAlt : null;
+
+            // clamp leg end altitudes for destination airport to GND
+            if (isLastLegToAirport) {
+                const gndAltFt = m2ft(terrain.elevations_m[terrain.elevations_m.length - 1][1]);
+                leg.endAlt.minUserAltFt = gndAltFt;
+                leg.endAlt.maxUserAltFt = gndAltFt;
+            }
+
+            // find back propagated altitudes from next leg (if any)
+            const backPropMinAltFt = nextLeg ? nextLeg.startAlt.minAltFt : leg.minTerrainAltFt;
+            const backPropMaxAltFt = nextLeg ? nextLeg.startAlt.maxAltFt : leg.minTerrainAltFt;
+
+            // calculate leg end altitudes by prio
+            calcAltByPrio(leg.endAlt, leg.minTerrainAltFt, backPropMinAltFt, backPropMaxAltFt);
+
+
+            // leg START
+            leg.startAlt = initAltMetaData();
+
+            // get altitudes defined by user
+            leg.startAlt.minUserAltFt = wp.isaltatlegstart && isWpMinAlt(wp) ? wpAlt : null;
+            leg.startAlt.maxUserAltFt = wp.isaltatlegstart && isWpMaxAlt(wp) ? wpAlt : null;
+
+            // clamp leg start altitudes for origin airport to GND
+            if (isFirstLegFromAirport) {
+                const gndAltFt = m2ft(terrain.elevations_m[0][1]);
+                leg.startAlt.minUserAltFt = gndAltFt;
+                leg.startAlt.maxUserAltFt = gndAltFt;
+            }
+
+            // calculate climb/descent performance backwards from leg end to start
+            const legDescentTimeMin = calcLegDescentTimeMin(wp, aircraft);
+            const legClimbTimeMin = calcLegClimbTimeMin(wp, aircraft);
+            const legStartMinClimbAltFt = calcClimbStartingAltFt(leg.endAlt.minAltFt, legClimbTimeMin, aircraft.rocSeaLevelFpm, aircraft.serviceCeilingFt);
+            const legStartMaxDecentAltFt = calcDescentStartingAltFt(leg.endAlt.maxAltFt, legDescentTimeMin, aircraft.rodFpm);
+
+            // calculate leg start altitudes by prio
+            calcAltByPrio(leg.startAlt, leg.minTerrainAltFt, legStartMinClimbAltFt, legStartMaxDecentAltFt);
+        }
+    }
+
+
+    function calcAltByPrio(legAlt, legMinTerrainAltFt, backPropMinAltFt, backPropMaxAltFt) {
+        // prio 3: back-propagate from next leg
+        legAlt.minAltFt = backPropMinAltFt;
+        legAlt.maxAltFt = backPropMaxAltFt;
+
+        // prio 2: terrain clearance: override back-propagation if below terrain clearance
+        if (legMinTerrainAltFt > legAlt.minAltFt) {
+            legAlt.minAltFt = legMinTerrainAltFt;
+        }
+        if (legMinTerrainAltFt > legAlt.maxAltFt) {
+            legAlt.maxAltFt = legMinTerrainAltFt;
+        }
+
+        // prio 1: used defined altitudes: override values if above previous min / below previous max
+        if (legAlt.minUserAltFt && legAlt.minUserAltFt > legAlt.minAltFt) {
+            legAlt.minAltFt = legAlt.minUserAltFt;
+        }
+        if (legAlt.maxUserAltFt && legAlt.maxUserAltFt < legAlt.maxAltFt) {
+            legAlt.maxAltFt = legAlt.maxUserAltFt;
+        }
+        // TODO
+        if (legAlt.minUserAltFt && legAlt.minUserAltFt > legAlt.maxAltFt) {
+            legAlt.maxAltFt = legAlt.minUserAltFt;
+        }
+        // TODO
+        if (legAlt.maxUserAltFt && legAlt.maxUserAltFt < legAlt.minAltFt) {
+            legAlt.minAltFt = legAlt.maxUserAltFt;
+        }
+    }
+    
+    
+    function initAltMetaData() {
+        return {
+            minAltFt: null,
+            maxAltFt: null,
+            minUserAltFt: null,
+            maxUserAltFt: null,
+        }
+    }
+
+
+    function isWpMinAlt(waypoint) {
+        return waypoint.alt && (waypoint.isminalt || (!waypoint.isminalt && !waypoint.ismaxalt));
+    }
+
+
+    function isWpMaxAlt(waypoint) {
+        return waypoint.alt && (waypoint.ismaxalt || (!waypoint.isminalt && !waypoint.ismaxalt));
+    }
+
+
+    function calcLegDescentTimeMin(wp, aircraft) {
+        return wp.dist / aircraft.speed * 60 + (wp.vacTime ? wp.vacTime : 0);
+    }
+
+
+    function calcLegClimbTimeMin(wp, aircraft) {
+        const legDescentTimeMin = calcLegDescentTimeMin(wp, aircraft);
+        return legDescentTimeMin * (100 / aircraft.climbSpeedPercent);
+    }
+
+
+
+    function addRoute2(svg, terrain, waypoints, aircraft, wpClickCallback, maxelevation_m) {
+        if (terrain.legs.length !== waypoints.length - 1) {
+            logError("number of legs and waypoints don't match");
+            return;
+        }
+
+        const maxelevation_ft = m2ft(maxelevation_m);
+
+        let currentDistPercent = 0;
+        let currentAltFt = m2ft(terrain.elevations_m[0][1]); // Start at terrain elevation of first point
+        let nextAltFt = currentAltFt;
+        for (let i = 0; i < terrain.legs.length; i++)
+        {
+            const leg = terrain.legs[i];
+            const legDistPercent = 100 / terrain.totaldistance_m * leg.distance_m;
+            const legX1Percent = currentDistPercent;
+            const legX2Percent = currentDistPercent + legDistPercent;
+
+            if (leg.endAlt.minAltFt > currentAltFt) {
+                const legClimbTimeMin = calcLegClimbTimeMin(waypoints[i + 1], aircraft);
+                const maxClimbAltFt = calcClimbTargetAltFt(currentAltFt, legClimbTimeMin, aircraft.rocSeaLevelFpm, aircraft.serviceCeilingFt);
+                nextAltFt = Math.min(leg.endAlt.minAltFt, maxClimbAltFt);
+                if (maxClimbAltFt < leg.endAlt.minUserAltFt || maxClimbAltFt < leg.minTerrainAltFt) {
+                    leg.warning = "Climb performance may be insufficient to reach the altitude before the end of the leg! (update climb performance in ⚙️ Settings)";
+                    nextAltFt = leg.endAlt.minAltFt;
+                }
+            } else if (leg.endAlt.maxAltFt < currentAltFt) {
+                nextAltFt = leg.endAlt.maxAltFt;
+            }
+
+            if (!leg.warning) {
+                const terrainClearanceText = "Flight path may be below min. terrain clearance of leg!";
+                const minTerrainAltFtForWarning = leg.minTerrainAltFt - MIN_TERRAIN_CLEARANCE_FT + MIN_TERRAIN_CLEARANCE_FOR_WARNING_FT;
+                if (i > 0 && i < terrain.legs.length - 1 && (currentAltFt < minTerrainAltFtForWarning)) {
+                    leg.warning = terrainClearanceText;
+                } else if (i === 0 && nextAltFt < minTerrainAltFtForWarning) {
+                    leg.warning = terrainClearanceText;
+                } else if (i === terrain.legs.length - 1 && currentAltFt < minTerrainAltFtForWarning) {
+                    leg.warning = terrainClearanceText;
+                }
+            }
+
+            const legY1Percent = 100 * (1 - currentAltFt / maxelevation_ft);
+            const legY2Percent = 100 * (1 - nextAltFt / maxelevation_ft);
+
+            // line
+            var line = document.createElementNS(SVG_NS, "line");
+            line.setAttribute("x1", legX1Percent.toString() + "%");
+            line.setAttribute("x2", legX2Percent.toString() + "%");
+            line.setAttribute("y1", legY1Percent.toString() + "%");
+            line.setAttribute("y2", legY2Percent.toString() + "%");
+            line.setAttribute("style", "stroke:rgba(255, 0, 255, 1.0); stroke-width:5px;");
+            line.setAttribute("shape-rendering", "crispEdges");
+            svg.appendChild(line);
+
+            //waypoint dot and label
+            addRouteDot(svg, currentDistPercent, legY1Percent, waypoints[i], wpClickCallback);
+            addRouteDotPlumline(svg, currentDistPercent, legY1Percent, IMAGE_HEIGHT_PX);
+            addWaypointLabel(svg, currentDistPercent, legY1Percent, waypoints[i], (i === 0) ? "start" : "middle", (i % 2) === 1, wpClickCallback); // TODO: alternate label y pos
+
+            // warning
+            if (leg.warning) {
+                const xPercent = (legX1Percent + legX2Percent) / 2;
+                const yPercent = (legY1Percent + legY2Percent) / 2;
+                addRouteWarning(svg, xPercent, yPercent, leg.warning);
+            }
+
+            // TODO: debug, min line
+            /*const legMinY1Percent = 100 * (1 - leg.startAlt.minAltFt / maxelevation_ft);
+            const legMinY2Percent = 100 * (1 - leg.endAlt.minAltFt / maxelevation_ft);
+
+            const line3 = document.createElementNS(SVG_NS, "line");
+            line3.setAttribute("x1", legX1Percent.toString() + "%");
+            line3.setAttribute("y1", legMinY1Percent.toString() + "%");
+            line3.setAttribute("x2", legX2Percent.toString() + "%");
+            line3.setAttribute("y2", legMinY2Percent.toString() + "%");
+            line3.setAttribute("style", "stroke:rgba(0, 0, 255, 1.0); stroke-width:3px;");
+            line3.setAttribute("shape-rendering", "crispEdges");
+            svg.appendChild(line3);*/
+
+            // TODO: debug, max line
+            /*const legMaxY1Percent = 100 * (1 - leg.startAlt.maxAltFt / maxelevation_ft);
+            const legMaxY2Percent = 100 * (1 - leg.endAlt.maxAltFt / maxelevation_ft);
+
+            const line2 = document.createElementNS(SVG_NS, "line");
+            line2.setAttribute("x1", legX1Percent.toString() + "%");
+            line2.setAttribute("y1", legMaxY1Percent.toString() + "%");
+            line2.setAttribute("x2", legX2Percent.toString() + "%");
+            line2.setAttribute("y2", legMaxY2Percent.toString() + "%");
+            line2.setAttribute("style", "stroke:rgba(255, 0, 0, 1.0); stroke-width:2px;");
+            line2.setAttribute("shape-rendering", "crispEdges");
+            svg.appendChild(line2);*/
+
+            currentDistPercent += legDistPercent;
+            currentAltFt = nextAltFt;
+        }
+
+
+        // final dot
+        const legY2Percent = 100 * (1 - currentAltFt / maxelevation_ft);
+        const lastIdx = waypoints.length - 1;
+        const lastWp = waypoints[lastIdx];
+
+        addRouteDot(svg, 100, legY2Percent, lastWp, wpClickCallback);
+        addRouteDotPlumline(svg, 100, legY2Percent, IMAGE_HEIGHT_PX);
+        addWaypointLabel(svg, currentDistPercent, legY2Percent, lastWp, "end", lastIdx % 2 === 1, wpClickCallback);
+
+
+        function addRouteWarning(svg, xPercent, yPercent, message)
+        {
+            const icon = document.createElementNS(SVG_NS, "text");
+            icon.setAttribute("x", xPercent.toString() + "%");
+            icon.setAttribute("y", yPercent.toString() + "%");
+            icon.setAttribute("style", "stroke:#FFFF00; fill:#FFFF00; cursor: help");
+            icon.setAttribute("text-anchor", "middle");
+            icon.setAttribute("font-family", "Calibri,sans-serif");
+            icon.setAttribute("font-weight", "bold");
+            icon.setAttribute("font-size", "24px");
+            icon.setAttribute("transform", "translate(0 6)");
+            icon.textContent = "⚠️";
+
+            const title = document.createElementNS(SVG_NS, "title");
+            title.textContent = message;
+            icon.appendChild(title);
+
+            svg.appendChild(icon);
+        }
+
+
+        function addRouteDot(svg, cxPercent, cyPercent, waypoint, clickCallback)
+        {
+            const dot = document.createElementNS(SVG_NS, "circle");
+            dot.setAttribute("cx", cxPercent.toString() + "%");
+            dot.setAttribute("cy", cyPercent.toString() + "%");
+            dot.setAttribute("r", "6");
+            dot.setAttribute("style", "stroke:#FF00FF; stroke-width:0px; fill:rgba(255, 0, 255, 1.0); cursor: pointer");
+            dot.setAttribute("shape-rendering", "crispEdges");
+
+            if (clickCallback)
+                dot.addEventListener("click", function() { clickCallback(waypoint); });
+
+            svg.appendChild(dot);
+        }
+
+
+        function addRouteDotPlumline(svg, cxPercent, cyPercent, height)
+        {
+            const line = document.createElementNS(SVG_NS, "line");
+            line.setAttribute("x1", cxPercent.toString() + "%");
+            line.setAttribute("x2", cxPercent.toString() + "%");
+            line.setAttribute("y1", cyPercent.toString() + "%");
+            line.setAttribute("y2", height);
+            line.setAttribute("style", "stroke:#FF00FF; stroke-width:1px;");
+            line.setAttribute("shape-rendering", "crispEdges");
+            line.setAttribute("stroke-dasharray", "3, 5");
+
+            svg.appendChild(line);
+        }
+
+
+        function addWaypointLabel(svg, xPercent, yPercent, waypoint, textAnchor, isOddWp, clickCallback)
+        {
+            let transformX, transformY;
+
+            switch (textAnchor)
+            {
+                case "start":
+                    transformX = 7;
+                    break;
+                case "end":
+                    transformX = -7;
+                    break;
+                default:
+                    transformX = 0;
+                    break;
+            }
+
+            if (isOddWp) {
+                transformY = 25;
+            } else {
+                transformY = -15;
+            }
+
+            // glow around label
+            const labelGlow = document.createElementNS(SVG_NS, "text");
+            labelGlow.setAttribute("x", xPercent.toString() + "%");
+            labelGlow.setAttribute("y", yPercent.toString() + "%");
+            labelGlow.setAttribute("style", "stroke:#FFFFFF; stroke-width:5px; fill:#FFFFFF; cursor: pointer");
+            labelGlow.setAttribute("text-anchor", textAnchor);
+            labelGlow.setAttribute("font-family", "Calibri,sans-serif");
+            labelGlow.setAttribute("font-weight", "bold");
+            labelGlow.setAttribute("font-size", "15px");
+            labelGlow.setAttribute("transform", "translate(" + transformX + ", " + transformY + ")");
+            labelGlow.textContent = waypoint.checkpoint;
+
+            svg.appendChild(labelGlow);
+
+            // label
+            const label = document.createElementNS(SVG_NS, "text");
+            label.setAttribute("x", xPercent.toString() + "%");
+            label.setAttribute("y", yPercent.toString() + "%");
+            label.setAttribute("style", "stroke:none; fill:#660066; cursor: pointer");
+            label.setAttribute("text-anchor", textAnchor);
+            label.setAttribute("font-family", "Calibri,sans-serif");
+            label.setAttribute("font-weight", "bold");
+            label.setAttribute("font-size", "15px");
+            label.setAttribute("transform", "translate(" + transformX + ", " + transformY + ")");
+            label.textContent = waypoint.checkpoint;
+
+            if (clickCallback)
+                label.addEventListener("click", function() { clickCallback(waypoint); });
+
+            svg.appendChild(label);
+        }
     }
 }

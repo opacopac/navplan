@@ -1,5 +1,6 @@
 <div class="container nonmapcontent">
 	<div class="form-horizontal">
+		<h3>Global Settings</h3>
 		<div class="form-group">
 			<label for="variation" class="control-label col-sm-3">Magnetic Variation (&deg; W-, E+)</label>
 			<div class="col-sm-2">
@@ -19,8 +20,37 @@
 			</div>
 		</div>
 	</div>
+	<div class="form-horizontal">
+		<h3>Altitude Profile Settings</h3>
+		<div class="form-group">
+			<label for="serviceCeiling" class="control-label col-sm-3">Service Ceiling (ft AMSL)</label>
+			<div class="col-sm-2">
+				<input type="text" id="serviceCeiling" class="form-control" ng-model="globalData.aircraft.serviceCeilingFt">
+			</div>
+		</div>
+		<div class="form-group">
+			<label for="rocSeaLevel" class="control-label col-sm-3">Rate of Climb at Sea Level (ft per min)</label>
+			<div class="col-sm-2">
+				<input type="text" id="rocSeaLevel" class="form-control" ng-model="globalData.aircraft.rocSeaLevelFpm">
+			</div>
+		</div>
+		<div class="form-group">
+			<label for="rod" class="control-label col-sm-3">Rate of Descent (ft per min)</label>
+			<div class="col-sm-2">
+				<input type="text" id="rod" class="form-control" ng-model="globalData.aircraft.rodFpm">
+			</div>
+		</div>
+		<div class="form-group">
+			<label for="climbSpeed" class="control-label col-sm-3">Climb Speed (% of Cruise Speed)</label>
+			<div class="col-sm-2">
+				<input type="text" id="climbSpeed" class="form-control" ng-model="globalData.aircraft.climbSpeedPercent">
+				(<i>{{ getClimbSpeedKts() }} kt</i>)
+			</div>
+		</div>
+	</div>
 	<div ng-show="isSelf(globalData.user.email)"><!-- internal use only -->
-		Click History (internal use only):<br />
+		<h3>Internal Use Only</h3>
+		Click History:<br />
 		<textarea class="form-control">{{ getClickHistoryString() }}</textarea><br />
         Route as Polygon:<br />
         <textarea class="form-control">{{ getRoutePolygonString() }}</textarea>

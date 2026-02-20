@@ -5,6 +5,7 @@
 //region CONSTANTS
 
 var TMP_DIR = 'tmp/';
+var SERVICE_CEILING_ROC_FTPM = 100;
 
 //endregion
 
@@ -435,6 +436,12 @@ function nautmile2m(distance_nm)
 }
 
 
+function m2nautmile(distance_m)
+{
+    return distance_m / 1852;
+}
+
+
 function kmh2kt(speed_kmh)
 {
     return speed_kmh / 1.852;
@@ -740,6 +747,67 @@ function regexMatchAll(regex, text)
     }
 
     return res;
+}
+
+//endregion
+
+
+//region CLIMNB / DESCENT CALCULATIONS
+
+function calcAbsoluteCeiling(rocSeaLevelFt, serviceCeilingFt) {
+    return (rocSeaLevelFt * serviceCeilingFt) / (rocSeaLevelFt - SERVICE_CEILING_ROC_FTPM);
+}
+
+
+function calcMinutesToClimbFromSeaLevel(altitudeFt, rocSeaLevelFt, serviceCeilingFt) {
+    const absoluteCeilingFt = calcAbsoluteCeiling(rocSeaLevelFt, serviceCeilingFt);
+    if (altitudeFt >= absoluteCeilingFt) {
+        return Number.POSITIVE_INFINITY; // Cannot climb above absolute ceiling
+    }
+
+    return absoluteCeilingFt / rocSeaLevelFt * Math.log(absoluteCeilingFt / (absoluteCeilingFt - altitudeFt));
+}
+
+
+function calcMinutesToClimb(lowerAltFt, upperAltFt, rocSeaLevelFt, serviceCeilingFt) {
+    const lowerMinutes = calcMinutesToClimbFromSeaLevel(lowerAltFt, rocSeaLevelFt, serviceCeilingFt);
+    const upperMinutes = calcMinutesToClimbFromSeaLevel(upperAltFt, rocSeaLevelFt, serviceCeilingFt);
+
+    return upperMinutes - lowerMinutes;
+}
+
+
+function calcMinutesToDescent(upperAltFt, lowerAltFt, rodFtPm) {
+    const altitudeDiffFt = upperAltFt - lowerAltFt;
+
+    return altitudeDiffFt / rodFtPm;
+}
+
+
+function calcClimbTargetAltFt(startingAltFt, timeMin, rocSeaLevelFpm, serviceCeilingFt) {
+    const absoluteCeilingFt = calcAbsoluteCeiling(rocSeaLevelFpm, serviceCeilingFt);
+
+    return startingAltFt + (absoluteCeilingFt - startingAltFt) * (1 - Math.exp(-timeMin * rocSeaLevelFpm / absoluteCeilingFt));
+}
+
+
+function calcClimbStartingAltFt(targetAltFt, timeMin, rocSeaLevelFpm, serviceCeilingFt) {
+    const absoluteCeilingFt = calcAbsoluteCeiling(rocSeaLevelFpm, serviceCeilingFt);
+    if (targetAltFt >= absoluteCeilingFt) {
+        return absoluteCeilingFt; // Cannot climb above absolute ceiling
+    }
+
+    return absoluteCeilingFt - (absoluteCeilingFt - targetAltFt) * Math.exp(timeMin * rocSeaLevelFpm / absoluteCeilingFt);
+}
+
+
+function calcDescentTargetAltFt(startingAltFt, timeMin, rodFpm) {
+    return startingAltFt - timeMin * rodFpm;
+}
+
+
+function calcDescentStartingAltFt(targetAltFt, timeMin, rodFpm) {
+    return targetAltFt + timeMin * rodFpm;
 }
 
 //endregion

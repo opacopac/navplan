@@ -10,6 +10,11 @@ function settingsCtrl($scope, globalData)
 {
 	$scope.globalData = globalData;
 
+	$scope.getClimbSpeedKts = function()
+	{
+		return Math.round($scope.globalData.aircraft.climbSpeedPercent / 100 * $scope.globalData.aircraft.speed);
+	}
+
 	$scope.getClickHistoryString = function()
 	{
 		var history = '';

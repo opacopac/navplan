@@ -148,7 +148,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
         if ($scope.globalData.showTerrain)
         {
             if ($scope.globalData.navplan.waypoints && $scope.globalData.navplan.waypoints.length >= 2)
-                terrainService.updateTerrain($scope.globalData.navplan.waypoints, $scope.onTerrainWaypointClicked);
+                terrainService.updateTerrain($scope.globalData.navplan.waypoints, $scope.globalData.aircraft, $scope.onTerrainWaypointClicked);
             else
                 $scope.globalData.showTerrain = false;
         }
@@ -821,7 +821,7 @@ function mapCtrl($scope, $sce, $route, mapService, mapFeatureService, locationSe
         $scope.globalData.showTerrain = !$scope.globalData.showTerrain;
 
         if ($scope.globalData.showTerrain)
-            terrainService.updateTerrain($scope.globalData.navplan.waypoints, $scope.onTerrainWaypointClicked);
+            terrainService.updateTerrain($scope.globalData.navplan.waypoints, $scope.globalData.aircraft, $scope.onTerrainWaypointClicked);
     };
 
 
