@@ -345,8 +345,8 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 
         var zrange = [7, 14];
         var zoomfact = Math.pow(2, (z - 6));
-        var yrange = [33 * zoomfact, 33 * zoomfact + zoomfact - 1];
-        var xrange = [22 * zoomfact, 22 * zoomfact + zoomfact - 1];
+        var xrange = [33 * zoomfact, 33 * zoomfact + zoomfact - 1];
+        var yrange = [22 * zoomfact, 22 * zoomfact + zoomfact - 1];
 
         if (z < zrange[0] || z > zrange[1])
             return false;
