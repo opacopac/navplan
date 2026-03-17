@@ -305,11 +305,11 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 
         if (type === 'icao_ch_aero')
         {
-            return 'v2/maptiles/icao_ch_aero/' + z + '/' + x + '/' + y + '.png';
+            return 'https://www.navplan.ch/v2/maptiles/icao_ch_aero/' + z + '/' + x + '/' + y + '.png';
         }
         else if (type === 'icao_ch_glider')
         {
-            return 'v2/maptiles/icao_ch_glider/' + z + '/' + x + '/' + y + '.png';
+            return 'https://www.navplan.ch/v2/maptiles/icao_ch_glider/' + z + '/' + x + '/' + y + '.png';
         }
         else if (type === 'aerial_ch')
         {
