@@ -47,6 +47,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 	var onFullScreenCallback = undefined;
 	var onCenterOwnPositionCallback = undefined;
 	var isGeopointSelectionActive = false;
+	var currentMapLayerType = 'opentopomap';
 	var wgs84Sphere = new ol.Sphere(6378137);
 	var minZoomLevel = [];
 	var maxAgeSecTrackDots = 120;
@@ -165,12 +166,16 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
         ol.inherits(CenterOwnPositionControl, ol.control.Control);
         var centerOwnPosButtonControl = new CenterOwnPositionControl();
 
+        ol.inherits(MapLayerSelectControl, ol.control.Control);
+        var mapLayerSelectControl = new MapLayerSelectControl();
+
 
         // init map
         map = new ol.Map({
             target: 'map',
             controls: [
                 new ol.control.ScaleLine({ units: 'nautical' }),
+                mapLayerSelectControl,
                 fsButtonControl,
                 new ol.control.Rotate(),
                 new ol.control.Attribution(),
@@ -258,87 +263,108 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
     function createMapLayer()
     {
         return new ol.layer.Tile({
-            source: new ol.source.XYZ({
-                tileUrlFunction: getTileUrl,
-                minZoom: 0,
-                maxZoom: MAX_ZOOMLEVEL,
-                crossOrigin: null,
-                attributions:
-                    [
-                        new ol.Attribution({ html: 'Map Data: &copy; <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors <a href="https://creativecommons.org/licenses/by-sa/2.0/" target="_blank">(CC-BY-SA)</a>' }),
-                        new ol.Attribution({ html: 'Elevation Data: <a href="https://lta.cr.usgs.gov/SRTM" target="_blank">SRTM</a>' }),
-                        new ol.Attribution({ html: 'Map Visualization: <a href="http://www.opentopomap.org/" target="_blank">OpenTopoMap</a> <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank">(CC-BY-SA)</a>' }),
-                        new ol.Attribution({ html: 'Aviation Data: <a href="http://www.openaip.net/" target="_blank">openAIP</a> <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/" target="_blank">(BY-NC-SA)</a>' }),
-                        new ol.Attribution({ html: 'Traffic Data: <a href="http://wiki.glidernet.org/about" target="_blank">Open Glider Network</a> | <a href="http://www.ADSBexchange.com/" target="_blank">ADSBexchange</a>' }),
-                        new ol.Attribution({ html: 'Aerodrome Charts: <a href="http://www.avare.ch/" target="_blank">Avare.ch</a>' }),
-                        new ol.Attribution({ html: 'Weather Data: <a href="https://www.aviationweather.gov/" target="_blank">NOAA - Aviation Weather Center</a>' }),
-                        new ol.Attribution({ html: 'NOTAM Data: <a href="https://www.icao.int/safety/iStars/pages/intro.aspx" target="_blank">ICAO - iSTARS API Data Service</a>' }),
-                        new ol.Attribution({ html: 'Geographical Data: <a href="http://www.geonames.org/" target="_blank">GeoNames</a> <a href="http://creativecommons.org/licenses/by/3.0/" target="_blank">(CC-BY)</a>' }),
-                        new ol.Attribution({ html: 'Links to Webcams: all images are digital property of the webcam owners. check the reference for details.' })
-                    ]
-            })
+            source: createMapSource(currentMapLayerType)
         });
+    }
 
 
-        function getTileUrl(coordinate)
+    function createMapSource(type)
+    {
+        var attributions = [
+            new ol.Attribution({ html: 'Map Data: &copy; <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors <a href="https://creativecommons.org/licenses/by-sa/2.0/" target="_blank">(CC-BY-SA)</a>' }),
+            new ol.Attribution({ html: 'Map Visualization: <a href="http://www.opentopomap.org/" target="_blank">OpenTopoMap</a> <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank">(CC-BY-SA)</a>' }),
+            new ol.Attribution({ html: 'Aviation Data: <a href="http://www.openaip.net/" target="_blank">openAIP</a> <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/" target="_blank">(BY-NC-SA)</a>' }),
+            new ol.Attribution({ html: 'Traffic Data: <a href="http://wiki.glidernet.org/about" target="_blank">Open Glider Network</a> | <a href="http://www.ADSBexchange.com/" target="_blank">ADSBexchange</a>' }),
+            new ol.Attribution({ html: 'Aeronautical Chart ICAO: &copy; <a href="https://www.swisstopo.admin.ch/" target="_blank">swisstopo</a>' }),
+            new ol.Attribution({ html: 'Glider Map Switzerland: &copy; <a href="https://www.swisstopo.admin.ch/" target="_blank">swisstopo</a>' }),
+            new ol.Attribution({ html: 'Aerial Images: &copy; <a href="https://www.swisstopo.admin.ch/" target="_blank">swisstopo</a>' }),
+            new ol.Attribution({ html: 'Aerodrome Charts: <a href="http://www.avare.ch/" target="_blank">Avare.ch</a>' }),
+            new ol.Attribution({ html: 'Elevation Data: <a href="https://lta.cr.usgs.gov/SRTM" target="_blank">SRTM</a>' }),
+            new ol.Attribution({ html: 'Weather Data: <a href="https://www.aviationweather.gov/" target="_blank">NOAA - Aviation Weather Center</a>' }),
+            new ol.Attribution({ html: 'NOTAM Data: <a href="https://www.icao.int/safety/iStars/pages/intro.aspx" target="_blank">ICAO - iSTARS API Data Service</a>' }),
+            new ol.Attribution({ html: 'Geographical Data: <a href="http://www.geonames.org/" target="_blank">GeoNames</a> <a href="http://creativecommons.org/licenses/by/3.0/" target="_blank">(CC-BY)</a>' }),
+            new ol.Attribution({ html: 'Links to Webcams: all images are digital property of the webcam owners. check the reference for details.' })
+        ];
+
+        return new ol.source.XYZ({
+            tileUrlFunction: function(coordinate) { return getMapTileUrl(coordinate, type); },
+            minZoom: 0,
+            maxZoom: MAX_ZOOMLEVEL,
+            crossOrigin: null,
+            attributions: attributions
+        });
+    }
+
+
+    function getMapTileUrl(coordinate, type)
+    {
+        var z = coordinate[0];
+        var x = coordinate[1];          // tile column (x)
+        var y = (-coordinate[2] - 1);   // tile row (y)
+        var n;
+
+        if (type === 'icao_ch_aero')
         {
-            var otmBaseUrls = [ "//a.tile.opentopomap.org/", "//b.tile.opentopomap.org/", "//c.tile.opentopomap.org/" ];
-            //var otmBaseUrls = [ "//opentopomap.org/", "//opentopomap.org/", "//opentopomap.org/" ];
-            var localBaseUrl = "maptiles/";
-            var z = coordinate[0];
-            var y = coordinate[1];
-            var x = (-coordinate[2] - 1);
+            return 'v2/maptiles/icao_ch_aero/' + z + '/' + x + '/' + y + '.png';
+        }
+        else if (type === 'icao_ch_glider')
+        {
+            return 'v2/maptiles/icao_ch_glider/' + z + '/' + x + '/' + y + '.png';
+        }
+        else if (type === 'aerial_ch')
+        {
+            var wmtsBaseUrls = [ 'https://wmts5.geo.admin.ch/', 'https://wmts9.geo.admin.ch/', 'https://wmts10.geo.admin.ch/' ];
+            n = (z + x + y) % wmtsBaseUrls.length;
+            return wmtsBaseUrls[n] + '1.0.0/ch.swisstopo.swissimage/default/current/3857/' + z + '/' + x + '/' + y + '.jpeg';
+        }
+        else // opentopomap (default)
+        {
+            var otmBaseUrls = [ '//a.tile.opentopomap.org/', '//b.tile.opentopomap.org/', '//c.tile.opentopomap.org/' ];
+            var localBaseUrl = 'maptiles/';
 
-            //return "https://tile.mapzen.com/mapzen/terrain/v1/normal/" + z + "/" + y + "/" + x + ".png?api_key=mapzen-ECzH36f";
-            //return "https://api.mapbox.com/styles/v1/opacopac/cj0msmdwf00ad2snz48faknaq/tiles/256/" + z + "/" + y + "/" + x + "@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2owbXNsN3ltMDAwdjMyczZudmt0bGwwdiJ9.RG5N7U6VkoIQ44S-bB-aNg";
-
-            /*if (isBranch())
+            if (isLocalTile(z, x, y))
             {
-                // TODO: temp for saving map views
-                var email = getCookie("email");
-
-                    if (!(email && isSelf(email)))
-                    return "https://api.mapbox.com/styles/v1/opacopac/cj0mxdtd800bx2slaha4b0p68/tiles/256/" + z + "/" + y + "/" + x + "@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2oxYjZ6aDQxMDA1ejJ3cGUzbmZ1Zm81eiJ9.oFvbw05OkuQesxOghWqv_A";
-            }
-            else
-                return "https://api.mapbox.com/styles/v1/opacopac/cj0mxdtd800bx2slaha4b0p68/tiles/256/" + z + "/" + y + "/" + x + "@2x?access_token=pk.eyJ1Ijoib3BhY29wYWMiLCJhIjoiY2oxYjdkOXpzMDA2dTMycGV3ZDlkM3R2NyJ9.paBLy_T8QJLELJd8VAAEIw";*/
-
-            if (isLocalTile(z, y, x))
-            {
-                return localBaseUrl + z + "/" + y + "/" + x + ".png";
+                return localBaseUrl + z + '/' + x + '/' + y + '.png';
             }
             else
             {
-                var n = (z + y + x) % otmBaseUrls.length;
-                return otmBaseUrls[n] + z + "/" + y + "/" + x + ".png";
+                n = (z + x + y) % otmBaseUrls.length;
+                return otmBaseUrls[n] + z + '/' + x + '/' + y + '.png';
             }
         }
+    }
 
 
-        function isLocalTile(z, y, x)
-        {
-            if (isLocalhost())
-                return false;
+    function isLocalTile(z, x, y)
+    {
+        if (isLocalhost())
+            return false;
 
-            if (z <= 6)
-                return true;
-
-            var zrange = [7, 14];
-            var zoomfact = Math.pow(2, (z - 6));
-            var yrange = [33 * zoomfact, 33 * zoomfact + zoomfact - 1 ];
-            var xrange = [22 * zoomfact, 22 * zoomfact + zoomfact - 1 ];
-
-            if (z < zrange[0] || z > zrange[1])
-                return false;
-
-            if (y < yrange[0] || y > yrange[1])
-                return false;
-
-            if (x < xrange[0] || x > xrange[1])
-                return false;
-
+        if (z <= 6)
             return true;
-        }
+
+        var zrange = [7, 14];
+        var zoomfact = Math.pow(2, (z - 6));
+        var yrange = [33 * zoomfact, 33 * zoomfact + zoomfact - 1];
+        var xrange = [22 * zoomfact, 22 * zoomfact + zoomfact - 1];
+
+        if (z < zrange[0] || z > zrange[1])
+            return false;
+
+        if (x < xrange[0] || x > xrange[1])
+            return false;
+
+        if (y < yrange[0] || y > yrange[1])
+            return false;
+
+        return true;
+    }
+
+
+    function setMapLayerType(type)
+    {
+        currentMapLayerType = type;
+        mapLayer.setSource(createMapSource(type));
     }
 
 
@@ -1823,6 +1849,71 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
                 onCenterOwnPositionCallback();
             }
         }
+    }
+
+
+    function MapLayerSelectControl(opt_options)
+    {
+        var options = opt_options || {};
+
+        // Popup panel
+        var panel = document.createElement('div');
+        panel.className = 'mapbutton-maplayer-panel';
+        panel.style.display = 'none';
+
+        panel.addEventListener('click', function(e) { e.stopPropagation(); }, false);
+
+        var layerOptions = [
+            { value: 'opentopomap',   label: 'OpenTopoMap' },
+            { value: 'icao_ch_aero',  label: 'Aeronautical Chart ICAO (\u00a9 swisstopo)' },
+            { value: 'icao_ch_glider', label: 'Glider Map Switzerland (\u00a9 swisstopo)' },
+            { value: 'aerial_ch',     label: 'Aerial Images (\u00a9 swisstopo)' }
+        ];
+
+        layerOptions.forEach(function(opt) {
+            var label = document.createElement('label');
+            label.className = 'mapbutton-maplayer-option';
+
+            var radio = document.createElement('input');
+            radio.type = 'radio';
+            radio.name = 'maplayer';
+            radio.value = opt.value;
+            if (opt.value === currentMapLayerType)
+                radio.checked = true;
+
+            radio.addEventListener('change', function() {
+                if (this.checked) {
+                    setMapLayerType(opt.value);
+                    panel.style.display = 'none';
+                }
+            }, false);
+
+            label.appendChild(radio);
+            label.appendChild(document.createTextNode('\u00a0' + opt.label));
+            panel.appendChild(label);
+        });
+
+        // Toggle button
+        var icon = document.createElement('i');
+        icon.className = 'fa fa-map';
+
+        var button = document.createElement('button');
+        button.setAttribute('title', 'select map layer');
+        button.addEventListener('click', function(e) {
+            panel.style.display = (panel.style.display === 'none') ? 'block' : 'none';
+            e.stopPropagation();
+        }, false);
+        button.appendChild(icon);
+
+        var div = document.createElement('div');
+        div.className = 'mapbutton-maplayer ol-unselectable ol-control';
+        div.appendChild(panel);
+        div.appendChild(button);
+
+        ol.control.Control.call(this, {
+            element: div,
+            target: options.target
+        });
     }
 
 

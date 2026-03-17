@@ -92,7 +92,7 @@ html, body {
 .mapbutton-center-position{
     top: auto;
     right: .5em;
-    bottom: 6.5em;
+    bottom: 9.5em;
 }
 
 .mapbutton-traffic {
@@ -365,13 +365,45 @@ html, body {
 .ol-rotate {
     top: auto;
     right: .5em;
-    bottom: 9.5em;
+    bottom: 12.5em;
+}
+
+.mapbutton-maplayer {
+    top: auto;
+    right: .5em;
+    bottom: 3.5em;
+}
+
+.mapbutton-maplayer-panel {
+    position: absolute;
+    bottom: 0;
+    right: 100%;
+    margin-right: 6px;
+    background-color: rgba(255, 255, 255, 0.93);
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    padding: 8px 14px 8px 10px;
+    white-space: nowrap;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    z-index: 1;
+}
+
+.mapbutton-maplayer-option {
+    display: block;
+    margin: 5px 0;
+    font-weight: normal;
+    cursor: pointer;
+}
+
+.mapbutton-maplayer-option input[type="radio"] {
+    margin-right: 5px;
+    cursor: pointer;
 }
 
 .ol-full-screen {
     top: auto;
     right: .5em;
-    bottom: 3.5em;
+    bottom: 6.5em;
 }
 
 .ol-full-screen .glyphicon-fullscreen {
