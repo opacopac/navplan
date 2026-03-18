@@ -61,6 +61,14 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
         "C": ['E', 'F', 'G'],
         "D": ['E', 'F', 'G']
     };
+    // Boundary filters for Swiss-specific tile layers (WGS84 lon/lat).
+    // Tiles outside these bounds return undefined → no HTTP request is made.
+    // Replace the placeholder coordinates with the exact values once available.
+    var TILE_BOUNDS = {
+        'icao_ch_aero':   { minLon: 5.9, maxLon: 10.5, minLat: 45.8, maxLat: 47.9 },
+        'icao_ch_glider': { minLon: 5.9, maxLon: 10.5, minLat: 45.8, maxLat: 47.9 },
+        'aerial_ch':      { minLon: 5.9, maxLon: 10.5, minLat: 45.8, maxLat: 47.9 }
+    };
 
 
     // return api reference
@@ -268,6 +276,32 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
     }
 
 
+    /**
+     * Returns true when tile (z/x/y) overlaps the given WGS84 bounding box.
+     * Uses the standard Web-Mercator (EPSG:3857) slippy-map tile formula.
+     *
+     * @param {number} z  zoom level
+     * @param {number} x  tile column
+     * @param {number} y  tile row
+     * @param {{minLon:number, maxLon:number, minLat:number, maxLat:number}} bounds
+     * @returns {boolean}
+     */
+    function isTileInBounds(z, x, y, bounds)
+    {
+        var scale = Math.pow(2, z);
+
+        var xMin = Math.floor((bounds.minLon + 180) / 360 * scale);
+        var xMax = Math.floor((bounds.maxLon + 180) / 360 * scale);
+
+        var latMaxRad = bounds.maxLat * Math.PI / 180;
+        var latMinRad = bounds.minLat * Math.PI / 180;
+        var yMin = Math.floor((1 - Math.log(Math.tan(latMaxRad) + 1 / Math.cos(latMaxRad)) / Math.PI) / 2 * scale);
+        var yMax = Math.floor((1 - Math.log(Math.tan(latMinRad) + 1 / Math.cos(latMinRad)) / Math.PI) / 2 * scale);
+
+        return x >= xMin && x <= xMax && y >= yMin && y <= yMax;
+    }
+
+
     function createMapSource(type)
     {
         var attributions = [
@@ -305,14 +339,26 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 
         if (type === 'icao_ch_aero')
         {
+            if (!isTileInBounds(z, x, y, TILE_BOUNDS['icao_ch_aero'])) {
+                return undefined;
+            }
+
             return 'https://www.navplan.ch/v2/maptiles/icao_ch_aero/' + z + '/' + x + '/' + y + '.png';
         }
         else if (type === 'icao_ch_glider')
         {
+            if (!isTileInBounds(z, x, y, TILE_BOUNDS['icao_ch_glider'])) {
+                return undefined;
+            }
+
             return 'https://www.navplan.ch/v2/maptiles/icao_ch_glider/' + z + '/' + x + '/' + y + '.png';
         }
         else if (type === 'aerial_ch')
         {
+            if (!isTileInBounds(z, x, y, TILE_BOUNDS['aerial_ch'])) {
+                return undefined;
+            }
+
             var wmtsBaseUrls = [ 'https://wmts5.geo.admin.ch/', 'https://wmts9.geo.admin.ch/', 'https://wmts10.geo.admin.ch/' ];
             n = (z + x + y) % wmtsBaseUrls.length;
             return wmtsBaseUrls[n] + '1.0.0/ch.swisstopo.swissimage/default/current/3857/' + z + '/' + x + '/' + y + '.jpeg';
