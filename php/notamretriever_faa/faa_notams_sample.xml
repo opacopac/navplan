@@ -3,7 +3,7 @@
 	<soap:Body>
 		<wfs:FeatureCollection xmlns="http://www.aixm.aero/schema/5.1/message" xmlns:aixm="http://www.aixm.aero/schema/5.1" xmlns:event="http://www.aixm.aero/schema/5.1/event" xmlns:gts="http://www.isotc211.org/2005/gts" xmlns:gco="http://www.isotc211.org/2005/gco" xmlns:gmd="http://www.isotc211.org/2005/gmd" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:html="http://www.w3.org/1999/xhtml" xmlns:gss="http://www.isotc211.org/2005/gss" xmlns:gsr="http://www.isotc211.org/2005/gsr" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:fnse="http://www.aixm.aero/schema/5.1/extensions/FAA/FNSE" xmlns:fns="urn:us.gov.dot.faa.aim.fns" xmlns:ows="http://www.opengis.net/ows/1.1" xmlns:wfs="http://www.opengis.net/wfs/2.0" xmlns:fes="http://www.opengis.net/fes/2.0" xmlns:wfs-util="http://www.opengis.net/wfs-util/2.0" numberReturned="67783" timeStamp="2026-04-06T03:00:05.038Z">
 
-		<!-- example: USA (local and icao format) -->
+			<!-- example: USA (local and icao format) -->
 			<wfs:member>
 				<AIXMBasicMessage gml:id="NMS_ID_1765992358219212">
 					<gml:boundedBy xsi:nil="true"/>
