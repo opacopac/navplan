@@ -37,12 +37,13 @@ class FaaNotamXmlParser
             throw new Exception("Failed to open XML file: {$filePath}");
         }
 
-        // Stream through the XML file looking for aixm:member elements
+        // Stream through the XML file looking for wfs:member elements
         while ($reader->read()) {
-            // Look for aixm:member elements
+            // Look for wfs:member elements (namespace changed from aixm to wfs in newer FAA SWIM format)
             if ($reader->nodeType === XMLReader::ELEMENT &&
                 $reader->localName === 'member' &&
-                $reader->namespaceURI === 'http://www.aixm.aero/schema/5.1') {
+                ($reader->namespaceURI === 'http://www.opengis.net/wfs/2.0' ||
+                 $reader->namespaceURI === 'http://www.aixm.aero/schema/5.1')) {
 
                 // Read the entire member element into a SimpleXML object
                 $memberXml = $reader->readOuterXml();
@@ -66,7 +67,7 @@ class FaaNotamXmlParser
     }
 
     /**
-     * Parse a single aixm:member XML fragment
+     * Parse a single wfs:member (or aixm:member) XML fragment
      *
      * @param string $memberXml XML string of the member element
      * @return FaaNotam[] Array of parsed NOTAMs from this member
