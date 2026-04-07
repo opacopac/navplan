@@ -6,7 +6,7 @@ require_once __DIR__ . '/../logger.php';
 // TODO
 $parser = new NotamGeometryParserFaa();
 
-if ($_GET["testnotamid"])
+if (isset($_GET["testnotamid"]) && $_GET["testnotamid"])
     $parser->test($_GET["testnotamid"]);
 else
     $parser->go();
@@ -360,7 +360,7 @@ class NotamGeometryParserFaa
             $polygon = $this->tryParsePolygon2($notam["all"]);
             if ($polygon)
             {
-                $this->logger->writelog("DEBUG", "pure polygon geometry in message found: " . implode(",", $polygon));
+                $this->logger->writelog("DEBUG", "pure polygon geometry in message found: " . json_encode($polygon));
 
                 $geometry["polygon"] = $polygon;
                 return $geometry;
@@ -730,8 +730,8 @@ class NotamGeometryParserFaa
 
             if ($this->isAreaNameMatch($rs["name"], $notamContent["message"]))
             {
-                $top = $notam["geometry"] && $notam["geometry"]["top"] ? $notam["geometry"]["top"] : NULL;
-                $bottom = $notam["geometry"] && $notam["geometry"]["bottom"] ? $notam["geometry"]["bottom"] : NULL;
+                $top = isset($notam["geometry"]["top"]) ? $notam["geometry"]["top"] : NULL;
+                $bottom = isset($notam["geometry"]["bottom"]) ? $notam["geometry"]["bottom"] : NULL;
                 $polygon = convertDbPolygonToArray($rs["polygon"]);
 
                 if (!isset($notam["airspaceGeometry"]))
