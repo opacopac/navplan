@@ -65,9 +65,9 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
     // Tiles outside these bounds return undefined → no HTTP request is made.
     // Replace the placeholder coordinates with the exact values once available.
     var TILE_BOUNDS = {
-        'icao_ch_aero':   { minLon: 5.9, maxLon: 10.5, minLat: 45.8, maxLat: 47.9 },
-        'icao_ch_glider': { minLon: 5.9, maxLon: 10.5, minLat: 45.8, maxLat: 47.9 },
-        'aerial_ch':      { minLon: 5.9, maxLon: 10.5, minLat: 45.8, maxLat: 47.9 }
+        'icao_ch_aero':   { minLon: 5.3476, maxLon: 10.8713, minLat: 45.5266, maxLat: 47.9391 },
+        'icao_ch_glider': { minLon: 5.3476, maxLon: 10.6526, minLat: 45.5573, maxLat: 47.8970 },
+        'aerial_ch':      { minLon: 4.4810, maxLon: 12.7428, minLat: 44.9439, maxLat: 48.8959 }
     };
 
 
