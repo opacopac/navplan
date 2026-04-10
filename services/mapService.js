@@ -3535,7 +3535,7 @@ function mapService($http, mapFeatureService, metarTafNotamService, meteoService
 		var x = Math.cos(f1) * Math.sin(f2) - Math.sin(f1) * Math.cos(f2) * Math.cos(dl);
 		var t = Math.atan2(y, x);
 
-		return ((t * toDeg + 360) % 360 - magvar);
+		return ((t * toDeg - magvar + 360) % 360);
 	}
 
 

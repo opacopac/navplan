@@ -28,7 +28,7 @@ function waypointService(mapService)
 		for (var i = 0; i < wps.length; i++)
 		{
 			// vac time for start/end +5
-			if ((i == 1 && wps[0].type == 'airport') || (i == wps.length - 1 && wps[i].type == 'airport'))
+			if ((i === 1 && wps[0].type === 'airport') || (i === wps.length - 1 && wps[i].type === 'airport'))
 				wps[i].vacTime = 5;
 			else
 				wps[i].vacTime = 0;
