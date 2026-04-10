@@ -65,7 +65,7 @@ function waypointService(mapService)
 		if (prevWp)
 		{
 			wp.dist = Math.ceil(mapService.getDistance(wp.latitude, wp.longitude, prevWp.latitude, prevWp.longitude));
-			wp.mt = Math.round(mapService.getBearing(prevWp.latitude, prevWp.longitude, wp.latitude, wp.longitude, magvar));
+			wp.mt = Math.round(mapService.getBearing(prevWp.latitude, prevWp.longitude, wp.latitude, wp.longitude, magvar)) % 360;
 		}
 		else
 		{
@@ -82,7 +82,7 @@ function waypointService(mapService)
 	
 	function formatMt(wp, isAlternate)
 	{
-		if (!wp || !wp.mt || wp.mt.length > 3)
+		if (!wp || wp.mt === undefined || wp.mt.length > 3)
 			return '';
 		
 		if (wp.vacTime > 0 && !isAlternate)
