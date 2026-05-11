@@ -157,8 +157,10 @@ function checkNumeric($num)
 
 function checkString($string, $minlen, $maxlen)
 {
-    if (isset($maxlen) && strlen($string) > $maxlen)
-        throw new Exception("format error: string '" . $string . "' too long");
+    if (isset($maxlen) && strlen($string) > $maxlen) {
+        $preview = strlen($string) > 1000 ? substr($string, 0, 1000) . '...' : $string;
+        throw new Exception("format error: string '" . $preview . "' too long");
+    }
 
     if (isset($minlen) && strlen($string) < $minlen)
         throw new Exception("format error: string '" . $string . "' too short");

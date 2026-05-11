@@ -229,14 +229,22 @@ class FaaNotamsImporter
 
             $queryParts = [];
             foreach ($batch as $icaoNotam) {
-                $queryParts[] = "('"
-                    . checkEscapeString($this->conn, $icaoNotam->id, 0, 20) . "','"
-                    . checkEscapeString($this->conn, $icaoNotam->StateCode, 0, 10) . "','"
-                    . checkEscapeString($this->conn, $icaoNotam->type, 0, 10) . "','"
-                    . checkEscapeString($this->conn, $icaoNotam->location, 0, 10) . "','"
-                    . getDbTimeString(strtotime($icaoNotam->startdate)) . "','"
-                    . getDbTimeString(strtotime($icaoNotam->enddate)) . "','"
-                    . checkEscapeString($this->conn, $icaoNotam->getJson(), 0, 999999) . "')";
+                try {
+                    $queryParts[] = "('"
+                        . checkEscapeString($this->conn, $icaoNotam->id, 0, 20) . "','"
+                        . checkEscapeString($this->conn, $icaoNotam->StateCode, 0, 10) . "','"
+                        . checkEscapeString($this->conn, $icaoNotam->type, 0, 10) . "','"
+                        . checkEscapeString($this->conn, $icaoNotam->location, 0, 10) . "','"
+                        . getDbTimeString(strtotime($icaoNotam->startdate)) . "','"
+                        . getDbTimeString(strtotime($icaoNotam->enddate)) . "','"
+                        . checkEscapeString($this->conn, $icaoNotam->getJson(), 0, 999999) . "')";
+                } catch (Exception $e) {
+                    echo "    [SKIP] NOTAM " . $icaoNotam->id . " skipped: " . $e->getMessage() . "\n";
+                }
+            }
+
+            if (empty($queryParts)) {
+                continue;
             }
 
             $query = "INSERT INTO faa_notam (notam_id, country, type, icao, startdate, enddate, notam) VALUES " . join(",", $queryParts);
