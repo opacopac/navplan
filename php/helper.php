@@ -132,12 +132,12 @@ function cleanUpTempDirs()
             $tmpFilePath = $tmpDirPath . "/" . $tmpFile;
 
             if (!unlink($tmpFilePath))
-                die("ERROR: while deleting temp file '" . $tmpFilePath . "'");
+                throw new Exception("ERROR: while deleting temp file '" . $tmpFilePath . "'");
         }
 
         // remove tmp dir
         if (!rmdir($tmpDirPath))
-            die("ERROR: while deleting temp dir '" . $tmpDirPath . "'");
+            throw new Exception("ERROR: while deleting temp dir '" . $tmpDirPath . "'");
     }
 }
 
@@ -149,7 +149,7 @@ function cleanUpTempDirs()
 function checkNumeric($num)
 {
     if (!is_numeric($num))
-        die("format error: '" . $num . "' is not numeric");
+        throw new Exception("format error: '" . $num . "' is not numeric");
 
     return $num;
 }
@@ -158,10 +158,10 @@ function checkNumeric($num)
 function checkString($string, $minlen, $maxlen)
 {
     if (isset($maxlen) && strlen($string) > $maxlen)
-        die("format error: string '" . $string . "' too long");
+        throw new Exception("format error: string '" . $string . "' too long");
 
     if (isset($minlen) && strlen($string) < $minlen)
-        die("format error: string '" . $string . "' too short");
+        throw new Exception("format error: string '" . $string . "' too short");
 
     return $string;
 }
@@ -172,10 +172,10 @@ function checkAlphaNumeric($string, $minlen, $maxlen)
     $pattern = "/[a-zA-Z0-9]/";
 
     if (!$string)
-        die("format error: string is null");
+        throw new Exception("format error: string is null");
 
     if (!preg_match($pattern, $string))
-        die("format error: string '" . $string . "' is not alphanumeric");
+        throw new Exception("format error: string '" . $string . "' is not alphanumeric");
 
     return checkString($string, $minlen, $maxlen);
 }
@@ -186,10 +186,10 @@ function checkFilename($string)
     $pattern = '/^[a-zA-Z0-9]+[a-zA-Z0-9_\-]*\.[a-zA-Z0-9]+$/';
 
     if (!$string)
-        die("format error: empty string");
+        throw new Exception("format error: empty string");
 
     if (!preg_match($pattern, $string))
-        die("format error: string '" . $string . "' is not a filename");
+        throw new Exception("format error: string '" . $string . "' is not a filename");
 
     return checkString($string, 1, 50);
 }
@@ -199,7 +199,7 @@ function checkFilename($string)
 function checkEmail($email)
 {
     if (!$email)
-        die("email is null");
+        throw new Exception("email is null");
 
     // TODO: check email format with regexp
     return checkString($email, 1, 100);
@@ -209,7 +209,7 @@ function checkEmail($email)
 function checkToken($token)
 {
     if (!$token)
-        die("token is null");
+        throw new Exception("token is null");
 
     return checkString($token, 1, 200);
 }
@@ -218,10 +218,10 @@ function checkToken($token)
 function checkId($id)
 {
     if (!is_numeric($id))
-        die("format error");
+        throw new Exception("format error");
 
     if ($id < 0 || $id > 4294967295)
-        die("format error");
+        throw new Exception("format error");
 
     return $id;
 }
