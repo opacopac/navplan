@@ -24,6 +24,8 @@
 			<div class="col-sm-6">
 				<button type="submit" class="btn btn-primary" ng-click="onLoginClicked()" ng-disabled="loginForm.$invalid">Log In</button>
 				<button type="submit" class="btn btn-success pull-right" ng-click="onRegisterClicked()" ng-disabled="loginForm.$invalid">Create New Account</button>
+				<br>
+				<i ng-show="loginForm.$invalid" class="pull-right" style="color: gray">(please enter email & password first)</i>
 			</div>
 		</div>
 	</form>
