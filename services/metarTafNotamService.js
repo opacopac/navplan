@@ -109,7 +109,11 @@ function metarTafNotamService($http, $sce)
 
     function loadAreaWeatherInfos(extent, successCallback, errorCallback)
     {
-        var url = metarTafBaseUrl + extent[1] + "," + extent[0] + "," + extent[3] + "," + extent[2];
+        var url = metarTafBaseUrl
+            + roundToDigits(extent[1], 6) + ","
+            + roundToDigits(extent[0], 6) + ","
+            + roundToDigits(extent[3], 6) + ","
+            + roundToDigits(extent[2], 6);
 
         $sce.trustAsResourceUrl(url);
 
